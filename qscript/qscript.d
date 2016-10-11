@@ -48,7 +48,7 @@ private:
 		uint skipBlock=0;
 		if (!args[0].d){
 			if (scr.read==codes["endAt"]){
-				skipBlock = decodeNum(to!string(scr.read));
+				skipBlock = decodeNum(scr.read);
 				scr.position(scr.position+skipBlock-1);
 			}
 		}
@@ -191,7 +191,7 @@ private:
 			if (line==codes["end"]){
 				break;
 			}else
-			if (line==codes["callArg"]){
+			if (line==codes["call"]){
 				r.add(call);
 			}else
 			if (line==codes["numArg"]){
@@ -280,15 +280,15 @@ public:
 	this(){
 		//define the binary codes for interpretation
 		codes=[
-			"sp":to!string(cast(char)0),
-			"function":to!string(cast(char)1),
-			"call":to!string(cast(char)2),
-			"callArg":to!string(cast(char)2),
-			"numArg":to!string(cast(char)4),
-			"strArg":to!string(cast(char)5),
-			"end":to!string(cast(char)6),
-			"endAt":to!string(cast(char)7),
-			"endF":to!string(cast(char)8),
+			"sp":cast(string)[0],
+			"function":cast(string)[1],
+			"call":cast(string)[2],
+			//IDK why I didn't use \003
+			"numArg":cast(string)[4],
+			"strArg":cast(string)[5],
+			"end":cast(string)[6],
+			"endAt":cast(string)[7],
+			"endF":cast(string)[8],
 			//"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
 		];
 		//And put together the list of builtin functions
