@@ -7,7 +7,7 @@ import std.stdio;
 import std.conv:to;
 
 alias scriptFunction = Tqvar delegate(Tqvar[]);
-alias execProc = Tqvar delegate(string name,Tqvar[]);
+alias execFunc = Tqvar delegate(string name,Tqvar[]);
 
 class Tqscript{
 private:
@@ -227,8 +227,10 @@ private:
 			}
 		}else if (name in fStream){
 			r = execF(name, tmArgs);
-		}else{
+		}else if (onExec){
 			r = onExec(name, tmArgs);
+		}else{
+			throw new Exception("onExec was never defined, cannot execute: "~name);
 		}
 		return r;
 	}
@@ -275,7 +277,7 @@ private:
 	Tlist!uint loops;//To contain address to previous while-start to make loops faster
 	scriptFunction[string] pList;//To contain all script functions
 
-	execProc onExec;
+	execFunc onExec;
 public:
 	this(){
 		//define the binary codes for interpretation
@@ -349,7 +351,7 @@ public:
 			execF(name,args);
 		}
 	}
-	void setExecProc(execProc e){
+	void setExecFunc(execFunc e){
 		onExec = e;
 	}
 }
