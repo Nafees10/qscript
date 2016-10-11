@@ -346,7 +346,6 @@ private Tlist!string compileOp(){
 	];
 	string[string] toReplace=[
 		"if":"!if",
-		"again":"!again",
 		"string":"!string",
 		"double":"!double",
 		"getLength":"!getLength"
@@ -442,7 +441,7 @@ private Tlist!string compileOp(){
 		}else if (line=="while"){
 			tokens.set(i,"!while");
 			tokens.insert(brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}"),
-				["again","(",")",";"]);
+				["!again","(",")",";"]);
 		}else if (line in compareFunc){
 			tokens.set(i,",");
 			operand[0]=tokens.readRange(brackStart(tokens,i),i);
@@ -558,7 +557,7 @@ private bool isAlphaNum(string s){
 }
 
 private void compileByte(){
-	Tlist!int curlPos= new Tlist!int;
+	Tlist!uint curlPos= new Tlist!uint;
 	Tlist!string r=new Tlist!string;
 	uint i;
 	string line;
@@ -571,8 +570,8 @@ private void compileByte(){
 		"strArg":to!string(cast(char)5),
 		"end":to!string(cast(char)6),
 		"endAt":to!string(cast(char)7),
-		"endF":to!string(cast(char)8),
-		"startAt":to!string(cast(char)9)
+		"endF":to!string(cast(char)8)//,
+		//"startAt":to!string(cast(char)9)//I realized this wasn't even needed by the interpreter :P
 	];
 	
 	uint till = tokens.count;
@@ -609,22 +608,26 @@ private void compileByte(){
 				r.add(codes["endF"]);
 				r.add(codes["sp"]);
 			}else{
-				uint sPos = curlPos.readLast;
-
-				uint j, lnth, end;
+				uint j, lnth, end, sPos = curlPos.readLast;
 				lnth = 0;
 				end=r.count;
-				string ln;
-				for (j=sPos+1;j<end;j++){
-					lnth+=r.read(j).length;
+				//string ln;
+				for (j=sPos;j<end;j++){
+					if (r.read(j)==codes["numArg"]){
+						lnth+=2;
+						j+=3;
+					}
+					if (r.read(j)!=codes["sp"]){
+						lnth++;
+					}
 				}
-				lnth+=2;
+				//lnth+=2;
 				r.set(sPos,to!string(encodeNum(lnth)));
 
-				r.add(codes["startAt"]);
+				/*r.add(codes["startAt"]);
 				r.add(codes["sp"]);
 				r.add(to!string(encodeNum(lnth)));
-				r.add(codes["sp"]);
+				r.add(codes["sp"]);*///This ain't even required by the interpreter! wonder why I wrote it...
 			}
 			curlPos.del(curlPos.count-1);
 		}else

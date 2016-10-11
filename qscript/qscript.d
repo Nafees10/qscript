@@ -289,7 +289,7 @@ public:
 			"end":to!string(cast(char)6),
 			"endAt":to!string(cast(char)7),
 			"endF":to!string(cast(char)8),
-			"startAt":to!string(cast(char)9)
+			//"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
 		];
 		//And put together the list of builtin functions
 		pList=[
