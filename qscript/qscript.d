@@ -329,8 +329,6 @@ public:
 
 		Tlist!string sLst = new Tlist!string();
 		sLst.loadArray(s);
-		writeln(sLst.count," lines loaded.");
-		writeln("original length:",s.length);
 		string[] errors = compile(sLst);
 		//Then create it
 		if (errors.length==0){
