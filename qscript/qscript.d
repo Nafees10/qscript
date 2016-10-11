@@ -209,8 +209,8 @@ private:
 	}
 
 	Tqvar call(){
-		uint currPos = scr.position-2;
-		string name = cast(string)scr.read;
+		uint currPos = scr.position-1;//current pos is towards name, but we want \002
+		string name = scr.read;
 		scriptFunction* f;
 		Tqvar r;
 		Tqvar[] tmArgs = solveArgs;
@@ -238,13 +238,13 @@ private:
 		Tqvar r;
 		Tqvar[string] currVars = vars;
 		TbinReader prevScr = scr;
-		scr = new TbinReader(null,null,fStream[name]);
-		//Init the var container
+		scr = new TbinReader(fStream[name]);
+		//clear the var container
 		foreach (key; vars.keys){
 			vars.remove(key);
 		}
 		//Put args in vars
-		vars["args"]=r;
+		vars["args"]=r;//r is just a placeholder, just put any Tqvar, so I placed r
 		vars["args"].array.length=args.length;
 		for (uint i=0;i<args.length;i++){
 			vars["args"].array[i]=args[i];
@@ -253,10 +253,8 @@ private:
 		vars["result"]=r;
 		//start executing;
 		uint till = scr.size;
-		string line;
 		while (scr.position<till){
-			line = cast(string)scr.read();
-			if (line==codes["call"]){
+			if (scr.read()==codes["call"]){
 				call;
 			}
 		}
@@ -269,7 +267,7 @@ private:
 	}
 
 	Tqvar[string] vars;//use as vars[varname][index]
-	char[][string] fStream;//stream, to contain extracted functions
+	string[][string] fStream;//stream, to contain extracted functions
 
 	string[string] codes;
 	TbinReader script=null;//To contain the compiled script
@@ -346,11 +344,11 @@ public:
 
 		return errors;
 	}
-	void execute(string name){
+	void execute(string name, Tqvar[] args=[]){
 		if (!script){
 			throw new Exception("no script loaded");
 		}else{
-			execF(name,[]);
+			execF(name,args);
 		}
 	}
 	void setExecProc(execProc e){

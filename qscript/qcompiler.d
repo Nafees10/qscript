@@ -594,12 +594,12 @@ private void compileByte(){
 				r.add(codes["sp"]);
 				r.add(tokens.read(i-1));
 				r.add(codes["sp"]);
-				//notice that line below is curlPos.add, not r.add!
+				//notice that the line below is curlPos.add, not r.add! It caused me a huge confusion!
 				curlPos.add(r.count-2);
 			}else{
 				r.add(codes["endAt"]);
 				r.add(codes["sp"]);
-				r.add("{");
+				r.add("{");//It's just a placeholder, will be replaced when '}' is reached
 				r.add(codes["sp"]);
 				curlPos.add(r.count-2);
 			}

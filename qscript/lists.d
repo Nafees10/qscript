@@ -102,108 +102,93 @@ public:
 
 class TbinReader{
 private:
-	char[] stream;
+	string[] stream;
 	string[] functions;
 	uint pos=0;
 	uint total;
 public:
-	this(string[] dat=null, string fname = null, char[] strm=null){
+	this(string[] dat=null, string fname = null){
 		if (fname){
-			stream = cast(char[])(std.file.read(fname,to!uint(getSize(fname))));
+			char[] fContents = cast(char[])(std.file.read(fname,to!uint(getSize(fname))));
+			uint i, till = fContents.length, readFrom;
+			Tlist!string rStream = new Tlist!string;
+			for (i=0;i<till;i++){
+				if (fContents[i]=='\000' && i>readFrom){
+					rStream.add(cast(string)fContents[readFrom..i]);//not i+1, as we don't want \000
+					readFrom = i+1;//again, i+1 to skip the \000
+					i++;//In case the next char is \000 as a number, not as sp
+				}
+			}
+			delete fContents;
+			stream = rStream.toArray;
+			delete rStream;
 			total = stream.length;
 		}else if (dat){
-			uint i, lnth=0;
-			for (i=0;i<dat.length;i++){
-				lnth+=dat[i].length;
+			Tlist!string rStream = new Tlist!string;
+			rStream.loadArray(dat);
+			uint i, till = rStream.count;
+			for (i=0;i<till;i++){
+				if (rStream.read(i)=="\000"){
+					rStream.del(i);
+					till--;
+					i++;
+				}
 			}
-			stream.length=lnth;
-			uint wPos=0;
-			for (i=0;i<dat.length;i++){
-				stream[wPos..wPos+dat[i].length]=cast(char[])dat[i];
-				wPos+=dat[i].length;
-			}
-			total = stream.length;
-		}else if (strm){
-			stream=strm;
+			stream = rStream.toArray;
+			delete rStream;
 			total = stream.length;
 		}
 	}
-	char[] read(bool forward = true){
+	string read(){
 		uint i;
-		char[] r;
-		if (forward){
-			for (i=pos+1;i<total;i++){
-				if (stream[i]=='\000'){
-					break;
-				}
-			}
-			r= stream[pos..i];
-			pos=i+1;
-		}else{
-			for (i=pos-1;i>=0;i--){
-				if (stream[i]=='\000'){
-					break;
-				}
-			}
-			r= stream[i+1..pos+1];
-			pos=i-1;
-		}
+		string r;
+		r = stream[pos];
+		pos++;
 		return r;
 	}
-	char[] toArray(){
+	string[] toArray(){
 		return stream;
 	}
-	void position(uint newPos){
-		pos=newPos;
+	@property uint position(uint newPos){
+		return pos=newPos;
 	}
-	uint position(){
+	@property uint position(){
 		return pos;
 	}
 	uint size(){
 		return total;
 	}
-	char[][string] extractFunctions(){
-		uint sPos;
-		uint ePos;
-		bool soe = true;
-
-		string line, name;
-
+	string[][string] extractFunctions(){//This has to be called before reading functions[]
+		uint startPos;//index from where a function is starting
+		uint i;
+		string name = null;//Name of current function
 		Tlist!string fNames = new Tlist!string;
-
 		string[string] codes=[
-			"fEnd":to!string(cast(char)8),
-			"fStart":to!string(cast(char)1),
-			"numArg":to!string(cast(char)4),
-			"callEnd":to!string(cast(char)6),
+			"fEnd":cast(string)[8],
+			"fStart":cast(string)[1],
+			"numArg":cast(string)[4],
 		];
+		string[][string] r;
 
-		char[][string] r;
-		pos = 0;
-		while (pos<total){
-			if (soe){
-				sPos=pos;
-			}else{
-				ePos=pos;
+		for (i=0;i<total;i++){
+			if (stream[i]==codes["numArg"]){
+				i+=2;//+=1 = the number, which can be \000
 			}
-			line = cast(string)read;
-			if (line==codes["numArg"]){
-				read;
-			}else
-			if (line==codes["fEnd"]){
-				r[name]=stream[sPos..ePos+1];
-				sPos=pos;
-			}else
-			if (line==codes["fStart"]){
-				name = cast(string)read;
+
+			if (stream[i]==codes["fStart"]){
+				name = stream[i+1];
 				fNames.add(name);
-				soe=false;
+				startPos = i+2;//+1 = functionName;+2 = start of function Body
+			}
+			if (stream[i]==codes["fEnd"]){
+				r[name]=stream[startPos..i];
+				name = null;
 			}
 		}
-
 		functions = fNames.toArray;
 		delete fNames;
 		return r;
+
 	}
 	string[] getFunctionNames(){
 		return functions;
