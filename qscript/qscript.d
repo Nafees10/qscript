@@ -7,7 +7,7 @@ import std.stdio;
 import std.conv:to;
 
 alias scriptFunction = Tqvar delegate(Tqvar[]);
-alias execProc = Tqvar delegate(string name,Tqvar[]);
+alias execFunc = Tqvar delegate(string name,Tqvar[]);
 
 class Tqscript{
 private:
@@ -48,7 +48,7 @@ private:
 		uint skipBlock=0;
 		if (!args[0].d){
 			if (scr.read==codes["endAt"]){
-				skipBlock = decodeNum(to!string(scr.read));
+				skipBlock = decodeNum(scr.read);
 				scr.position(scr.position+skipBlock-1);
 			}
 		}
@@ -191,7 +191,7 @@ private:
 			if (line==codes["end"]){
 				break;
 			}else
-			if (line==codes["callArg"]){
+			if (line==codes["call"]){
 				r.add(call);
 			}else
 			if (line==codes["numArg"]){
@@ -209,8 +209,8 @@ private:
 	}
 
 	Tqvar call(){
-		uint currPos = scr.position-2;
-		string name = cast(string)scr.read;
+		uint currPos = scr.position-1;//current pos is towards name, but we want \002
+		string name = scr.read;
 		scriptFunction* f;
 		Tqvar r;
 		Tqvar[] tmArgs = solveArgs;
@@ -227,8 +227,10 @@ private:
 			}
 		}else if (name in fStream){
 			r = execF(name, tmArgs);
-		}else{
+		}else if (onExec){
 			r = onExec(name, tmArgs);
+		}else{
+			throw new Exception("onExec was never defined, cannot execute: "~name);
 		}
 		return r;
 	}
@@ -238,13 +240,13 @@ private:
 		Tqvar r;
 		Tqvar[string] currVars = vars;
 		TbinReader prevScr = scr;
-		scr = new TbinReader(null,null,fStream[name]);
-		//Init the var container
+		scr = new TbinReader(fStream[name]);
+		//clear the var container
 		foreach (key; vars.keys){
 			vars.remove(key);
 		}
 		//Put args in vars
-		vars["args"]=r;
+		vars["args"]=r;//r is just a placeholder, just put any Tqvar, so I placed r
 		vars["args"].array.length=args.length;
 		for (uint i=0;i<args.length;i++){
 			vars["args"].array[i]=args[i];
@@ -253,10 +255,8 @@ private:
 		vars["result"]=r;
 		//start executing;
 		uint till = scr.size;
-		string line;
 		while (scr.position<till){
-			line = cast(string)scr.read();
-			if (line==codes["call"]){
+			if (scr.read()==codes["call"]){
 				call;
 			}
 		}
@@ -269,7 +269,7 @@ private:
 	}
 
 	Tqvar[string] vars;//use as vars[varname][index]
-	char[][string] fStream;//stream, to contain extracted functions
+	string[][string] fStream;//stream, to contain extracted functions
 
 	string[string] codes;
 	TbinReader script=null;//To contain the compiled script
@@ -277,21 +277,21 @@ private:
 	Tlist!uint loops;//To contain address to previous while-start to make loops faster
 	scriptFunction[string] pList;//To contain all script functions
 
-	execProc onExec;
+	execFunc onExec;
 public:
 	this(){
 		//define the binary codes for interpretation
 		codes=[
-			"sp":to!string(cast(char)0),
-			"function":to!string(cast(char)1),
-			"call":to!string(cast(char)2),
-			"callArg":to!string(cast(char)2),
-			"numArg":to!string(cast(char)4),
-			"strArg":to!string(cast(char)5),
-			"end":to!string(cast(char)6),
-			"endAt":to!string(cast(char)7),
-			"endF":to!string(cast(char)8),
-			"startAt":to!string(cast(char)9)
+			"sp":cast(string)[0],
+			"function":cast(string)[1],
+			"call":cast(string)[2],
+			//IDK why I didn't use \003
+			"numArg":cast(string)[4],
+			"strArg":cast(string)[5],
+			"end":cast(string)[6],
+			"endAt":cast(string)[7],
+			"endF":cast(string)[8],
+			//"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
 		];
 		//And put together the list of builtin functions
 		pList=[
@@ -331,8 +331,6 @@ public:
 
 		Tlist!string sLst = new Tlist!string();
 		sLst.loadArray(s);
-		writeln(sLst.count," lines loaded.");
-		writeln("original length:",s.length);
 		string[] errors = compile(sLst);
 		//Then create it
 		if (errors.length==0){
@@ -346,14 +344,14 @@ public:
 
 		return errors;
 	}
-	void execute(string name){
+	void execute(string name, Tqvar[] args=[]){
 		if (!script){
 			throw new Exception("no script loaded");
 		}else{
-			execF(name,[]);
+			execF(name,args);
 		}
 	}
-	void setExecProc(execProc e){
+	void setExecFunc(execFunc e){
 		onExec = e;
 	}
 }

@@ -17,13 +17,13 @@ export extern(C) void term(){
 	delete qscr;
 	//rt_term;
 }
-export extern(C) void onExec(execProc e){
-	qscr.setExecProc(e);
+export extern(C) void onExec(execFunc e){
+	qscr.setExecFunc(e);
 }
 export extern(C) string[] loadScript(string fname){
 	string[] er = qscr.loadScript(fileToArray(fname));
 	return er;
 }
-export extern(C) void execute(string name){
-	qscr.execute(name);
+export extern(C) void execute(string name, Tqvar[] args){
+	qscr.execute(name,args);
 }

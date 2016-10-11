@@ -49,7 +49,7 @@ void main(string[] args){
 		}
 	}else{
 		qscr.setExec(&tst.call);
-		qscr.execute("main");
+		qscr.execute("main",[/*NO ARGS*/]);
 	}
 	delete tst;
 	delete qscr;

@@ -12,11 +12,11 @@ union Tqvar{
 
 class Tqloader{
 private:
-	alias execProc = Tqvar delegate(string name, Tqvar[] args);
+	alias execFunc = Tqvar delegate(string name, Tqvar[] args);
 	
-	alias TsetExec = extern(C) void function(execProc);
+	alias TsetExec = extern(C) void function(execFunc);
 	alias TinitEnd = extern(C) void function();
-	alias Texecute = extern(C) void function(string);
+	alias Texecute = extern(C) void function(string,Tqvar[]);
 	alias TloadScript = extern(C) string[] function(string);
 	
 	void* libso;
