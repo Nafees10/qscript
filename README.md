@@ -23,6 +23,6 @@ The file <code>qloader.d</code> and <code>main.d</code> in <code>/test</code> de
 <p>Use the issues tab at the top, or if you can't, here is my email address: nafees[dot]hassan[at]outlook[dot]com</p>
 <br>
 <h3>How to contribute?</h3>
-<p>Clone this repo, make changes, commit and push to dev branch.</p>
+<p>Clone this repo, make changes, commit and push to dev or any other branch branch.</p>
 <br>
 <br>
