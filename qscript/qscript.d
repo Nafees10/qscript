@@ -49,7 +49,7 @@ private:
 		if (!args[0].d){
 			if (scr.read==codes["endAt"]){
 				skipBlock = decodeNum(scr.read);
-				scr.position(scr.position+skipBlock);
+				scr.position(scr.position+skipBlock-1);
 			}
 		}
 		return args[0];
