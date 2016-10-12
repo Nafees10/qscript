@@ -5,7 +5,7 @@ QScript has been designed and tested on only Linux, and I have no plans to add s
 <ol>
 	<li>Download/clone this repo</li>
 	<li><code>cd</code> into %CLONE DIR%/qscript</li>
-	<li>Build using:<code>dmd -m32 -shared -fPIC "lists.d" "main.d" "misc.d" "qcompiler.d" "qscript.d"</code></li>
+	<li>Build using:<code>dmd -m32 -shared -fPIC "lists.d" "main.d" "misc.d" "qcompiler.d" "qscript.d" -oflibqscript.so</code></li>
 </ol><br>
 <h3>Usage</h3>
 The file <code>qloader.d</code> and <code>main.d</code> in <code>/test</code> demonstrate how to use QScript.<br>
