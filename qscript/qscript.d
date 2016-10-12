@@ -49,7 +49,7 @@ private:
 		if (!args[0].d){
 			if (scr.read==codes["endAt"]){
 				skipBlock = decodeNum(scr.read);
-				scr.position(scr.position+skipBlock-1);
+				scr.position(scr.position+skipBlock);
 			}
 		}
 		return args[0];
@@ -187,7 +187,7 @@ private:
 		string line;
 		uint dcs=1;
 		while (true){
-			line = cast(string)scr.read;
+			line = scr.read;
 			if (line==codes["end"]){
 				break;
 			}else
@@ -195,11 +195,11 @@ private:
 				r.add(call);
 			}else
 			if (line==codes["numArg"]){
-				tmVar.d = decodeNum(cast(string)scr.read);
+				tmVar.d = decodeNum(scr.read);
 				r.add(tmVar);
 			}else
 			if (line==codes["strArg"]){
-				tmVar.s = cast(string)scr.read;
+				tmVar.s = scr.read;
 				r.add(tmVar);
 			}
 		}

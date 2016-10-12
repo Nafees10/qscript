@@ -103,7 +103,6 @@ public:
 class TbinReader{
 private:
 	string[] stream;
-	string[] functions;
 	uint pos=0;
 	uint total;
 public:
@@ -128,10 +127,13 @@ public:
 			rStream.loadArray(dat);
 			uint i, till = rStream.count;
 			for (i=0;i<till;i++){
+				if (rStream.read(i)=="\004"){
+					i++;
+					continue;
+				}
 				if (rStream.read(i)=="\000"){
 					rStream.del(i);
 					till--;
-					i++;
 				}
 			}
 			stream = rStream.toArray;
@@ -162,7 +164,6 @@ public:
 		uint startPos;//index from where a function is starting
 		uint i;
 		string name = null;//Name of current function
-		Tlist!string fNames = new Tlist!string;
 		string[string] codes=[
 			"fEnd":cast(string)[8],
 			"fStart":cast(string)[1],
@@ -177,20 +178,15 @@ public:
 
 			if (stream[i]==codes["fStart"]){
 				name = stream[i+1];
-				fNames.add(name);
 				startPos = i+2;//+1 = functionName;+2 = start of function Body
+
 			}
 			if (stream[i]==codes["fEnd"]){
 				r[name]=stream[startPos..i];
 				name = null;
 			}
 		}
-		functions = fNames.toArray;
-		delete fNames;
 		return r;
 
-	}
-	string[] getFunctionNames(){
-		return functions;
 	}
 }
