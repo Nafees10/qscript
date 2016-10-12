@@ -16,6 +16,7 @@ The file <code>qloader.d</code> and <code>main.d</code> in <code>/test</code> de
 	<li>Easy and unique (a bit like C) syntax</li>
 	<li>Dynamic arrays</li>
 	<li>Open source - Can't find a feature, implement it yourself</li>
+	<li>Fast execution - a loop of 10000 times, calling 8 functions each time, finished within 2 - 3 seconds.</li>
 	<li>More features on the way, qscript is still in beta</li>
 </ol>
 <br>
