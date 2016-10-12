@@ -26,3 +26,5 @@ The file <code>qloader.d</code> and <code>main.d</code> in <code>/test</code> de
 <p>Clone this repo, make changes, commit and push to dev or any other branch branch.</p>
 <br>
 <br>
+<h3>Where to learn QScript from?</h3>
+<p>I've written a whole wiki on this topic, here is the link to the wiki: <a hred="https://github.com/Nafees10/qscript/wiki">https://github.com/Nafees10/qscript/wiki</a></p>
