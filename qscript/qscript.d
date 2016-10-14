@@ -133,7 +133,7 @@ private:
 	}
 	//loop Break:
 	Tqvar breakLoop(Tqvar[] args){
-		scr.position(scr.position+loopEnd.readLast-1);
+		scr.position(loopEnd.readLast);
 		Tqvar r;
 		return r;
 	}
@@ -148,7 +148,7 @@ private:
 	//!loop
 	Tqvar loop(Tqvar[] args){
 		if (scr.read==codes["endAt"]){
-			loopEnd.add(decodeNum(scr.read));
+			loopEnd.add(scr.position+decodeNum(scr.read)-1);
 		}
 		Tqvar r;
 		return r;
