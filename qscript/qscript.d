@@ -46,7 +46,7 @@ private:
 	//IF
 	Tqvar doIf(Tqvar[] args){
 		uint skipBlock=0;
-		if (!args[0].d){
+		if (args[0].d!=1){
 			if (scr.read==codes["endAt"]){
 				skipBlock = decodeNum(scr.read);
 				scr.position(scr.position+skipBlock-1);
@@ -131,10 +131,25 @@ private:
 		r.d = args[0].array.length;
 		return r;
 	}
+	//loop Break:
+	Tqvar breakLoop(Tqvar[] args){
+		scr.position(scr.position+loopEnd.readLast-1);
+		Tqvar r;
+		return r;
+	}
 	//loop again
 	Tqvar again(Tqvar[] args){
-		scr.position(loops.readLast);
-		loops.del(loops.count-1);
+		Tqvar r;
+		if (scr.read==codes["startAt"]){
+			scr.position(scr.position-decodeNum(scr.read)-1);
+		}
+		return r;
+	}
+	//!loop
+	Tqvar loop(Tqvar[] args){
+		if (scr.read==codes["endAt"]){
+			loopEnd.add(decodeNum(scr.read));
+		}
 		Tqvar r;
 		return r;
 	}
@@ -219,9 +234,6 @@ private:
 			f = name in pList;
 			if (f){
 				r = (*f)(tmArgs);
-				if (name=="!while"){
-					loops.add(currPos);
-				}
 			}else{
 				throw new Exception("undefined function call: "~name);
 			}
@@ -238,11 +250,12 @@ private:
 
 	Tqvar execF(string name, Tqvar[] args){
 		Tqvar r;
-		Tqvar[string] currVars = vars;
+		Tqvar[string] currVars;
 		TbinReader prevScr = scr;
 		scr = new TbinReader(fStream[name]);
 		//clear the var container
 		foreach (key; vars.keys){
+			currVars[key] = vars[key];
 			vars.remove(key);
 		}
 		//Put args in vars
@@ -255,14 +268,19 @@ private:
 		vars["result"]=r;
 		//start executing;
 		uint till = scr.size;
+		string token;
 		while (scr.position<till){
-			if (scr.read()==codes["call"]){
+			token = scr.read;
+			if (token==codes["call"]){
 				call;
+			}else if (token==codes["numArg"] || token==codes["startAt"] ||
+				token==codes["endAt"]){
+				scr.read;//To skip the next content
 			}
 		}
 
 		r=vars["result"];
-
+		delete scr;
 		scr = prevScr;
 		vars = currVars;
 		return r;
@@ -273,8 +291,8 @@ private:
 
 	string[string] codes;
 	TbinReader script=null;//To contain the compiled script
-	TbinReader scr=null;//To contain byte code for currently executng function
-	Tlist!uint loops;//To contain address to previous while-start to make loops faster
+	TbinReader scr=null;//To contain byte code for currently executng function#
+	Tlist!uint loopEnd;
 	scriptFunction[string] pList;//To contain all script functions
 
 	execFunc onExec;
@@ -291,7 +309,8 @@ public:
 			"end":cast(string)[6],
 			"endAt":cast(string)[7],
 			"endF":cast(string)[8],
-			//"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
+			"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
+			//Now startAt is used
 		];
 		//And put together the list of builtin functions
 		pList=[
@@ -312,17 +331,19 @@ public:
 			"!double":&toDouble,
 			"!setLength":&setLength,
 			"!getLength":&getLength,
+			"!break":&breakLoop,
 			"!again":&again,
+			"!loop":&loop,
 			"!new":&newVar,
 			"![":&readArray,
 			"!?":&getVar,
 			"!=":&setVar
 		];
-		loops = new Tlist!uint;
+		loopEnd = new Tlist!uint;
 	}
 	~this(){
+		delete loopEnd;
 		delete script;
-		delete loops;
 		delete scr;
 	}
 	string[] loadScript(string[] s){

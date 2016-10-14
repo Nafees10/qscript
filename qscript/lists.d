@@ -168,11 +168,14 @@ public:
 			"fEnd":cast(string)[8],
 			"fStart":cast(string)[1],
 			"numArg":cast(string)[4],
+			"endAt":cast(string)[7],
+			"startAt":to!string(cast(char)9)
 		];
 		string[][string] r;
 
 		for (i=0;i<total;i++){
-			if (stream[i]==codes["numArg"]){
+			if (stream[i]==codes["numArg"] || stream[i]==codes["startAt"] ||
+				stream[i]==codes["endAt"]){
 				i+=2;//+=1 = the number, which can be \000
 			}
 

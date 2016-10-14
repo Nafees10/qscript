@@ -348,6 +348,7 @@ private Tlist!string compileOp(){
 		"if":"!if",
 		"string":"!string",
 		"double":"!double",
+		"break":"!break",
 		"getLength":"!getLength"
 	];
 
@@ -438,10 +439,11 @@ private Tlist!string compileOp(){
 			i-=operand[0].length-2;
 		}else if(line in toReplace){
 			tokens.set(i,toReplace[line]);
-		}else if (line=="while"){
-			tokens.set(i,"!while");
-			tokens.insert(brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}"),
+		}else if (line=="loop"){
+			tokens.set(i,"!loop");
+			tokens.insert(brackEnd(tokens,i+1,"{","}"),
 				["!again","(",")",";"]);
+			tokens.insert(i+1,["(",")",";"]);
 		}else if (line in compareFunc){
 			tokens.set(i,",");
 			operand[0]=tokens.readRange(brackStart(tokens,i),i);
@@ -572,7 +574,7 @@ private void compileByte(){
 		"end":cast(string)[6],
 		"endAt":cast(string)[7],
 		"endF":cast(string)[8],
-		//"startAt":to!string(cast(char)9)//I realized this wasn't even needed by the interpreter :P
+		"startAt":to!string(cast(char)9)
 	];
 	
 	uint till = tokens.count;
@@ -623,12 +625,14 @@ private void compileByte(){
 					}
 				}
 				//lnth+=2;
-				r.set(sPos,to!string(encodeNum(lnth)));
+				string encoded = encodeNum(lnth);
+				r.set(sPos,encoded);
 
-				/*r.add(codes["startAt"]);
+				r.add(codes["startAt"]);
 				r.add(codes["sp"]);
-				r.add(to!string(encodeNum(lnth)));
-				r.add(codes["sp"]);*///This ain't even required by the interpreter! wonder why I wrote it...
+				r.add(encoded);
+				r.add(codes["sp"]);//This ain't even required by the interpreter! wonder why I wrote it...
+				//EDIT: Now it is used by the interpreter!
 			}
 			curlPos.del(curlPos.count-1);
 		}else
