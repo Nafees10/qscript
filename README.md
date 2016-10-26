@@ -27,6 +27,14 @@ The file <code>qloader.d</code> and <code>main.d</code> in <code>/test</code> de
 <h3>How to contribute?</h3>
 <p>Clone this repo, make changes, commit and push to dev or any other branch branch.</p>
 <br>
-<br>
 <h3>Where to learn QScript from?</h3>
 <p>I've written a whole wiki on this topic, here is the link to the wiki: <a hred="https://github.com/Nafees10/qscript/wiki">https://github.com/Nafees10/qscript/wiki</a></p>
+<br>
+<p>P.S: Updates have slowed down, a lot, because I am making a lot of changes, and I wont commit them, till I've finished it.<br>
+Those changes include:<ol>
+<li>new byte code. Not exactly byte code, it's something different, all the functions are arranged in an array in the order they have to be executed.</li>
+<li>huge speed improvements.</li>
+<li>changes in the compiler. Obviously! The old byte code is/will-be dead</li>
+<li>re-writing the interpreter. I wonder if I should still call it an interpreter, because now, it won't be doing much</li>
+<li>probably some other that got off my head.</li>
+</ol></p>
