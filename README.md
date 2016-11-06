@@ -1,3 +1,7 @@
+<p>
+This is the dev branch, you should clone from the master branch.<br>
+dev branch is for development, and nothing is stable in dev.
+</p>
 QScript is a fast, and simple scripting language.<br>
 QScript has been designed and tested on only Linux, and I have no plans to add support for Windows.
 <br>
