@@ -43,10 +43,10 @@
     <DebugLevel>0</DebugLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="compiler.d" />
     <Compile Include="lists.d" />
     <Compile Include="main.d" />
     <Compile Include="misc.d" />
-    <Compile Include="qcompiler.d" />
     <Compile Include="qscript.d" />
   </ItemGroup>
 </Project>

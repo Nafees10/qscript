@@ -1,4 +1,4 @@
-﻿module qcompiler;
+﻿module compiler;
 
 import misc;
 import lists;
@@ -10,24 +10,14 @@ private Tlist!string tokens;
 private uint[] origLine;
 
 private void addEr(Tlist!string errors, uint line, string msg){
-	uint till = origLine.length;
 	int i;
 	uint lineno;
-	for (i=0;i<till;i++){
+	for (i=0;i<origLine.length;i++){
 		if (origLine[i]>=line){break;}
 	}
 	lineno = i+1;
-	//Get position of error
-	/*uint pos;
-	if (i>0){
-		i = origLine[i-1];
-	}
-	for (;i<line;i++){
-		pos+=tokens.read(i).length;
-	}*/
 
-
-	errors.add(to!string(lineno)/*~','~to!string(pos)*/~':'~msg);
+	errors.add(to!string(lineno)~':'~msg);
 }
 
 private int strEnd(string s, uint i){
@@ -43,30 +33,83 @@ private int strEnd(string s, uint i){
 	return i;
 }
 
+private int brackEnd(Tlist!string list, int i, string s="(", string e=")"){
+	uint dcs=1;
+	string token;
+	for (i++;i<list.count;i++){
+		if (dcs==0){
+			break;
+		}
+		token=list.read(i);
+		if (token==s){
+			dcs++;
+		}else if (token==e){
+			dcs--;
+		}
+	}
+	i--;
+	if (dcs>0){
+		i=-1;
+	}
+	return i;
+}
+
+private int brackStart(Tlist!string list, int i, string s="(", string e=")"){
+	uint dcs=1;
+	string token;
+	for (i--;i>=0;i--){
+		if (dcs==0){
+			break;
+		}
+		token=list.read(i);
+		if (token==s){
+			dcs--;
+		}else if (token==e){
+			dcs++;
+		}
+	}
+	i++;
+	if (dcs>0){
+		i=-1;
+	}
+	return i;
+}
+
+private bool hasElement(T)(T[] array, T element){
+	bool r = false;
+	foreach(cur; array){
+		if (cur == element){
+			r = true;
+			break;
+		}
+	}
+	return r;
+}
+
 private string[] nextToken(uint i){
 	string token;
-	bool[string] sp=[
-		"/":true,
-		"*":true,
-		"+":true,
-		"-":true,
-		"%":true,
-		";":true,
-		"{":true,
-		"}":true,
-		")":true,
-		",":true,
-		"=":true,
-		"==":true,
-		"<":true,
-		">":true,
-		"<=":true,
-		">=":true,
+	string[] sp=[
+		"/",
+		"*",
+		"+",
+		"-",
+		"%",
+		";",
+		"{",
+		"}",
+		")",
+		",",
+		"=",
+		"==",
+		"<",
+		">",
+		"<=",
+		">=",
 	];
 	uint frm=i;
 	for (;i<tokens.count;i++){
 		token = tokens.read(i);
-		if (token in sp){
+		if (sp.hasElement(token)){
 			//i--;
 			break;
 		}
@@ -85,28 +128,28 @@ private string[] nextToken(uint i){
 
 private string[] prevToken(int i){
 	string token;
-	bool[string] sp=[
-		"/":true,
-		"*":true,
-		"+":true,
-		"-":true,
-		"%":true,
-		";":true,
-		"{":true,
-		"}":true,
-		"(":true,
-		",":true,
-		"=":true,
-		"==":true,
-		"<":true,
-		">":true,
-		"<=":true,
-		">=":true,
+	string[] sp=[
+		"/",
+		"*",
+		"+",
+		"-",
+		"%",
+		";",
+		"{",
+		"}",
+		"(",
+		",",
+		"=",
+		"==",
+		"<",
+		">",
+		"<=",
+		">=",
 	];
 	int till=i+1;
 	for (;i>=0;i--){
 		token = tokens.read(i);
-		if (token in sp){
+		if (sp.hasElement(token)){
 			//i--;
 			break;
 		}
@@ -167,7 +210,7 @@ private bool isVarName(uint i){
 	return r;
 }
 
-string[2] parseVarName(uint i){
+private string[2] parseVarName(uint i){
 	string[2] r;//1 be varname 2 be index
 	r[0]=tokens.read(i);
 	if (tokens.read(i+1)=="["){
@@ -276,33 +319,12 @@ private ubyte getOpType(string[] operand){
 	return r;
 }
 
-private string[] parseNum(string num){
-	uint i;
-	string[] r=[num];
-	string newNum;
-	for (i=0;i<num.length;i++){
-		if (num[i]=='.'){
-			break;
-		}
-		newNum~=num[i];
-	}
-	if (i<num.length){
-		uint divBy=1;
-		for (i++;i<num.length;i++){
-			divBy*=10;
-			newNum~=num[i];
-		}
-		r=["!/","(",newNum,",",to!string(divBy),")"];
-	}
-	return r;
-}
-
 private void addTokn(uint count, uint pos){
 	uint till = origLine.length;
 	uint i;
 	for (i=0;i<till;i++){
-		if (origLine[i]>pos){break;}
-		if (origLine[i]==pos){i--;break;}
+		if (origLine[i]>=pos){break;}//change >= to = if not working
+		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
 	}
 	for (;i<till;i++){
 		origLine[i]+=count;
@@ -313,8 +335,8 @@ private void delTokn(uint count, uint pos){
 	uint till = origLine.length;
 	uint i;
 	for (i=0;i<till;i++){
-		if (origLine[i]>pos){break;}
-		if (origLine[i]==pos){i--;break;}
+		if (origLine[i]>=pos){break;}//change >= to = if not working
+		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
 	}
 	for (;i<till;i++){
 		origLine[i]-=count;
@@ -348,7 +370,6 @@ private Tlist!string compileOp(){
 		"if":"!if",
 		"string":"!string",
 		"double":"!double",
-		"break":"!break",
 		"getLength":"!getLength"
 	];
 
@@ -439,16 +460,17 @@ private Tlist!string compileOp(){
 			i-=operand[0].length-2;
 		}else if(line in toReplace){
 			tokens.set(i,toReplace[line]);
-		}else if (line=="loop"){
-			tokens.set(i,"!loop");
-			tokens.insert(brackEnd(tokens,i+1,"{","}"),
-				["!again","(",")",";"]);
-			tokens.insert(i+1,["(",")",";"]);
+		}else if (line=="while"){
+			uint pos;
+			tokens.set(i,"!if");
+			pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
+			tokens.insert(pos, ["!again","(","foo",")",";"]);
+			addTokn(4,pos);
 		}else if (line in compareFunc){
 			tokens.set(i,",");
-			operand[0]=tokens.readRange(brackStart(tokens,i),i);
+			operand[0] = tokens.readRange(brackStart(tokens,i),i);
 			operand[0] = prevToken(i-operand[0].length)~operand[0];
-			operand[1]=tokens.readRange(i+1,brackEnd(tokens,i));
+			operand[1] = tokens.readRange(i+1,brackEnd(tokens,i));
 
 			if (operand[0].length==0 || operand[1].length==0){
 				addEr(errors,i,"not enough operands for "~line~" operator");
@@ -499,10 +521,21 @@ private Tlist!string compileOp(){
 				tokens.insert(i+2,operand[0]);
 				addTokn(operand[0].length,i+2);
 			}else{
-				tokens.set(i+2,'"'~tokens.read(i+2)~'"');
+				//tokens.set(i+2,'"'~tokens.read(i+2)~'"');
+				uint j = i+2, till = tokens.count;
+				operand[0].length = 0;
+				if (tokens.read(j-1)=="("){
+					for (;j<till;j++){
+						operand[0][0] = tokens.read(j);
+						if (operand[0][0]==")"){
+							break;
+						}
+						tokens.set(j,'"'~operand[0][0]~'"');
+					}
+				}
 			}
 		}else
-		if (line=="(" && i>0){
+		if (line=="(" && i>0){//delette unnecessary brackets
 			tmstr[0] = tokens.read(i-1);
 			tmstr[1] = tokens.read(brackEnd(tokens,i)+1);
 			if ((tmstr[0]==","||tmstr[0]=="(") && (tmstr[1]==","||tmstr[1]==")")){
@@ -534,9 +567,17 @@ private Tlist!string compileOp(){
 
 private bool isNum(string s){
 	bool r=false;
-	if ("0123456789.".canFind(s[0])){
-		r=true;
+	uint i;
+	if (!"0123456789".canFind(s[0])){
+		goto skipCheck;
 	}
+	for (i=1;i<s.length;i++){
+		if ("0123456789.".canFind(s[i])){
+			r = true;
+			break;
+		}
+	}
+	skipCheck:
 	return r;
 }
 
@@ -558,124 +599,126 @@ private bool isAlphaNum(string s){
 	return r;
 }
 
-private void compileByte(){
-	Tlist!uint curlPos= new Tlist!uint;
-	Tlist!string r=new Tlist!string;
-	uint i;
-	string line;
-	
-	string[string] codes=[
-		"sp":cast(string)[0],
-		"function":cast(string)[1],
-		"call":cast(string)[2],
-		//IDK why I didn't use \003
-		"numArg":cast(string)[4],
-		"strArg":cast(string)[5],
-		"end":cast(string)[6],
-		"endAt":cast(string)[7],
-		"endF":cast(string)[8],
-		"startAt":to!string(cast(char)9)
-	];
-	
-	uint till = tokens.count;
-	for (i=0;i<till;i++){
-		line = tokens.read(i);
-		if (line=="("){
-			r.add(codes["call"]);
-			r.add(codes["sp"]);
-			r.add(tokens.read(i-1));
-			r.add(codes["sp"]);
-		}else
-		if(line==")"){
-			r.add(codes["end"]);
-			r.add(codes["sp"]);
-		}else
-		if (line=="{"){
-			if (curlPos.count==0){
-				r.add(codes["function"]);
-				r.add(codes["sp"]);
-				r.add(tokens.read(i-1));
-				r.add(codes["sp"]);
-				//notice that the line below is curlPos.add, not r.add! It caused me a huge confusion!
-				curlPos.add(r.count-2);
-			}else{
-				r.add(codes["endAt"]);
-				r.add(codes["sp"]);
-				r.add("{");//It's just a placeholder, will be replaced when '}' is reached
-				r.add(codes["sp"]);
-				curlPos.add(r.count-2);
-			}
-		}else
-		if (line=="}"){
-			if (curlPos.count==1){
-				r.add(codes["endF"]);
-				r.add(codes["sp"]);
-			}else{
-				uint j, lnth, end, sPos = curlPos.readLast;
-				lnth = 0;
-				end=r.count;
-				//string ln;
-				for (j=sPos;j<end;j++){
-					if (r.read(j)==codes["numArg"]){
-						lnth+=2;
-						j+=3;
-					}
-					if (r.read(j)!=codes["sp"]){
-						lnth++;
-					}
-				}
-				//lnth+=2;
-				string encoded = encodeNum(lnth);
-				r.set(sPos,encoded);
 
-				r.add(codes["startAt"]);
-				r.add(codes["sp"]);
-				r.add(encoded);
-				r.add(codes["sp"]);//This ain't even required by the interpreter! wonder why I wrote it...
-				//EDIT: Now it is used by the interpreter!
+private void compileByte(ref scrFunction*[][string] calls, ref Tqvar[][string] stack,
+	uint[][string] stackInd, scrFunction*[string] functions){
+	/*
+	 * functions needs to have these:
+	 * !clearStack 	to clear stack FOR ONLY THAT FUNCTION!
+	 * !extern		to call a function that's externally defined, name will be in stack
+	 * !add			to add something to stack
+	 * !/ 			for division
+	 * !* 			multiplication
+	 * !+ 			addition
+	 * !- 			subtraction
+	 * !% 			remainder
+	 * !~ 			concatenation
+	 * !< 			smaller
+	 * !> 			greater
+	 * !<= 			smaller or equal
+	 * !>= 			greater or equal
+	 * !== 			if equal
+	 * !if			to jump ahead if condition is false
+	 * !string 		convert double to string
+	 * !double 		convert string to double
+	 * !again		jump to start of loop body
+	 * !getLength 	get array's length
+	 * !setLength 	set array's length
+	 * !new 		to declare new variable
+	*/
+	Tlist!(scrFunction*) fCalls = new Tlist!(scrFunction*);
+	Tlist!uint blockDepth = new Tlist!uint;
+	Tlist!uint fStackInd = new Tlist!uint;
+	Tlist!Tqvar fStack = new Tlist!Tqvar;
+	Tlist!uint ifPos = new Tlist!uint;
+	uint i, till = tokens.count, j, bEnd, brackDepth=0;
+	string token, fName, tmStr;
+	Tqvar arg;
+
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token=="{"){
+			if (blockDepth.count==0){
+				fName = tokens.read(i-1);
 			}
-			curlPos.del(curlPos.count-1);
+			blockDepth.add(fCalls.count-1);
 		}else
-		if (line[0]=='"'){
-			r.add(codes["strArg"]);
-			r.add(codes["sp"]);
-			r.add(parseStr(line[1..line.length-1]));
-			r.add(codes["sp"]);
+		if (token=="}"){
+			if (blockDepth.count==1){
+				fCalls.add(functions["!clearStack"]);
+				fStackInd.add(0);//!clearStack doesn't need any args, but indexes have to be same, so i'll add a 0
+				//Now save all the IR into that function's asociative array
+				calls[fName] = fCalls.toArray;
+				fCalls.clear;
+				stack[fName] = fStack.toArray;
+				fStack.clear;
+				stackInd[fName] = fStackInd.toArray;
+				fStackInd.clear;
+				//null the fName so things don't get messed up
+				fName = null;
+			}
+			if (ifPos.count>0){
+				arg.d = blockDepth.readLast;
+				fStack.set(ifPos.readLast,arg);
+			}
+			blockDepth.del(blockDepth.count-1);
 		}else
-		if (isNum(line)){
-			if (line.canFind('.')){
-				tokens.del(i);
-				tokens.insert(i,parseNum(line));
-				till = tokens.count;
-				i-=1;
+		if (token==")"){
+			arg.s = [0];//This is to specify that args have ended! Now it's next function's args
+			fStack.add(arg);
+			brackDepth--;
+			bEnd = brackStart(tokens,i);
+			//add the function to call list
+			tmStr = tokens.read(bEnd-1);//it's the function name
+			if (tmStr in functions){//if it's a built in function
+				if (tmStr=="!if"){
+					ifPos.add(fStack.count);
+					fStack.add(arg);//This'll be later replaced by index where block ends in the calls
+				}
+				fCalls.add(functions[tmStr]);
 			}else{
-				r.add(codes["numArg"]);
-				r.add(codes["sp"]);
-				r.add(encodeNum(to!uint(line)));
-				r.add(codes["sp"]);
+				fCalls.add(functions["!extern"]);
+				arg.s = tmStr;
+				fStack.add(arg);
+			}
+		}else
+		if (token=="("){
+			brackDepth++;
+			fStackInd.add(fStack.count);
+		}else
+		if (token=="!again"){
+			tokens.set(i+2,to!string(blockDepth.readLast));
+		}else
+		if (brackDepth>0){
+			if (token[0]=='"'){
+				arg.s = token;
+				fStack.add(arg);
+			}else
+			if (isNum(token)){
+				arg.d = to!double(token);
+				fStack.add(arg);
 			}
 		}
 	}
-	delete tokens;
-	delete curlPos;
-	tokens = r;
+	//free all the classes!
+	delete fCalls;
+	delete blockDepth;
+	delete fStack;
+	delete fStackInd;
+	delete ifPos;
 }
 
-string[] compile(Tlist!string script){
+
+string[] compile(Tlist!string script, ref scrFunction*[][string] calls,
+	ref Tqvar[][string] stack,uint[][string] stackInd, scrFunction*[string] functions){
 	toTokens(script);
 	Tlist!string err;
 	err = compileOp();
 	string[] r = err.toArray;
 	delete err;
 	if (r.length==0){
-		debug{
-			tokens.saveFile("/home/nafees/Desktop/q.tokens","\n");
-		}
-		compileByte();
-		debug{
-			tokens.saveFile("/home/nafees/Desktop/q.compiled","");
-		}
-		script.loadArray(tokens.toArray);
+		r = null;
+		compileByte(calls,stack,stackInd,functions);
 	}
 	delete tokens;
 	return r;
