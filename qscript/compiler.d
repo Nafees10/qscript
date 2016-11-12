@@ -461,11 +461,10 @@ private Tlist!string compileOp(){
 		}else if(line in toReplace){
 			tokens.set(i,toReplace[line]);
 		}else if (line=="while"){
-			uint pos;
-			tokens.set(i,"!if");
-			pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
+			tokens.set(i,"!while");
+			/*uint pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
 			tokens.insert(pos, ["!again","(","foo",")",";"]);
-			addTokn(4,pos);
+			addTokn(1,pos);*/
 		}else if (line in compareFunc){
 			tokens.set(i,",");
 			operand[0] = tokens.readRange(brackStart(tokens,i),i);
@@ -571,6 +570,9 @@ private bool isNum(string s){
 	if (!"0123456789".canFind(s[0])){
 		goto skipCheck;
 	}
+	if (s.length==1){
+		r = true;
+	}
 	for (i=1;i<s.length;i++){
 		if ("0123456789.".canFind(s[i])){
 			r = true;
@@ -600,125 +602,94 @@ private bool isAlphaNum(string s){
 }
 
 
-private void compileByte(ref scrFunction*[][string] calls, ref Tqvar[][string] stack,
-	uint[][string] stackInd, scrFunction*[string] functions){
-	/*
-	 * functions needs to have these:
-	 * !clearStack 	to clear stack FOR ONLY THAT FUNCTION!
-	 * !extern		to call a function that's externally defined, name will be in stack
-	 * !add			to add something to stack
-	 * !/ 			for division
-	 * !* 			multiplication
-	 * !+ 			addition
-	 * !- 			subtraction
-	 * !% 			remainder
-	 * !~ 			concatenation
-	 * !< 			smaller
-	 * !> 			greater
-	 * !<= 			smaller or equal
-	 * !>= 			greater or equal
-	 * !== 			if equal
-	 * !if			to jump ahead if condition is false
-	 * !string 		convert double to string
-	 * !double 		convert string to double
-	 * !again		jump to start of loop body
-	 * !getLength 	get array's length
-	 * !setLength 	set array's length
-	 * !new 		to declare new variable
-	*/
-	Tlist!(scrFunction*) fCalls = new Tlist!(scrFunction*);
+private string[][string] compileByte(){
+	uint i, till;
+	string token, tmStr, fName;
+	Tlist!string output = new Tlist!string;
 	Tlist!uint blockDepth = new Tlist!uint;
-	Tlist!uint fStackInd = new Tlist!uint;
-	Tlist!Tqvar fStack = new Tlist!Tqvar;
-	Tlist!uint ifPos = new Tlist!uint;
-	uint i, till = tokens.count, j, bEnd, brackDepth=0;
-	string token, fName, tmStr;
-	Tqvar arg;
+	Tlist!(uint[2]) addJmp = new Tlist!(uint[2]);
+	Tlist!(uint[2]) addIfPos = new Tlist!(uint[2]);
+	uint[2] tmpInt;
 
+	string[][string] r;
+
+	till = tokens.count;
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
 		if (token=="{"){
 			if (blockDepth.count==0){
 				fName = tokens.read(i-1);
 			}
-			blockDepth.add(fCalls.count-1);
+			blockDepth.add(i);
 		}else
 		if (token=="}"){
+			if (addIfPos.count>0){
+				tmpInt = addIfPos.readLast;
+				if (tmpInt[1] == blockDepth.count){
+					//!if statement's block is ending
+					output.set(tmpInt[0],"PSH "~to!string(output.count));
+				}
+			}
+			if (addJmp.count>0){
+				tmpInt = addJmp.readLast;
+				if (tmpInt[1]==blockDepth.count){
+					//!while's block is ending
+					output.add("JMP "~to!string(tmpInt[0]));
+				}
+			}
 			if (blockDepth.count==1){
-				fCalls.add(functions["!clearStack"]);
-				fStackInd.add(0);//!clearStack doesn't need any args, but indexes have to be same, so i'll add a 0
-				//Now save all the IR into that function's asociative array
-				calls[fName] = fCalls.toArray;
-				fCalls.clear;
-				stack[fName] = fStack.toArray;
-				fStack.clear;
-				stackInd[fName] = fStackInd.toArray;
-				fStackInd.clear;
-				//null the fName so things don't get messed up
+				r[fName]=output.toArray;
+				output.clear;
 				fName = null;
 			}
-			if (ifPos.count>0){
-				arg.d = blockDepth.readLast;
-				fStack.set(ifPos.readLast,arg);
-			}
-			blockDepth.del(blockDepth.count-1);
+			blockDepth.removeLast;
 		}else
 		if (token==")"){
-			arg.s = [0];//This is to specify that args have ended! Now it's next function's args
-			fStack.add(arg);
-			brackDepth--;
-			bEnd = brackStart(tokens,i);
-			//add the function to call list
-			tmStr = tokens.read(bEnd-1);//it's the function name
-			if (tmStr in functions){//if it's a built in function
-				if (tmStr=="!if"){
-					ifPos.add(fStack.count);
-					fStack.add(arg);//This'll be later replaced by index where block ends in the calls
-				}
-				fCalls.add(functions[tmStr]);
-			}else{
-				fCalls.add(functions["!extern"]);
-				arg.s = tmStr;
-				fStack.add(arg);
+			tmStr = tokens.read(brackStart(tokens,i)-1);
+			if (tmStr=="!while"){
+				tmpInt = [output.count,blockDepth.count];
+				//PSH the index to jump to
+				output.add("PSH foo");//will be replaced later
+				addJmp.add(tmpInt);
+				tokens.set(i,"!if");
+				addIfPos.add(tmpInt);
+			}else if (tmStr=="!if"){
+				tmpInt = [output.count,blockDepth.count];
+				output.add("PSH foo");
+				addIfPos.add(tmpInt);
 			}
+			output.add("EXE "~tmStr);
 		}else
-		if (token=="("){
-			brackDepth++;
-			fStackInd.add(fStack.count);
+		if (isNum(token)){
+			//is a number type argument
+			output.add("PSH "~token);
 		}else
-		if (token=="!again"){
-			tokens.set(i+2,to!string(blockDepth.readLast));
-		}else
-		if (brackDepth>0){
-			if (token[0]=='"'){
-				arg.s = token;
-				fStack.add(arg);
-			}else
-			if (isNum(token)){
-				arg.d = to!double(token);
-				fStack.add(arg);
-			}
+		if (token[0]=='"'){
+			//is a string type argument
+			output.add("PSH "~token[1..token.length-1]);
 		}
 	}
-	//free all the classes!
-	delete fCalls;
-	delete blockDepth;
-	delete fStack;
-	delete fStackInd;
-	delete ifPos;
+	return r;
 }
 
 
-string[] compile(Tlist!string script, ref scrFunction*[][string] calls,
-	ref Tqvar[][string] stack,uint[][string] stackInd, scrFunction*[string] functions){
+string[][string] compileQScript(Tlist!string script){
 	toTokens(script);
 	Tlist!string err;
 	err = compileOp();
-	string[] r = err.toArray;
+	string[][string] r; 
+	r["errors"] = err.toArray;
 	delete err;
-	if (r.length==0){
+	if (r["errors"].length==0){
 		r = null;
-		compileByte(calls,stack,stackInd,functions);
+		r.remove("errors");
+		r = compileByte();
+		debug{
+			foreach(key; r.keys){
+				writeln(key,":");
+				writeArray(r[key],"\n");
+			}
+		}
 	}
 	delete tokens;
 	return r;

@@ -35,7 +35,6 @@ public:
 		taken-=count;
 	}
 	void removeLast(){
-		list[taken] = null;
 		taken--;
 		if (list.length-taken>10){
 			list.length=taken;

@@ -6,7 +6,7 @@ import std.stdio;
 import std.conv:to;
 
 
-alias scrFunction = Tqvar function(Tqvar[]);
+alias scrFunction = void function();
 
 union Tqvar{
 	double d;
@@ -43,6 +43,16 @@ void writeArray(T)(T[] a,T sp){
 	foreach(cur; a){
 		write(cur,sp);
 	}
+}
+
+T max (T)(T[] dat){
+	T highest = dat[0];
+	foreach(key; dat){
+		if (highest<key){
+			highest = key;
+		}
+	}
+	return highest;
 }
 
 T[] convArrayType(T,T2)(T2[] dat){
