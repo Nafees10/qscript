@@ -34,8 +34,8 @@ public:
 		list.length-=count;
 		taken-=count;
 	}
-	void removeLast(){
-		taken--;
+	void removeLast(uint count = 1){
+		taken -= count;
 		if (list.length-taken>10){
 			list.length=taken;
 		}
@@ -69,6 +69,9 @@ public:
 	}
 	T readLast(){
 		return list[taken-1];
+	}
+	T[] readLast(uint count){
+		return list[taken-count..taken];
 	}
 	int count(){
 		return taken;

@@ -603,13 +603,14 @@ private bool isAlphaNum(string s){
 
 
 private string[][string] compileByte(){
-	uint i, till;
+	uint i, till, argC, j;
 	string token, tmStr, fName;
 	Tlist!string output = new Tlist!string;
 	Tlist!uint blockDepth = new Tlist!uint;
 	Tlist!(uint[2]) addJmp = new Tlist!(uint[2]);
 	Tlist!(uint[2]) addIfPos = new Tlist!(uint[2]);
 	uint[2] tmpInt;
+	ubyte semicolonCount = 0;
 
 	string[][string] r;
 
@@ -623,21 +624,25 @@ private string[][string] compileByte(){
 			blockDepth.add(i);
 		}else
 		if (token=="}"){
+			j = blockDepth.count-1;
 			if (addIfPos.count>0){
 				tmpInt = addIfPos.readLast;
-				if (tmpInt[1] == blockDepth.count){
+				if (tmpInt[1] == /*blockDepth.count*/j){
 					//!if statement's block is ending
-					output.set(tmpInt[0],"PSH "~to!string(output.count));
+					output.set(tmpInt[0],"!PSH "~to!string(output.count-1));
+					//-1 cause after execution of if, +1 will be done by interpreter.
+					addIfPos.removeLast;
 				}
 			}
 			if (addJmp.count>0){
 				tmpInt = addJmp.readLast;
-				if (tmpInt[1]==blockDepth.count){
+				if (tmpInt[1]==/*blockDepth.count*/j){
 					//!while's block is ending
-					output.add("JMP "~to!string(tmpInt[0]));
+					output.add("!JMP "~to!string(tmpInt[0]));
+					addJmp.removeLast;
 				}
 			}
-			if (blockDepth.count==1){
+			if (/*blockDepth.count*/j==/*1*/0){
 				r[fName]=output.toArray;
 				output.clear;
 				fName = null;
@@ -649,45 +654,71 @@ private string[][string] compileByte(){
 			if (tmStr=="!while"){
 				tmpInt = [output.count,blockDepth.count];
 				//PSH the index to jump to
-				output.add("PSH foo");//will be replaced later
+				output.add("!PSH foo");//will be replaced later
 				addJmp.add(tmpInt);
 				tokens.set(i,"!if");
 				addIfPos.add(tmpInt);
 			}else if (tmStr=="!if"){
 				tmpInt = [output.count,blockDepth.count];
-				output.add("PSH foo");
+				output.add("!PSH foo");
 				addIfPos.add(tmpInt);
 			}
-			output.add("EXE "~tmStr);
+			//count the args:
+			string tmStr2;
+			argC=0;
+			uint end = brackStart(tokens,i);
+			for (j=i-1;j>=end;j--){
+				tmStr2 = tokens.read(j);
+				if (tmStr2==")"){
+					j = brackStart(tokens,j);
+					continue;
+				}
+				if (tmStr2=="(" || tmStr2==","){
+					argC++;
+				}
+			}
+			if (i-end==1){
+				argC = 0;
+			}
+			output.add(tmStr~' '~to!string(argC));
+		}else
+		if (token==";"){
+			semicolonCount++;
+			if (semicolonCount>=4){
+				output.add("!CLR ");
+				//Cause some functions' return won't be used, unless CLR-ed, it'll waste memory
+			}
 		}else
 		if (isNum(token)){
 			//is a number type argument
-			output.add("PSH "~token);
+			output.add("!PSH "~token);
 		}else
 		if (token[0]=='"'){
 			//is a string type argument
-			output.add("PSH "~token[1..token.length-1]);
+			output.add("!PSH "~token);
 		}
 	}
 	return r;
 }
 
 
-string[][string] compileQScript(Tlist!string script){
+string[][string] compileQScript(Tlist!string script, bool writeOutput = false){
 	toTokens(script);
 	Tlist!string err;
 	err = compileOp();
 	string[][string] r; 
-	r["errors"] = err.toArray;
+	r["#####"] = err.toArray;
 	delete err;
-	if (r["errors"].length==0){
+	if (r["#####"].length==0){
 		r = null;
-		r.remove("errors");
+		r.remove("#####");
 		r = compileByte();
 		debug{
-			foreach(key; r.keys){
-				writeln(key,":");
-				writeArray(r[key],"\n");
+			if (writeOutput){
+				foreach(key; r.keys){
+					writeln(key,":");
+					writeArray(r[key],"\n");
+				}
 			}
 		}
 	}
