@@ -522,7 +522,7 @@ private Tlist!string compileOp(){
 			}else{
 				//tokens.set(i+2,'"'~tokens.read(i+2)~'"');
 				uint j = i+2, till = tokens.count;
-				operand[0].length = 0;
+				operand[0].length = 1;
 				if (tokens.read(j-1)=="("){
 					for (;j<till;j++){
 						operand[0][0] = tokens.read(j);
@@ -601,7 +601,6 @@ private bool isAlphaNum(string s){
 	return r;
 }
 
-
 private string[][string] compileByte(){
 	uint i, till, argC, j;
 	string token, tmStr, fName;
@@ -610,7 +609,6 @@ private string[][string] compileByte(){
 	Tlist!(uint[2]) addJmp = new Tlist!(uint[2]);
 	Tlist!(uint[2]) addIfPos = new Tlist!(uint[2]);
 	uint[2] tmpInt;
-	ubyte semicolonCount = 0;
 
 	string[][string] r;
 
@@ -625,6 +623,16 @@ private string[][string] compileByte(){
 		}else
 		if (token=="}"){
 			j = blockDepth.count-1;
+			//JMP has to be added first, or it'll become an infinite loop n the interpreter, as the !if
+			//will keep landing on JMP
+			if (addJmp.count>0){
+				tmpInt = addJmp.readLast;
+				if (tmpInt[1]==/*blockDepth.count*/j){
+					//!while's block is ending
+					output.add("!JMP "~to!string(tmpInt[0]));
+					addJmp.removeLast;
+				}
+			}
 			if (addIfPos.count>0){
 				tmpInt = addIfPos.readLast;
 				if (tmpInt[1] == /*blockDepth.count*/j){
@@ -632,14 +640,6 @@ private string[][string] compileByte(){
 					output.set(tmpInt[0],"!PSH "~to!string(output.count-1));
 					//-1 cause after execution of if, +1 will be done by interpreter.
 					addIfPos.removeLast;
-				}
-			}
-			if (addJmp.count>0){
-				tmpInt = addJmp.readLast;
-				if (tmpInt[1]==/*blockDepth.count*/j){
-					//!while's block is ending
-					output.add("!JMP "~to!string(tmpInt[0]));
-					addJmp.removeLast;
 				}
 			}
 			if (/*blockDepth.count*/j==/*1*/0){
@@ -651,14 +651,7 @@ private string[][string] compileByte(){
 		}else
 		if (token==")"){
 			tmStr = tokens.read(brackStart(tokens,i)-1);
-			if (tmStr=="!while"){
-				tmpInt = [output.count,blockDepth.count];
-				//PSH the index to jump to
-				output.add("!PSH foo");//will be replaced later
-				addJmp.add(tmpInt);
-				tokens.set(i,"!if");
-				addIfPos.add(tmpInt);
-			}else if (tmStr=="!if"){
+			if (tmStr=="!if"){
 				tmpInt = [output.count,blockDepth.count];
 				output.add("!PSH foo");
 				addIfPos.add(tmpInt);
@@ -667,27 +660,34 @@ private string[][string] compileByte(){
 			string tmStr2;
 			argC=0;
 			uint end = brackStart(tokens,i);
-			for (j=i-1;j>=end;j--){
-				tmStr2 = tokens.read(j);
-				if (tmStr2==")"){
-					j = brackStart(tokens,j);
-					continue;
+			if (!(i-end==1) && !(tmStr=="!if")){
+				for (j=i-1;j>=end;j--){
+					tmStr2 = tokens.read(j);
+					if (tmStr2==")"){
+						j = brackStart(tokens,j);
+						continue;
+					}
+					if (tmStr2=="(" || tmStr2==","){
+						argC++;
+					}
 				}
-				if (tmStr2=="(" || tmStr2==","){
-					argC++;
+			}else{
+				if (i-end==1){
+					argC = 0;
+				}else{
+					argC = 2;
 				}
-			}
-			if (i-end==1){
-				argC = 0;
 			}
 			output.add(tmStr~' '~to!string(argC));
 		}else
+		if (token=="!while"){
+			tmpInt = [output.count-1,blockDepth.count];//interptreter will do +1
+			addJmp.add(tmpInt);
+			tokens.set(i,"!if");
+		}else
 		if (token==";"){
-			semicolonCount++;
-			if (semicolonCount>=4){
-				output.add("!CLR ");
-				//Cause some functions' return won't be used, unless CLR-ed, it'll waste memory
-			}
+			output.add("!CLR 1");
+			//Cause some functions' return won't be used, unless CLR-ed, it'll waste memory
 		}else
 		if (isNum(token)){
 			//is a number type argument

@@ -113,3 +113,32 @@ public:
 		return i;
 	}
 }
+
+class Tqstack(T){
+private:
+	Tlist!T list;
+	uint pos;
+public:
+	void push(T dat){
+		list.add(dat);
+	}
+	void push(T[] dat){
+		list.addArray(dat);
+	}
+	T pop(){
+		T r = list.read(pos);
+		pos++;
+		return r;
+	}
+	T[] pop(uint count){
+		T[] r = list.readRange(pos,pos+count);
+		pos+=count-1;
+		return r;
+	}
+	@property uint position(){
+		return pos;
+	}
+	@property uint position(uint newPos){
+		return pos=newPos;
+	}
+}

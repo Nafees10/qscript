@@ -6,7 +6,7 @@ import std.stdio;
 import std.conv:to;
 
 
-alias scrFunction = void function();
+alias scrFunction = Tqvar delegate(Tqvar[]);
 
 union Tqvar{
 	double d;

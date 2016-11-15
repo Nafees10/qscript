@@ -43,7 +43,6 @@ private:
 	Tqvar doIf(Tqvar[] args){
 		uint skipBlock=0;
 		if (args[0].d!=1){
-			//TODO: implement if
 			ind = cast(uint)args[1].d;
 		}
 		return args[0];
@@ -166,23 +165,38 @@ private:
 		(*curVar) = val;
 		return r;
 	}
+	//misc functions
+	void push(Tqvar arg){
+		stack.add(arg);
+	}
+	/*void pop(Tqvar arg){
+		stack.removeLast(cast(uint)arg.d);
+	}*/
+	void clr(Tqvar arg){
+		stack.clear;
+	}
+	void jmp(Tqvar arg){
+		ind = cast(uint)arg.d;
+	}
 
 	//sdfsdf:
 	Tqvar[string] vars;
 
 	Tlist!Tqvar stack;
-	scrFunction[][string] calls;
+	string[][string] calls;
 	uint ind;//stores the index of function-to-call from calls
 	Tqvar[][string] callsArgs;
 
 	scrFunction[string] fList;
+
+	Tqvar delegate(string, Tqvar[]) onExec = null;
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
 		uint i, lineno;
 		string token, line;
 		Tqvar arg;
-		Tlist!scrFunction tmpCalls = new Tlist!scrFunction;
+		Tlist!string tmpCalls = new Tlist!string;
 		Tlist!Tqvar tmpArgs = new Tlist!Tqvar;
 		foreach(fName; script.keys){
 			for (lineno=0;lineno<script[fName].length;lineno++){
@@ -190,11 +204,7 @@ private:
 				for (i=0;i<line.length;i++){
 					if (line[i]==' '){
 						token = line[0..i];
-						if (token in fList){
-							tmpCalls.add(fList[token]);
-						}else{
-							throw new Exception("unrecognized function call: "~token);
-						}
+						tmpCalls.add(token);
 						if (i==line.length-1){
 							tmpArgs.add(arg);
 							//just so that the indexes are synced. this call doesn't need args
@@ -202,12 +212,13 @@ private:
 							token = line[i+1..line.length];
 							if (token[0]=='"'){
 								//is string
-								arg.s = token;
+								arg.s = parseStr(token[1..token.length-1]);
 							}else{
 								arg.d = to!double(token);
 							}
 							tmpArgs.add(arg);
 						}
+						break;
 					}
 				}
 			}
@@ -219,8 +230,109 @@ private:
 		delete tmpCalls;
 		delete tmpArgs;
 	}
+	Tqvar execF(string fName, Tqvar[] args){
+		Tlist!Tqvar oldStack = stack;
+		stack = new Tlist!Tqvar;
+		//clear vars
+		Tqvar[string] oldVars;
+		foreach(key; vars.keys){
+			oldVars[key] = vars[key];
+			vars.remove(key);
+		}
+		//set args
+		Tqvar r;
+		r.d = 0;
+		vars["result"] = r;
+		r.array = args;
+		vars["args"] = r;
+
+		uint oldInd = ind;
+
+		void delegate(Tqvar)[string] mList = [
+			"!PSH":&push,
+			"!CLR":&clr,
+			"!JMP":&jmp
+		];
+		Tqvar[] tmArgs;
+		string func;
+		Tqvar arg;
+		//start executing
+		for (ind = 0;ind<calls[fName].length;ind++){
+			func = calls[fName][ind];
+			arg = callsArgs[fName][ind];
+			if (func in mList){
+				mList[func](arg);
+			}else{
+				tmArgs = stack.readLast(cast(uint)arg.d);
+				stack.removeLast(cast(uint)arg.d);
+				if (func in calls){
+					r = execF(func,tmArgs);
+				}else
+				if (func in fList){
+					r = fList[func](tmArgs);
+				}else
+				if (onExec){
+					r = onExec(func,tmArgs);
+				}else{
+					throw new Exception("unrecognized function call "~func);
+				}
+				stack.add(r);
+			}
+		}
+		delete stack;
+		stack = oldStack;
+		r = vars["result"];
+		foreach(key; vars.keys){
+			vars.remove(key);
+		}
+		vars = oldVars;
+		ind = oldInd;
+
+		return r;
+	}
+
 public:
 	this(){
-
+		fList = [
+			"!/":&divOp,
+			"!*":&mulOp,
+			"!+":&plusOp,
+			"!-":&minusOp,
+			"!%":&modulusOp,
+			"!~":&strConcat,
+			"!if":&doIf,
+			"!while":&doIf,
+			"!==":&isEqual,
+			"!>":&isBigger,
+			"!<":&isSmaller,
+			"!>=":&isBiggerEqual,
+			"!<=":&isSmalerEqual,
+			"!string":&toString,
+			"!double":&toDouble,
+			"!setLength":&setLength,
+			"!getLength":&getLength,
+			"!new":&newVar,
+			"![":&readArray,
+			"!?":&getVar,
+			"!=":&setVar,
+		];
+	}
+	string[] loadScript(string fName){
+		Tlist!string script = new Tlist!string;
+		script.loadArray(fileToArray(fName));
+		calls = compileQScript(script/*, true*/);//uncomment to see compiled output
+		string[] r;
+		if ("#####" in calls){
+			r = calls["#####"];
+		}else{
+			finalCompile(calls);
+		}
+		return r;
+	}
+	Tqvar executeFunction(string name, Tqvar[] args){
+		return execF(name,args);
+	}
+	void setOnExec(Tqvar delegate(string, Tqvar[]) e){
+		onExec = e;
 	}
 }
