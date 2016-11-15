@@ -46,7 +46,7 @@ void main(string[] args){
 	compileQScript(script, true);*/
 	Tqscript scr = new Tqscript;
 	Tqfuncs scrF = new Tqfuncs;
-	scr.loadScript("/home/nafees/Desktop/q.qod");
+	scr.loadScript(args[0]);
 	scr.setOnExec(&scrF.call);
 	scr.executeFunction("main",[]);
 	delete scr;
