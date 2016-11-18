@@ -15,18 +15,7 @@ QScript has been designed and tested on only Linux, and I have no plans to add s
 	<li>Easy and unique (a bit like C) syntax</li>
 	<li>Dynamic arrays</li>
 	<li>Open Source</li>
-	<li>Fast execution - This script:<br>
-	<code><pre>
-main{
-	new(i);
-	i = 0;
-	new(ar);
-	setLength(ar,10000);
-	while (i<10000){
-		i = i + 1;
-	}
-}
-	<pre></code><br>Finishes in aboyt 55msecs, on an intel core2 duo</li>
+	<li>Fast execution - or should I say, very fast.</li>
 	<li>More features on the way, qscript is still in beta</li>
 </ol>
 <br>
