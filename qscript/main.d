@@ -5,6 +5,7 @@ import lists;
 import qscript;
 import compiler;
 import std.stdio;
+import std.datetime;
 
 class Tqfuncs{
 private:
@@ -40,15 +41,20 @@ public:
 	}
 }
 
+//run it like this from terminal: qscript /path/to/the/script/file
 void main(string[] args){
 	/*Tlist!string script = new Tlist!string;
 	script.loadArray(fileToArray("/home/nafees/Desktop/q.qod"));
 	compileQScript(script, true);*/
 	Tqscript scr = new Tqscript;
 	Tqfuncs scrF = new Tqfuncs;
-	scr.loadScript(args[0]);
+	scr.loadScript(args[1]);
 	scr.setOnExec(&scrF.call);
+	StopWatch sw;
+	sw.start;
 	scr.executeFunction("main",[]);
+	sw.stop;
+	writeln("\nExecution ended in ",sw.peek().msecs," msecs!");
 	delete scr;
 	delete scrF;
 }
