@@ -196,7 +196,7 @@ private string lowercase(string s){
 	
 	return tmstr;
 }
-
+/*
 private bool isVarName(uint i){
 	bool r=true;
 	if (!isAlphaNum(tokens.read(i))){
@@ -220,7 +220,7 @@ private string[2] parseVarName(uint i){
 	}
 	return r;
 }
-
+*/
 private void removeWhitespace(Tlist!string scr){
 	string line, newline;
 	bool modified;
