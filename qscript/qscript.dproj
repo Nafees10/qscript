@@ -4,7 +4,6 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{305CE79D-AB62-4744-BBEC-6BE4C8B89072}</ProjectGuid>
-    <BaseDirectory>.</BaseDirectory>
     <Compiler>DMD2</Compiler>
     <PreferOneStepBuild>true</PreferOneStepBuild>
     <UseDefaultCompiler>true</UseDefaultCompiler>
@@ -16,8 +15,8 @@
     <ObjectsDirectory>obj/Debug</ObjectsDirectory>
     <LinkinThirdPartyLibraries>false</LinkinThirdPartyLibraries>
     <UnittestMode>false</UnittestMode>
-    <OutputName>libqscript</OutputName>
-    <Target>SharedLibrary</Target>
+    <OutputName>qscript</OutputName>
+    <Target>Executable</Target>
     <Externalconsole>true</Externalconsole>
     <DebugLevel>0</DebugLevel>
   </PropertyGroup>
@@ -26,8 +25,8 @@
     <ObjectsDirectory>obj/Release</ObjectsDirectory>
     <LinkinThirdPartyLibraries>false</LinkinThirdPartyLibraries>
     <UnittestMode>false</UnittestMode>
-    <OutputName>libqscript</OutputName>
-    <Target>SharedLibrary</Target>
+    <OutputName>qscript</OutputName>
+    <Target>Executable</Target>
     <Externalconsole>true</Externalconsole>
     <DebugLevel>0</DebugLevel>
   </PropertyGroup>
@@ -37,16 +36,16 @@
     <ObjectsDirectory>obj/Unittest</ObjectsDirectory>
     <LinkinThirdPartyLibraries>false</LinkinThirdPartyLibraries>
     <UnittestMode>true</UnittestMode>
-    <OutputName>libqscript</OutputName>
+    <OutputName>qscript</OutputName>
     <Target>Executable</Target>
     <Externalconsole>true</Externalconsole>
     <DebugLevel>0</DebugLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="compiler.d" />
     <Compile Include="lists.d" />
     <Compile Include="main.d" />
     <Compile Include="misc.d" />
-    <Compile Include="qcompiler.d" />
     <Compile Include="qscript.d" />
   </ItemGroup>
 </Project>

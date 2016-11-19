@@ -2,16 +2,12 @@
 
 import misc;
 import lists;
-import qcompiler;
-import std.stdio;
+import compiler;
 import std.conv:to;
-
-alias scriptFunction = Tqvar delegate(Tqvar[]);
-alias execFunc = Tqvar delegate(string name,Tqvar[]);
 
 class Tqscript{
 private:
-	//String
+	//script functions//String
 	Tqvar strConcat(Tqvar[] args){
 		Tqvar r;
 		r.s = args[0].s~args[1].s;
@@ -47,10 +43,7 @@ private:
 	Tqvar doIf(Tqvar[] args){
 		uint skipBlock=0;
 		if (args[0].d!=1){
-			if (scr.read==codes["endAt"]){
-				skipBlock = decodeNum(scr.read);
-				scr.position(scr.position+skipBlock-1);
-			}
+			ind = cast(uint)args[1].d;
 		}
 		return args[0];
 	}
@@ -131,28 +124,6 @@ private:
 		r.d = args[0].array.length;
 		return r;
 	}
-	//loop Break:
-	Tqvar breakLoop(Tqvar[] args){
-		scr.position(scr.position+loopEnd.readLast-1);
-		Tqvar r;
-		return r;
-	}
-	//loop again
-	Tqvar again(Tqvar[] args){
-		Tqvar r;
-		if (scr.read==codes["startAt"]){
-			scr.position(scr.position-decodeNum(scr.read)-1);
-		}
-		return r;
-	}
-	//!loop
-	Tqvar loop(Tqvar[] args){
-		if (scr.read==codes["endAt"]){
-			loopEnd.add(decodeNum(scr.read));
-		}
-		Tqvar r;
-		return r;
-	}
 	//Vars
 	Tqvar newVar(Tqvar[] args){
 		Tqvar r;
@@ -194,126 +165,135 @@ private:
 		(*curVar) = val;
 		return r;
 	}
-
-	//Args fetcher
-	Tqvar[] solveArgs(){
-		Tlist!Tqvar r = new Tlist!Tqvar;
-		Tqvar tmVar;
-		string line;
-		uint dcs=1;
-		while (true){
-			line = scr.read;
-			if (line==codes["end"]){
-				break;
-			}else
-			if (line==codes["call"]){
-				r.add(call);
-			}else
-			if (line==codes["numArg"]){
-				tmVar.d = decodeNum(scr.read);
-				r.add(tmVar);
-			}else
-			if (line==codes["strArg"]){
-				tmVar.s = scr.read;
-				r.add(tmVar);
-			}
-		}
-		Tqvar[] ret = r.toArray;
-		delete r;
-		return ret;
+	//misc functions
+	void push(Tqvar arg){
+		stack.add(arg);
+	}
+	/*void pop(Tqvar arg){
+		stack.removeLast(cast(uint)arg.d);
+	}*/
+	void clr(Tqvar arg){
+		stack.clear;
+	}
+	void jmp(Tqvar arg){
+		ind = cast(uint)arg.d;
 	}
 
-	Tqvar call(){
-		uint currPos = scr.position-1;//current pos is towards name, but we want \002
-		string name = scr.read;
-		scriptFunction* f;
-		Tqvar r;
-		Tqvar[] tmArgs = solveArgs;
+	//sdfsdf:
+	Tqvar[string] vars;
 
-		if (name[0]=='!'){
-			f = name in pList;
-			if (f){
-				r = (*f)(tmArgs);
-			}else{
-				throw new Exception("undefined function call: "~name);
+	Tlist!Tqvar stack;
+	string[][string] calls;
+	uint ind;//stores the index of function-to-call from calls
+	Tqvar[][string] callsArgs;
+
+	scrFunction[string] fList;
+
+	Tqvar delegate(string, Tqvar[]) onExec = null;
+
+	//compile2 & all the other functions
+	void finalCompile(string[][string] script){
+		uint i, lineno;
+		string token, line;
+		Tqvar arg;
+		Tlist!string tmpCalls = new Tlist!string;
+		Tlist!Tqvar tmpArgs = new Tlist!Tqvar;
+		foreach(fName; script.keys){
+			for (lineno=0;lineno<script[fName].length;lineno++){
+				line = script[fName][lineno];
+				for (i=0;i<line.length;i++){
+					if (line[i]==' '){
+						token = line[0..i];
+						tmpCalls.add(token);
+						if (i==line.length-1){
+							tmpArgs.add(arg);
+							//just so that the indexes are synced. this call doesn't need args
+						}else{
+							token = line[i+1..line.length];
+							if (token[0]=='"'){
+								//is string
+								arg.s = parseStr(token[1..token.length-1]);
+							}else{
+								arg.d = to!double(token);
+							}
+							tmpArgs.add(arg);
+						}
+						break;
+					}
+				}
 			}
-		}else if (name in fStream){
-			r = execF(name, tmArgs);
-		}else if (onExec){
-			r = onExec(name, tmArgs);
-		}else{
-			throw new Exception("onExec was never defined, cannot execute: "~name);
+			calls[fName] = tmpCalls.toArray;
+			tmpCalls.clear;
+			callsArgs[fName] = tmpArgs.toArray;
+			tmpArgs.clear;
 		}
-		return r;
+		delete tmpCalls;
+		delete tmpArgs;
 	}
-	//To execute functions defined in script
-
-	Tqvar execF(string name, Tqvar[] args){
-		Tqvar r;
-		Tqvar[string] currVars;
-		TbinReader prevScr = scr;
-		scr = new TbinReader(fStream[name]);
-		//clear the var container
-		foreach (key; vars.keys){
-			currVars[key] = vars[key];
+	Tqvar execF(string fName, Tqvar[] args){
+		Tlist!Tqvar oldStack = stack;
+		stack = new Tlist!Tqvar;
+		//clear vars
+		Tqvar[string] oldVars;
+		foreach(key; vars.keys){
+			oldVars[key] = vars[key];
 			vars.remove(key);
 		}
-		//Put args in vars
-		vars["args"]=r;//r is just a placeholder, just put any Tqvar, so I placed r
-		vars["args"].array.length=args.length;
-		for (uint i=0;i<args.length;i++){
-			vars["args"].array[i]=args[i];
-		}
-		//init the var that'll contain result;
-		vars["result"]=r;
-		//start executing;
-		uint till = scr.size;
-		string token;
-		while (scr.position<till){
-			token = scr.read;
-			if (token==codes["call"]){
-				call;
-			}else if (token==codes["numArg"] || token==codes["startAt"] ||
-				token==codes["endAt"]){
-				scr.read;//To skip the next content
+		//set args
+		Tqvar r;
+		r.d = 0;
+		vars["result"] = r;
+		r.array = args;
+		vars["args"] = r;
+
+		uint oldInd = ind;
+
+		void delegate(Tqvar)[string] mList = [
+			"!PSH":&push,
+			"!CLR":&clr,
+			"!JMP":&jmp
+		];
+		Tqvar[] tmArgs;
+		string func;
+		Tqvar arg;
+		//start executing
+		for (ind = 0;ind<calls[fName].length;ind++){
+			func = calls[fName][ind];
+			arg = callsArgs[fName][ind];
+			if (func in mList){
+				mList[func](arg);
+			}else{
+				tmArgs = stack.readLast(cast(uint)arg.d);
+				stack.removeLast(cast(uint)arg.d);
+				if (func in calls){
+					r = execF(func,tmArgs);
+				}else
+				if (func in fList){
+					r = fList[func](tmArgs);
+				}else
+				if (onExec){
+					r = onExec(func,tmArgs);
+				}else{
+					throw new Exception("unrecognized function call "~func);
+				}
+				stack.add(r);
 			}
 		}
+		delete stack;
+		stack = oldStack;
+		r = vars["result"];
+		foreach(key; vars.keys){
+			vars.remove(key);
+		}
+		vars = oldVars;
+		ind = oldInd;
 
-		r=vars["result"];
-		delete scr;
-		scr = prevScr;
-		vars = currVars;
 		return r;
 	}
 
-	Tqvar[string] vars;//use as vars[varname][index]
-	string[][string] fStream;//stream, to contain extracted functions
-
-	string[string] codes;
-	TbinReader script=null;//To contain the compiled script
-	TbinReader scr=null;//To contain byte code for currently executng function#
-	Tlist!uint loopEnd;
-	scriptFunction[string] pList;//To contain all script functions
-
-	execFunc onExec;
 public:
 	this(){
-		//define the binary codes for interpretation
-		codes=[
-			"sp":cast(string)[0],
-			"function":cast(string)[1],
-			"call":cast(string)[2],
-			//IDK why I didn't use \003
-			"numArg":cast(string)[4],
-			"strArg":cast(string)[5],
-			"end":cast(string)[6],
-			"endAt":cast(string)[7],
-			"endF":cast(string)[8],
-			"startAt":to!string(cast(char)9)//again, I have no idea why I wrote it, but I don't want to remove it...
-			//Now startAt is used
-		];
-		//And put together the list of builtin functions
-		pList=[
+		fList = [
 			"!/":&divOp,
 			"!*":&mulOp,
 			"!+":&plusOp,
@@ -331,48 +311,28 @@ public:
 			"!double":&toDouble,
 			"!setLength":&setLength,
 			"!getLength":&getLength,
-			"!break":&breakLoop,
-			"!again":&again,
-			"!loop":&loop,
 			"!new":&newVar,
 			"![":&readArray,
 			"!?":&getVar,
-			"!=":&setVar
+			"!=":&setVar,
 		];
-		loopEnd = new Tlist!uint;
 	}
-	~this(){
-		delete loopEnd;
-		delete script;
-		delete scr;
-	}
-	string[] loadScript(string[] s){
-		//If previously loaded, free it!
-		if (script){delete script;}
-
-		Tlist!string sLst = new Tlist!string();
-		sLst.loadArray(s);
-		string[] errors = compile(sLst);
-		//Then create it
-		if (errors.length==0){
-			delete errors;
-			errors = null;
-			//Load the functions/script
-			script = new TbinReader(sLst.toArray);
-			fStream = script.extractFunctions;
-		}
-		delete sLst;
-
-		return errors;
-	}
-	void execute(string name, Tqvar[] args=[]){
-		if (!script){
-			throw new Exception("no script loaded");
+	string[] loadScript(string fName){
+		Tlist!string script = new Tlist!string;
+		script.loadArray(fileToArray(fName));
+		calls = compileQScript(script/*, true*/);//uncomment to see compiled output
+		string[] r;
+		if ("#####" in calls){
+			r = calls["#####"];
 		}else{
-			execF(name,args);
+			finalCompile(calls);
 		}
+		return r;
 	}
-	void setExecFunc(execFunc e){
+	Tqvar executeFunction(string name, Tqvar[] args){
+		return execF(name,args);
+	}
+	void setOnExec(Tqvar delegate(string, Tqvar[]) e){
 		onExec = e;
 	}
 }

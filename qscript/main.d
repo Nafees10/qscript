@@ -1,29 +1,60 @@
-﻿module qscrmain;
+﻿module main;
 
 import misc;
+import lists;
 import qscript;
-import std.string;
-import core.memory;
-import core.runtime;
+import compiler;
+import std.stdio;
+import std.datetime;
 
-Tqscript qscr;
+class Tqfuncs{
+private:
+	Tqvar qwrite(Tqvar[] args){
+		foreach(arg; args){
+			write(arg.s);
+		}
+		Tqvar r;
+		return r;
+	}
+	Tqvar qread(Tqvar[] args){
+		Tqvar r;
+		r.s = readln;
+		r.s.length--;
+		return r;
+	}
+	Tqvar delegate(Tqvar[])[string] pList;
+public:
+	this(){
+		pList = [
+			"qwrite":&qwrite,
+			"qread":&qread
+		];
+	}
+	Tqvar call(string name, Tqvar[] args){
+		Tqvar r;
+		if (name in pList){
+			r = pList[name](args);
+		}else{
+			throw new Exception("unrecognized function call "~name);
+		}
+		return r;
+	}
+}
 
-export extern(C) void init(){
-	rt_init;
-	GC.disable;
-	qscr = new Tqscript;
-}
-export extern(C) void term(){
-	delete qscr;
-	//rt_term;
-}
-export extern(C) void onExec(execFunc e){
-	qscr.setExecFunc(e);
-}
-export extern(C) string[] loadScript(string fname){
-	string[] er = qscr.loadScript(fileToArray(fname));
-	return er;
-}
-export extern(C) void execute(string name, Tqvar[] args){
-	qscr.execute(name,args);
+//run it like this from terminal: qscript /path/to/the/script/file
+void main(string[] args){
+	/*Tlist!string script = new Tlist!string;
+	script.loadArray(fileToArray("/home/nafees/Desktop/q.qod"));
+	compileQScript(script, true);*/
+	Tqscript scr = new Tqscript;
+	Tqfuncs scrF = new Tqfuncs;
+	scr.loadScript(args[1]);
+	scr.setOnExec(&scrF.call);
+	StopWatch sw;
+	sw.start;
+	scr.executeFunction("main",[]);
+	sw.stop;
+	writeln("\nExecution ended in ",sw.peek().msecs," msecs!");
+	delete scr;
+	delete scrF;
 }
