@@ -5,15 +5,6 @@ import std.math;
 import std.stdio;
 import std.conv:to;
 
-
-alias scrFunction = Tqvar delegate(Tqvar[]);
-
-union Tqvar{
-	double d;
-	string s;
-	Tqvar[] array;
-}
-
 string parseStr(string s){
 	string r;
 	for (uint i=0;i<s.length;i++){

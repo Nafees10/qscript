@@ -5,6 +5,15 @@ import lists;
 import compiler;
 import std.conv:to;
 
+
+alias scrFunction = Tqvar delegate(Tqvar[]);
+
+union Tqvar{
+	double d;
+	string s;
+	Tqvar[] array;
+}
+
 class Tqscript{
 private:
 	//script functions//String

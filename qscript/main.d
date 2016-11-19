@@ -1,6 +1,5 @@
 ﻿module main;
 
-import misc;
 import lists;
 import qscript;
 import compiler;
