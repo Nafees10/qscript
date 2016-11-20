@@ -47,13 +47,20 @@ void main(string[] args){
 	compileQScript(script, true);*/
 	Tqscript scr = new Tqscript;
 	Tqfuncs scrF = new Tqfuncs;
-	scr.loadScript(args[1]);
-	scr.setOnExec(&scrF.call);
-	StopWatch sw;
-	sw.start;
-	scr.executeFunction("main",[]);
-	sw.stop;
-	writeln("\nExecution ended in ",sw.peek().msecs," msecs!");
+	string[] errors = scr.loadScript(args[1]);
+	if (errors){
+		writeln("There are errors in script: ");
+		foreach(error; errors){
+			writeln(error);
+		}
+	}else{
+		scr.setOnExec(&scrF.call);
+		StopWatch sw;
+		sw.start;
+		scr.executeFunction("main",[]);
+		sw.stop;
+		writeln("\nExecution ended in ",sw.peek().msecs," msecs!");
+	}
 	delete scr;
 	delete scrF;
 }

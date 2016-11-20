@@ -13,9 +13,9 @@ private void addEr(Tlist!string errors, uint line, string msg){
 	int i;
 	uint lineno;
 	for (i=0;i<origLine.length;i++){
-		if (origLine[i]>=line){break;}
+		if (origLine[i]>line){break;}
 	}
-	lineno = i+1;
+	lineno = i;
 
 	errors.add(to!string(lineno)~':'~msg);
 }
@@ -221,87 +221,6 @@ private string[2] parseVarName(uint i){
 	return r;
 }
 */
-private void removeWhitespace(Tlist!string scr){
-	string line, newline;
-	bool modified;
-	uint i, tmint;
-	for (uint lineno=0;lineno<scr.count;lineno++){
-		line=scr.read(lineno);
-		modified=false;
-		newline="";
-		for (i=0;i<line.length;i++){
-			if (line[i]=='"'){
-				tmint = strEnd(line,i);
-				newline~=line[i..tmint+1];
-				i=tmint+1;
-			}
-			if (line[i]=='\t'){
-				continue;
-			}else if(i<line.length-1 && line[i..i+2]=="//"){
-				break;
-			}else if (i<line.length-1 && line[i..i+2]=="  "){
-				continue;
-			}else{
-				newline~=line[i];
-			}
-		}
-		scr.set(lineno,newline);
-	}
-}
-
-private void toTokens(Tlist!string slst){
-	uint i, lineno;
-	int tmint;
-	string token;
-	string line;
-
-	origLine.length=slst.count;
-
-	Tlist!string scr = new Tlist!string;
-	scr.loadArray(slst.toArray);
-	removeWhitespace(scr);
-	string sp="/*+-%~;{}(),=<>#$[]";
-
-	uint till = scr.count;
-
-	tokens = new Tlist!string;
-	for (lineno=0;lineno<till;lineno++){
-		line = scr.read(lineno);
-		token="";
-		for (i=0;i<line.length;i++){
-			if (line[i]=='"'){
-				tmint = strEnd(line,i);
-				token~=line[i..tmint+1];
-				i=tmint+1;
-			}
-			if (line[i]==' '){
-				if (token!=""){
-					tokens.add(token);
-					token="";
-				}
-				continue;
-			}
-			if (sp.canFind(line[i])){
-				if (token!=""){
-					tokens.add(token);
-				}
-				token="";
-				if (i<line.length-1&&"=<>".canFind(line[i+1])&&"=<>".canFind(line[i])){
-					tokens.add(line[i..i+2]);
-					i++;
-				}else{
-					tokens.add(to!string(line[i]));
-				}
-				continue;
-			}
-			token~=line[i];
-			if (i==line.length-1 && token!=""){
-				tokens.add(token);
-			}
-		}
-		origLine[lineno]=tokens.count-1;
-	}
-}
 
 private ubyte getOpType(string[] operand){
 	ubyte r=2;
@@ -340,6 +259,124 @@ private void delTokn(uint count, uint pos){
 	}
 	for (;i<till;i++){
 		origLine[i]-=count;
+	}
+}
+
+private bool isNum(string s){
+	bool r=false;
+	uint i;
+	if (!"0123456789".canFind(s[0])){
+		goto skipCheck;
+	}
+	if (s.length==1){
+		r = true;
+	}
+	for (i=1;i<s.length;i++){
+		if ("0123456789.".canFind(s[i])){
+			r = true;
+			break;
+		}
+	}
+	skipCheck:
+	return r;
+}
+
+private bool isAlphaNum(string s){
+	ubyte aStart = cast(ubyte)'a';
+	ubyte aEnd = cast(ubyte)'z';
+	s = lowercase(s);
+	bool r=true;
+	ubyte cur;
+	for (uint i=0;i<s.length;i++){
+		cur = cast(ubyte) s[i];
+		if (cur<aStart || cur>aEnd){
+			if ("0123456789".canFind(s[i])==false){
+				r=false;
+				break;
+			}
+		}
+	}
+	return r;
+}
+private void removeWhitespace(Tlist!string scr){
+	string line, newline;
+	bool modified;
+	uint i, tmint;
+	for (uint lineno=0;lineno<scr.count;lineno++){
+		line=scr.read(lineno);
+		modified=false;
+		newline="";
+		for (i=0;i<line.length;i++){
+			if (line[i]=='"'){
+				tmint = strEnd(line,i);
+				newline~=line[i..tmint+1];
+				i=tmint+1;
+			}
+			if (line[i]=='\t'){
+				continue;
+			}else if(i<line.length-1 && line[i..i+2]=="//"){
+				break;
+			}else if (i<line.length-1 && line[i..i+2]=="  "){
+				continue;
+			}else{
+				newline~=line[i];
+			}
+		}
+		scr.set(lineno,newline);
+	}
+}
+
+private void toTokens(Tlist!string slst){
+	uint i, lineno;
+	int tmint;
+	string token;
+	string line;
+	
+	origLine.length=slst.count;
+	
+	Tlist!string scr = new Tlist!string;
+	scr.loadArray(slst.toArray);
+	removeWhitespace(scr);
+	string sp="/*+-%~;{}(),=<>#$[]";
+	
+	uint till = scr.count;
+	
+	tokens = new Tlist!string;
+	for (lineno=0;lineno<till;lineno++){
+		line = scr.read(lineno);
+		token="";
+		for (i=0;i<line.length;i++){
+			if (line[i]=='"'){
+				tmint = strEnd(line,i);
+				token~=line[i..tmint+1];
+				i=tmint+1;
+			}
+			if (line[i]==' '){
+				if (token!=""){
+					tokens.add(token);
+					token="";
+				}
+				continue;
+			}
+			if (sp.canFind(line[i])){
+				if (token!=""){
+					tokens.add(token);
+				}
+				token="";
+				if (i<line.length-1&&"=<>".canFind(line[i+1])&&"=<>".canFind(line[i])){
+					tokens.add(line[i..i+2]);
+					i++;
+				}else{
+					tokens.add(to!string(line[i]));
+				}
+				continue;
+			}
+			token~=line[i];
+			if (i==line.length-1 && token!=""){
+				tokens.add(token);
+			}
+		}
+		origLine[lineno]=tokens.count-1;
 	}
 }
 
@@ -562,43 +599,6 @@ private Tlist!string compileOp(){
 		}
 	}
 	return errors;
-}
-
-private bool isNum(string s){
-	bool r=false;
-	uint i;
-	if (!"0123456789".canFind(s[0])){
-		goto skipCheck;
-	}
-	if (s.length==1){
-		r = true;
-	}
-	for (i=1;i<s.length;i++){
-		if ("0123456789.".canFind(s[i])){
-			r = true;
-			break;
-		}
-	}
-	skipCheck:
-	return r;
-}
-
-private bool isAlphaNum(string s){
-	ubyte aStart = cast(ubyte)'a';
-	ubyte aEnd = cast(ubyte)'z';
-	s = lowercase(s);
-	bool r=true;
-	ubyte cur;
-	for (uint i=0;i<s.length;i++){
-		cur = cast(ubyte) s[i];
-		if (cur<aStart || cur>aEnd){
-			if ("0123456789".canFind(s[i])==false){
-				r=false;
-				break;
-			}
-		}
-	}
-	return r;
 }
 
 private string[][string] compileByte(){
