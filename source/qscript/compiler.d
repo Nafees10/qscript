@@ -7,11 +7,11 @@ import std.conv:to;
 import std.algorithm:canFind;
 
 private Tlist!string tokens;
-private uint[] origLine;
+private ulong[] origLine;
 
-private void addEr(Tlist!string errors, uint line, string msg){
-	int i;
-	uint lineno;
+private void addEr(Tlist!string errors, ulong line, string msg){
+	long i;
+	ulong lineno;
 	for (i=0;i<origLine.length;i++){
 		if (origLine[i]>line){break;}
 	}
@@ -20,7 +20,7 @@ private void addEr(Tlist!string errors, uint line, string msg){
 	errors.add(to!string(lineno)~':'~msg);
 }
 
-private int strEnd(string s, uint i){
+private long strEnd(string s, ulong i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
 			i++;
@@ -33,8 +33,8 @@ private int strEnd(string s, uint i){
 	return i;
 }
 
-private int brackEnd(Tlist!string list, int i, string s="(", string e=")"){
-	uint dcs=1;
+private long brackEnd(Tlist!string list, long i, string s="(", string e=")"){
+	ulong dcs=1;
 	string token;
 	for (i++;i<list.count;i++){
 		if (dcs==0){
@@ -54,8 +54,8 @@ private int brackEnd(Tlist!string list, int i, string s="(", string e=")"){
 	return i;
 }
 
-private int brackStart(Tlist!string list, int i, string s="(", string e=")"){
-	uint dcs=1;
+private long brackStart(Tlist!string list, long i, string s="(", string e=")"){
+	ulong dcs=1;
 	string token;
 	for (i--;i>=0;i--){
 		if (dcs==0){
@@ -86,7 +86,7 @@ private bool hasElement(T)(T[] array, T element){
 	return r;
 }
 
-private string[] nextToken(uint i){
+private string[] nextToken(ulong i){
 	string token;
 	string[] sp=[
 		"/",
@@ -106,7 +106,7 @@ private string[] nextToken(uint i){
 		"<=",
 		">=",
 	];
-	uint frm=i;
+	ulong frm=i;
 	for (;i<tokens.count;i++){
 		token = tokens.read(i);
 		if (sp.hasElement(token)){
@@ -126,7 +126,7 @@ private string[] nextToken(uint i){
 	return tokens.toArray[frm..i];
 }
 
-private string[] prevToken(int i){
+private string[] prevToken(long i){
 	string token;
 	string[] sp=[
 		"/",
@@ -146,7 +146,7 @@ private string[] prevToken(int i){
 		"<=",
 		">=",
 	];
-	int till=i+1;
+	long till=i+1;
 	for (;i>=0;i--){
 		token = tokens.read(i);
 		if (sp.hasElement(token)){
@@ -162,9 +162,9 @@ private string[] prevToken(int i){
 	return tokens.toArray[i+1..till];
 }
 
-private string[] restOfTheLine(int i){
+private string[] restOfTheLine(long i){
 	string token;
-	uint frm=i;
+	ulong frm=i;
 	for (;i<tokens.count;i++){
 		token = tokens.read(i);
 		if (token==";"){
@@ -184,7 +184,7 @@ private string[] restOfTheLine(int i){
 private string lowercase(string s){
 	string tmstr;
 	ubyte tmbt;
-	for (int i=0;i<s.length;i++){
+	for (long i=0;i<s.length;i++){
 		tmbt = cast(ubyte) s[i];
 		if (tmbt>=65 && tmbt<=90){
 			tmbt+=32;
@@ -197,7 +197,7 @@ private string lowercase(string s){
 	return tmstr;
 }
 /*
-private bool isVarName(uint i){
+private bool isVarName(ulong i){
 	bool r=true;
 	if (!isAlphaNum(tokens.read(i))){
 		r=false;
@@ -210,7 +210,7 @@ private bool isVarName(uint i){
 	return r;
 }
 
-private string[2] parseVarName(uint i){
+private string[2] parseVarName(ulong i){
 	string[2] r;//1 be varname 2 be index
 	r[0]=tokens.read(i);
 	if (tokens.read(i+1)=="["){
@@ -238,9 +238,9 @@ private ubyte getOpType(string[] operand){
 	return r;
 }
 
-private void addTokn(uint count, uint pos){
-	uint till = origLine.length;
-	uint i;
+private void addTokn(ulong count, ulong pos){
+	ulong till = origLine.length;
+	ulong i;
 	for (i=0;i<till;i++){
 		if (origLine[i]>=pos){break;}//change >= to = if not working
 		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
@@ -250,9 +250,9 @@ private void addTokn(uint count, uint pos){
 	}
 }
 
-private void delTokn(uint count, uint pos){
-	uint till = origLine.length;
-	uint i;
+private void delTokn(ulong count, ulong pos){
+	ulong till = origLine.length;
+	ulong i;
 	for (i=0;i<till;i++){
 		if (origLine[i]>=pos){break;}//change >= to = if not working
 		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
@@ -264,7 +264,7 @@ private void delTokn(uint count, uint pos){
 
 private bool isNum(string s){
 	bool r=false;
-	uint i;
+	ulong i;
 	if (!"0123456789".canFind(s[0])){
 		goto skipCheck;
 	}
@@ -287,7 +287,7 @@ private bool isAlphaNum(string s){
 	s = lowercase(s);
 	bool r=true;
 	ubyte cur;
-	for (uint i=0;i<s.length;i++){
+	for (ulong i=0;i<s.length;i++){
 		cur = cast(ubyte) s[i];
 		if (cur<aStart || cur>aEnd){
 			if ("0123456789".canFind(s[i])==false){
@@ -301,8 +301,8 @@ private bool isAlphaNum(string s){
 private void removeWhitespace(Tlist!string scr){
 	string line, newline;
 	bool modified;
-	uint i, tmint;
-	for (uint lineno=0;lineno<scr.count;lineno++){
+	ulong i, tmint;
+	for (ulong lineno=0;lineno<scr.count;lineno++){
 		line=scr.read(lineno);
 		modified=false;
 		newline="";
@@ -327,8 +327,8 @@ private void removeWhitespace(Tlist!string scr){
 }
 
 private void toTokens(Tlist!string slst){
-	uint i, lineno;
-	int tmint;
+	ulong i, lineno;
+	long tmint;
 	string token;
 	string line;
 	
@@ -339,7 +339,7 @@ private void toTokens(Tlist!string slst){
 	removeWhitespace(scr);
 	string sp="/*+-%~;{}(),=<>#$[]";
 	
-	uint till = scr.count;
+	ulong till = scr.count;
 	
 	tokens = new Tlist!string;
 	for (lineno=0;lineno<till;lineno++){
@@ -381,7 +381,7 @@ private void toTokens(Tlist!string slst){
 }
 
 private Tlist!string compileOp(){
-	uint i;
+	ulong i;
 	string line;
 	string[2] tmstr;
 	string[][2] operand;
@@ -474,9 +474,9 @@ private Tlist!string compileOp(){
 			tokens.del((i-operand[0].length),operand[0].length);
 			i -= operand[0].length-1;
 			delTokn(operand[0].length,i-operand[0].length+1);
-			uint bEnd;
+			ulong bEnd;
 			Tlist!string tmList = new Tlist!string;
-			for (int j=0;j<operand[0].length && operand[0][j]!="!?";j++){
+			for (long j=0;j<operand[0].length && operand[0][j]!="!?";j++){
 				if (operand[0][j]=="!["){
 					tmList.loadArray(operand[0]);
 					bEnd = brackEnd(tmList,j+1);
@@ -499,7 +499,7 @@ private Tlist!string compileOp(){
 			tokens.set(i,toReplace[line]);
 		}else if (line=="while"){
 			tokens.set(i,"!while");
-			/*uint pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
+			/*ulong pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
 			tokens.insert(pos, ["!again","(","foo",")",";"]);
 			addTokn(1,pos);*/
 		}else if (line in compareFunc){
@@ -542,7 +542,7 @@ private Tlist!string compileOp(){
 				tokens.del(i+2,operand[0].length);
 				delTokn(operand[0].length,i+2);
 				Tlist!string tmp = new Tlist!string;
-				for (uint j=0;j<operand[0].length;j++){
+				for (ulong j=0;j<operand[0].length;j++){
 					if (operand[0][j]=="["){
 						operand[0][j] = ",";
 						tmp.loadArray(operand[0]);
@@ -558,7 +558,7 @@ private Tlist!string compileOp(){
 				addTokn(operand[0].length,i+2);
 			}else{
 				//tokens.set(i+2,'"'~tokens.read(i+2)~'"');
-				uint j = i+2, till = tokens.count;
+				ulong j = i+2, till = tokens.count;
 				operand[0].length = 1;
 				if (tokens.read(j-1)=="("){
 					for (;j<till;j++){
@@ -575,7 +575,7 @@ private Tlist!string compileOp(){
 			tmstr[0] = tokens.read(i-1);
 			tmstr[1] = tokens.read(brackEnd(tokens,i)+1);
 			if ((tmstr[0]==","||tmstr[0]=="(") && (tmstr[1]==","||tmstr[1]==")")){
-				uint delPos = brackEnd(tokens,i);
+				ulong delPos = brackEnd(tokens,i);
 				tokens.del(delPos);
 				delTokn(1,delPos);
 				tokens.del(i);
@@ -593,7 +593,7 @@ private Tlist!string compileOp(){
 			operand[0]=prevToken(i-1);
 			tokens.set(brackEnd(tokens,i,"[","]"),")");
 			tokens.set(i,",");
-			uint toIns = i-operand[0].length;
+			ulong toIns = i-operand[0].length;
 			tokens.insert(toIns,["![","("]);
 			addTokn(2,toIns);
 		}
@@ -602,13 +602,13 @@ private Tlist!string compileOp(){
 }
 
 private string[][string] compileByte(){
-	uint i, till, argC, j;
+	ulong i, till, argC, j;
 	string token, tmStr, fName;
 	Tlist!string output = new Tlist!string;
-	Tlist!uint blockDepth = new Tlist!uint;
-	Tlist!(uint[2]) addJmp = new Tlist!(uint[2]);
-	Tlist!(uint[2]) addIfPos = new Tlist!(uint[2]);
-	uint[2] tmpInt;
+	Tlist!ulong blockDepth = new Tlist!ulong;
+	Tlist!(ulong[2]) addJmp = new Tlist!(ulong[2]);
+	Tlist!(ulong[2]) addIfPos = new Tlist!(ulong[2]);
+	ulong[2] tmpInt;
 
 	string[][string] r;
 
@@ -659,7 +659,7 @@ private string[][string] compileByte(){
 			//count the args:
 			string tmStr2;
 			argC=0;
-			uint end = brackStart(tokens,i);
+			ulong end = brackStart(tokens,i);
 			if (!(i-end==1) && !(tmStr=="!if")){
 				for (j=i-1;j>=end;j--){
 					tmStr2 = tokens.read(j);

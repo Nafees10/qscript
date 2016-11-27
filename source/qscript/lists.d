@@ -8,7 +8,7 @@ import std.conv:to;
 class Tlist(T){
 private:
 	T[] list;
-	uint taken=0;
+	ulong taken=0;
 public:
 	void add(T dat){
 		if (taken==list.length){
@@ -22,30 +22,30 @@ public:
 		list ~= dat;
 		taken += dat.length;
 	}
-	void set(uint index, T dat){
+	void set(ulong index, T dat){
 		list[index]=dat;
 	}
-	void del(uint index, uint count=1){
-		int i;
-		int till=taken-count;
+	void del(ulong index, ulong count=1){
+		long i;
+		long till=taken-count;
 		for (i=index;i<till;i++){
 			list[i] = list[i+count];
 		}
 		list.length-=count;
 		taken-=count;
 	}
-	void removeLast(uint count = 1){
+	void removeLast(ulong count = 1){
 		taken -= count;
 		if (list.length-taken>10){
 			list.length=taken;
 		}
 	}
-	void shrink(uint newSize){
+	void shrink(ulong newSize){
 		list.length=newSize;
 		taken = list.length;
 	}
-	void insert(uint index, T[] dat){
-		int i;
+	void insert(ulong index, T[] dat){
+		long i;
 		T[] ar,ar2;
 		ar=list[0..index];
 		ar2=list[index..taken];
@@ -55,29 +55,29 @@ public:
 	}
 	void saveFile(string s, T sp){
 		File f = File(s,"w");
-		uint i;
+		ulong i;
 		for (i=0;i<taken;i++){
 			f.write(list[i],sp);
 		}
 		f.close;
 	}
-	T read(uint index){
+	T read(ulong index){
 		return list[index];
 	}
-	T[] readRange(uint index,uint i2){
+	T[] readRange(ulong index,ulong i2){
 		return list[index..i2];
 	}
 	T readLast(){
 		return list[taken-1];
 	}
-	T[] readLast(uint count){
+	T[] readLast(ulong count){
 		return list[taken-count..taken];
 	}
-	int count(){
+	long count(){
 		return taken;
 	}
 	T[] toArray(){
-		uint i;
+		ulong i;
 		T[] r;
 		if (taken!=-1){
 			r.length=taken;
@@ -88,7 +88,7 @@ public:
 		return r;
 	}
 	void loadArray(T[] dats){
-		uint i;
+		ulong i;
 		list.length=dats.length;
 		taken=list.length;
 		for (i=0;i<dats.length;i++){
@@ -99,7 +99,7 @@ public:
 		list.length=0;
 		taken=0;
 	}
-	int indexOf(T dat, int i=0, bool forward=true){
+	long indexOf(T dat, long i=0, bool forward=true){
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
@@ -116,29 +116,41 @@ public:
 
 class Tqstack(T){
 private:
-	Tlist!T list;
-	uint pos;
+	T[] list;
+	ulong pos = 0;
 public:
-	void push(T dat){
-		list.add(dat);
+	this(ulong size=512){
+		list = new T[size];
 	}
-	void push(T[] dat){
-		list.addArray(dat);
+	void push(T dat){
+		pos ++;
+		list[pos] = dat;
+	}
+	void push(T[] dat){//This one is untested
+		pos++;
+		list[pos..pos+dat.length] = dat;
+		pos += dat.length-1;
 	}
 	T pop(){
-		T r = list.read(pos);
-		pos++;
+		T r;
+		pos--;
+		r = list[pos];
 		return r;
 	}
-	T[] pop(uint count){
-		T[] r = list.readRange(pos,pos+count);
-		pos+=count-1;
+	T[] pop(ulong count){
+		T[] r;
+		ulong tmp = pos - count;
+		r = list[tmp+1..pos+1];
+		pos -= count;
 		return r;
 	}
-	@property uint position(){
+	void clear(){
+		pos = 0;
+	}
+	@property ulong position(){
 		return pos;
 	}
-	@property uint position(uint newPos){
+	@property ulong position(ulong newPos){
 		return pos=newPos;
 	}
 }
