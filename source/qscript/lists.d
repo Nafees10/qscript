@@ -3,7 +3,7 @@
 import misc;
 import std.file;
 import std.stdio;
-import std.conv:to;
+//import std.conv:to;
 
 class Tlist(T){
 private:
