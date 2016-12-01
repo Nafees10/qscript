@@ -698,6 +698,11 @@ private string[][string] compileByte(){
 			output.add("!PSH "~token);
 		}
 	}
+	//free the memory
+	delete output;
+	delete blockDepth;
+	delete addJmp;
+	delete addIfPos;
 	return r;
 }
 
