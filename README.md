@@ -15,7 +15,7 @@ Use the issues tab at the top!
 ###How to contribute?
 There are 2 ways:  
 1. Clone this repo, make changes, push to some branch other than master, make a pull request.  
-
+2. Make a fork, and let me know when it's reday  
 ---
 ###Where to learn QScript from (Since QScript is a language itself)?  
 Use the wiki.  

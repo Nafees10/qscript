@@ -8,6 +8,8 @@ import std.conv:to;
 
 alias scrFunction = Tqvar delegate(Tqvar[]);
 
+private alias inst = void delegate(Tqvar);
+
 union Tqvar{
 	double d;
 	string s;
@@ -50,9 +52,9 @@ private:
 	}
 	//IF
 	Tqvar doIf(Tqvar[] args){
-		ulong skipBlock=0;
+		size_t skipBlock=0;
 		if (args[0].d!=1){
-			ind = cast(ulong)args[1].d;
+			ind = cast(size_t)args[1].d;
 		}
 		return args[0];
 	}
@@ -116,16 +118,16 @@ private:
 	Tqvar setLength(Tqvar[] args){
 		Tqvar* curVar = &vars[args[0].s];
 		if (args.length>2){
-			ulong i;
-			ulong till = args.length-1;
+			size_t i;
+			size_t till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(ulong)args[i].d];
+				curVar = &curVar.array[cast(size_t)args[i].d];
 			}
 		}
-		(*curVar).array.length = cast(ulong)args[args.length-1].d;
+		(*curVar).array.length = cast(size_t)args[args.length-1].d;
 		return args[1];
 	}
 	Tqvar getLength(Tqvar[] args){
@@ -146,7 +148,7 @@ private:
 			throw new Exception("index out of limit"~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
-		return args[0].array[cast(ulong)args[1].d];
+		return args[0].array[cast(size_t)args[1].d];
 	}
 	Tqvar getVar(Tqvar[] args){
 		if (!(args[0].s in vars)){
@@ -162,13 +164,13 @@ private:
 		Tqvar* curVar = &vars[args[0].s];
 		Tqvar r;
 		if (args.length>2){
-			ulong i;
-			ulong till = args.length-1;
+			size_t i;
+			size_t till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(ulong)args[i].d];
+				curVar = &curVar.array[cast(size_t)args[i].d];
 			}
 		}
 		(*curVar) = val;
@@ -179,13 +181,24 @@ private:
 		stack.push(arg);
 	}
 	/*void pop(Tqvar arg){
-		stack.removeLast(cast(ulong)arg.d);
+		stack.removeLast(cast(size_t)arg.d);
 	}*/
 	void clr(Tqvar arg){
 		stack.clear;
 	}
 	void jmp(Tqvar arg){
-		ind = cast(ulong)arg.d;
+		ind = cast(size_t)arg.d;
+	}
+	void exe(Tqvar arg){
+		string fName = arg.s;
+		scrFunction* func = fName in fList;
+		if (func){
+			size_t argC = cast(size_t)stack.pop.d;
+			Tqvar[] args = stack.pop(argC/*cast(size_t)stack.pop.d*/);
+			stack.push((*func)(args));
+		}else{
+			throw new Exception("unrecognized function call "~fName);
+		}
 	}
 
 	//sdfsdf:
@@ -193,8 +206,8 @@ private:
 
 	//Tlist!Tqvar stack;
 	Tqstack!Tqvar stack;
-	string[][string] calls;
-	ulong ind;//stores the index of function-to-call from calls
+	inst[][string] calls;
+	size_t ind;//stores the index of function-to-call from calls
 	Tqvar[][string] callsArgs;
 
 	scrFunction[string] fList;
@@ -203,18 +216,30 @@ private:
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
-		ulong i, lineno;
+		size_t i, lineno;
 		string token, line;
 		Tqvar arg;
-		Tlist!string tmpCalls = new Tlist!string;
+		Tlist!inst tmpCalls = new Tlist!inst;
 		Tlist!Tqvar tmpArgs = new Tlist!Tqvar;
+
+		inst[string] mList = [
+			"PSH":&push,
+			"CLR":&clr,
+			"JMP":&jmp,
+			"EXE":&exe
+		];
+
 		foreach(fName; script.keys){
 			for (lineno=0;lineno<script[fName].length;lineno++){
 				line = script[fName][lineno];
 				for (i=0;i<line.length;i++){
 					if (line[i]==' '){
 						token = line[0..i];
-						tmpCalls.add(token);
+						if (token in mList){
+							tmpCalls.add(mList[token]);
+						}else{
+							throw new Exception("unrecognized function call "~token);
+						}
 						if (i==line.length-1){
 							tmpArgs.add(arg);
 							//just so that the indexes are synced. this call doesn't need args
@@ -242,7 +267,7 @@ private:
 	}
 	Tqvar execF(string fName, Tqvar[] args){
 		Tqstack!Tqvar oldStack = stack;
-		ulong oldInd = ind;
+		size_t oldInd = ind;
 		stack = new Tqstack!Tqvar;
 		//clear vars
 		Tqvar[string] oldVars;
@@ -257,44 +282,15 @@ private:
 		r.array = args;
 		vars["args"] = r;
 
-		void delegate(Tqvar)[string] mList = [
-			"!PSH":&push,
-			"!CLR":&clr,
-			"!JMP":&jmp
-		];
 		Tqvar[] tmArgs;
-		string func;
+		inst* func;
 		Tqvar arg;
 		//start executing
 		for (ind = 0;ind<calls[fName].length;ind++){
-			func = calls[fName][ind];
-			arg = callsArgs[fName][ind];
-			if (func in mList){
-				mList[func](arg);
-			}else{
-				tmArgs = stack.pop(cast(ulong)arg.d);
-				if (func in calls){
-					r = execF(func,tmArgs);
-				}else
-				if (func in fList){
-					r = fList[func](tmArgs);
-				}else
-				if (onExec){
-					r = onExec(func,tmArgs);
-				}else{
-					throw new Exception("unrecognized function call "~func);
-				}
-				/*debug{
-					arg.s = "SP";
-					writeln("Called ",func," with args:");
-					foreach(elm; tmArgs){
-						writeln('"',elm.s,'"','\t',elm.d);
-					}readln;
-				}*/
-				stack.push(r);
-			}
+			calls[fName][ind](callsArgs[fName][ind]);
 		}
 		delete stack;
+		//restote previous state
 		stack = oldStack;
 		r = vars["result"];
 		foreach(key; vars.keys){
@@ -335,12 +331,13 @@ public:
 	string[] loadScript(string fName){
 		Tlist!string script = new Tlist!string;
 		script.loadArray(fileToArray(fName));
-		calls = compileQScript(script/*, true*/);//uncomment to see compiled output
+		string[][string] byteCode;
+		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		string[] r;
 		if ("#####" in calls){
-			r = calls["#####"];
+			r = byteCode["#####"];
 		}else{
-			finalCompile(calls);
+			finalCompile(byteCode);
 		}
 		return r;
 	}

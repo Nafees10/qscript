@@ -8,7 +8,7 @@ import std.stdio;
 class Tlist(T){
 private:
 	T[] list;
-	ulong taken=0;
+	size_t taken=0;
 public:
 	void add(T dat){
 		if (taken==list.length){
@@ -22,30 +22,30 @@ public:
 		list ~= dat;
 		taken += dat.length;
 	}
-	void set(ulong index, T dat){
+	void set(size_t index, T dat){
 		list[index]=dat;
 	}
-	void del(ulong index, ulong count=1){
-		long i;
-		long till=taken-count;
+	void del(size_t index, size_t count=1){
+		ptrdiff_t i;
+		ptrdiff_t till=taken-count;
 		for (i=index;i<till;i++){
 			list[i] = list[i+count];
 		}
 		list.length-=count;
 		taken-=count;
 	}
-	void removeLast(ulong count = 1){
+	void removeLast(size_t count = 1){
 		taken -= count;
 		if (list.length-taken>10){
 			list.length=taken;
 		}
 	}
-	void shrink(ulong newSize){
+	void shrink(size_t newSize){
 		list.length=newSize;
 		taken = list.length;
 	}
-	void insert(ulong index, T[] dat){
-		long i;
+	void insert(size_t index, T[] dat){
+		ptrdiff_t i;
 		T[] ar,ar2;
 		ar=list[0..index];
 		ar2=list[index..taken];
@@ -55,29 +55,29 @@ public:
 	}
 	void saveFile(string s, T sp){
 		File f = File(s,"w");
-		ulong i;
+		size_t i;
 		for (i=0;i<taken;i++){
 			f.write(list[i],sp);
 		}
 		f.close;
 	}
-	T read(ulong index){
+	T read(size_t index){
 		return list[index];
 	}
-	T[] readRange(ulong index,ulong i2){
+	T[] readRange(size_t index,size_t i2){
 		return list[index..i2];
 	}
 	T readLast(){
 		return list[taken-1];
 	}
-	T[] readLast(ulong count){
+	T[] readLast(size_t count){
 		return list[taken-count..taken];
 	}
-	long count(){
+	ptrdiff_t count(){
 		return taken;
 	}
 	T[] toArray(){
-		ulong i;
+		size_t i;
 		T[] r;
 		if (taken!=-1){
 			r.length=taken;
@@ -88,7 +88,7 @@ public:
 		return r;
 	}
 	void loadArray(T[] dats){
-		ulong i;
+		size_t i;
 		list.length=dats.length;
 		taken=list.length;
 		for (i=0;i<dats.length;i++){
@@ -99,7 +99,7 @@ public:
 		list.length=0;
 		taken=0;
 	}
-	long indexOf(T dat, long i=0, bool forward=true){
+	ptrdiff_t indexOf(T dat, ptrdiff_t i=0, bool forward=true){
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
@@ -117,9 +117,9 @@ public:
 class Tqstack(T){
 private:
 	T[] list;
-	ulong pos = 0;
+	size_t pos = 0;
 public:
-	this(ulong size=512){
+	this(size_t size=512){
 		list = new T[size];
 	}
 	void push(T dat){
@@ -133,13 +133,13 @@ public:
 	}
 	T pop(){
 		T r;
-		pos--;
 		r = list[pos];
+		pos--;
 		return r;
 	}
-	T[] pop(ulong count){
+	T[] pop(size_t count){
 		T[] r;
-		ulong tmp = pos - count;
+		size_t tmp = pos - count;
 		r = list[tmp+1..pos+1];
 		pos -= count;
 		return r;
@@ -147,10 +147,10 @@ public:
 	void clear(){
 		pos = 0;
 	}
-	@property ulong position(){
+	@property size_t position(){
 		return pos;
 	}
-	@property ulong position(ulong newPos){
+	@property size_t position(size_t newPos){
 		return pos=newPos;
 	}
 }
