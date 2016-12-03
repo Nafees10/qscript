@@ -133,8 +133,8 @@ public:
 	}
 	T pop(){
 		T r;
-		pos--;
 		r = list[pos];
+		pos--;
 		return r;
 	}
 	T[] pop(size_t count){
