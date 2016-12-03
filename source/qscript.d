@@ -50,9 +50,9 @@ private:
 	}
 	//IF
 	Tqvar doIf(Tqvar[] args){
-		ulong skipBlock=0;
+		size_t skipBlock=0;
 		if (args[0].d!=1){
-			ind = cast(ulong)args[1].d;
+			ind = cast(size_t)args[1].d;
 		}
 		return args[0];
 	}
@@ -116,16 +116,16 @@ private:
 	Tqvar setLength(Tqvar[] args){
 		Tqvar* curVar = &vars[args[0].s];
 		if (args.length>2){
-			ulong i;
-			ulong till = args.length-1;
+			size_t i;
+			size_t till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(ulong)args[i].d];
+				curVar = &curVar.array[cast(size_t)args[i].d];
 			}
 		}
-		(*curVar).array.length = cast(ulong)args[args.length-1].d;
+		(*curVar).array.length = cast(size_t)args[args.length-1].d;
 		return args[1];
 	}
 	Tqvar getLength(Tqvar[] args){
@@ -146,7 +146,7 @@ private:
 			throw new Exception("index out of limit"~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
-		return args[0].array[cast(ulong)args[1].d];
+		return args[0].array[cast(size_t)args[1].d];
 	}
 	Tqvar getVar(Tqvar[] args){
 		if (!(args[0].s in vars)){
@@ -162,13 +162,13 @@ private:
 		Tqvar* curVar = &vars[args[0].s];
 		Tqvar r;
 		if (args.length>2){
-			ulong i;
-			ulong till = args.length-1;
+			size_t i;
+			size_t till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(ulong)args[i].d];
+				curVar = &curVar.array[cast(size_t)args[i].d];
 			}
 		}
 		(*curVar) = val;
@@ -179,13 +179,13 @@ private:
 		stack.push(arg);
 	}
 	/*void pop(Tqvar arg){
-		stack.removeLast(cast(ulong)arg.d);
+		stack.removeLast(cast(size_t)arg.d);
 	}*/
 	void clr(Tqvar arg){
 		stack.clear;
 	}
 	void jmp(Tqvar arg){
-		ind = cast(ulong)arg.d;
+		ind = cast(size_t)arg.d;
 	}
 
 	//sdfsdf:
@@ -194,7 +194,7 @@ private:
 	//Tlist!Tqvar stack;
 	Tqstack!Tqvar stack;
 	string[][string] calls;
-	ulong ind;//stores the index of function-to-call from calls
+	size_t ind;//stores the index of function-to-call from calls
 	Tqvar[][string] callsArgs;
 
 	scrFunction[string] fList;
@@ -203,7 +203,7 @@ private:
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
-		ulong i, lineno;
+		size_t i, lineno;
 		string token, line;
 		Tqvar arg;
 		Tlist!string tmpCalls = new Tlist!string;
@@ -242,7 +242,7 @@ private:
 	}
 	Tqvar execF(string fName, Tqvar[] args){
 		Tqstack!Tqvar oldStack = stack;
-		ulong oldInd = ind;
+		size_t oldInd = ind;
 		stack = new Tqstack!Tqvar;
 		//clear vars
 		Tqvar[string] oldVars;
@@ -272,7 +272,7 @@ private:
 			if (func in mList){
 				mList[func](arg);
 			}else{
-				tmArgs = stack.pop(cast(ulong)arg.d);
+				tmArgs = stack.pop(cast(size_t)arg.d);
 				if (func in calls){
 					r = execF(func,tmArgs);
 				}else
