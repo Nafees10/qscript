@@ -6,15 +6,19 @@ QScript is a fast, and simple scripting language.
 4. Open Source
 5. Fast execution - or should I say, very fast.
 6. More features on the way, qscript is still in beta
+  
 ---
 ###Where to report bugs?
-Use the issues tab at the top!  
+Use the issues tab at the top!
+  
 ---
 ###How to contribute?
 There are 2 ways:  
 1. Clone this repo, make changes, push to some branch other than master, make a pull request.  
+
 ---
 ###Where to learn QScript from (Since QScript is a language itself)?  
 Use the wiki.  
+
 ---
 P.S: Updates have slowed down, a lot, because I am nowadays very busy with my studies.
