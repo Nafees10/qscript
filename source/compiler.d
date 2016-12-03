@@ -629,7 +629,7 @@ private string[][string] compileByte(){
 				tmpint = addJmp.readLast;
 				if (tmpint[1]==/*blockDepth.count*/j){
 					//!while's block is ending
-					output.add("!JMP "~to!string(tmpint[0]));
+					output.add("JMP "~to!string(tmpint[0]));
 					addJmp.removeLast;
 				}
 			}
@@ -637,7 +637,7 @@ private string[][string] compileByte(){
 				tmpint = addIfPos.readLast;
 				if (tmpint[1] == /*blockDepth.count*/j){
 					//!if statement's block is ending
-					output.set(tmpint[0],"!PSH "~to!string(output.count-1));
+					output.set(tmpint[0],"PSH "~to!string(output.count-1));
 					//-1 cause after execution of if, +1 will be done by interpreter.
 					addIfPos.removeLast;
 				}
@@ -653,7 +653,7 @@ private string[][string] compileByte(){
 			tmStr = tokens.read(brackStart(tokens,i)-1);
 			if (tmStr=="!if"){
 				tmpint = [output.count,blockDepth.count];
-				output.add("!PSH foo");
+				output.add("PSH foo");
 				addIfPos.add(tmpint);
 			}
 			//count the args:
@@ -678,7 +678,8 @@ private string[][string] compileByte(){
 					argC = 2;
 				}
 			}
-			output.add(tmStr~' '~to!string(argC));
+			output.add("PSH "~to!string(argC));
+			output.add("EXE \""~tmStr~'"');
 		}else
 		if (token=="!while"){
 			tmpint = [output.count-1,blockDepth.count];//interptreter will do +1
@@ -686,16 +687,16 @@ private string[][string] compileByte(){
 			tokens.set(i,"!if");
 		}else
 		if (token==";"){
-			output.add("!CLR 1");
+			output.add("CLR 1");
 			//Cause some functions' return won't be used, unless CLR-ed, it'll waste memory
 		}else
 		if (isNum(token)){
 			//is a number type argument
-			output.add("!PSH "~token);
+			output.add("PSH "~token);
 		}else
 		if (token[0]=='"'){
 			//is a string type argument
-			output.add("!PSH "~token);
+			output.add("PSH "~token);
 		}
 	}
 	//free the memory
