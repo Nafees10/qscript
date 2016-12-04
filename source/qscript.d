@@ -192,10 +192,15 @@ private:
 	void exe(Tqvar arg){
 		string fName = arg.s;
 		scrFunction* func = fName in fList;
+		Tqvar[] args = stack.pop(cast(size_t)stack.pop.d);
 		if (func){
-			size_t argC = cast(size_t)stack.pop.d;
-			Tqvar[] args = stack.pop(argC/*cast(size_t)stack.pop.d*/);
 			stack.push((*func)(args));
+		}else
+		if (fName in calls){
+			execF(fName,args);
+		}else
+		if (onExec){
+			onExec(fName,args);
 		}else{
 			throw new Exception("unrecognized function call "~fName);
 		}
