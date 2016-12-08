@@ -1,4 +1,4 @@
-﻿module lists;
+module lists;
 
 import misc;
 import std.file;
