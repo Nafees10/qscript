@@ -60,7 +60,7 @@ private:
 	}
 	Tqvar isEqual(Tqvar[] args){
 		Tqvar r;
-		if (args[0]==args[1]){
+		if (args[0].d==args[1].d || args[0].s == args[1].s){
 			r.d=1;
 		}else{
 			r.d = 0;
