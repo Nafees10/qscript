@@ -1,4 +1,4 @@
-﻿module misc;
+module misc;
 
 import lists;
 import std.math;
