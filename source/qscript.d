@@ -52,9 +52,9 @@ private:
 	}
 	//IF
 	Tqvar doIf(Tqvar[] args){
-		size_t skipBlock=0;
+		uinteger skipBlock=0;
 		if (args[0].d!=1){
-			ind = cast(size_t)args[1].d;
+			ind = cast(uinteger)args[1].d;
 		}
 		return args[0];
 	}
@@ -118,16 +118,16 @@ private:
 	Tqvar setLength(Tqvar[] args){
 		Tqvar* curVar = &vars[args[0].s];
 		if (args.length>2){
-			size_t i;
-			size_t till = args.length-1;
+			uinteger i;
+			uinteger till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(size_t)args[i].d];
+				curVar = &curVar.array[cast(uinteger)args[i].d];
 			}
 		}
-		(*curVar).array.length = cast(size_t)args[args.length-1].d;
+		(*curVar).array.length = cast(uinteger)args[args.length-1].d;
 		return args[1];
 	}
 	Tqvar getLength(Tqvar[] args){
@@ -148,7 +148,7 @@ private:
 			throw new Exception("index out of limit"~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
-		return args[0].array[cast(size_t)args[1].d];
+		return args[0].array[cast(uinteger)args[1].d];
 	}
 	Tqvar getVar(Tqvar[] args){
 		if (!(args[0].s in vars)){
@@ -164,13 +164,13 @@ private:
 		Tqvar* curVar = &vars[args[0].s];
 		Tqvar r;
 		if (args.length>2){
-			size_t i;
-			size_t till = args.length-1;
+			uinteger i;
+			uinteger till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(size_t)args[i].d];
+				curVar = &curVar.array[cast(uinteger)args[i].d];
 			}
 		}
 		(*curVar) = val;
@@ -180,19 +180,16 @@ private:
 	void push(Tqvar arg){
 		stack.push(arg);
 	}
-	/*void pop(Tqvar arg){
-		stack.removeLast(cast(size_t)arg.d);
-	}*/
 	void clr(Tqvar arg){
 		stack.clear;
 	}
 	void jmp(Tqvar arg){
-		ind = cast(size_t)arg.d;
+		ind = cast(uinteger)arg.d;
 	}
 	void exe(Tqvar arg){
 		string fName = arg.s;
 		scrFunction* func = fName in fList;
-		Tqvar[] args = stack.pop(cast(size_t)stack.pop.d);
+		Tqvar[] args = stack.pop(cast(uinteger)stack.pop.d);
 		if (func){
 			stack.push((*func)(args));
 		}else
@@ -209,10 +206,10 @@ private:
 	//sdfsdf:
 	Tqvar[string] vars;
 
-	//Tlist!Tqvar stack;
-	Tqstack!Tqvar stack;
+	//List!Tqvar stack;
+	Stack!Tqvar stack;
 	inst[][string] calls;
-	size_t ind;//stores the index of function-to-call from calls
+	uinteger ind;//stores the index of function-to-call from calls
 	Tqvar[][string] callsArgs;
 
 	scrFunction[string] fList;
@@ -221,11 +218,11 @@ private:
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
-		size_t i, lineno;
+		uinteger i, lineno;
 		string token, line;
 		Tqvar arg;
-		Tlist!inst tmpCalls = new Tlist!inst;
-		Tlist!Tqvar tmpArgs = new Tlist!Tqvar;
+		List!inst tmpCalls = new List!inst;
+		List!Tqvar tmpArgs = new List!Tqvar;
 
 		inst[string] mList = [
 			"PSH":&push,
@@ -271,9 +268,9 @@ private:
 		delete tmpArgs;
 	}
 	Tqvar execF(string fName, Tqvar[] args){
-		Tqstack!Tqvar oldStack = stack;
-		size_t oldInd = ind;
-		stack = new Tqstack!Tqvar;
+		Stack!Tqvar oldStack = stack;
+		uinteger oldInd = ind;
+		stack = new Stack!Tqvar;
 		//clear vars
 		Tqvar[string] oldVars;
 		foreach(key; vars.keys){
@@ -334,10 +331,10 @@ public:
 		];
 	}
 	string[] loadScript(string fName){
-		Tlist!string script = new Tlist!string;
+		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
+		//byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		string[] r;
 		if ("#####" in calls){
 			r = byteCode["#####"];
