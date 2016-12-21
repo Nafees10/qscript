@@ -37,6 +37,7 @@ private enum TokenType{
 	Identifier,
 	Operator,
 	Comma,
+	StatementEnd,
 	BracketOpen,
 	BracketClose
 }
@@ -129,7 +130,7 @@ private bool isAlphaNum(string s){
 }
 
 private bool isOperator(string s){
-	return ["/","*","+","-","%","<",">","=","<=","==",">="].hasElement(s);
+	return ["/","*","+","-","%","~","<",">","=","<=","==",">="].hasElement(s);
 }
 
 private bool isBracketOpen(char b){
@@ -197,15 +198,15 @@ private integer bracketPos(uinteger start, bool forward = true){
 }
 
 //Functions below is where the 'magic' happens
-private void toTokens(List!string script){
+private bool toTokens(List!string script){
 	if (tokens){
 		delete tokens;
 	}
 	tokens = new List!Token;
 	uinteger i, lineno, till = script.length, addFrom;
-	uinteger[2] tmInt;
+	uinteger tmInt;
 	string line;
-	Token tmpToken;
+	Token token;
 	bool hasError = false;
 	//First convert everything to 'tokens', TokenType will be set later
 	for (lineno=0; lineno<till; lineno++){
@@ -216,41 +217,47 @@ private void toTokens(List!string script){
 			if (line[i] == ' ' || line[i] == '\t'){
 				//Add token if any
 				if (addFrom!=i){
-					tmpToken.token = line[addFrom..i];
-					tokens.add(tmpToken);
+					token.token = line[addFrom..i];
+					tokens.add(token);
 				}
 				addFrom = i+1;
 			}
+			//comments
 			if (i<line.length-1 && line[i..i+2]=="//"){
 				if (addFrom!=i){
-					break;
-				}else{
-					tmpToken.token = line[addFrom..i];
-					tokens.add(tmpToken);
+					token.token = line[addFrom..i];
+					tokens.add(token);
 				}
+				break;
 			}
 			//ignore and add strings
 			if (line[i]=='"'){
-				tmInt[0] = line.strEnd(i);
-				if (tmInt[0]==-1){
+				tmInt = line.strEnd(i);
+				if (tmInt==-1){
 					addError(i,"Unterminated string");
+					hasError = true;
+					break;
 				}else if (addFrom!=i){
 					addError(i,"Unexpected string");
+					hasError = true;
+					break;
 				}else{
-					tmpToken.token = line[addFrom..tmInt[0]+1];
-					tokens.add(tmpToken);
+					token.token = line[addFrom..tmInt+1];
+					tokens.add(token);
+					addFrom = tmInt+1;
 				}
 			}
-			//at bracket end/open & dot & comma
-			if (isBracketOpen(line[i]) || isBracketClose(line[i]) || [',','.'].hasElement(line[i])){
+			//at bracket end/open & comma & semicolon
+			if (isBracketOpen(line[i]) || isBracketClose(line[i]) || [',',';'].hasElement(line[i])){
 				if (addFrom!=i){
 					//has to add a token from before the bracket
-					tmpToken.token = line[addFrom..i];
-					tokens.add(tmpToken);
+					token.token = line[addFrom..i];
+					tokens.add(token);
 				}
-				//add the bracket too
-				tmpToken.token = [line[i]];
-				tokens.add(tmpToken);
+				//add the current token too
+				token.token = [line[i]];
+				tokens.add(token);
+				addFrom = i+1;
 			}
 			//and operators
 			if (isOperator([line[i]])){// it works cuz 2char operator's for char is an operator
@@ -259,26 +266,77 @@ private void toTokens(List!string script){
 					//is 2 char operator
 					if (addFrom!=i){
 						//has to add a token from before the operator
-						tmpToken.token = line[addFrom..i];
-						tokens.add(tmpToken);
+						token.token = line[addFrom..i];
+						tokens.add(token);
 					}
 					//add the operator too
-					tmpToken.token = line[i..i+2];//it's a 2 char operator
-					tokens.add(tmpToken);
+					token.token = line[i..i+2];//it's a 2char operator
+					tokens.add(token);
+					addFrom = i+2;//it's a 2char operator!
 				}else{
 					//is 1 char operator
 					if (addFrom!=i){
 						//has to add a token from before the operator
-						tmpToken.token = line[addFrom..i];
-						tokens.add(tmpToken);
+						token.token = line[addFrom..i];
+						tokens.add(token);
 					}
 					//add the operator too
-					tmpToken.token = [line[i]];
-					tokens.add(tmpToken);
+					token.token = [line[i]];
+					tokens.add(token);
+					addFrom = i+1;
 				}
 			}
 		}
+		if (hasError){
+			break;
+		}
 	}
+	if (hasError){
+		goto skipConversion;
+	}
+	//Now put in Token Types
+	till = tokens.length;
+	for (i=0; i<till; i++){
+		token = tokens.read(i);
+		if (token.token.isNum){
+			//Numbers:
+			token.type = TokenType.Number;
+			tokens.set(i,token);
+		}else if (token.token.isAlphaNum){
+			//Identifiers
+			token.type = TokenType.Identifier;
+			tokens.set(i,token);
+		}else if (token.token.isOperator){
+			//Operator
+			token.type = TokenType.Operator;
+			tokens.set(i,token);
+		}else if (token.token.length == 1){
+			//comma, semicolon, brackets
+			switch (token.token[0]){
+				case ',':
+					token.type = TokenType.Comma;
+					break;
+				case ';':
+					token.type = TokenType.StatementEnd;
+					break;
+				default:
+					if (isBracketOpen(token.token[0])){
+						token.type = TokenType.BracketOpen;
+					}else if (isBracketOpen(token.token[0])){
+						token.type = TokenType.BracketClose;
+					}
+					break;
+			}
+			tokens.set(i,token);
+		}else if (token.token[0]=='"'){
+			//string
+			token.type = TokenType.String;
+			tokens.set(i,token);
+		}
+	}
+
+skipConversion:
+	return hasError;
 }
 
 private void toFunctionCalls(){
@@ -293,9 +351,22 @@ private void toFunctionCalls(){
 
 	till = tokens.length;
 	for (i=0;i<till;i++){
-		//Compile stuff here
+
 	}
 	
 	delete vars;
 	delete globalVars;
 }
+
+
+/*
+Sample QScript:
+main{
+	new(
+		var1,
+		var2,
+		var3
+	);//A comment
+}
+
+*/
