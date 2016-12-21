@@ -5,10 +5,10 @@ import std.file;
 import std.stdio;
 //import std.conv:to;
 
-class Tlist(T){
+class List(T){
 private:
 	T[] list;
-	size_t taken=0;
+	uinteger taken=0;
 public:
 	void add(T dat){
 		if (taken==list.length){
@@ -22,30 +22,30 @@ public:
 		list ~= dat;
 		taken += dat.length;
 	}
-	void set(size_t index, T dat){
+	void set(uinteger index, T dat){
 		list[index]=dat;
 	}
-	void del(size_t index, size_t count=1){
-		ptrdiff_t i;
-		ptrdiff_t till=taken-count;
+	void del(uinteger index, uinteger count=1){
+		integer i;
+		integer till=taken-count;
 		for (i=index;i<till;i++){
 			list[i] = list[i+count];
 		}
 		list.length-=count;
 		taken-=count;
 	}
-	void removeLast(size_t count = 1){
+	void removeLast(uinteger count = 1){
 		taken -= count;
 		if (list.length-taken>10){
 			list.length=taken;
 		}
 	}
-	void shrink(size_t newSize){
+	void shrink(uinteger newSize){
 		list.length=newSize;
 		taken = list.length;
 	}
-	void insert(size_t index, T[] dat){
-		ptrdiff_t i;
+	void insert(uinteger index, T[] dat){
+		integer i;
 		T[] ar,ar2;
 		ar=list[0..index];
 		ar2=list[index..taken];
@@ -55,29 +55,29 @@ public:
 	}
 	void saveFile(string s, T sp){
 		File f = File(s,"w");
-		size_t i;
+		uinteger i;
 		for (i=0;i<taken;i++){
 			f.write(list[i],sp);
 		}
 		f.close;
 	}
-	T read(size_t index){
+	T read(uinteger index){
 		return list[index];
 	}
-	T[] readRange(size_t index,size_t i2){
+	T[] readRange(uinteger index,uinteger i2){
 		return list[index..i2];
 	}
 	T readLast(){
 		return list[taken-1];
 	}
-	T[] readLast(size_t count){
+	T[] readLast(uinteger count){
 		return list[taken-count..taken];
 	}
-	ptrdiff_t count(){
+	integer length(){
 		return taken;
 	}
 	T[] toArray(){
-		size_t i;
+		uinteger i;
 		T[] r;
 		if (taken!=-1){
 			r.length=taken;
@@ -88,7 +88,7 @@ public:
 		return r;
 	}
 	void loadArray(T[] dats){
-		size_t i;
+		uinteger i;
 		list.length=dats.length;
 		taken=list.length;
 		for (i=0;i<dats.length;i++){
@@ -99,7 +99,7 @@ public:
 		list.length=0;
 		taken=0;
 	}
-	ptrdiff_t indexOf(T dat, ptrdiff_t i=0, bool forward=true){
+	integer indexOf(T dat, integer i=0, bool forward=true){
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
@@ -114,12 +114,12 @@ public:
 	}
 }
 
-class Tqstack(T){
+class Stack(T){
 private:
 	T[] list;
-	size_t pos = 0;
+	uinteger pos = 0;
 public:
-	this(size_t size=512){
+	this(uinteger size=512){
 		list = new T[size];
 	}
 	void push(T dat){
@@ -137,9 +137,9 @@ public:
 		pos--;
 		return r;
 	}
-	T[] pop(size_t count){
+	T[] pop(uinteger count){
 		T[] r;
-		size_t tmp = pos - count;
+		uinteger tmp = pos - count;
 		r = list[tmp+1..pos+1];
 		pos -= count;
 		return r;
@@ -147,10 +147,10 @@ public:
 	void clear(){
 		pos = 0;
 	}
-	@property size_t position(){
+	@property uinteger position(){
 		return pos;
 	}
-	@property size_t position(size_t newPos){
+	@property uinteger position(uinteger newPos){
 		return pos=newPos;
 	}
 }
