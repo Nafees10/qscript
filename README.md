@@ -1,3 +1,4 @@
+####This is the dev branch, not stable!
 QScript is a fast, and simple scripting language.   
 ###Features:   
 1. Declare functions inside scripts
