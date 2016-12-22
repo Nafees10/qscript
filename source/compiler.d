@@ -207,11 +207,14 @@ private bool toTokens(List!string script){
 	uinteger tmInt;
 	string line;
 	Token token;
+	uinteger tokenCount;
 	bool hasError = false;
+	lineLength.length = till;
 	//First convert everything to 'tokens', TokenType will be set later
 	for (lineno=0; lineno<till; lineno++){
 		line = script.read(lineno);
 		addFrom = 0;
+		tokenCount = 0;
 		for (i=0;i<line.length;i++){
 			//ignore whitespace
 			if (line[i] == ' ' || line[i] == '\t'){
@@ -219,6 +222,7 @@ private bool toTokens(List!string script){
 				if (addFrom!=i){
 					token.token = line[addFrom..i];
 					tokens.add(token);
+					tokenCount++;
 				}
 				addFrom = i+1;
 			}
@@ -227,6 +231,7 @@ private bool toTokens(List!string script){
 				if (addFrom!=i){
 					token.token = line[addFrom..i];
 					tokens.add(token);
+					tokenCount++;
 				}
 				break;
 			}
@@ -244,6 +249,7 @@ private bool toTokens(List!string script){
 				}else{
 					token.token = line[addFrom..tmInt+1];
 					tokens.add(token);
+					tokenCount++;
 					addFrom = tmInt+1;
 				}
 			}
@@ -253,10 +259,12 @@ private bool toTokens(List!string script){
 					//has to add a token from before the bracket
 					token.token = line[addFrom..i];
 					tokens.add(token);
+					tokenCount++;
 				}
 				//add the current token too
 				token.token = [line[i]];
 				tokens.add(token);
+				tokenCount++;
 				addFrom = i+1;
 			}
 			//and operators
@@ -268,10 +276,12 @@ private bool toTokens(List!string script){
 						//has to add a token from before the operator
 						token.token = line[addFrom..i];
 						tokens.add(token);
+						tokenCount++;
 					}
 					//add the operator too
 					token.token = line[i..i+2];//it's a 2char operator
 					tokens.add(token);
+					tokenCount++;
 					addFrom = i+2;//it's a 2char operator!
 				}else{
 					//is 1 char operator
@@ -279,14 +289,17 @@ private bool toTokens(List!string script){
 						//has to add a token from before the operator
 						token.token = line[addFrom..i];
 						tokens.add(token);
+						tokenCount++;
 					}
 					//add the operator too
 					token.token = [line[i]];
 					tokens.add(token);
+					tokenCount++;
 					addFrom = i+1;
 				}
 			}
 		}
+		lineLength[lineno] = tokenCount;
 		if (hasError){
 			break;
 		}
