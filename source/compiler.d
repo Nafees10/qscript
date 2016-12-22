@@ -26,7 +26,7 @@ private enum BracketType{
 
 private enum DataTypes{
 	String,
-	Array,
+	DoubleArray,
 	Char,
 	Double
 }
@@ -37,9 +37,12 @@ private enum TokenType{
 	Identifier,
 	Operator,
 	Comma,
+	DataType,
 	StatementEnd,
 	BracketOpen,
-	BracketClose
+	BracketClose,
+	FunctionCall,
+	FunctionDef
 }
 
 private struct Token{
@@ -130,7 +133,15 @@ private bool isAlphaNum(string s){
 }
 
 private bool isOperator(string s){
-	return ["/","*","+","-","%","~","<",">","=","<=","==",">="].hasElement(s);
+	return ["/","*","+","-","%","~","=","<",">","<=","==",">="].hasElement(s);
+}
+
+private bool isCompareOperator(string s){
+	return ["<",">","<=","==",">="].hasElement(s);
+}
+
+private bool isDataType(string s){
+	return ["double","doubleArray","char","string"].hasElement(s);
 }
 
 private bool isBracketOpen(char b){
@@ -197,6 +208,17 @@ private integer bracketPos(uinteger start, bool forward = true){
 	return i;
 }
 
+/*private Token[] readTokens(uinteger pos, bool forward = true){
+	integer i;
+	uinteger till = tokens.length;
+	Token token = tokens.read(pos);
+	if (forward){
+		for (i=pos;i<till;i++){
+
+		}
+	}
+}*/
+
 //Functions below is where the 'magic' happens
 private bool toTokens(List!string script){
 	if (tokens){
@@ -204,10 +226,11 @@ private bool toTokens(List!string script){
 	}
 	tokens = new List!Token;
 	uinteger i, lineno, till = script.length, addFrom;
-	uinteger tmInt;
+	//addFrom stores position in line from where token starts
+	uinteger tmInt;//To store temp function returns
 	string line;
 	Token token;
-	uinteger tokenCount;
+	uinteger tokenCount;//count of tokens added from current line, needed for error reporting
 	bool hasError = false;
 	lineLength.length = till;
 	//First convert everything to 'tokens', TokenType will be set later
@@ -243,7 +266,7 @@ private bool toTokens(List!string script){
 					hasError = true;
 					break;
 				}else if (addFrom!=i){
-					addError(i,"Unexpected string");
+					addError(i,"Unexpected token");
 					hasError = true;
 					break;
 				}else{
@@ -308,6 +331,7 @@ private bool toTokens(List!string script){
 		goto skipConversion;
 	}
 	//Now put in Token Types
+	Token tmpToken;
 	till = tokens.length;
 	for (i=0; i<till; i++){
 		token = tokens.read(i);
@@ -316,8 +340,17 @@ private bool toTokens(List!string script){
 			token.type = TokenType.Number;
 			tokens.set(i,token);
 		}else if (token.token.isAlphaNum){
-			//Identifiers
-			token.type = TokenType.Identifier;
+			//Identifiers & FunctionCall & FunctionCall
+			if (i<till-1){
+				tmpToken = tokens.read(i+1).token;
+				if (tmpToken.token=="("){
+					token.type = TokenType.FunctionCall;
+				}else if (tmpToken.token="{"){
+					token.type = TokenType.FunctionDef;
+				}
+			}else{
+				token.type = TokenType.Identifier;
+			}
 			tokens.set(i,token);
 		}else if (token.token.isOperator){
 			//Operator
@@ -345,6 +378,10 @@ private bool toTokens(List!string script){
 			//string
 			token.type = TokenType.String;
 			tokens.set(i,token);
+		}else if (isDataType(token.token)){
+			//is a data type
+			token.type = TokenType.DataType;
+			tokens.set(i,token);
 		}
 	}
 
@@ -360,12 +397,60 @@ private void toFunctionCalls(){
 
 	List!var vars = new List!var;
 	List!var globalVars = new List!var;
-	uinteger i, till;
+	uinteger i, till=tokens.length;
+	Token token;
+	TokenType[] expectedTokens = [TokenType.Identifier, TokenType.DataType];
+	bool hasError = false;
+	//^either it has to be a function name, or globalvar
 
-	till = tokens.length;
 	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		//die at unexpected tokens
+		if (!expectedTokens.hasElement(token.type)){
+			addError(i,"Unexpected token");
+			hasError = true;
+			break;//That's it! No more compiling!
+		}
+		//make sure all brackets are closed
+		if (token.type == TokenType.BracketOpen){
+			if (bracketPos(i)==-1){
+				addError(i,"Unclosed bracket");
+				hasError = true;
+				break;
+			}
+			//set next set of expectedTokens
+			if (["(","{"].hasElement(token.token)){
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier];//common expectation
+				if (token.token=="("){
+					expectedTokens += [TokenType.Number,TokenType.String];
+				}else{
+					expectedTokens += [TokenType.DataType];
+				}
+			}else{//is obviously a square bracket
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number];
+			}
 
+		}else if (token.type == TokenType.BracketClose){
+			if (bracketPos(i,false)==-1){
+				addError(i,"Unopened bracket");
+				hasError = true;
+				break;
+			}
+			//set next set of expectedTokens
+			if ([")","}"].hasElement(token.token)){
+				expectedTokens = [TokenType.BracketClose];//common expectation
+				if (token.token==")"){
+					expectedTokens += [TokenType.Comma,TokenType.Operator,TokenType.StatementEnd];
+				}else{
+					expectedTokens += [TokenType.DataType,TokenType.FunctionCall,TokenType.FunctionDef,
+						TokenType.Identifier];
+				}
+			}else{//is obviously a square bracket
+				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,TokenType.StatementEnd];
+			}
+		}
 	}
+
 	
 	delete vars;
 	delete globalVars;
@@ -375,11 +460,8 @@ private void toFunctionCalls(){
 /*
 Sample QScript:
 main{
-	new(
-		var1,
-		var2,
-		var3
-	);//A comment
+	newString someStringVar;//It's a string!
+	double 
 }
 
 */
