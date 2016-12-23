@@ -406,7 +406,6 @@ private bool toTokens(List!string script){
 		if (token.token.isNum){
 			//Numbers:
 			token.type = TokenType.Number;
-			tokens.set(i,token);
 		}else if (token.token.isIdentifier){
 			//Identifiers & FunctionCall & FunctionCall
 			if (i<till-1){
@@ -419,11 +418,9 @@ private bool toTokens(List!string script){
 			}else{
 				token.type = TokenType.Identifier;
 			}
-			tokens.set(i,token);
 		}else if (token.token.isOperator){
 			//Operator
 			token.type = TokenType.Operator;
-			tokens.set(i,token);
 		}else if (token.token.length == 1){
 			//comma, semicolon, brackets
 			switch (token.token[0]){
@@ -436,24 +433,22 @@ private bool toTokens(List!string script){
 				default:
 					if (isBracketOpen(token.token[0])){
 						token.type = TokenType.BracketOpen;
-					}else if (isBracketOpen(token.token[0])){
+					}else if (isBracketClose(token.token[0])){
 						token.type = TokenType.BracketClose;
 					}
 					break;
 			}
-			tokens.set(i,token);
 		}else if (token.token[0]=='"'){
 			//string
 			token.type = TokenType.String;
-			tokens.set(i,token);
 		}else if (isDataType(token.token)){
 			//is a data type
 			token.type = TokenType.DataType;
-			tokens.set(i,token);
 		}else if (isKeyword(token.token)){
 			//Keyword
 			token.type = TokenType.Keyword;
 		}
+		tokens.set(i,token);
 	}
 
 skipConversion:
