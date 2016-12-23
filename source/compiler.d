@@ -186,7 +186,7 @@ private bool isBracketOpen(char b){
 }
 
 private bool isBracketClose(char b){
-	return ['{','[','('].hasElement(b);
+	return ['}',']',')'].hasElement(b);
 }
 
 private DataType strToDataType(string s){
@@ -348,6 +348,8 @@ private bool toTokens(List!string script){
 					tokens.add(token);
 					tokenCount++;
 					addFrom = tmInt+1;
+					i = tmInt;
+					continue;
 				}
 			}
 			//at bracket end/open & comma & semicolon
@@ -720,7 +722,7 @@ debug{
 		foreach(token; tokens.toArray){
 			writeln(token.token,"\t\t",toks[token.type]);
 		}
-		writeln("Press enter to start syntax check");
+		writeln("Press enter to start syntax check");readln;
 		if (checkSyntax){
 			writeln("There were errors:");
 			foreach(error; errors.toArray){
