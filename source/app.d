@@ -60,5 +60,4 @@ void main(string[] args){
 	}
 	delete scr;
 	delete scrF;*/
-
 }

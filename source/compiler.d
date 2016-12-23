@@ -61,6 +61,40 @@ private void addError(uinteger pos, string msg){
 	errors.add("Line: "~to!string(i+1)~": "~msg);
 }
 
+private void incLineLength(uinteger pos, uinteger n=1){
+	uinteger i = 0, chars = 0;
+	for (; i<=pos;i++){
+		if (chars>i || chars==i){
+			break;
+		}else{
+			chars+=lineLength[i];
+		}
+	}
+	lineLength[i] += n;
+}
+
+private void decLineLength(uinteger pos, uinteger n=1){
+	uinteger i = 0, chars = 0;
+	for (; i<=pos;i++){
+		if (chars>i || chars==i){
+			break;
+		}else{
+			chars+=lineLength[i];
+		}
+	}
+	//Decrement could be from several lines:
+	while (n>0){
+		if (lineLength[i]<n){
+			n -= lineLength[i];
+			lineLength[i] = 0;
+		}else{
+			lineLength[i] -= n;
+			n = 0;
+		}
+		i++;
+	}
+}
+
 private integer strEnd(string s, uinteger i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
@@ -113,7 +147,7 @@ private bool isNum(string s){
 	return r;
 }
 
-private bool isAlphaNum(string s){
+private bool isIdentifier(string s){
 	ubyte aStart = cast(ubyte)'a';
 	ubyte aEnd = cast(ubyte)'z';
 	s = lowercase(s);
@@ -122,7 +156,7 @@ private bool isAlphaNum(string s){
 	for (uinteger i=0;i<s.length;i++){
 		cur = cast(ubyte) s[i];
 		if (cur<aStart || cur>aEnd){
-			if ("0123456789".canFind(s[i])==false){
+			if ("0123456789_".canFind(s[i])==false){
 				r=false;
 				break;
 			}
@@ -362,7 +396,7 @@ private bool toTokens(List!string script){
 			//Numbers:
 			token.type = TokenType.Number;
 			tokens.set(i,token);
-		}else if (token.token.isAlphaNum){
+		}else if (token.token.isIdentifier){
 			//Identifiers & FunctionCall & FunctionCall
 			if (i<till-1){
 				tmpToken = tokens.read(i+1);
@@ -415,17 +449,14 @@ skipConversion:
 	return hasError;
 }
 
-private void toFunctionCalls(){
-
+private bool checkSyntax(){
 	List!string vars = new List!string;
 	List!DataType varTypes = new List!DataType;
-	uinteger i, till=tokens.length;
-	Token token;
-	Token[1] tmpToken;
-	TokenType[] expectedTokens = [TokenType.FunctionDef];//expect a functionDef
+	uinteger i, till = tokens.length;
 	bool hasError = false;
-	uinteger blockDepth = 0;
-	//^either it has to be a function name, or globalvar
+	uinteger blockDepth;
+	Token token, tmpToken;
+	TokenType[] expectedTokens = [TokenType.FunctionDef];
 
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
@@ -452,7 +483,7 @@ private void toFunctionCalls(){
 			}else{//if it ain't a round or a square, then it is obviously a square bracket
 				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number];
 			}
-
+			
 		}else if (token.type == TokenType.BracketClose){
 			if (bracketPos(i,false)==-1){
 				addError(i,"closing an unopened bracket");
@@ -475,7 +506,7 @@ private void toFunctionCalls(){
 				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
 					TokenType.StatementEnd];
 			}
-
+			
 		}else if (token.type == TokenType.DataType){//is var declaration
 			uinteger j, end;
 			bool expComma = false;
@@ -496,14 +527,14 @@ private void toFunctionCalls(){
 				break;
 			}
 			for (j=i+2;j<end;j++){
-				tmpToken[0] = tokens.read(j);
-				if (tmpToken[0].type!=TokenType.Identifier){
+				tmpToken = tokens.read(j);
+				if (tmpToken.type!=TokenType.Identifier){
 					if (!expComma){
 						//it should've been an identifier, but it wasn't
 						addError(i+1,"identifier expected in variable declaration");
 						hasError = true;
 						break;
-					}else if (tmpToken[0].type!=TokenType.Comma){
+					}else if (tmpToken.type!=TokenType.Comma){
 						//comma was expected, but it wasn't there :(
 						addError(i+1,"comma must be used to separate variable names in declaration");
 						hasError = true;
@@ -512,11 +543,87 @@ private void toFunctionCalls(){
 						//comma was expected, and it was there :)
 						expComma = false;
 					}
-				}else if (tmpToken[0].type==TokenType.Identifier){
-					vars.add(tmpToken[0].token);
-					varTypes.add(tmpToken[0].token.strToDataType);
+				}else if (tmpToken.type==TokenType.Identifier){
+					vars.add(tmpToken.token);
+					varTypes.add(tmpToken.token.strToDataType);
 					expComma = true;
 				}
+			}
+			if (hasError){
+				break;
+			}
+			i=end+1;
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
+				TokenType.Identifier];
+			continue;//to skip the semicolon at end
+			
+		}else if (token.type == TokenType.Comma){
+			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.Number,TokenType.String];
+			
+		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef ||
+			token.type == TokenType.Keyword){
+			expectedTokens = [TokenType.BracketOpen];
+			
+		}else if (token.type == TokenType.Identifier){
+			//Check if is a var
+			if (vars.indexOf(token.token)==-1){
+				//is not a declared var
+				addError(i, "Variable was not declared.");
+				hasError = true;
+				//isn't a 'critical' error, just add it to list-of-errors, and don't generate bytecode
+			}
+			//set next set of tokens
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd];
+			
+		}else if (token.type == TokenType.Number || token.type == TokenType.String){
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd];
+			
+		}else if (token.type == TokenType.Operator){
+			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.Number,TokenType.String];
+			
+		}else if (token.type == TokenType.StatementEnd){
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
+				TokenType.Identifier];
+		}
+	}
+	delete vars;
+	delete varTypes;
+
+	return hasError;
+}
+
+private void toFunctionCalls(){
+
+	List!string vars = new List!string;
+	List!DataType varTypes = new List!DataType;
+	uinteger i, till=tokens.length;
+	Token token;
+	Token[2] tmpToken;
+	TokenType[] expectedTokens = [TokenType.FunctionDef];//expect a functionDef
+	bool hasError = false;
+	uinteger blockDepth = 0;
+
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token.type == TokenType.BracketClose && token.token=="}"){
+			blockDepth--;
+			if (blockDepth==0){
+				vars.clear;
+				varTypes.clear;
+			}
+			expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
+				TokenType.FunctionDef,TokenType.Identifier,TokenType.Keyword];
+		}
+		if (token.type == TokenType.DataType){//is var declaration
+			uinteger end = bracketPos(i+1);
+			for (i+=2;i<end;i+=2){
+				tmpToken[0] = tokens.read(i);
+				vars.add(tmpToken[0].token);
+				varTypes.add(tmpToken[0].token.strToDataType);
 			}
 			if (hasError){
 				break;
@@ -551,6 +658,46 @@ private void toFunctionCalls(){
 
 		}else if (token.type == TokenType.Operator){
 			//TODO: Implement Operators in compiler!
+			Token[][2] operand;
+			uinteger j;
+			if (!["<","<=","==",">=",">","="].hasElement(token.token)){
+				//ain't a comparison operator
+				//read first operand 'a'+b -> 'a'
+				for (j=i-1;j>=0;j--){
+					tmpToken[0] = tokens.read(j);
+					if ([TokenType.Comma,TokenType.BracketOpen].hasElement(tmpToken[0].type)){
+						break;
+					}
+				}
+				operand[0] = tokens.readRange(j+1,i);
+				//read second operand a+'b' -> 'b'
+				for (j=i+1;j<till;j++){
+					tmpToken[0] = tokens.read(j);
+					if ([TokenType.Comma,TokenType.BracketClose].hasElement(tmpToken[0].type)){
+						break;
+					}
+				}
+				operand[1] = tokens.readRange(i+1,j);
+				//Insert tokens that make the operator into a function call
+				tmpToken[0].token = "__"~token.token;
+				tmpToken[0].type = TokenType.FunctionCall;
+				tmpToken[1].token = "(";
+				tmpToken[1].type = TokenType.BracketOpen;
+				j = i-operand[0].length;//cause i-operand[0].length is required twice.
+				tokens.insert(j,tmpToken);
+				incLineLength(j,2);
+				//change the operator to comma
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				tokens.set(i,tmpToken[0]);
+				//Insert a bracket end
+				tmpToken[0].token = ")";
+				tmpToken[0].type = TokenType.BracketClose;
+				j = i+operand[0].length;//cause i+operand[0].length is required twice.
+				tokens.insert(j,[tmpToken[0]]);
+				incLineLength(j,1);
+				//That deals with all arithematic (math) & string concatenation
+			}
 
 		}else if (token.type == TokenType.StatementEnd){
 			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
