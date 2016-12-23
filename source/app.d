@@ -62,7 +62,7 @@ void main(string[] args){
 	delete scrF;*/
 	debug{
 		import compiler;
-		debugCompiler("/home/nafees/Desktop");
+		debugCompiler("/home/nafees/Desktop/q.qod");
 		readln;
 	}
 }
