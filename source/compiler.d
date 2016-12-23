@@ -198,17 +198,17 @@ private DataType strToDataType(string s){
 	}
 	return r;
 }
-/*//Not used
-private string DataTypeToStr(DataType dat){
-	string r;
-	if (dat==DataType.Double){
-		r = "double";
-	}else if (dat==DataType.String){
-		r = "string";
+debug{
+	private string DataTypeToStr(DataType dat){
+		string r;
+		if (dat==DataType.Double){
+			r = "double";
+		}else if (dat==DataType.String){
+			r = "string";
+		}
+		return r;
 	}
-	return r;
 }
-*/
 private integer bracketPos(uinteger start, bool forward = true){
 	List!BracketType bracks = new List!BracketType;
 	integer i;
@@ -265,16 +265,33 @@ private integer bracketPos(uinteger start, bool forward = true){
 	return i;
 }
 
-/*private Token[] readTokens(uinteger pos, bool forward = true){
+private Token[] readOperand(uinteger pos, bool forward = true){
 	integer i;
-	uinteger till = tokens.length;
-	Token token = tokens.read(pos);
+	Token[] r;
 	if (forward){
+		uinteger till = tokens.length;
 		for (i=pos;i<till;i++){
-
+			Token token = tokens.read(i);
+			if ([TokenType.BracketClose,TokenType.Comma,TokenType.StatementEnd].hasElement(token.type)){
+				break;
+			}else if (token.type == TokenType.BracketOpen){
+				i = bracketPos(i);
+			}
 		}
+		r = tokens.readRange(pos,i);
+	}else{
+		for (i=pos;i>=0;i--){
+			Token token = tokens.read(i);
+			if ([TokenType.BracketOpen,TokenType.Comma,TokenType.StatementEnd].hasElement(token.type)){
+				break;
+			}else if (token.type == TokenType.BracketClose){
+				i = bracketPos(i,false);
+			}
+		}
+		r = tokens.readRange(i+1,pos+1);
 	}
-}*/
+	return r;
+}
 
 //Functions below is where the 'magic' happens
 private bool toTokens(List!string script){
@@ -446,6 +463,11 @@ private bool toTokens(List!string script){
 	}
 
 skipConversion:
+	if (hasError){
+		hasError = false;
+	}else{
+		hasError = true;
+	}
 	return hasError;
 }
 
@@ -511,7 +533,7 @@ private bool checkSyntax(){
 			uinteger j, end;
 			bool expComma = false;
 			if (tokens.read(i+1).token!="("){
-				addError(i+1,"variable declarations must be enclosed in paranthesis");
+				addError(i+1,"variable definitions must be enclosed in paranthesis");
 				hasError = true;
 				break;
 			}
@@ -531,12 +553,12 @@ private bool checkSyntax(){
 				if (tmpToken.type!=TokenType.Identifier){
 					if (!expComma){
 						//it should've been an identifier, but it wasn't
-						addError(i+1,"identifier expected in variable declaration");
+						addError(i+1,"identifier expected in variable definition");
 						hasError = true;
 						break;
 					}else if (tmpToken.type!=TokenType.Comma){
 						//comma was expected, but it wasn't there :(
-						addError(i+1,"comma must be used to separate variable names in declaration");
+						addError(i+1,"comma must be used to separate variable names in definition");
 						hasError = true;
 						break;
 					}else{
@@ -569,7 +591,7 @@ private bool checkSyntax(){
 			//Check if is a var
 			if (vars.indexOf(token.token)==-1){
 				//is not a declared var
-				addError(i, "Variable was not declared.");
+				addError(i, "variable was not defined");
 				hasError = true;
 				//isn't a 'critical' error, just add it to list-of-errors, and don't generate bytecode
 			}
@@ -593,93 +615,52 @@ private bool checkSyntax(){
 	delete vars;
 	delete varTypes;
 
+	if (hasError){
+		hasError = false;
+	}else{
+		hasError = true;
+	}
 	return hasError;
 }
 
-private void toFunctionCalls(){
-
-	List!string vars = new List!string;
-	List!DataType varTypes = new List!DataType;
+private void operatorsToFunctionCalls(){
 	uinteger i, till=tokens.length;
 	Token token;
 	Token[2] tmpToken;
-	TokenType[] expectedTokens = [TokenType.FunctionDef];//expect a functionDef
-	bool hasError = false;
 	uinteger blockDepth = 0;
+	Token[][2] operand;
+	uinteger j;
 
-	for (i=0;i<till;i++){
-		token = tokens.read(i);
-		if (token.type == TokenType.BracketClose && token.token=="}"){
-			blockDepth--;
-			if (blockDepth==0){
-				vars.clear;
-				varTypes.clear;
-			}
-			expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
-				TokenType.FunctionDef,TokenType.Identifier,TokenType.Keyword];
-		}
-		if (token.type == TokenType.DataType){//is var declaration
-			uinteger end = bracketPos(i+1);
-			for (i+=2;i<end;i+=2){
-				tmpToken[0] = tokens.read(i);
-				vars.add(tmpToken[0].token);
-				varTypes.add(tmpToken[0].token.strToDataType);
-			}
-			if (hasError){
-				break;
-			}
-			i=end+2;
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
-				TokenType.Identifier];
-
-		}else if (token.type == TokenType.Comma){
-			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
-				TokenType.Number,TokenType.String];
-
-		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef ||
-				token.type == TokenType.Keyword){
-			expectedTokens = [TokenType.BracketOpen];
-
-		}else if (token.type == TokenType.Identifier){
-			//Check if is a var
-			if (vars.indexOf(token.token)==-1){
-				//is not a declared var
-				addError(i, "Variable was not declared.");
-				hasError = true;
-				//isn't a 'critical' error, just add it to list-of-errors, and don't generate bytecode
-			}//No else needed to handle variable, byteCode converter will do
-			//set next set of tokens
-			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
-				TokenType.StatementEnd];
-
-		}else if (token.type == TokenType.Number || token.type == TokenType.String){
-			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
-				TokenType.StatementEnd];
-
-		}else if (token.type == TokenType.Operator){
-			//TODO: Implement Operators in compiler!
-			Token[][2] operand;
-			uinteger j;
-			if (!["<","<=","==",">=",">","="].hasElement(token.token)){
-				//ain't a comparison operator
+	string[string][] operators;//[operator priority][operator name]->compiled name
+	operators.length = 2;
+	operators[0] = [//top priority
+		"/":"_/",
+		"*":"_*",
+		"-":"_-",
+		"+":"_+",
+		"%":"_%",
+		"~":"_~",
+	];
+	operators[1] = [//second
+		"==":"_==",
+		">=":"_>=",
+		"<=":"_<=",
+		">":"_>",
+		"<":"_<"
+	];
+	/*Note to future self: `=` operator is not compiled here,
+	 *there is the `setv` instruction for it, so it is compiled
+	 *by the `toByteCode` function!*/
+	foreach(curOperators; operators){//compile all priority functions, one by one
+		for (i=0;i<till;i++){
+			token = tokens.read(i);
+			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
-				for (j=i-1;j>=0;j--){
-					tmpToken[0] = tokens.read(j);
-					if ([TokenType.Comma,TokenType.BracketOpen].hasElement(tmpToken[0].type)){
-						break;
-					}
-				}
-				operand[0] = tokens.readRange(j+1,i);
+				operand[0] = readOperand(i-1,false);
 				//read second operand a+'b' -> 'b'
-				for (j=i+1;j<till;j++){
-					tmpToken[0] = tokens.read(j);
-					if ([TokenType.Comma,TokenType.BracketClose].hasElement(tmpToken[0].type)){
-						break;
-					}
-				}
-				operand[1] = tokens.readRange(i+1,j);
+				operand[1] = readOperand(i+1);
 				//Insert tokens that make the operator into a function call
-				tmpToken[0].token = "__"~token.token;
+				tmpToken[0].token = curOperators[token.token];
 				tmpToken[0].type = TokenType.FunctionCall;
 				tmpToken[1].token = "(";
 				tmpToken[1].type = TokenType.BracketOpen;
@@ -696,18 +677,53 @@ private void toFunctionCalls(){
 				j = i+operand[0].length;//cause i+operand[0].length is required twice.
 				tokens.insert(j,[tmpToken[0]]);
 				incLineLength(j,1);
-				//That deals with all arithematic (math) & string concatenation
+				
 			}
-
-		}else if (token.type == TokenType.StatementEnd){
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
-				TokenType.Identifier];
 		}
 	}
 
-	
-	delete vars;
-	delete varTypes;
+
+}
+
+debug{
+	void debugCompiler(string fname){
+		import std.stdio;
+		List!string scr = new List!string;
+		scr.loadArray(fileToArray(fname));
+		writeln("Converting to tokens, press enter to begin...");readln;
+		if (!toTokens(scr)){
+			writeln("There were errors:");
+			foreach(error; errors.toArray){
+				writeln(error);
+			}
+			writeln("press enter to exit...");readln;
+			goto skip;
+		}
+		delete scr;
+		writeln("Conversion complete, press enter to display tokens...");readln;
+		foreach(token; tokens.toArray){
+			writeln(token.token,"\t\t",token.type.DataTypeToStr);
+		}
+		writeln("Press enter to start syntax check");
+		if (checkSyntax){
+			writeln("There were errors:");
+			foreach(error; errors.toArray){
+				writeln(error);
+			}
+			writeln("press enter to exit...");readln;
+			goto skip;
+		}
+		writeln("Syntax check complete, no errors found,\n",
+			" press enter to start conversion from operators to functions...");readln;
+		operatorsToFunctionCalls;
+		writeln("Conversion complete, press enter to display tokens...");readln;
+		foreach(token; tokens.toArray){
+			writeln(token.token,"\t\t",token.type.DataTypeToStr);
+		}
+		writeln("test ended!");
+
+	skip:
+	}
 }
 
 
