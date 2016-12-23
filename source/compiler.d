@@ -690,6 +690,22 @@ debug{
 		import std.stdio;
 		List!string scr = new List!string;
 		scr.loadArray(fileToArray(fname));
+
+		string[TokenType] toks = [
+			TokenType.BracketClose:"Bracket Close",
+			TokenType.BracketOpen:"Bracket Open",
+			TokenType.Comma:"Comma",
+			TokenType.DataType:"Data Type",
+			TokenType.FunctionCall:"Function Call",
+			TokenType.FunctionDef:"Function Definition",
+			TokenType.Identifier:"Identifier",
+			TokenType.Keyword:"Keyword",
+			TokenType.Number:"Number",
+			TokenType.Operator:"Operator",
+			TokenType.StatementEnd:"Semicolon",
+			TokenType.String:"String"
+		];
+
 		writeln("Converting to tokens, press enter to begin...");readln;
 		if (!toTokens(scr)){
 			writeln("There were errors:");
@@ -702,7 +718,7 @@ debug{
 		delete scr;
 		writeln("Conversion complete, press enter to display tokens...");readln;
 		foreach(token; tokens.toArray){
-			writeln(token.token,"\t\t",token.type.DataTypeToStr);
+			writeln(token.token,"\t\t",toks[token.type]);
 		}
 		writeln("Press enter to start syntax check");
 		if (checkSyntax){
@@ -718,7 +734,7 @@ debug{
 		operatorsToFunctionCalls;
 		writeln("Conversion complete, press enter to display tokens...");readln;
 		foreach(token; tokens.toArray){
-			writeln(token.token,"\t\t",token.type.DataTypeToStr);
+			writeln(token.token,"\t\t",toks[token.type]);
 		}
 		writeln("test ended!");
 
