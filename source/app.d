@@ -60,4 +60,9 @@ void main(string[] args){
 	}
 	delete scr;
 	delete scrF;*/
+	debug{
+		import compiler;
+		debugCompiler("/home/nafees/Desktop");
+		readln;
+	}
 }
