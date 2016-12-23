@@ -51,6 +51,7 @@ private struct Token{
 //These functions below are used by compiler
 private void addError(uinteger pos, string msg){
 	uinteger i = 0, chars = 0;
+	pos++;
 	for (; chars<pos;i++){
 		chars+=lineLength[i];
 	}
@@ -59,12 +60,13 @@ private void addError(uinteger pos, string msg){
 
 private void incLineLength(uinteger pos, uinteger n=1){
 	uinteger i = 0, chars = 0;
+	pos++;
 	for (; chars<pos;i++){
 		chars+=lineLength[i];
 	}
 	lineLength[i] += n;
 }
-
+/*
 private void decLineLength(uinteger pos, uinteger n=1){
 	uinteger i = 0, chars = 0;
 	for (; i<=pos;i++){
@@ -86,7 +88,7 @@ private void decLineLength(uinteger pos, uinteger n=1){
 		i++;
 	}
 }
-
+*/
 private integer strEnd(string s, uinteger i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
@@ -597,7 +599,7 @@ private bool checkSyntax(){
 			
 		}else if (token.type == TokenType.StatementEnd){
 			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
-				TokenType.Identifier];
+				TokenType.Identifier,TokenType.BracketClose];
 		}
 	}
 	delete vars;
