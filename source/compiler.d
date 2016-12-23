@@ -411,6 +411,9 @@ private bool toTokens(List!string script){
 		}else if (isKeyword(token.token)){//this has to come before isIdentifier! Don't mess with it!
 			//Keyword
 			token.type = TokenType.Keyword;
+		}else if (isDataType(token.token)){
+			//is a data type
+			token.type = TokenType.DataType;
 		}else if (token.token.isIdentifier){
 			//Identifiers & FunctionCall & FunctionCall
 			token.type = TokenType.Identifier;
@@ -428,9 +431,6 @@ private bool toTokens(List!string script){
 		}else if (token.token[0]=='"'){
 			//string
 			token.type = TokenType.String;
-		}else if (isDataType(token.token)){
-			//is a data type
-			token.type = TokenType.DataType;
 		}else if (token.token.length == 1){
 			//comma, semicolon, brackets
 			switch (token.token[0]){
