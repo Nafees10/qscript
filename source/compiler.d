@@ -24,10 +24,8 @@ private enum BracketType{
 	Block
 }
 
-private enum DataTypes{
+private enum DataType{
 	String,
-	DoubleArray,
-	Char,
 	Double
 }
 
@@ -42,7 +40,8 @@ private enum TokenType{
 	BracketOpen,
 	BracketClose,
 	FunctionCall,
-	FunctionDef
+	FunctionDef,
+	Keyword
 }
 
 private struct Token{
@@ -144,6 +143,10 @@ private bool isDataType(string s){
 	return ["double","doubleArray","char","string"].hasElement(s);
 }
 
+private bool isKeyword(string s){
+	return ["if","while","setLength","getLength","array"].hasElement(s);
+}
+
 private bool isBracketOpen(char b){
 	return ['{','[','('].hasElement(b);
 }
@@ -152,6 +155,26 @@ private bool isBracketClose(char b){
 	return ['{','[','('].hasElement(b);
 }
 
+private DataType strToDataType(string s){
+	DataType r;
+	if (s=="double"){
+		r = DataType.Double;
+	}else if (s=="string"){
+		r = DataType.String;
+	}
+	return r;
+}
+/*//Not used
+private string DataTypeToStr(DataType dat){
+	string r;
+	if (dat==DataType.Double){
+		r = "double";
+	}else if (dat==DataType.String){
+		r = "string";
+	}
+	return r;
+}
+*/
 private integer bracketPos(uinteger start, bool forward = true){
 	List!BracketType bracks = new List!BracketType;
 	integer i;
@@ -175,7 +198,7 @@ private integer bracketPos(uinteger start, bool forward = true){
 				if (bracks.readLast == brackCloseIdent[curToken]){
 					bracks.removeLast;
 				}else{
-					addError(i," Wrong bracket closed.");
+					addError(i,"brackets order is wrong, first opened must be last closed");
 					i = -1;
 					break;
 				}
@@ -193,7 +216,7 @@ private integer bracketPos(uinteger start, bool forward = true){
 				if (bracks.readLast == brackOpenIdent[curToken]){
 					bracks.removeLast;
 				}else{
-					addError(i," Wrong bracket closed.");
+					addError(i,"brackets order is wrong, first opened must be last closed");
 					i = -1;
 					break;
 				}
@@ -262,11 +285,11 @@ private bool toTokens(List!string script){
 			if (line[i]=='"'){
 				tmInt = line.strEnd(i);
 				if (tmInt==-1){
-					addError(i,"Unterminated string");
+					addError(i,"string must be terminated with a \"");
 					hasError = true;
 					break;
 				}else if (addFrom!=i){
-					addError(i,"Unexpected token");
+					addError(i,"string at enexpected position");
 					hasError = true;
 					break;
 				}else{
@@ -327,11 +350,11 @@ private bool toTokens(List!string script){
 			break;
 		}
 	}
+	Token tmpToken;
 	if (hasError){
 		goto skipConversion;
 	}
 	//Now put in Token Types
-	Token tmpToken;
 	till = tokens.length;
 	for (i=0; i<till; i++){
 		token = tokens.read(i);
@@ -342,10 +365,10 @@ private bool toTokens(List!string script){
 		}else if (token.token.isAlphaNum){
 			//Identifiers & FunctionCall & FunctionCall
 			if (i<till-1){
-				tmpToken = tokens.read(i+1).token;
+				tmpToken = tokens.read(i+1);
 				if (tmpToken.token=="("){
 					token.type = TokenType.FunctionCall;
-				}else if (tmpToken.token="{"){
+				}else if (tmpToken.token=="{"){
 					token.type = TokenType.FunctionDef;
 				}
 			}else{
@@ -382,6 +405,9 @@ private bool toTokens(List!string script){
 			//is a data type
 			token.type = TokenType.DataType;
 			tokens.set(i,token);
+		}else if (isKeyword(token.token)){
+			//Keyword
+			token.type = TokenType.Keyword;
 		}
 	}
 
@@ -390,70 +416,151 @@ skipConversion:
 }
 
 private void toFunctionCalls(){
-	struct var{
-		DataTypes type;
-		string name;
-	}
 
-	List!var vars = new List!var;
-	List!var globalVars = new List!var;
+	List!string vars = new List!string;
+	List!DataType varTypes = new List!DataType;
 	uinteger i, till=tokens.length;
 	Token token;
-	TokenType[] expectedTokens = [TokenType.Identifier, TokenType.DataType];
+	Token[1] tmpToken;
+	TokenType[] expectedTokens = [TokenType.FunctionDef];//expect a functionDef
 	bool hasError = false;
+	uinteger blockDepth = 0;
 	//^either it has to be a function name, or globalvar
 
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
 		//die at unexpected tokens
 		if (!expectedTokens.hasElement(token.type)){
-			addError(i,"Unexpected token");
+			addError(i,"unexpected token found");
 			hasError = true;
-			break;//That's it! No more compiling!
+			break;//That's it! No more compiling, first fix this, then I'll compile!
 		}
 		//make sure all brackets are closed
 		if (token.type == TokenType.BracketOpen){
 			if (bracketPos(i)==-1){
-				addError(i,"Unclosed bracket");
+				addError(i,"bracket left unclosed");
 				hasError = true;
 				break;
 			}
 			//set next set of expectedTokens
-			if (["(","{"].hasElement(token.token)){
-				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier];//common expectation
-				if (token.token=="("){
-					expectedTokens += [TokenType.Number,TokenType.String];
-				}else{
-					expectedTokens += [TokenType.DataType];
-				}
-			}else{//is obviously a square bracket
+			if (token.token=="("){
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number,
+					TokenType.String,TokenType.BracketOpen];
+			}else if (token.token=="{"){
+				blockDepth++;
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.DataType];
+			}else{//if it ain't a round or a square, then it is obviously a square bracket
 				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number];
 			}
 
 		}else if (token.type == TokenType.BracketClose){
 			if (bracketPos(i,false)==-1){
-				addError(i,"Unopened bracket");
+				addError(i,"closing an unopened bracket");
 				hasError = true;
 				break;
 			}
 			//set next set of expectedTokens
-			if ([")","}"].hasElement(token.token)){
-				expectedTokens = [TokenType.BracketClose];//common expectation
-				if (token.token==")"){
-					expectedTokens += [TokenType.Comma,TokenType.Operator,TokenType.StatementEnd];
-				}else{
-					expectedTokens += [TokenType.DataType,TokenType.FunctionCall,TokenType.FunctionDef,
-						TokenType.Identifier];
+			if (token.token==")"){
+				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+					TokenType.StatementEnd,TokenType.BracketOpen];//BracketOpen cuz `if(...){...}`
+			}else if (token.token=="}"){
+				blockDepth--;
+				if (blockDepth==0){
+					vars.clear;
+					varTypes.clear;
 				}
+				expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
+					TokenType.FunctionDef,TokenType.Identifier,TokenType.Keyword];
 			}else{//is obviously a square bracket
-				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,TokenType.StatementEnd];
+				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+					TokenType.StatementEnd];
 			}
+
+		}else if (token.type == TokenType.DataType){//is var declaration
+			uinteger j, end;
+			bool expComma = false;
+			if (tokens.read(i+1).token!="("){
+				addError(i+1,"variable declarations must be enclosed in paranthesis");
+				hasError = true;
+				break;
+			}
+			end = bracketPos(i+1);
+			if (end==-1){
+				addError(i+1,"bracket left unclosed");
+				hasError = true;
+				break;
+			}
+			if (end+1>=till || tokens.read(end+1).type!=TokenType.StatementEnd){
+				addError(end+1,"semicolon expected at end of statement");
+				hasError = true;
+				break;
+			}
+			for (j=i+2;j<end;j++){
+				tmpToken[0] = tokens.read(j);
+				if (tmpToken[0].type!=TokenType.Identifier){
+					if (!expComma){
+						//it should've been an identifier, but it wasn't
+						addError(i+1,"identifier expected in variable declaration");
+						hasError = true;
+						break;
+					}else if (tmpToken[0].type!=TokenType.Comma){
+						//comma was expected, but it wasn't there :(
+						addError(i+1,"comma must be used to separate variable names in declaration");
+						hasError = true;
+						break;
+					}else{
+						//comma was expected, and it was there :)
+						expComma = false;
+					}
+				}else if (tmpToken[0].type==TokenType.Identifier){
+					vars.add(tmpToken[0].token);
+					varTypes.add(tmpToken[0].token.strToDataType);
+					expComma = true;
+				}
+			}
+			if (hasError){
+				break;
+			}
+			i=end+2;
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
+				TokenType.Identifier];
+
+		}else if (token.type == TokenType.Comma){
+			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.Number,TokenType.String];
+
+		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef ||
+				token.type == TokenType.Keyword){
+			expectedTokens = [TokenType.BracketOpen];
+
+		}else if (token.type == TokenType.Identifier){
+			//Check if is a var
+			if (vars.indexOf(token.token)==-1){
+				//is not a declared var
+				addError(i, "Variable was not declared.");
+				hasError = true;
+				//isn't a 'critical' error, just add it to list-of-errors, and don't generate bytecode
+			}//No else needed to handle variable, byteCode converter will do
+			//set next set of tokens
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd];
+
+		}else if (token.type == TokenType.Number || token.type == TokenType.String){
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd];
+
+		}else if (token.type == TokenType.Operator){
+			//TODO: Implement Operators in compiler!
+
+		}else if (token.type == TokenType.StatementEnd){
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
+				TokenType.Identifier];
 		}
 	}
 
 	
 	delete vars;
-	delete globalVars;
+	delete varTypes;
 }
 
 
@@ -463,5 +570,15 @@ main{
 	newString someStringVar;//It's a string!
 	double 
 }
-
+Interpreter instructions:
+psh  - push element(s) to stack
+pop  - pop `n` elements from stack
+clr  - empty the stack, remove all elements
+pshv - push a variable's value to stack
+setv - set variable value to last element on stack
+exe  - execute function(s), don't push return to stack
+exa  - execute function(s), push retur to stack
+jmp  - jump to another index, and start execution from there, used in loops, and if
+Rules:
+An instruction can recieve dynamic amount of arguments! No limit
 */
