@@ -63,6 +63,6 @@ void main(string[] args){
 	debug{
 		import compiler;
 		debugCompiler("/home/nafees/Desktop/q.qod");
-		readln;
+		//readln;
 	}
 }

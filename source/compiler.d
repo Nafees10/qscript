@@ -463,7 +463,6 @@ skipConversion:
 
 private bool checkSyntax(){
 	List!string vars = new List!string;
-	List!DataType varTypes = new List!DataType;
 	uinteger i, till = tokens.length;
 	bool hasError = false;
 	uinteger blockDepth;
@@ -510,7 +509,6 @@ private bool checkSyntax(){
 				blockDepth--;
 				if (blockDepth==0){
 					vars.clear;
-					varTypes.clear;
 				}
 				expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
 					TokenType.FunctionDef,TokenType.Identifier,TokenType.Keyword];
@@ -557,7 +555,6 @@ private bool checkSyntax(){
 					}
 				}else if (tmpToken.type==TokenType.Identifier){
 					vars.add(tmpToken.token);
-					varTypes.add(tmpToken.token.strToDataType);
 					expComma = true;
 				}
 			}
@@ -603,7 +600,6 @@ private bool checkSyntax(){
 		}
 	}
 	delete vars;
-	delete varTypes;
 
 	if (hasError){
 		hasError = false;
