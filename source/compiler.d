@@ -406,8 +406,12 @@ private bool toTokens(List!string script){
 		if (token.token.isNum){
 			//Numbers:
 			token.type = TokenType.Number;
+		}else if (isKeyword(token.token)){//this has to come before isIdentifier! Don't mess with it!
+			//Keyword
+			token.type = TokenType.Keyword;
 		}else if (token.token.isIdentifier){
 			//Identifiers & FunctionCall & FunctionCall
+			token.type = TokenType.Identifier;
 			if (i<till-1){
 				tmpToken = tokens.read(i+1);
 				if (tmpToken.token=="("){
@@ -415,12 +419,16 @@ private bool toTokens(List!string script){
 				}else if (tmpToken.token=="{"){
 					token.type = TokenType.FunctionDef;
 				}
-			}else{
-				token.type = TokenType.Identifier;
 			}
 		}else if (token.token.isOperator){
 			//Operator
 			token.type = TokenType.Operator;
+		}else if (token.token[0]=='"'){
+			//string
+			token.type = TokenType.String;
+		}else if (isDataType(token.token)){
+			//is a data type
+			token.type = TokenType.DataType;
 		}else if (token.token.length == 1){
 			//comma, semicolon, brackets
 			switch (token.token[0]){
@@ -438,15 +446,6 @@ private bool toTokens(List!string script){
 					}
 					break;
 			}
-		}else if (token.token[0]=='"'){
-			//string
-			token.type = TokenType.String;
-		}else if (isDataType(token.token)){
-			//is a data type
-			token.type = TokenType.DataType;
-		}else if (isKeyword(token.token)){
-			//Keyword
-			token.type = TokenType.Keyword;
 		}
 		tokens.set(i,token);
 	}
