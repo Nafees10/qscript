@@ -51,24 +51,16 @@ private struct Token{
 //These functions below are used by compiler
 private void addError(uinteger pos, string msg){
 	uinteger i = 0, chars = 0;
-	for (; i<=pos;i++){
-		if (chars>i || chars==i){
-			break;
-		}else{
-			chars+=lineLength[i];
-		}
+	for (; chars<pos;i++){
+		chars+=lineLength[i];
 	}
-	errors.add("Line: "~to!string(i+1)~": "~msg);
+	errors.add("Line: "~to!string(i)~": "~msg);
 }
 
 private void incLineLength(uinteger pos, uinteger n=1){
 	uinteger i = 0, chars = 0;
-	for (; i<=pos;i++){
-		if (chars>i || chars==i){
-			break;
-		}else{
-			chars+=lineLength[i];
-		}
+	for (; chars<pos;i++){
+		chars+=lineLength[i];
 	}
 	lineLength[i] += n;
 }
@@ -691,6 +683,7 @@ debug{
 	void debugCompiler(string fname){
 		import std.stdio;
 		List!string scr = new List!string;
+		errors = new List!string;
 		scr.loadArray(fileToArray(fname));
 
 		string[TokenType] toks = [
@@ -723,7 +716,7 @@ debug{
 			writeln(token.token,"\t\t",toks[token.type]);
 		}
 		writeln("Press enter to start syntax check");readln;
-		if (checkSyntax){
+		if (!checkSyntax){
 			writeln("There were errors:");
 			foreach(error; errors.toArray){
 				writeln(error);
@@ -741,6 +734,7 @@ debug{
 		writeln("test ended!");
 
 	skip:
+		delete errors;
 	}
 }
 
