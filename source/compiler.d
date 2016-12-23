@@ -266,7 +266,8 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 		uinteger till = tokens.length;
 		for (i=pos;i<till;i++){
 			Token token = tokens.read(i);
-			if ([TokenType.BracketClose,TokenType.Comma,TokenType.StatementEnd].hasElement(token.type)){
+			if ([TokenType.BracketClose,TokenType.Comma,TokenType.StatementEnd,
+					TokenType.Operator].hasElement(token.type)){
 				break;
 			}else if (token.type == TokenType.BracketOpen){
 				i = bracketPos(i);
@@ -276,7 +277,8 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 	}else{
 		for (i=pos;i>=0;i--){
 			Token token = tokens.read(i);
-			if ([TokenType.BracketOpen,TokenType.Comma,TokenType.StatementEnd].hasElement(token.type)){
+			if ([TokenType.BracketOpen,TokenType.Comma,TokenType.StatementEnd,
+					TokenType.Operator].hasElement(token.type)){
 				break;
 			}else if (token.type == TokenType.BracketClose){
 				i = bracketPos(i,false);
@@ -643,27 +645,35 @@ private void operatorsToFunctionCalls(){
 			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
 				operand[0] = readOperand(i-1,false);
+				write("\noperand[0]=");foreach(o;operand[0]){write(o.token);}
 				//read second operand a+'b' -> 'b'
 				operand[1] = readOperand(i+1);
+				write("\noperand[1]=");foreach(o;operand[1]){write(o.token);}readln;
+				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				tokens.set(i,tmpToken[0]);
+				//Then, insert a bracket at end! Don't mess with this order!
+				tmpToken[0].token = ")";
+				tmpToken[0].type = TokenType.BracketClose;
+				j = (i+operand[0].length)+1;//cause i+operand[0].length... is required twice.
+				tokens.insert(j,[tmpToken[0]]);
+				incLineLength(j,1);
 				//Insert tokens that make the operator into a function call
 				tmpToken[0].token = curOperators[token.token];
 				tmpToken[0].type = TokenType.FunctionCall;
 				tmpToken[1].token = "(";
 				tmpToken[1].type = TokenType.BracketOpen;
-				j = i-operand[0].length;//cause i-operand[0].length is required twice.
+				j = (i-operand[0].length);//cause i-operand[0].length... is required twice.
 				tokens.insert(j,tmpToken);
 				incLineLength(j,2);
-				//change the operator to comma
-				tmpToken[0].token = ",";
-				tmpToken[0].type = TokenType.Comma;
-				tokens.set(i,tmpToken[0]);
-				//Insert a bracket end
-				tmpToken[0].token = ")";
-				tmpToken[0].type = TokenType.BracketClose;
-				j = i+operand[0].length;//cause i+operand[0].length is required twice.
-				tokens.insert(j,[tmpToken[0]]);
-				incLineLength(j,1);
-				
+				writeln("<DEBUG>");
+				foreach(a; tokens.toArray){
+					writeln(a.token);
+				}
+				writeln("</DEBUG>");readln;
+				//go back a few steps
+				i-=operand[0].length+1;
 			}
 		}
 	}
@@ -723,7 +733,7 @@ debug{
 		foreach(token; tokens.toArray){
 			writeln(token.token,"\t\t",toks[token.type]);
 		}
-		writeln("test ended!");
+		writeln("test ended!");readln;
 
 	skip:
 		delete errors;
