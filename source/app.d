@@ -62,7 +62,26 @@ void main(string[] args){
 	delete scrF;*/
 	debug{
 		import compiler;
-		debugCompiler("/home/nafees/Desktop/q.qod");
-		//readln;
+		import lists;
+		import misc;
+		//debugCompiler("/home/nafees/Desktop/q.qod");
+		List!string l = new List!string;
+		l.loadArray(fileToArray("/home/nafees/Desktop/q.qod"));
+		string[][string] scr = compileQScript(l);
+		delete l;
+		if ("#errors" in scr){
+			writeln("ERRORS!:");
+			foreach(err; scr["#errors"]){
+				writeln(err);
+			}
+		}else{
+			foreach(func; scr.keys){
+				writeln("Press enter to show byteCode for ",func);readln;
+				foreach(content; scr[func]){
+					writeln(content);
+				}
+			}
+		}
+		readln;
 	}
 }
