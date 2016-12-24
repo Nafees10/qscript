@@ -41,7 +41,6 @@ private enum TokenType{
 	BracketClose,
 	FunctionCall,
 	FunctionDef,
-	Keyword
 }
 
 private struct Token{
@@ -169,10 +168,6 @@ private bool isCompareOperator(string s){
 
 private bool isDataType(string s){
 	return ["double","doubleArray","char","string"].hasElement(s);
-}
-
-private bool isKeyword(string s){
-	return ["if","while","setLength","getLength","array"].hasElement(s);
 }
 
 private bool isBracketOpen(char b){
@@ -410,9 +405,6 @@ private bool toTokens(List!string script){
 		if (token.token.isNum){
 			//Numbers:
 			token.type = TokenType.Number;
-		}else if (isKeyword(token.token)){//this has to come before isIdentifier! Don't mess with it!
-			//Keyword
-			token.type = TokenType.Keyword;
 		}else if (isDataType(token.token)){
 			//is a data type
 			token.type = TokenType.DataType;
@@ -489,7 +481,7 @@ private bool checkSyntax(){
 			//set next set of expectedTokens
 			if (token.token=="("){
 				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number,
-					TokenType.String,TokenType.BracketOpen];
+					TokenType.String,TokenType.BracketOpen,TokenType.BracketClose];
 			}else if (token.token=="{"){
 				blockDepth++;
 				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.DataType];
@@ -513,7 +505,7 @@ private bool checkSyntax(){
 					vars.clear;
 				}
 				expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
-					TokenType.FunctionDef,TokenType.Identifier,TokenType.Keyword];
+					TokenType.FunctionDef,TokenType.Identifier];
 			}else{//is obviously a square bracket
 				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
 					TokenType.StatementEnd];
@@ -564,7 +556,7 @@ private bool checkSyntax(){
 				break;
 			}
 			i=end+1;
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,
 				TokenType.Identifier];
 			continue;//to skip the semicolon at end
 			
@@ -572,8 +564,7 @@ private bool checkSyntax(){
 			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
 				TokenType.Number,TokenType.String];
 			
-		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef ||
-			token.type == TokenType.Keyword){
+		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef){
 			expectedTokens = [TokenType.BracketOpen];
 			
 		}else if (token.type == TokenType.Identifier){
@@ -597,8 +588,8 @@ private bool checkSyntax(){
 				TokenType.Number,TokenType.String];
 			
 		}else if (token.type == TokenType.StatementEnd){
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Keyword,
-				TokenType.Identifier,TokenType.BracketClose];
+			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.BracketClose];
 		}
 	}
 	delete vars;
@@ -620,7 +611,7 @@ private void operatorsToFunctionCalls(){
 	uinteger j;
 
 	string[string][] operators;//[operator priority][operator name]->compiled name
-	operators.length = 2;
+	operators.length = 3;
 	operators[0] = [//top priority
 		"/":"_/",
 		"*":"_*",
@@ -636,6 +627,9 @@ private void operatorsToFunctionCalls(){
 		">":"_>",
 		"<":"_<"
 	];
+	operators[2] = [
+		"=":"_="
+	];
 	/*Note to future self: `=` operator is not compiled here,
 	 *there is the `setv` instruction for it, so it is compiled
 	 *by the `toByteCode` function!*/
@@ -645,10 +639,8 @@ private void operatorsToFunctionCalls(){
 			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
 				operand[0] = readOperand(i-1,false);
-				write("\noperand[0]=");foreach(o;operand[0]){write(o.token);}
 				//read second operand a+'b' -> 'b'
 				operand[1] = readOperand(i+1);
-				write("\noperand[1]=");foreach(o;operand[1]){write(o.token);}readln;
 				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;
@@ -667,18 +659,106 @@ private void operatorsToFunctionCalls(){
 				j = (i-operand[0].length);//cause i-operand[0].length... is required twice.
 				tokens.insert(j,tmpToken);
 				incLineLength(j,2);
-				writeln("<DEBUG>");
-				foreach(a; tokens.toArray){
-					writeln(a.token);
-				}
-				writeln("</DEBUG>");readln;
 				//go back a few steps
 				i-=operand[0].length+1;
 			}
 		}
 	}
+}
 
+private string[][string] toByteCode(){
+	uinteger blockDepth = 0;
+	uinteger addIfJump = 0;
+	uinteger brackDepth = 0;
+	List!string calls = new List!string;
+	List!(uinteger[2]) addJump = new List!(uinteger[2]);//First element for onBlockToAdd, second: whatToAdd
+	string[][string] r;
+	string fname = null;
+	Token token, tmpToken;
+	uinteger[2] tmint;
 
+	uinteger i, till;
+	till = tokens.length;
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token.type==TokenType.FunctionDef){
+			fname = token.token;
+		}
+		if (token.type==TokenType.BracketOpen && token.token=="{"){
+			blockDepth++;
+		}else if (token.type==TokenType.BracketOpen && token.token=="("){
+			brackDepth++;
+		}
+		if (token.type == TokenType.BracketClose && token.token=="}"){
+			if (addJump.length>0){
+				//just add a jmp statement
+				tmint = addJump.readLast;
+				if (tmint[0]==blockDepth){
+					calls.add("jmp "~to!string(tmint[1]));
+					addJump.removeLast;
+				}
+			}
+			if (blockDepth==1){
+				//is an ending function
+				r[fname] = calls.toArray;
+				calls.clear;
+				fname=null;
+			}
+			blockDepth--;
+		}else if (token.type == TokenType.BracketClose && token.token==")"){
+			//could be an if statement end
+			tmint[0] = bracketPos(i,false);
+			tmpToken = tokens.read(tmint[0]-1);
+			if (addIfJump!=0){
+				calls.add("jmp "~token.token);
+			}
+			if (brackDepth>1){
+				//is a function-as-arg
+				calls.add("exa "~tmpToken.token);
+			}else{
+				calls.add("exf "~tmpToken.token);
+			}
+			brackDepth--;
+		}
+		if (token.type == TokenType.FunctionCall){
+			if (token.token=="if" || token.token=="while"){
+				addIfJump = calls.length-1;//cause the interpreter does +1
+				if (token.token=="while"){
+					addJump.add([blockDepth,calls.length-1]);
+					//change while to if
+					tmpToken.token = "if";
+					tmpToken.type = TokenType.FunctionCall;
+					tokens.set(i,tmpToken);
+				}
+			}
+			//Deal with normal functions
+		}
+		if (token.type == TokenType.Number || token.type == TokenType.String){
+			calls.add("psh "~token.token);
+		}
+	}
+
+	delete calls;
+	delete addJump;
+	return r;
+}
+
+public string[][string] compileQScript(List!string script){
+	string[][string] r;
+	 if (!toTokens(script)){
+		//was an error
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
+	if (!checkSyntax){
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
+	operatorsToFunctionCalls;
+	r = toByteCode;
+
+skipIt:
+	return r;
 }
 
 debug{
@@ -696,14 +776,13 @@ debug{
 			TokenType.FunctionCall:"Function Call",
 			TokenType.FunctionDef:"Function Definition",
 			TokenType.Identifier:"Identifier",
-			TokenType.Keyword:"Keyword",
 			TokenType.Number:"Number",
 			TokenType.Operator:"Operator",
 			TokenType.StatementEnd:"Semicolon",
 			TokenType.String:"String"
 		];
 
-		writeln("Converting to tokens, press enter to begin...");readln;
+		writeln("Press enter to begin...");readln;
 		if (!toTokens(scr)){
 			writeln("There were errors:");
 			foreach(error; errors.toArray){
@@ -713,7 +792,7 @@ debug{
 			goto skip;
 		}
 		delete scr;
-		writeln("Conversion complete, press enter to display tokens...");readln;
+		writeln("Conversion to tokens complete, press enter to display tokens...");readln;
 		foreach(token; tokens.toArray){
 			writeln(token.token,"\t\t",toks[token.type]);
 		}
@@ -733,13 +812,13 @@ debug{
 		foreach(token; tokens.toArray){
 			writeln(token.token,"\t\t",toks[token.type]);
 		}
-		writeln("test ended!");readln;
+		writeln("Press enter to begin conversion to bytecode:");readln;
+
 
 	skip:
 		delete errors;
 	}
 }
-
 
 /*
 Sample QScript:
@@ -748,14 +827,13 @@ main{
 	double 
 }
 Interpreter instructions:
-psh  - push element(s) to stack
-pop  - pop `n` elements from stack
-clr  - empty the stack, remove all elements
-pshv - push a variable's value to stack
-setv - set variable value to last element on stack
-exe  - execute function(s), don't push return to stack
-exa  - execute function(s), push retur to stack
-jmp  - jump to another index, and start execution from there, used in loops, and if
+psh - push element(s) to stack
+pop - pop `n` elements from stack
+gtv - push a variable's value to stack
+stv - set variable value to last element on stack
+exf - execute function(s), don't push return to stack
+exa - execute function(s), push retur to stack
+jmp - jump to another index, and start execution from there, used in loops, and if
 Rules:
 An instruction can recieve dynamic amount of arguments! No limit
 */
