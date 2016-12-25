@@ -648,7 +648,7 @@ private void operatorsToFunctionCalls(){
 				//Then, insert a bracket at end! Don't mess with this order!
 				tmpToken[0].token = ")";
 				tmpToken[0].type = TokenType.BracketClose;
-				j = (i+operand[0].length)+1;//cause i+operand[0].length... is required twice.
+				j = (i+operand[1].length)+1;//cause i+operand[0].length... is required twice.
 				tokens.insert(j,[tmpToken[0]]);
 				incLineLength(j,1);
 				//Insert tokens that make the operator into a function call
@@ -710,7 +710,7 @@ private string[][string] toByteCode(){
 			tmint[0] = bracketPos(i,false);
 			tmpToken = tokens.read(tmint[0]-1);
 			if (addIfJump!=0){
-				calls.add("jmp "~token.token);
+				calls.add("jmp "~to!string(addIfJump));
 			}
 			if (brackDepth>1){
 				//is a function-as-arg
@@ -735,6 +735,8 @@ private string[][string] toByteCode(){
 		}
 		if (token.type == TokenType.Number || token.type == TokenType.String){
 			calls.add("psh "~token.token);
+		}else if (token.type == TokenType.Identifier){
+			calls.add("psh \""~token.token~'"');
 		}
 	}
 
@@ -745,6 +747,7 @@ private string[][string] toByteCode(){
 
 public string[][string] compileQScript(List!string script){
 	string[][string] r;
+	errors = new List!string;
 	 if (!toTokens(script)){
 		//was an error
 		r["#errors"] = errors.toArray;
@@ -754,70 +757,17 @@ public string[][string] compileQScript(List!string script){
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
+	delete errors;
 	operatorsToFunctionCalls;
+	debug{
+		foreach(tk; tokens.toArray){
+			writeln(tk.token);
+		}readln;
+	}
 	r = toByteCode;
 
 skipIt:
 	return r;
-}
-
-debug{
-	void debugCompiler(string fname){
-		import std.stdio;
-		List!string scr = new List!string;
-		errors = new List!string;
-		scr.loadArray(fileToArray(fname));
-
-		string[TokenType] toks = [
-			TokenType.BracketClose:"Bracket Close",
-			TokenType.BracketOpen:"Bracket Open",
-			TokenType.Comma:"Comma",
-			TokenType.DataType:"Data Type",
-			TokenType.FunctionCall:"Function Call",
-			TokenType.FunctionDef:"Function Definition",
-			TokenType.Identifier:"Identifier",
-			TokenType.Number:"Number",
-			TokenType.Operator:"Operator",
-			TokenType.StatementEnd:"Semicolon",
-			TokenType.String:"String"
-		];
-
-		writeln("Press enter to begin...");readln;
-		if (!toTokens(scr)){
-			writeln("There were errors:");
-			foreach(error; errors.toArray){
-				writeln(error);
-			}
-			writeln("press enter to exit...");readln;
-			goto skip;
-		}
-		delete scr;
-		writeln("Conversion to tokens complete, press enter to display tokens...");readln;
-		foreach(token; tokens.toArray){
-			writeln(token.token,"\t\t",toks[token.type]);
-		}
-		writeln("Press enter to start syntax check");readln;
-		if (!checkSyntax){
-			writeln("There were errors:");
-			foreach(error; errors.toArray){
-				writeln(error);
-			}
-			writeln("press enter to exit...");readln;
-			goto skip;
-		}
-		writeln("Syntax check complete, no errors found,\n",
-			" press enter to start conversion from operators to functions...");readln;
-		operatorsToFunctionCalls;
-		writeln("Conversion complete, press enter to display tokens...");readln;
-		foreach(token; tokens.toArray){
-			writeln(token.token,"\t\t",toks[token.type]);
-		}
-		writeln("Press enter to begin conversion to bytecode:");readln;
-
-
-	skip:
-		delete errors;
-	}
 }
 
 /*
