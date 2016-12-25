@@ -672,6 +672,7 @@ private string[][string] toByteCode(){
 	uinteger brackDepth = 0;
 	List!string calls = new List!string;
 	List!(uinteger[2]) addJump = new List!(uinteger[2]);//First element for onBlockToAdd, second: whatToAdd
+	List!uinteger argC = new List!uinteger;
 	string[][string] r;
 	string fname = null;
 	Token token, tmpToken;
@@ -688,6 +689,7 @@ private string[][string] toByteCode(){
 			blockDepth++;
 		}else if (token.type==TokenType.BracketOpen && token.token=="("){
 			brackDepth++;
+			argC.add(0);
 		}
 		if (token.type == TokenType.BracketClose && token.token=="}"){
 			if (addJump.length>0){
@@ -712,12 +714,18 @@ private string[][string] toByteCode(){
 			if (addIfJump!=0){
 				calls.add("jmp "~to!string(addIfJump));
 			}
+			if (i-tmint[0]!=1){
+				//meaning it was NOT a `()` so increment in argC
+				argC.set(argC.length-1,argC.readLast+1);
+			}
+			calls.add("psh "~tmpToken.token);
 			if (brackDepth>1){
 				//is a function-as-arg
-				calls.add("exa "~tmpToken.token);
+				calls.add("exa "~to!string(argC.readLast));
 			}else{
-				calls.add("exf "~tmpToken.token);
+				calls.add("exf "~to!string(argC.readLast));
 			}
+			argC.removeLast;
 			brackDepth--;
 		}
 		if (token.type == TokenType.FunctionCall){
@@ -733,15 +741,22 @@ private string[][string] toByteCode(){
 			}
 			//Deal with normal functions
 		}
-		if (token.type == TokenType.Number || token.type == TokenType.String){
+		if (token.type == TokenType.String){
+			calls.add("psh "~token.token[1..token.token.length-2]);
+		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Identifier){
-			calls.add("psh \""~token.token~'"');
+			calls.add("psh "~token.token);
+		}
+		if (token.type == TokenType.Comma && brackDepth!=0){
+			//increment in argC
+			argC.set(argC.length-1,argC.readLast+1);
 		}
 	}
 
 	delete calls;
 	delete addJump;
+	delete argC;
 	return r;
 }
 
@@ -781,8 +796,8 @@ psh - push element(s) to stack
 pop - pop `n` elements from stack
 gtv - push a variable's value to stack
 stv - set variable value to last element on stack
-exf - execute function(s), don't push return to stack
-exa - execute function(s), push retur to stack
+exf - execute function(s), don't push return to stack. take fName from stack, and argC from given args
+exa - execute function(s), push retur to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
 Rules:
 An instruction can recieve dynamic amount of arguments! No limit
