@@ -24,18 +24,13 @@ private enum BracketType{
 	Block
 }
 
-private enum DataType{
-	String,
-	Double
-}
-
 private enum TokenType{
 	String,
 	Number,
 	Identifier,
 	Operator,
 	Comma,
-	DataType,
+	VarDef,
 	StatementEnd,
 	BracketOpen,
 	BracketClose,
@@ -166,10 +161,6 @@ private bool isCompareOperator(string s){
 	return ["<",">","<=","==",">="].hasElement(s);
 }
 
-private bool isDataType(string s){
-	return ["double","doubleArray","char","string"].hasElement(s);
-}
-
 private bool isBracketOpen(char b){
 	return ['{','[','('].hasElement(b);
 }
@@ -178,26 +169,16 @@ private bool isBracketClose(char b){
 	return ['}',']',')'].hasElement(b);
 }
 
-private DataType strToDataType(string s){
-	DataType r;
-	if (s=="double"){
-		r = DataType.Double;
-	}else if (s=="string"){
-		r = DataType.String;
-	}
-	return r;
-}
-debug{
-	private string DataTypeToStr(DataType dat){
-		string r;
-		if (dat==DataType.Double){
-			r = "double";
-		}else if (dat==DataType.String){
-			r = "string";
+private Token[] IdentifiersToString(Token[] ident){
+	for (uinteger i = 0;i < ident.length; i++){
+		if (ident[i].type==TokenType.Identifier){
+			ident[i].token = '"'~ident[i].token~'"';
+			ident[i].type = TokenType.String;
 		}
-		return r;
 	}
+	return ident;
 }
+
 private integer bracketPos(uinteger start, bool forward = true){
 	List!BracketType bracks = new List!BracketType;
 	integer i;
@@ -405,9 +386,9 @@ private bool toTokens(List!string script){
 		if (token.token.isNum){
 			//Numbers:
 			token.type = TokenType.Number;
-		}else if (isDataType(token.token)){
+		}else if (token.token == "new"){
 			//is a data type
-			token.type = TokenType.DataType;
+			token.type = TokenType.VarDef;
 		}else if (token.token.isIdentifier){
 			//Identifiers & FunctionCall & FunctionCall
 			token.type = TokenType.Identifier;
@@ -484,7 +465,7 @@ private bool checkSyntax(){
 					TokenType.String,TokenType.BracketOpen,TokenType.BracketClose];
 			}else if (token.token=="{"){
 				blockDepth++;
-				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.DataType];
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.VarDef];
 			}else{//if it ain't a round or a square, then it is obviously a square bracket
 				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number];
 			}
@@ -504,14 +485,14 @@ private bool checkSyntax(){
 				if (blockDepth==0){
 					vars.clear;
 				}
-				expectedTokens = [TokenType.BracketClose,TokenType.DataType,TokenType.FunctionCall,
+				expectedTokens = [TokenType.BracketClose,TokenType.VarDef,TokenType.FunctionCall,
 					TokenType.FunctionDef,TokenType.Identifier];
 			}else{//is obviously a square bracket
 				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
-					TokenType.StatementEnd];
+					TokenType.StatementEnd,TokenType.BracketOpen];//BrOpen cuz i`[0][0]` =...; 
 			}
 			
-		}else if (token.type == TokenType.DataType){//is var declaration
+		}else if (token.type == TokenType.VarDef){//is var declaration
 			uinteger j, end;
 			bool expComma = false;
 			if (tokens.read(i+1).token!="("){
@@ -556,7 +537,7 @@ private bool checkSyntax(){
 				break;
 			}
 			i=end+1;
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,
+			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,
 				TokenType.Identifier];
 			continue;//to skip the semicolon at end
 			
@@ -577,7 +558,7 @@ private bool checkSyntax(){
 			}
 			//set next set of tokens
 			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
-				TokenType.StatementEnd];
+				TokenType.StatementEnd,TokenType.BracketOpen];
 			
 		}else if (token.type == TokenType.Number || token.type == TokenType.String){
 			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
@@ -588,7 +569,7 @@ private bool checkSyntax(){
 				TokenType.Number,TokenType.String];
 			
 		}else if (token.type == TokenType.StatementEnd){
-			expectedTokens = [TokenType.DataType,TokenType.FunctionCall,TokenType.Identifier,
+			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,TokenType.Identifier,
 				TokenType.BracketClose];
 		}
 	}
@@ -606,7 +587,6 @@ private void operatorsToFunctionCalls(){
 	uinteger i, till=tokens.length;
 	Token token;
 	Token[2] tmpToken;
-	uinteger blockDepth = 0;
 	Token[][2] operand;
 	uinteger j;
 
@@ -639,8 +619,10 @@ private void operatorsToFunctionCalls(){
 			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
 				operand[0] = readOperand(i-1,false);
+				//operand[0] = operand[0].IdentifiersToString;
 				//read second operand a+'b' -> 'b'
 				operand[1] = readOperand(i+1);
+				//operand[1] = operand[1].IdentifiersToString;
 				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;
@@ -661,7 +643,101 @@ private void operatorsToFunctionCalls(){
 				incLineLength(j,2);
 				//go back a few steps
 				i-=operand[0].length+1;
+				//update `till`
+				till = tokens.length;
 			}
+		}
+	}
+	//remove unnecessary brackets, and `[]` from assignment calls
+	bool isInAssignment=false;
+	operators.length=0;//free mem(?)
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token.type==TokenType.FunctionCall && ["setLength","getLength","_="].hasElement(token.token)){
+			isInAssignment = true;
+		}
+		if (isInAssignment && token.type==TokenType.Comma){
+			isInAssignment = false;
+		}
+		if (token.type==TokenType.Identifier){
+			token.type = TokenType.String;
+			token.token = '"'~token.token~'"';
+		}
+		if (isInAssignment && token.type==TokenType.BracketOpen && token.token=="["){
+			j = bracketPos(i);
+			//convert these to comma
+			tmpToken[0].token = ",";
+			tmpToken[0].type = TokenType.Comma;
+			tokens.set(i,tmpToken[0]);
+			tokens.remove(j);
+			till--;
+			i = j-1;//so it doesnt mess up with contents inside []
+			continue;
+		}
+		if (token.type == TokenType.BracketClose && token.token==")"){
+			j = bracketPos(i,false);
+			tmpToken[0] = tokens.read(j-1);
+			if ([TokenType.BracketOpen,TokenType.Comma].hasElement(token.type)){
+				//remove it!
+				tokens.remove(j);
+				tokens.remove(i);
+				till-=2;
+				i-=3;//cuz `for` will do +1
+				continue;
+			}
+		}
+	}
+	isInAssignment = false;
+	//put `_?` for vars
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		//skip if in `new`
+		if (token.type == TokenType.VarDef){
+			j = bracketPos(i+1);
+			i=j;
+			continue;
+		}
+		//now replace
+		//vars
+		if (token.type == TokenType.Identifier){
+			//change from Identifier to String
+			token.type = TokenType.String;
+			token.token = '"'~token.token~'"';
+			tokens.set(i,token);
+			//put the bracket at end
+			tmpToken[0].token = ")";
+			tmpToken[0].type = TokenType.BracketClose;
+			tokens.insert(i+1,[tmpToken[0]]);
+			//put _?( at start:
+			tmpToken[0].token = "_?";
+			tmpToken[0].type = TokenType.FunctionCall;
+			tmpToken[1].token = "(";
+			tmpToken[1].type = TokenType.BracketOpen;
+			tokens.insert(i,tmpToken);
+		}
+		//arrays
+		if (token.type == TokenType.BracketOpen && token.token=="["){
+			operand[0] = readOperand(i-1,false);
+			j = bracketPos(i+1);
+			//operand[1] = tokens.readRange(i+1,bracketPos(i+1));
+			//change `[` to `,`
+			tmpToken[0].token = ",";
+			tmpToken[0].type = TokenType.Comma;
+			tokens.set(i+1,tmpToken[0]);
+			//change `]` to `)`
+			tmpToken[0].token = ")";
+			tmpToken[0].type = TokenType.BracketClose;
+			tokens.set(j,tmpToken[0]);
+			//insert `_readArray`
+			j = i-operand[0].length;
+			tmpToken[0].type = TokenType.FunctionCall;
+			tmpToken[0].token = "_readArray";
+			tmpToken[1].type = TokenType.BracketOpen;
+			tmpToken[1].token = "(";
+			tokens.insert(j,tmpToken);
+			till+=2;
+			i-=3;
+			continue;
 		}
 	}
 }
@@ -717,6 +793,8 @@ private string[][string] toByteCode(){
 			if (i-tmint[0]!=1){
 				//meaning it was NOT a `()` so increment in argC
 				argC.set(argC.length-1,argC.readLast+1);
+				//push the last argument, if any
+				//calls.add("psh "~tokens.read(i-1).token);
 			}
 			calls.add("psh "~tmpToken.token);
 			if (brackDepth>1){
@@ -742,10 +820,8 @@ private string[][string] toByteCode(){
 			//Deal with normal functions
 		}
 		if (token.type == TokenType.String){
-			calls.add("psh "~token.token[1..token.token.length-2]);
+			calls.add("psh "~token.token[1..token.token.length-1]);
 		}else if (token.type == TokenType.Number){
-			calls.add("psh "~token.token);
-		}else if (token.type == TokenType.Identifier){
 			calls.add("psh "~token.token);
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
@@ -776,7 +852,7 @@ public string[][string] compileQScript(List!string script){
 	operatorsToFunctionCalls;
 	debug{
 		foreach(tk; tokens.toArray){
-			writeln(tk.token);
+			write(tk.token);
 		}readln;
 	}
 	r = toByteCode;
@@ -793,9 +869,6 @@ main{
 }
 Interpreter instructions:
 psh - push element(s) to stack
-pop - pop `n` elements from stack
-gtv - push a variable's value to stack
-stv - set variable value to last element on stack
 exf - execute function(s), don't push return to stack. take fName from stack, and argC from given args
 exa - execute function(s), push retur to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
