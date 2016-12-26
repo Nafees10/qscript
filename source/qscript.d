@@ -4,6 +4,7 @@ import misc;
 import lists;
 import compiler;
 import std.conv:to;
+import std.stdio;
 
 
 alias scrFunction = Tqvar delegate(Tqvar[]);
@@ -52,9 +53,8 @@ private:
 	}
 	//IF
 	Tqvar doIf(Tqvar[] args){
-		uinteger skipBlock=0;
-		if (args[0].d!=1){
-			ind = cast(uinteger)args[1].d;
+		if (args[0].d==1){
+			ind++;//skip the JMP-to-end
 		}
 		return args[0];
 	}
@@ -187,6 +187,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		/*debug{
+			writeln("Calling ",fName);
+		}*/
 		if (func){
 			(*func)(args);
 		}else
@@ -203,6 +206,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		/*debug{
+			writeln("Calling ",fName);
+		}*/
 		if (func){
 			stack.push((*func)(args));
 		}else
@@ -346,7 +352,7 @@ public:
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		//byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
+		byteCode = compileQScript(script);
 		string[] r;
 		if ("#####" in calls){
 			r = byteCode["#####"];
