@@ -5,9 +5,12 @@ import std.math;
 import std.stdio;
 import std.conv:to;
 
+alias integer = ptrdiff_t;
+alias uinteger = size_t;
+
 string parseStr(string s){
 	string r;
-	for (size_t i=0;i<s.length;i++){
+	for (uinteger i=0;i<s.length;i++){
 		if (s[i]=='\\'){
 			i++;
 			switch (s[i]){
@@ -17,7 +20,7 @@ string parseStr(string s){
 				case 'n':
 					r~='\n';
 					break;
-				case 'q':
+				case '"':
 					r~='"';
 					break;
 				default:
@@ -49,7 +52,7 @@ T max (T)(T[] dat){
 T[] convArrayType(T,T2)(T2[] dat){
 	T[] r;
 	r= new T[dat.length];
-	for (size_t i=0;i<dat.length;i++){
+	for (uinteger i=0;i<dat.length;i++){
 		r[i]=to!T(dat[i]);
 	}
 	return r;
@@ -59,7 +62,7 @@ string[] fileToArray(string fname){
 	File f = File(fname,"r");
 	string[] r;
 	string line;
-	ptrdiff_t i=0;
+	integer i=0;
 	r.length=0;
 	while (!f.eof()){
 		if (i+1>=r.length){
@@ -77,14 +80,14 @@ string[] fileToArray(string fname){
 	return r;
 }
 
-T[] del(T)(T[] dat, size_t pos, size_t count=1){
+T[] del(T)(T[] dat, uinteger pos, uinteger count=1){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos+count..dat.length];
 	return ar1~ar2;
 }
 
-T[] insert(T)(T[] dat, T[] ins, size_t pos){
+T[] insert(T)(T[] dat, T[] ins, uinteger pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];

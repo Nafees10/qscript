@@ -3,6 +3,7 @@ module qscript;
 import misc;
 import lists;
 import compiler;
+import std.stdio;
 import std.conv:to;
 
 
@@ -52,9 +53,8 @@ private:
 	}
 	//IF
 	Tqvar doIf(Tqvar[] args){
-		size_t skipBlock=0;
-		if (args[0].d!=1){
-			ind = cast(size_t)args[1].d;
+		if (args[0].d==1){
+			ind+=2;//skip the JMP-to-end
 		}
 		return args[0];
 	}
@@ -118,16 +118,16 @@ private:
 	Tqvar setLength(Tqvar[] args){
 		Tqvar* curVar = &vars[args[0].s];
 		if (args.length>2){
-			size_t i;
-			size_t till = args.length-1;
+			uinteger i;
+			uinteger till = args.length-1;
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
 					throw new Exception("index out of limit");
 				}
-				curVar = &curVar.array[cast(size_t)args[i].d];
+				curVar = &curVar.array[cast(uinteger)args[i].d];
 			}
 		}
-		(*curVar).array.length = cast(size_t)args[args.length-1].d;
+		(*curVar).array.length = cast(uinteger)args[args.length-1].d;
 		return args[1];
 	}
 	Tqvar getLength(Tqvar[] args){
@@ -145,10 +145,10 @@ private:
 	}
 	Tqvar readArray(Tqvar[] args){
 		if (args[0].array.length<=args[1].d){
-			throw new Exception("index out of limit"~to!string(args[1].d)~"/"~
+			throw new Exception("index out of limit: "~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
-		return args[0].array[cast(size_t)args[1].d];
+		return args[0].array[cast(uinteger)args[1].d];
 	}
 	Tqvar getVar(Tqvar[] args){
 		if (!(args[0].s in vars)){
@@ -164,13 +164,14 @@ private:
 		Tqvar* curVar = &vars[args[0].s];
 		Tqvar r;
 		if (args.length>2){
-			size_t i;
-			size_t till = args.length-1;
+			uinteger i;
+			uinteger till = args.length-1;//cuz below, it's a `<`, not a `<=`
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
-					throw new Exception("index out of limit");
+					throw new Exception("index out of limit: "~to!string(args[i].d)~'/'~
+						to!string(curVar.array.length-1));
 				}
-				curVar = &curVar.array[cast(size_t)args[i].d];
+				curVar = &curVar.array[cast(uinteger)args[i].d];
 			}
 		}
 		(*curVar) = val;
@@ -180,21 +181,20 @@ private:
 	void push(Tqvar arg){
 		stack.push(arg);
 	}
-	/*void pop(Tqvar arg){
-		stack.removeLast(cast(size_t)arg.d);
-	}*/
-	void clr(Tqvar arg){
-		stack.clear;
+	void clear(Tqvar arg){
+		if (arg.d==1){
+			stack.clear;
+		}
 	}
 	void jmp(Tqvar arg){
-		ind = cast(size_t)arg.d;
+		ind = cast(uinteger)arg.d;
 	}
-	void exe(Tqvar arg){
-		string fName = arg.s;
+	void exf(Tqvar arg){
+		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
-		Tqvar[] args = stack.pop(cast(size_t)stack.pop.d);
+		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
 		if (func){
-			stack.push((*func)(args));
+			(*func)(args);
 		}else
 		if (fName in calls){
 			execF(fName,args);
@@ -205,14 +205,30 @@ private:
 			throw new Exception("unrecognized function call "~fName);
 		}
 	}
+	void exa(Tqvar arg){
+		string fName = stack.pop.s;
+		scrFunction* func = fName in fList;
+		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		if (func){
+			stack.push((*func)(args));
+		}else
+		if (fName in calls){
+			stack.push(execF(fName,args));
+		}else
+		if (onExec){
+			stack.push(onExec(fName,args));
+		}else{
+			throw new Exception("unrecognized function call "~fName);
+		}
+	}
 
 	//sdfsdf:
 	Tqvar[string] vars;
 
-	//Tlist!Tqvar stack;
-	Tqstack!Tqvar stack;
+	//List!Tqvar stack;
+	Stack!Tqvar stack;
 	inst[][string] calls;
-	size_t ind;//stores the index of function-to-call from calls
+	uinteger ind;//stores the index of function-to-call from calls
 	Tqvar[][string] callsArgs;
 
 	scrFunction[string] fList;
@@ -221,17 +237,18 @@ private:
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
-		size_t i, lineno;
+		uinteger i, lineno;
 		string token, line;
 		Tqvar arg;
-		Tlist!inst tmpCalls = new Tlist!inst;
-		Tlist!Tqvar tmpArgs = new Tlist!Tqvar;
+		List!inst tmpCalls = new List!inst;
+		List!Tqvar tmpArgs = new List!Tqvar;
 
 		inst[string] mList = [
-			"PSH":&push,
-			"CLR":&clr,
-			"JMP":&jmp,
-			"EXE":&exe
+			"psh":&push,
+			"clr":&clear,
+			"jmp":&jmp,
+			"exf":&exf,
+			"exa":&exa
 		];
 
 		foreach(fName; script.keys){
@@ -271,9 +288,9 @@ private:
 		delete tmpArgs;
 	}
 	Tqvar execF(string fName, Tqvar[] args){
-		Tqstack!Tqvar oldStack = stack;
-		size_t oldInd = ind;
-		stack = new Tqstack!Tqvar;
+		Stack!Tqvar oldStack = stack;
+		uinteger oldInd = ind;
+		stack = new Stack!Tqvar;
 		//clear vars
 		Tqvar[string] oldVars;
 		foreach(key; vars.keys){
@@ -292,7 +309,15 @@ private:
 		Tqvar arg;
 		//start executing
 		for (ind = 0;ind<calls[fName].length;ind++){
-			calls[fName][ind](callsArgs[fName][ind]);
+			try{
+				calls[fName][ind](callsArgs[fName][ind]);
+			}catch(Exception e){
+				writeln("Something went wrong in instruction:",ind,":\n",e.msg);
+				write("Enter y to ignore, or just hit enter to abort:");
+				if (readln!="y\n"){
+					throw e;
+				}
+			}
 		}
 		delete stack;
 		//restote previous state
@@ -310,37 +335,36 @@ private:
 public:
 	this(){
 		fList = [
-			"!/":&divOp,
-			"!*":&mulOp,
-			"!+":&plusOp,
-			"!-":&minusOp,
-			"!%":&modulusOp,
-			"!~":&strConcat,
-			"!if":&doIf,
-			"!while":&doIf,
-			"!==":&isEqual,
-			"!>":&isBigger,
-			"!<":&isSmaller,
-			"!>=":&isBiggerEqual,
-			"!<=":&isSmalerEqual,
-			"!string":&toString,
-			"!double":&toDouble,
-			"!setLength":&setLength,
-			"!getLength":&getLength,
-			"!new":&newVar,
-			"![":&readArray,
-			"!?":&getVar,
-			"!=":&setVar,
+			"_/":&divOp,
+			"_*":&mulOp,
+			"_+":&plusOp,
+			"_-":&minusOp,
+			"_%":&modulusOp,
+			"_~":&strConcat,
+			"if":&doIf,
+			"_==":&isEqual,
+			"_>":&isBigger,
+			"_<":&isSmaller,
+			"_>=":&isBiggerEqual,
+			"_<=":&isSmalerEqual,
+			"string":&toString,
+			"double":&toDouble,
+			"setLength":&setLength,
+			"getLength":&getLength,
+			"new":&newVar,
+			"_readArray":&readArray,
+			"_?":&getVar,
+			"_=":&setVar,
 		];
 	}
 	string[] loadScript(string fName){
-		Tlist!string script = new Tlist!string;
+		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
 		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		string[] r;
-		if ("#####" in calls){
-			r = byteCode["#####"];
+		if ("#errors" in byteCode){
+			r = byteCode["#errors"];
 		}else{
 			finalCompile(byteCode);
 		}

@@ -1,26 +1,91 @@
-﻿module compiler;
+﻿/*
+ * uinteger will be used instead of uint. If uint was used, 
+ * then array.length would have to be casted to uint, plus,
+ * less elements could be used. uintger is uint on 32 bit, 
+ * and ulong on 64 bit. integer is int on 32 bit, and long 
+ * on 64 bit.
+*/
+
+module compiler;
 
 import misc;
 import lists;
-import std.stdio;
 import std.conv:to;
 import std.algorithm:canFind;
-
-private Tlist!string tokens;
-private size_t[] origLine;
-
-private void addEr(Tlist!string errors, size_t line, string msg){
-	ptrdiff_t i;
-	size_t lineno;
-	for (i=0;i<origLine.length;i++){
-		if (origLine[i]>line){break;}
-	}
-	lineno = i;
-
-	errors.add(to!string(lineno)~':'~msg);
+debug{
+	import std.stdio;
 }
 
-private ptrdiff_t strEnd(string s, size_t i){
+private List!Token tokens;
+private List!string errors;
+private uinteger[] lineLength;
+
+private enum BracketType{
+	Square,
+	Round,
+	Block
+}
+
+private enum TokenType{
+	String,
+	Number,
+	Identifier,
+	Operator,
+	Comma,
+	VarDef,
+	StatementEnd,
+	BracketOpen,
+	BracketClose,
+	FunctionCall,
+	FunctionDef,
+}
+
+private struct Token{
+	TokenType type;
+	string token;
+}
+//These functions below are used by compiler
+private void addError(uinteger pos, string msg){
+	uinteger i = 0, chars = 0;
+	pos++;
+	for (; chars<pos;i++){
+		chars+=lineLength[i];
+	}
+	errors.add("Line: "~to!string(i)~": "~msg);
+}
+
+private void incLineLength(uinteger pos, uinteger n=1){
+	uinteger i = 0, chars = 0;
+	pos++;
+	for (; chars<pos;i++){
+		chars+=lineLength[i];
+	}
+	lineLength[i] += n;
+}
+/*
+private void decLineLength(uinteger pos, uinteger n=1){
+	uinteger i = 0, chars = 0;
+	for (; i<=pos;i++){
+		if (chars>i || chars==i){
+			break;
+		}else{
+			chars+=lineLength[i];
+		}
+	}
+	//Decrement could be from several lines:
+	while (n>0){
+		if (lineLength[i]<n){
+			n -= lineLength[i];
+			lineLength[i] = 0;
+		}else{
+			lineLength[i] -= n;
+			n = 0;
+		}
+		i++;
+	}
+}
+*/
+private integer strEnd(string s, uinteger i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
 			i++;
@@ -30,48 +95,6 @@ private ptrdiff_t strEnd(string s, size_t i){
 		}
 	}
 	if (i==s.length){i=-1;}
-	return i;
-}
-
-private ptrdiff_t brackEnd(Tlist!string list, ptrdiff_t i, string s="(", string e=")"){
-	size_t dcs=1;
-	string token;
-	for (i++;i<list.count;i++){
-		if (dcs==0){
-			break;
-		}
-		token=list.read(i);
-		if (token==s){
-			dcs++;
-		}else if (token==e){
-			dcs--;
-		}
-	}
-	i--;
-	if (dcs>0){
-		i=-1;
-	}
-	return i;
-}
-
-private ptrdiff_t brackStart(Tlist!string list, ptrdiff_t i, string s="(", string e=")"){
-	size_t dcs=1;
-	string token;
-	for (i--;i>=0;i--){
-		if (dcs==0){
-			break;
-		}
-		token=list.read(i);
-		if (token==s){
-			dcs--;
-		}else if (token==e){
-			dcs++;
-		}
-	}
-	i++;
-	if (dcs>0){
-		i=-1;
-	}
 	return i;
 }
 
@@ -86,108 +109,13 @@ private bool hasElement(T)(T[] array, T element){
 	return r;
 }
 
-private string[] nextToken(size_t i){
-	string token;
-	string[] sp=[
-		"/",
-		"*",
-		"+",
-		"-",
-		"%",
-		";",
-		"{",
-		"}",
-		")",
-		",",
-		"=",
-		"==",
-		"<",
-		">",
-		"<=",
-		">=",
-	];
-	size_t frm=i;
-	for (;i<tokens.count;i++){
-		token = tokens.read(i);
-		if (sp.hasElement(token)){
-			//i--;
-			break;
-		}
-		if (token=="("||token=="["){
-			if (token=="("){
-				i=brackEnd(tokens,i);
-				break;
-			}else{
-				i=brackEnd(tokens,i,"[","]");
-			}
-			i++;
-		}
-	}
-	return tokens.toArray[frm..i];
-}
-
-private string[] prevToken(ptrdiff_t i){
-	string token;
-	string[] sp=[
-		"/",
-		"*",
-		"+",
-		"-",
-		"%",
-		";",
-		"{",
-		"}",
-		"(",
-		",",
-		"=",
-		"==",
-		"<",
-		">",
-		"<=",
-		">=",
-	];
-	ptrdiff_t till=i+1;
-	for (;i>=0;i--){
-		token = tokens.read(i);
-		if (sp.hasElement(token)){
-			//i--;
-			break;
-		}
-		if (token==")"){
-			i=brackStart(tokens,i);
-		}else if (token=="]"){
-			i=brackStart(tokens,i,"[","]");
-		}
-	}
-	return tokens.toArray[i+1..till];
-}
-
-private string[] restOfTheLine(ptrdiff_t i){
-	string token;
-	size_t frm=i;
-	for (;i<tokens.count;i++){
-		token = tokens.read(i);
-		if (token==";"){
-			break;
-		}
-		if (token=="(" || token=="{"){
-			if (token=="("){
-				i=brackEnd(tokens,i);
-			}else{
-				i=brackEnd(tokens,i,"{","}");
-			}
-		}
-	}
-	return tokens.toArray[frm..i+1];
-}
-
 private string lowercase(string s){
 	string tmstr;
 	ubyte tmbt;
-	for (ptrdiff_t i=0;i<s.length;i++){
+	for (integer i=0;i<s.length;i++){
 		tmbt = cast(ubyte) s[i];
-		if (tmbt>=65 && tmbt<=90){
-			tmbt+=32;
+		if (tmbt>=65 && tmbt<=90){//is in range of capital letters
+			tmbt+=32;//small letters are +32 of their capitals
 			tmstr ~= cast(char) tmbt;
 		}else{
 			tmstr ~= s[i];
@@ -196,101 +124,29 @@ private string lowercase(string s){
 	
 	return tmstr;
 }
-/*
-private bool isVarName(size_t i){
-	bool r=true;
-	if (!isAlphaNum(tokens.read(i))){
-		r=false;
-	}
-	if (tokens.read(i+1)=="["){
-		if (tokens.read(brackEnd(tokens,i+1,"[","]")+1)=="="){
-			r=false;
-		}
-	}
-	return r;
-}
-
-private string[2] parseVarName(size_t i){
-	string[2] r;//1 be varname 2 be index
-	r[0]=tokens.read(i);
-	if (tokens.read(i+1)=="["){
-		r[1]=tokens.read(i+2);
-	}else{
-		r[1]="-1";
-	}
-	return r;
-}
-*/
-
-private ubyte getOpType(string[] operand){
-	ubyte r=2;
-	if (operand.length>1){
-		r=2;
-	}else if (operand.length>0){
-		if (operand[0][0]=='"'){
-			r=1;
-		}else if (isNum(operand[0])){
-			r=0;
-		}else{
-			r=2;
-		}
-	}
-	return r;
-}
-
-private void addTokn(size_t count, size_t pos){
-	size_t till = origLine.length;
-	size_t i;
-	for (i=0;i<till;i++){
-		if (origLine[i]>=pos){break;}//change >= to = if not working
-		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
-	}
-	for (;i<till;i++){
-		origLine[i]+=count;
-	}
-}
-
-private void delTokn(size_t count, size_t pos){
-	size_t till = origLine.length;
-	size_t i;
-	for (i=0;i<till;i++){
-		if (origLine[i]>=pos){break;}//change >= to = if not working
-		//if (origLine[i]==pos){i--;break;}//Uncomment if done above
-	}
-	for (;i<till;i++){
-		origLine[i]-=count;
-	}
-}
 
 private bool isNum(string s){
 	bool r=false;
-	size_t i;
-	if (!"0123456789".canFind(s[0])){
-		goto skipCheck;
-	}
-	if (s.length==1){
-		r = true;
-	}
-	for (i=1;i<s.length;i++){
+	uinteger i;
+	for (i=0;i<s.length;i++){
 		if ("0123456789.".canFind(s[i])){
 			r = true;
 			break;
 		}
 	}
-	skipCheck:
 	return r;
 }
 
-private bool isAlphaNum(string s){
+private bool isIdentifier(string s){
 	ubyte aStart = cast(ubyte)'a';
 	ubyte aEnd = cast(ubyte)'z';
 	s = lowercase(s);
 	bool r=true;
 	ubyte cur;
-	for (size_t i=0;i<s.length;i++){
+	for (uinteger i=0;i<s.length;i++){
 		cur = cast(ubyte) s[i];
 		if (cur<aStart || cur>aEnd){
-			if ("0123456789".canFind(s[i])==false){
+			if ("0123456789_".canFind(s[i])==false){
 				r=false;
 				break;
 			}
@@ -298,436 +154,834 @@ private bool isAlphaNum(string s){
 	}
 	return r;
 }
-private void removeWhitespace(Tlist!string scr){
-	string line, newline;
-	bool modified;
-	size_t i, tmpint;
-	for (size_t lineno=0;lineno<scr.count;lineno++){
-		line=scr.read(lineno);
-		modified=false;
-		newline="";
-		for (i=0;i<line.length;i++){
-			if (line[i]=='"'){
-				tmpint = strEnd(line,i);
-				newline~=line[i..tmpint+1];
-				i=tmpint+1;
-			}
-			if (line[i]=='\t'){
-				continue;
-			}else if(i<line.length-1 && line[i..i+2]=="//"){
-				break;
-			}else if (i<line.length-1 && line[i..i+2]=="  "){
-				continue;
-			}else{
-				newline~=line[i];
-			}
-		}
-		scr.set(lineno,newline);
-	}
+
+private bool isOperator(string s){
+	return ["/","*","+","-","%","~","=","<",">","<=","==",">="].hasElement(s);
 }
 
-private void toTokens(Tlist!string slst){
-	size_t i, lineno;
-	ptrdiff_t tmpint;
-	string token;
-	string line;
-	
-	origLine.length=slst.count;
-	
-	Tlist!string scr = new Tlist!string;
-	scr.loadArray(slst.toArray);
-	removeWhitespace(scr);
-	string sp="/*+-%~;{}(),=<>#$[]";
-	
-	size_t till = scr.count;
-	
-	tokens = new Tlist!string;
-	for (lineno=0;lineno<till;lineno++){
-		line = scr.read(lineno);
-		token="";
-		for (i=0;i<line.length;i++){
-			if (line[i]=='"'){
-				tmpint = strEnd(line,i);
-				token~=line[i..tmpint+1];
-				i=tmpint+1;
-			}
-			if (line[i]==' '){
-				if (token!=""){
-					tokens.add(token);
-					token="";
+private bool isCompareOperator(string s){
+	return ["<",">","<=","==",">="].hasElement(s);
+}
+
+private bool isBracketOpen(char b){
+	return ['{','[','('].hasElement(b);
+}
+
+private bool isBracketClose(char b){
+	return ['}',']',')'].hasElement(b);
+}
+
+private Token[] IdentifiersToString(Token[] ident){
+	for (uinteger i = 0;i < ident.length; i++){
+		if (ident[i].type==TokenType.Identifier){
+			ident[i].token = '"'~ident[i].token~'"';
+			ident[i].type = TokenType.String;
+		}
+	}
+	return ident;
+}
+
+private integer bracketPos(uinteger start, bool forward = true){
+	List!BracketType bracks = new List!BracketType;
+	integer i;
+	string curToken;
+	BracketType[string] brackOpenIdent = [
+		"(":BracketType.Round,
+		"[":BracketType.Square,
+		"{":BracketType.Block
+	];
+	BracketType[string] brackCloseIdent = [
+		")":BracketType.Round,
+		"]":BracketType.Square,
+		"}":BracketType.Block
+	];
+	if (forward){
+		for (i=start; i<tokens.length; i++){
+			curToken = tokens.read(i).token;
+			if (curToken in brackOpenIdent){
+				bracks.add(brackOpenIdent[curToken]);
+			}else if (curToken in brackCloseIdent){
+				if (bracks.readLast == brackCloseIdent[curToken]){
+					bracks.removeLast;
+				}else{
+					addError(i,"brackets order is wrong, first opened must be last closed");
+					i = -1;
+					break;
 				}
+			}
+			if (bracks.length == 0){
+				break;
+			}
+		}
+	}else{
+		for (i=start; i>=0; i--){
+			curToken = tokens.read(i).token;
+			if (curToken in brackCloseIdent){
+				bracks.add(brackCloseIdent[curToken]);
+			}else if (curToken in brackOpenIdent){
+				if (bracks.readLast == brackOpenIdent[curToken]){
+					bracks.removeLast;
+				}else{
+					addError(i,"brackets order is wrong, first opened must be last closed");
+					i = -1;
+					break;
+				}
+			}
+			if (bracks.length == 0){
+				break;
+			}
+		}
+	}
+
+	delete bracks;
+	return i;
+}
+
+private Token[] readOperand(uinteger pos, bool forward = true){
+	integer i;
+	Token[] r;
+	if (forward){
+		uinteger till = tokens.length;
+		for (i=pos;i<till;i++){
+			Token token = tokens.read(i);
+			if ([TokenType.BracketClose,TokenType.Comma,TokenType.StatementEnd,
+					TokenType.Operator].hasElement(token.type)){
+				break;
+			}else if (token.type == TokenType.BracketOpen){
+				if (token.token=="{"){
+					break;
+				}
+				i = bracketPos(i);
+			}
+		}
+		r = tokens.readRange(pos,i);
+	}else{
+		for (i=pos;i>=0;i--){
+			Token token = tokens.read(i);
+			if ([TokenType.BracketOpen,TokenType.Comma,TokenType.StatementEnd,
+					TokenType.Operator].hasElement(token.type)){
+				break;
+			}else if (token.type == TokenType.BracketClose){
+				if (token.token=="}"){
+					break;
+				}
+				i = bracketPos(i,false);
+			}
+		}
+		r = tokens.readRange(i+1,pos+1);
+	}
+	return r;
+}
+
+//Functions below is where the 'magic' happens
+private bool toTokens(List!string script){
+	if (tokens){
+		delete tokens;
+	}
+	tokens = new List!Token;
+	uinteger i, lineno, till = script.length, addFrom;
+	//addFrom stores position in line from where token starts
+	uinteger tmInt;//To store temp function returns
+	string line;
+	Token token;
+	uinteger tokenCount;//count of tokens added from current line, needed for error reporting
+	bool hasError = false;
+	lineLength.length = till;
+	//First convert everything to 'tokens', TokenType will be set later
+	for (lineno=0; lineno<till; lineno++){
+		line = script.read(lineno);
+		addFrom = 0;
+		tokenCount = 0;
+		for (i=0;i<line.length;i++){
+			//ignore whitespace
+			if (line[i] == ' ' || line[i] == '\t'){
+				//Add token if any
+				if (addFrom!=i){
+					token.token = line[addFrom..i];
+					tokens.add(token);
+					tokenCount++;
+				}
+				addFrom = i+1;
 				continue;
 			}
-			if (sp.canFind(line[i])){
-				if (token!=""){
+			//comments
+			if (i<line.length-1 && line[i..i+2]=="//"){
+				if (addFrom!=i){
+					token.token = line[addFrom..i];
 					tokens.add(token);
+					tokenCount++;
+					continue;
 				}
-				token="";
-				if (i<line.length-1&&"=<>".canFind(line[i+1])&&"=<>".canFind(line[i])){
-					tokens.add(line[i..i+2]);
+				break;
+			}
+			//ignore and add strings
+			if (line[i]=='"'){
+				tmInt = line.strEnd(i);
+				if (tmInt==-1){
+					addError(i,"string must be terminated with a \"");
+					hasError = true;
+					break;
+				}else if (addFrom!=i){
+					addError(i,"string at enexpected position");
+					hasError = true;
+					break;
+				}else{
+					token.token = line[addFrom..tmInt+1];
+					tokens.add(token);
+					tokenCount++;
+					addFrom = tmInt+1;
+					i = tmInt;
+					continue;
+				}
+			}
+			//at bracket end/open & comma & semicolon
+			if (isBracketOpen(line[i]) || isBracketClose(line[i]) || [',',';'].hasElement(line[i])){
+				if (addFrom!=i){
+					//has to add a token from before the bracket
+					token.token = line[addFrom..i];
+					tokens.add(token);
+					tokenCount++;
+				}
+				//add the current token too
+				token.token = [line[i]];
+				tokens.add(token);
+				tokenCount++;
+				addFrom = i+1;
+				continue;
+			}
+			//and operators
+			if (isOperator([line[i]])){// it works cuz 2char operator's for char is an operator
+				//check if is a 2char op:
+				if (i<line.length-1 && isOperator(line[i..i+2])){
+					//is 2 char operator
+					if (addFrom!=i){
+						//has to add a token from before the operator
+						token.token = line[addFrom..i];
+						tokens.add(token);
+						tokenCount++;
+					}
+					//add the operator too
+					token.token = line[i..i+2];//it's a 2char operator
+					tokens.add(token);
+					tokenCount++;
+					addFrom = i+2;//it's a 2char operator!
 					i++;
 				}else{
-					tokens.add(to!string(line[i]));
+					//is 1 char operator
+					if (addFrom!=i){
+						//has to add a token from before the operator
+						token.token = line[addFrom..i];
+						tokens.add(token);
+						tokenCount++;
+					}
+					//add the operator too
+					token.token = [line[i]];
+					tokens.add(token);
+					tokenCount++;
+					addFrom = i+1;
 				}
 				continue;
 			}
-			token~=line[i];
-			if (i==line.length-1 && token!=""){
-				tokens.add(token);
-			}
 		}
-		origLine[lineno]=tokens.count-1;
-	}
-}
-
-private Tlist!string compileOp(){
-	size_t i;
-	string line;
-	string[2] tmstr;
-	string[][2] operand;
-	Tlist!string errors = new Tlist!string;
-
-	string[string] mthFunc=[
-		"/":"!/",
-		"*":"!*",
-		"+":"!+",
-		"-":"!-",
-		"%":"!%",
-		"~":"!~"
-	];
-	string[string] compareFunc=[
-		"<":"!<",
-		">":"!>",
-		"<=":"!<=",
-		">=":"!>=",
-		"==":"!==",
-
-	];
-	string[string] toReplace=[
-		"if":"!if",
-		"string":"!string",
-		"double":"!double",
-		"getLength":"!getLength"
-	];
-
-	for (i=0;i<tokens.count;i++){
-		line = tokens.read(i);
-		//Error catching:
-		//unclosed/unopened brackets/blocks
-		if (line=="(" && brackEnd(tokens,i)==-1){
-			addEr(errors,i,"unclosed bracket");
-		}else if (line==")" && brackStart(tokens,i)==-1){
-			addEr(errors,i,"unopened bracket");
-		}else if(line=="{" && brackEnd(tokens,i,"{","}")==-1){
-			addEr(errors,i,"unclosed block");
-		}else if(line=="}" && brackStart(tokens,i,"{","}")==-1){
-			addEr(errors,i,"unopened block");
-		}
-		//Skip compilation if has errors:
-		if (errors.count>0){
-			continue;
-		}
-		//compiling:
-		if (line in mthFunc){
-			tokens.set(i,",");
-			operand[0]=prevToken(i-1);
-			operand[1]=nextToken(i+1);
-
-			if (operand[0].length==0 && line=="-"){
-				operand[0]=["0"];
-				tokens.insert(i,["0"]);
-				i++;
-			}
-			if (operand[0].length==0 || operand[1].length==0){
-				addEr(errors,i,"not enough operands for "~line~" operator");
-			}
-
-			//<TYPE CHECKING>
-			if (operand[0].length==1 || operand[1].length==1){
-				ubyte[2] opType;
-				//Put operand types into opType[...];
-				opType[0]=getOpType(operand[0]);
-				opType[1]=getOpType(operand[1]);
-				//Do actual type checking-
-				if (line=="~"){
-					if (opType[0]!=2 && opType[1]!=2 && opType[0]+opType[1]==2){
-						addEr(errors,i,"incompatible types for "~line~" operator");
-					}
-				}else{
-					//Make sure no strings get through maths!
-					if (opType[0]==1 || opType[1]==1){
-						addEr(errors,i,"incompatible types for "~line~" operator");
-					}
-				}
-			}
-			//<</TYPE CHECKING>
-
-			tokens.insert(i-operand[0].length,[mthFunc[line],"("]);
-			tokens.insert(i+operand[1].length+3,[")"]);
-			addTokn(3,i);
-			i-=operand[0].length+1;
-		}else if(line=="="){
-			operand[1] = restOfTheLine(i+1);
-			operand[1].length--;
-			operand[0] = prevToken(i-1);
-			tokens.set(i,",");
-			tokens.del((i-operand[0].length),operand[0].length);
-			i -= operand[0].length-1;
-			delTokn(operand[0].length,i-operand[0].length+1);
-			size_t bEnd;
-			Tlist!string tmList = new Tlist!string;
-			for (ptrdiff_t j=0;j<operand[0].length && operand[0][j]!="!?";j++){
-				if (operand[0][j]=="!["){
-					tmList.loadArray(operand[0]);
-					bEnd = brackEnd(tmList,j+1);
-					operand[0]=del(operand[0],bEnd);
-					operand[0]=del(operand[0],j,2);
-					j=-1;
-				}
-			}
-			delete tmList;
-			operand[0]=del(operand[0],0,2);
-			operand[0]=del(operand[0],1);
-
-			tokens.insert(i+operand[1].length,[")"]);
-			addTokn(1,i+operand[1].length);
-			tokens.insert(i-1,["!=","("]~operand[0]);
-			addTokn(2+operand[0].length,i-1);
-
-			i-=operand[0].length-2;
-		}else if(line in toReplace){
-			tokens.set(i,toReplace[line]);
-		}else if (line=="while"){
-			tokens.set(i,"!while");
-			/*size_t pos = brackEnd(tokens,brackEnd(tokens,i+1)+1,"{","}");
-			tokens.insert(pos, ["!again","(","foo",")",";"]);
-			addTokn(1,pos);*/
-		}else if (line in compareFunc){
-			tokens.set(i,",");
-			operand[0] = tokens.readRange(brackStart(tokens,i),i);
-			operand[0] = prevToken(i-operand[0].length)~operand[0];
-			operand[1] = tokens.readRange(i+1,brackEnd(tokens,i));
-
-			if (operand[0].length==0 || operand[1].length==0){
-				addEr(errors,i,"not enough operands for "~line~" operator");
-			}
-
-			//<TYPE CHECKING>
-			if (operand[0].length==1 || operand[1].length==1){
-				ubyte[2] opType;
-				//Put operand types ptrdiff_to opType[...];
-				opType[0]=getOpType(operand[0]);
-				opType[1]=getOpType(operand[1]);
-				//Do actual type checking
-				if (line=="=="){
-					if (opType[0]!=2 && opType[1]!=2 && opType[0] != opType[1]){
-						addEr(errors,i,"incompatible types for "~line~" operator");
-					}
-				}else{
-					//Make sure no strings get through!
-					if (opType[0]==1 || opType[1]==1){
-						addEr(errors,i,"incompatible types for "~line~" operator");
-					}
-				}
-			}
-			//<</TYPE CHECKING>
-
-			tokens.insert(i-operand[0].length+1,[compareFunc[line],"("]);
-			tokens.insert(i+operand[1].length+3,[")"]);
-			addTokn(3,i);
-		}else if (line=="new" || line=="setLength"){
-			tokens.set(i,"!"~line);
-			if (line=="setLength"){
-				operand[0] = nextToken(i+2);
-				tokens.del(i+2,operand[0].length);
-				delTokn(operand[0].length,i+2);
-				Tlist!string tmp = new Tlist!string;
-				for (size_t j=0;j<operand[0].length;j++){
-					if (operand[0][j]=="["){
-						operand[0][j] = ",";
-						tmp.loadArray(operand[0]);
-						j = brackEnd(tmp,j,"[","]");
-						tmp.del(j);
-						operand[0] = tmp.toArray;
-						j--;
-					}
-				}
-				delete tmp;
-				operand[0][0] = '"'~operand[0][0]~'"';
-				tokens.insert(i+2,operand[0]);
-				addTokn(operand[0].length,i+2);
-			}else{
-				//tokens.set(i+2,'"'~tokens.read(i+2)~'"');
-				size_t j = i+2, till = tokens.count;
-				operand[0].length = 1;
-				if (tokens.read(j-1)=="("){
-					for (;j<till;j++){
-						operand[0][0] = tokens.read(j);
-						if (operand[0][0]==")"){
-							break;
-						}
-						tokens.set(j,'"'~operand[0][0]~'"');
-					}
-				}
-			}
-		}else
-		if (line=="(" && i>0){//delette unnecessary brackets
-			tmstr[0] = tokens.read(i-1);
-			tmstr[1] = tokens.read(brackEnd(tokens,i)+1);
-			if ((tmstr[0]==","||tmstr[0]=="(") && (tmstr[1]==","||tmstr[1]==")")){
-				size_t delPos = brackEnd(tokens,i);
-				tokens.del(delPos);
-				delTokn(1,delPos);
-				tokens.del(i);
-				delTokn(1,i);
-			}
-		}else if (isAlphaNum(line) && !"0123456789".canFind(line[0]) && i<tokens.count-1){
-			tmstr[0]=tokens.read(i+1);
-			if (tmstr[0]!="(" && tmstr[0]!="{"){
-				tokens.del(i);
-				tokens.insert(i,["!?","(",'"'~line~'"',")"]);
-
-				addTokn(3,i);
-			}
-		}else if (line=="["){
-			operand[0]=prevToken(i-1);
-			tokens.set(brackEnd(tokens,i,"[","]"),")");
-			tokens.set(i,",");
-			size_t toIns = i-operand[0].length;
-			tokens.insert(toIns,["![","("]);
-			addTokn(2,toIns);
+		lineLength[lineno] = tokenCount;
+		if (hasError){
+			break;
 		}
 	}
-	return errors;
+	Token tmpToken;
+	if (hasError){
+		goto skipConversion;
+	}
+	//Now put in Token Types
+	till = tokens.length;
+	for (i=0; i<till; i++){
+		token = tokens.read(i);
+		if (token.token.isNum){
+			//Numbers:
+			token.type = TokenType.Number;
+		}else if (token.token == "new"){
+			//is a data type
+			token.type = TokenType.VarDef;
+		}else if (token.token.isIdentifier){
+			//Identifiers & FunctionCall & FunctionCall
+			token.type = TokenType.Identifier;
+			if (i<till-1){
+				tmpToken = tokens.read(i+1);
+				if (tmpToken.token=="("){
+					token.type = TokenType.FunctionCall;
+				}else if (tmpToken.token=="{"){
+					token.type = TokenType.FunctionDef;
+				}
+			}
+		}else if (token.token.isOperator){
+			//Operator
+			token.type = TokenType.Operator;
+		}else if (token.token[0]=='"'){
+			//string
+			token.type = TokenType.String;
+		}else if (token.token.length == 1){
+			//comma, semicolon, brackets
+			switch (token.token[0]){
+				case ',':
+					token.type = TokenType.Comma;
+					break;
+				case ';':
+					token.type = TokenType.StatementEnd;
+					break;
+				default:
+					if (isBracketOpen(token.token[0])){
+						token.type = TokenType.BracketOpen;
+					}else if (isBracketClose(token.token[0])){
+						token.type = TokenType.BracketClose;
+					}
+					break;
+			}
+		}
+		tokens.set(i,token);
+	}
+
+skipConversion:
+	if (hasError){
+		hasError = false;
+	}else{
+		hasError = true;
+	}
+	return hasError;
 }
 
-private string[][string] compileByte(){
-	size_t i, till, argC, j;
-	string token, tmStr, fName;
-	Tlist!string output = new Tlist!string;
-	Tlist!size_t blockDepth = new Tlist!size_t;
-	Tlist!(size_t[2]) addJmp = new Tlist!(size_t[2]);
-	Tlist!(size_t[2]) addIfPos = new Tlist!(size_t[2]);
-	size_t[2] tmpint;
+private bool checkSyntax(){
+	List!string vars = new List!string;
+	uinteger i, till = tokens.length;
+	bool hasError = false;
+	uinteger blockDepth;
+	Token token, tmpToken;
+	TokenType[] expectedTokens = [TokenType.FunctionDef];
 
-	string[][string] r;
-
-	till = tokens.count;
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
-		if (token=="{"){
-			if (blockDepth.count==0){
-				fName = tokens.read(i-1);
+		//die at unexpected tokens
+		if (!expectedTokens.hasElement(token.type)){
+			addError(i,"unexpected token found");
+			hasError = true;
+			break;//That's it! No more compiling, first fix this, then I'll compile!
+		}
+		//make sure all brackets are closed
+		if (token.type == TokenType.BracketOpen){
+			if (bracketPos(i)==-1){
+				addError(i,"bracket left unclosed");
+				hasError = true;
+				break;
 			}
-			blockDepth.add(i);
-		}else
-		if (token=="}"){
-			j = blockDepth.count-1;
-			//JMP has to be added first, or it'll become an infinite loop n the interpreter, as the !if
-			//will keep landing on JMP
-			if (addJmp.count>0){
-				tmpint = addJmp.readLast;
-				if (tmpint[1]==/*blockDepth.count*/j){
-					//!while's block is ending
-					output.add("JMP "~to!string(tmpint[0]));
-					addJmp.removeLast;
+			//set next set of expectedTokens
+			if (token.token=="("){
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number,
+					TokenType.String,TokenType.BracketOpen,TokenType.BracketClose];
+			}else if (token.token=="{"){
+				blockDepth++;
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.VarDef];
+			}else{//if it ain't a round or a square, then it is obviously a square bracket
+				expectedTokens = [TokenType.FunctionCall,TokenType.Identifier,TokenType.Number];
+			}
+			
+		}else if (token.type == TokenType.BracketClose){
+			if (bracketPos(i,false)==-1){
+				addError(i,"closing an unopened bracket");
+				hasError = true;
+				break;
+			}
+			//set next set of expectedTokens
+			if (token.token==")"){
+				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+					TokenType.StatementEnd,TokenType.BracketOpen];//BracketOpen cuz `if(...){...}`
+			}else if (token.token=="}"){
+				blockDepth--;
+				if (blockDepth==0){
+					vars.clear;
 				}
+				expectedTokens = [TokenType.BracketClose,TokenType.VarDef,TokenType.FunctionCall,
+					TokenType.FunctionDef,TokenType.Identifier,TokenType.StatementEnd];
+			}else{//is obviously a square bracket
+				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+					TokenType.StatementEnd,TokenType.BracketOpen];//BrOpen cuz i`[0][0]` =...; 
 			}
-			if (addIfPos.count>0){
-				tmpint = addIfPos.readLast;
-				if (tmpint[1] == /*blockDepth.count*/j){
-					//!if statement's block is ending
-					output.set(tmpint[0],"PSH "~to!string(output.count-1));
-					//-1 cause after execution of if, +1 will be done by interpreter.
-					addIfPos.removeLast;
-				}
+			
+		}else if (token.type == TokenType.VarDef){//is var declaration
+			uinteger j, end;
+			bool expComma = false;
+			if (tokens.read(i+1).token!="("){
+				addError(i+1,"variable definitions must be enclosed in paranthesis");
+				hasError = true;
+				break;
 			}
-			if (/*blockDepth.count*/j==/*1*/0){
-				r[fName]=output.toArray;
-				output.clear;
-				fName = null;
+			end = bracketPos(i+1);
+			if (end==-1){
+				addError(i+1,"bracket left unclosed");
+				hasError = true;
+				break;
 			}
-			blockDepth.removeLast;
-		}else
-		if (token==")"){
-			tmStr = tokens.read(brackStart(tokens,i)-1);
-			if (tmStr=="!if"){
-				tmpint = [output.count,blockDepth.count];
-				output.add("PSH foo");
-				addIfPos.add(tmpint);
+			if (end+1>=till || tokens.read(end+1).type!=TokenType.StatementEnd){
+				addError(end+1,"semicolon expected at end of statement");
+				hasError = true;
+				break;
 			}
-			//count the args:
-			string tmStr2;
-			argC=0;
-			size_t end = brackStart(tokens,i);
-			if (!(i-end==1) && !(tmStr=="!if")){
-				for (j=i-1;j>=end;j--){
-					tmStr2 = tokens.read(j);
-					if (tmStr2==")"){
-						j = brackStart(tokens,j);
-						continue;
+			for (j=i+2;j<end;j++){
+				tmpToken = tokens.read(j);
+				if (tmpToken.type!=TokenType.Identifier){
+					if (!expComma){
+						//it should've been an identifier, but it wasn't
+						addError(i+1,"identifier expected in variable definition");
+						hasError = true;
+						break;
+					}else if (tmpToken.type!=TokenType.Comma){
+						//comma was expected, but it wasn't there :(
+						addError(i+1,"comma must be used to separate variable names in definition");
+						hasError = true;
+						break;
+					}else{
+						//comma was expected, and it was there :)
+						expComma = false;
 					}
-					if (tmStr2=="(" || tmStr2==","){
-						argC++;
-					}
+				}else if (tmpToken.type==TokenType.Identifier){
+					vars.add(tmpToken.token);
+					expComma = true;
 				}
+			}
+			if (hasError){
+				break;
+			}
+			i=end+1;
+			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,
+				TokenType.Identifier];
+			continue;//to skip the semicolon at end
+			
+		}else if (token.type == TokenType.Comma){
+			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.Number,TokenType.String];
+			
+		}else if (token.type == TokenType.FunctionCall || token.type == TokenType.FunctionDef){
+			expectedTokens = [TokenType.BracketOpen];
+			
+		}else if (token.type == TokenType.Identifier){
+			//Check if is a var
+			if (vars.indexOf(token.token)==-1){
+				//is not a declared var
+				addError(i, "variable was not defined");
+				hasError = true;
+				//isn't a 'critical' error, just add it to list-of-errors, and don't generate bytecode
+			}
+			//set next set of tokens
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd,TokenType.BracketOpen];
+			
+		}else if (token.type == TokenType.Number || token.type == TokenType.String){
+			expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
+				TokenType.StatementEnd];
+			
+		}else if (token.type == TokenType.Operator){
+			expectedTokens = [TokenType.BracketOpen,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.Number,TokenType.String];
+			
+		}else if (token.type == TokenType.StatementEnd){
+			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.BracketClose];
+		}
+	}
+	delete vars;
+
+	if (hasError){
+		hasError = false;
+	}else{
+		hasError = true;
+	}
+	return hasError;
+}
+
+private void operatorsToFunctionCalls(){
+	uinteger i, till=tokens.length;
+	Token token;
+	Token[2] tmpToken;
+	Token[][2] operand;
+	uinteger j;
+
+	string[string][] operators;//[operator priority][operator name]->compiled name
+	operators.length = 3;
+	operators[0] = [//top priority
+		"/":"_/",
+		"*":"_*",
+		"-":"_-",
+		"+":"_+",
+		"%":"_%",
+		"~":"_~",
+	];
+	operators[1] = [//second
+		"==":"_==",
+		">=":"_>=",
+		"<=":"_<=",
+		">":"_>",
+		"<":"_<"
+	];
+	operators[2] = [
+		"=":"_="
+	];
+	/*Note to future self: `=` operator is not compiled here,
+	 *there is the `setv` instruction for it, so it is compiled
+	 *by the `toByteCode` function!*/
+	foreach(curOperators; operators){//compile all priority functions, one by one
+		for (i=0;i<till;i++){
+			token = tokens.read(i);
+			if (token.type == TokenType.Operator && token.token in curOperators){
+				//read first operand 'a'+b -> 'a'
+				operand[0] = readOperand(i-1,false);
+				//read second operand a+'b' -> 'b'
+				operand[1] = readOperand(i+1);
+				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				tokens.set(i,tmpToken[0]);
+				//Then, insert a bracket at end! Don't mess with this order!
+				tmpToken[0].token = ")";
+				tmpToken[0].type = TokenType.BracketClose;
+				j = (i+operand[1].length)+1;//cause i+operand[0].length... is required twice.
+				tokens.insert(j,[tmpToken[0]]);
+				incLineLength(j,1);
+				//Insert tokens that make the operator into a function call
+				tmpToken[0].token = curOperators[token.token];
+				tmpToken[0].type = TokenType.FunctionCall;
+				tmpToken[1].token = "(";
+				tmpToken[1].type = TokenType.BracketOpen;
+				j = (i-operand[0].length);//cause i-operand[0].length... is required twice.
+				tokens.insert(j,tmpToken);
+				incLineLength(j,2);
+				//go back a few steps
+				i-=operand[0].length+1;
+				//update `till`
+				till = tokens.length;
+			}
+		}
+	}
+	//remove unnecessary brackets, and `[]` from assignment calls
+	bool isInAssignment=false;
+	operators.length=0;//free mem(?)
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token.type==TokenType.FunctionCall && ["setLength","_="].hasElement(token.token)){
+			isInAssignment = true;
+		}
+		if (isInAssignment && token.type==TokenType.Comma){
+			isInAssignment = false;
+		}
+		if (isInAssignment && token.type==TokenType.Identifier){
+			token.type = TokenType.String;
+			token.token = '"'~token.token~'"';
+			tokens.set(i,token);
+		}
+		if (isInAssignment && token.type==TokenType.BracketOpen && token.token=="["){
+			j = bracketPos(i);
+			//convert these to comma
+			tmpToken[0].token = ",";
+			tmpToken[0].type = TokenType.Comma;
+			tokens.set(i,tmpToken[0]);
+			tokens.remove(j);
+			till = tokens.length;
+			i = j-1;//so it doesnt mess up with contents inside []
+			continue;
+		}
+		if (token.type == TokenType.BracketClose && token.token==")"){
+			j = bracketPos(i,false);
+			tmpToken[0] = tokens.read(j-1);
+			if ([TokenType.BracketOpen,TokenType.Comma].hasElement(token.type)){
+				//remove it!
+				tokens.remove(j);
+				tokens.remove(i);
+				till = tokens.length;
+				i-=3;//cuz `for` will do +1
+				continue;
+			}
+		}
+	}
+	isInAssignment = false;
+	till = tokens.length;
+	//put `_?` for vars
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		//skip if in `new`
+		if (token.type == TokenType.VarDef){
+			j = bracketPos(i+1);
+			i=j;
+			continue;
+		}
+		//now replace
+		//vars
+		if (token.type == TokenType.Identifier){
+			//change from Identifier to String
+			token.type = TokenType.String;
+			token.token = '"'~token.token~'"';
+			tokens.set(i,token);
+			//put the bracket at end
+			tmpToken[0].token = ")";
+			tmpToken[0].type = TokenType.BracketClose;
+			tokens.insert(i+1,[tmpToken[0]]);
+			//put _?( at start:
+			tmpToken[0].token = "_?";
+			tmpToken[0].type = TokenType.FunctionCall;
+			tmpToken[1].token = "(";
+			tmpToken[1].type = TokenType.BracketOpen;
+			tokens.insert(i,tmpToken);
+			till = tokens.length;
+		}
+		//arrays
+		if (token.type == TokenType.BracketOpen && token.token=="["){
+			operand[0] = readOperand(i-1,false);
+			j = bracketPos(i);
+			//operand[1] = tokens.readRange(i+1,bracketPos(i+1));
+			//change `[` to `,`
+			tmpToken[0].token = ",";
+			tmpToken[0].type = TokenType.Comma;
+			tokens.set(i,tmpToken[0]);
+			//change `]` to `)`
+			tmpToken[0].token = ")";
+			tmpToken[0].type = TokenType.BracketClose;
+			tokens.set(j,tmpToken[0]);
+			//insert `_readArray`
+			j = i-operand[0].length;
+			tmpToken[0].type = TokenType.FunctionCall;
+			tmpToken[0].token = "_readArray";
+			tmpToken[1].type = TokenType.BracketOpen;
+			tmpToken[1].token = "(";
+			tokens.insert(j,tmpToken);
+			till = tokens.length;
+			i-=3;
+			continue;
+		}
+	}
+}
+
+private string[][string] toByteCode(){
+	List!(uinteger[2]) addIfJump = new List!(uinteger[2]);//1:blockDepth; 2:whereTheJMPis
+	List!(uinteger[2]) addJump = new List!(uinteger[2]);//First element for onBlockToAdd, second: whatToAdd
+	List!uinteger argC = new List!uinteger;
+	List!string calls = new List!string;
+	uinteger blockDepth = 0;
+	uinteger brackDepth = 0;
+	Token token, tmpToken;
+	string fname = null;
+	string[][string] r;
+	uinteger[2] tmint;
+
+	uinteger i, till;
+	till = tokens.length;
+	for (i=0;i<till;i++){
+		token = tokens.read(i);
+		if (token.type==TokenType.FunctionDef){
+			fname = token.token;
+		}
+		if (token.type==TokenType.BracketOpen && token.token=="{"){
+			blockDepth++;
+			if (addIfJump.length>0){
+				calls.add("clr 1");
+				calls.add("jmp foo");//will be later replaced
+				addIfJump.set(addIfJump.length-1,[addIfJump.readLast[0],calls.length-1]);
+			}
+		}else if (token.type==TokenType.BracketOpen && token.token=="("){
+			brackDepth++;
+			argC.add(0);
+		}
+		if (token.type == TokenType.BracketClose && token.token=="}"){
+			if (addJump.length>0){
+				//just add a jmp statement
+				tmint = addJump.readLast;
+				if (tmint[0]==blockDepth){
+					calls.add("clr 1");
+					calls.add("jmp "~to!string(tmint[1]));
+					addJump.removeLast;
+				}
+			}
+			if (addIfJump.length>0){
+				tmint = addIfJump.readLast;
+				if (tmint[0]==blockDepth){
+					calls.set(tmint[1],"jmp "~to!string(calls.length-1));
+					addIfJump.removeLast;
+				}
+			}
+			if (blockDepth==1){
+				//is an ending function
+				r[fname] = calls.toArray;
+				calls.clear;
+				fname=null;
+			}
+			blockDepth--;
+		}else if (token.type == TokenType.BracketClose && token.token==")"){
+			//could be an if statement end
+			tmint[0] = bracketPos(i,false);
+			tmpToken = tokens.read(tmint[0]-1);
+			if (i-tmint[0]!=1){
+				//meaning it was NOT a `()` so increment in argC
+				argC.set(argC.length-1,argC.readLast+1);
+				//push the last argument, if any
+				//calls.add("psh "~tokens.read(i-1).token);
+			}
+			calls.add("psh \""~tmpToken.token~'"');
+			if (brackDepth>1){
+				//is a function-as-arg
+				calls.add("exa "~to!string(argC.readLast));
 			}else{
-				if (i-end==1){
-					argC = 0;
-				}else{
-					argC = 2;
+				calls.add("exf "~to!string(argC.readLast));
+			}
+			argC.removeLast;
+			brackDepth--;
+		}
+		if (token.type == TokenType.FunctionCall){
+			if (token.token=="if" || token.token=="while"){
+				addIfJump.add([blockDepth+1,0]);//0 will be later replaced
+				if (token.token=="while"){
+					addJump.add([blockDepth+1,calls.length-1]);
+					//change while to if
+					tmpToken.token = "if";
+					tmpToken.type = TokenType.FunctionCall;
+					tokens.set(i,tmpToken);
 				}
 			}
-			output.add("PSH "~to!string(argC));
-			output.add("EXE \""~tmStr~'"');
-		}else
-		if (token=="!while"){
-			tmpint = [output.count-1,blockDepth.count];//interptreter will do +1
-			addJmp.add(tmpint);
-			tokens.set(i,"!if");
-		}else
-		if (token==";"){
-			output.add("CLR 1");
-			//Cause some functions' return won't be used, unless CLR-ed, it'll waste memory
-		}else
-		if (isNum(token)){
-			//is a number type argument
-			output.add("PSH "~token);
-		}else
-		if (token[0]=='"'){
-			//is a string type argument
-			output.add("PSH "~token);
+			//Deal with normal functions
+		}
+		if (token.type == TokenType.String){
+			calls.add("psh "~token.token);
+		}else if (token.type == TokenType.Number){
+			calls.add("psh "~token.token);
+		}else if (token.type == TokenType.Identifier){
+			calls.add("psh \""~token.token~'"');
+		}
+		if (token.type == TokenType.Comma && brackDepth!=0){
+			//increment in argC
+			argC.set(argC.length-1,argC.readLast+1);
 		}
 	}
-	//free the memory
-	delete output;
-	delete blockDepth;
-	delete addJmp;
-	delete addIfPos;
+
+	delete calls;
+	delete addJump;
+	delete argC;
 	return r;
 }
 
-
-string[][string] compileQScript(Tlist!string script, bool writeOutput = false){
-	toTokens(script);
-	Tlist!string err;
-	err = compileOp();
-	string[][string] r; 
-	r["#####"] = err.toArray;
-	delete err;
-	if (r["#####"].length==0){
-		r = null;
-		r.remove("#####");
-		r = compileByte();
-		debug{
-			if (writeOutput){
-				foreach(key; r.keys){
-					writeln(key,":");
-					writeArray(r[key],"\n");
-				}
+public string[][string] compileQScript(List!string script, bool showOutput=false){
+	string[][string] r;
+	errors = new List!string;
+	 if (!toTokens(script)){
+		//was an error
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
+	debug{
+		if (showOutput){
+			writeln("Press enter to display tokens");readln;
+			foreach(tk; tokens.toArray){
+				writeln(tk.token,'\t',tk.type.TokenTypeToString);
 			}
+			writeln("<over>");
+			readln;
 		}
 	}
+	if (!checkSyntax){
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
+	operatorsToFunctionCalls;
+	debug{
+		if (showOutput){
+			writeln("Press enter to display fCalls");readln;
+			foreach(tk; tokens.toArray){
+				write(tk.token,' ');
+				if (tk.type==TokenType.StatementEnd){
+					write("\n");
+				}
+			}
+			writeln("<over>");
+			readln;
+		}
+	}
+	r = toByteCode;
+	debug{
+		if (showOutput){
+			foreach(func; r.keys){
+				writeln("ByteCode for ",func);
+				foreach(inst; r[func]){
+					writeln(inst);
+				}
+				write("Press Enter to continue...");
+				readln;
+			}
+		}
+		//save the output, showOutput doesn't matter
+		/*List!string lst = new List!string;
+		foreach(key; r.keys){
+			lst.loadArray(r[key]);
+			lst.saveFile("/tmp/byteCode."~key,"\n");
+		}
+		delete lst;*/
+	}
+
+skipIt:
 	delete tokens;
+	delete errors;
 	return r;
 }
+
+debug{
+	private string TokenTypeToString(TokenType type){
+		string r;
+		switch(type){
+			case TokenType.BracketClose:
+				r = "Bracket Close";
+				break;
+			case TokenType.BracketOpen:
+				r = "Bracket Open";
+				break;
+			case TokenType.Comma:
+				r = "Comma";
+				break;
+			case TokenType.FunctionCall:
+				r = "Function Call";
+				break;
+			case TokenType.FunctionDef:
+				r = "Function Definition";
+				break;
+			case TokenType.Identifier:
+				r = "Identifier";
+				break;
+			case TokenType.Number:
+				r = "Number";
+				break;
+			case TokenType.Operator:
+				r = "Operator";
+				break;
+			case TokenType.StatementEnd:
+				r = "Statement End";
+				break;
+			case TokenType.String:
+				r = "String";
+				break;
+			case TokenType.VarDef:
+				r = "Variable Definition";
+				break;
+			default:
+				break;
+		}
+		return r;
+	}
+}
+
+/*
+Sample QScript:
+main{
+	newString someStringVar;//It's a string!
+	double 
+}
+Interpreter instructions:
+psh - push element(s) to stack
+clr - empty the stack
+exf - execute function(s), don't push return to stack. take fName from stack, and argC from given args
+exa - execute function(s), push retur to stack. take fName from stack, and argC from given args
+jmp - jump to another index, and start execution from there, used in loops, and if
+Rules:
+An instruction can recieve dynamic amount of arguments! No limit
+AND: right before jmp, clr must be called, to prevent a possible mem-leak
+*/
