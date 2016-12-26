@@ -744,15 +744,15 @@ private void operatorsToFunctionCalls(){
 }
 
 private string[][string] toByteCode(){
-	uinteger blockDepth = 0;
-	uinteger addIfJump = 0;
-	uinteger brackDepth = 0;
-	List!string calls = new List!string;
+	List!(uinteger[2]) addIfJump = new List!(uinteger[2]);//1:blockDepth; 2:whereTheJMPis
 	List!(uinteger[2]) addJump = new List!(uinteger[2]);//First element for onBlockToAdd, second: whatToAdd
 	List!uinteger argC = new List!uinteger;
-	string[][string] r;
-	string fname = null;
+	List!string calls = new List!string;
+	uinteger blockDepth = 0;
+	uinteger brackDepth = 0;
 	Token token, tmpToken;
+	string fname = null;
+	string[][string] r;
 	uinteger[2] tmint;
 
 	uinteger i, till;
@@ -764,6 +764,10 @@ private string[][string] toByteCode(){
 		}
 		if (token.type==TokenType.BracketOpen && token.token=="{"){
 			blockDepth++;
+			if (addIfJump.length>0){
+				calls.add("jmp foo");//will be later replaced
+				addIfJump.set(addIfJump.length-1,[addIfJump.readLast[0],calls.length-1]);
+			}
 		}else if (token.type==TokenType.BracketOpen && token.token=="("){
 			brackDepth++;
 			argC.add(0);
@@ -777,6 +781,13 @@ private string[][string] toByteCode(){
 					addJump.removeLast;
 				}
 			}
+			if (addIfJump.length>0){
+				tmint = addIfJump.readLast;
+				if (tmint[0]==blockDepth){
+					calls.set(tmint[1],"jmp "~to!string(calls.length-1));
+					addIfJump.removeLast;
+				}
+			}
 			if (blockDepth==1){
 				//is an ending function
 				r[fname] = calls.toArray;
@@ -788,9 +799,6 @@ private string[][string] toByteCode(){
 			//could be an if statement end
 			tmint[0] = bracketPos(i,false);
 			tmpToken = tokens.read(tmint[0]-1);
-			if (addIfJump!=0){
-				calls.add("jmp "~to!string(addIfJump));
-			}
 			if (i-tmint[0]!=1){
 				//meaning it was NOT a `()` so increment in argC
 				argC.set(argC.length-1,argC.readLast+1);
@@ -809,7 +817,7 @@ private string[][string] toByteCode(){
 		}
 		if (token.type == TokenType.FunctionCall){
 			if (token.token=="if" || token.token=="while"){
-				addIfJump = calls.length-1;//cause the interpreter does +1
+				addIfJump.add([blockDepth+1,0]);//0 will be later replaced
 				if (token.token=="while"){
 					addJump.add([blockDepth,calls.length-1]);
 					//change while to if
@@ -821,11 +829,11 @@ private string[][string] toByteCode(){
 			//Deal with normal functions
 		}
 		if (token.type == TokenType.String){
-			calls.add("psh "~token.token[1..token.token.length-1]);
+			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Identifier){
-			calls.add("psh "~token.token);
+			calls.add("psh \""~token.token~'"');
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
 			//increment in argC
