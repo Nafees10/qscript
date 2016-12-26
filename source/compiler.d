@@ -659,9 +659,10 @@ private void operatorsToFunctionCalls(){
 		if (isInAssignment && token.type==TokenType.Comma){
 			isInAssignment = false;
 		}
-		if (token.type==TokenType.Identifier){
+		if (isInAssignment && token.type==TokenType.Identifier){
 			token.type = TokenType.String;
 			token.token = '"'~token.token~'"';
+			tokens.set(i,token);
 		}
 		if (isInAssignment && token.type==TokenType.BracketOpen && token.token=="["){
 			j = bracketPos(i);
@@ -718,12 +719,12 @@ private void operatorsToFunctionCalls(){
 		//arrays
 		if (token.type == TokenType.BracketOpen && token.token=="["){
 			operand[0] = readOperand(i-1,false);
-			j = bracketPos(i+1);
+			j = bracketPos(i);
 			//operand[1] = tokens.readRange(i+1,bracketPos(i+1));
 			//change `[` to `,`
 			tmpToken[0].token = ",";
 			tmpToken[0].type = TokenType.Comma;
-			tokens.set(i+1,tmpToken[0]);
+			tokens.set(i,tmpToken[0]);
 			//change `]` to `)`
 			tmpToken[0].token = ")";
 			tmpToken[0].type = TokenType.BracketClose;
@@ -823,6 +824,8 @@ private string[][string] toByteCode(){
 			calls.add("psh "~token.token[1..token.token.length-1]);
 		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
+		}else if (token.type == TokenType.Identifier){
+			calls.add("psh "~token.token);
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
 			//increment in argC
@@ -848,16 +851,11 @@ public string[][string] compileQScript(List!string script){
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
-	delete errors;
 	operatorsToFunctionCalls;
-	debug{
-		foreach(tk; tokens.toArray){
-			write(tk.token);
-		}readln;
-	}
 	r = toByteCode;
 
 skipIt:
+	delete errors;
 	return r;
 }
 
