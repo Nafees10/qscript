@@ -25,7 +25,7 @@ public:
 	void set(uinteger index, T dat){
 		list[index]=dat;
 	}
-	void del(uinteger index, uinteger count=1){
+	void remove(uinteger index, uinteger count=1){
 		integer i;
 		integer till=taken-count;
 		for (i=index;i<till;i++){
