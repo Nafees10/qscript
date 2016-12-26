@@ -248,6 +248,9 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 					TokenType.Operator].hasElement(token.type)){
 				break;
 			}else if (token.type == TokenType.BracketOpen){
+				if (token.token=="{"){
+					break;
+				}
 				i = bracketPos(i);
 			}
 		}
@@ -259,6 +262,9 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 					TokenType.Operator].hasElement(token.type)){
 				break;
 			}else if (token.type == TokenType.BracketClose){
+				if (token.token=="}"){
+					break;
+				}
 				i = bracketPos(i,false);
 			}
 		}
@@ -670,7 +676,7 @@ private void operatorsToFunctionCalls(){
 	operators.length=0;//free mem(?)
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
-		if (token.type==TokenType.FunctionCall && ["setLength","getLength","_="].hasElement(token.token)){
+		if (token.type==TokenType.FunctionCall && ["setLength","_="].hasElement(token.token)){
 			isInAssignment = true;
 		}
 		if (isInAssignment && token.type==TokenType.Comma){
@@ -917,12 +923,12 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 			}
 		}
 		//save the output, showOutput doesn't matter
-		List!string lst = new List!string;
+		/*List!string lst = new List!string;
 		foreach(key; r.keys){
 			lst.loadArray(r[key]);
 			lst.saveFile("/tmp/byteCode."~key,"\n");
 		}
-		delete lst;
+		delete lst;*/
 	}
 
 skipIt:
