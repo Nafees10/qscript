@@ -145,7 +145,7 @@ private:
 	}
 	Tqvar readArray(Tqvar[] args){
 		if (args[0].array.length<=args[1].d){
-			throw new Exception("index out of limit"~to!string(args[1].d)~"/"~
+			throw new Exception("index out of limit: "~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
 		return args[0].array[cast(uinteger)args[1].d];
@@ -193,9 +193,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		debug{
+		/*debug{
 			writeln("Calling ",fName);
-		}
+		}*/
 		if (func){
 			(*func)(args);
 		}else
@@ -212,9 +212,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		debug{
+		/*debug{
 			writeln("Calling ",fName);
-		}
+		}*/
 		if (func){
 			stack.push((*func)(args));
 		}else
@@ -318,7 +318,11 @@ private:
 			try{
 				calls[fName][ind](callsArgs[fName][ind]);
 			}catch(Exception e){
-				writeln("Something went wrong in instruction#",ind,":\n",e.msg);
+				writeln("Something went wrong in instruction:",ind,":\n",e.msg);
+				writeln("Enter y to ignore, or just hit enter to abort.");
+				if (readln!="y\n"){
+					throw e;
+				}
 			}
 		}
 		delete stack;
