@@ -632,20 +632,8 @@ private void operatorsToFunctionCalls(){
 			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
 				operand[0] = readOperand(i-1,false);
-				/*debug{
-					write("Operartor:'",token.token,"'\noperand[0]:");
-					foreach(op; operand[0]){
-						write(op.token,' ');
-					}write('\n');
-				}*/
 				//read second operand a+'b' -> 'b'
 				operand[1] = readOperand(i+1);
-				/*debug{
-					write("operand[1]:");
-					foreach(op; operand[1]){
-						write(op.token,' ');
-					}readln;
-				}*/
 				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;

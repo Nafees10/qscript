@@ -193,9 +193,6 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		/*debug{
-			writeln("Calling ",fName);
-		}*/
 		if (func){
 			(*func)(args);
 		}else
@@ -212,9 +209,6 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		/*debug{
-			writeln("Calling ",fName);
-		}*/
 		if (func){
 			stack.push((*func)(args));
 		}else
