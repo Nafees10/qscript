@@ -54,7 +54,7 @@ private:
 	//IF
 	Tqvar doIf(Tqvar[] args){
 		if (args[0].d==1){
-			ind++;//skip the JMP-to-end
+			ind+=2;//skip the JMP-to-end
 		}
 		return args[0];
 	}
@@ -165,10 +165,11 @@ private:
 		Tqvar r;
 		if (args.length>2){
 			uinteger i;
-			uinteger till = args.length-1;
+			uinteger till = args.length-1;//cuz below, it's a `<`, not a `<=`
 			for (i=1;i<till;i++){
 				if (args[i].d >= curVar.array.length){
-					throw new Exception("index out of limit");
+					throw new Exception("index out of limit: "~to!string(args[i].d)~'/'~
+						to!string(curVar.array.length-1));
 				}
 				curVar = &curVar.array[cast(uinteger)args[i].d];
 			}
@@ -180,6 +181,11 @@ private:
 	void push(Tqvar arg){
 		stack.push(arg);
 	}
+	void clear(Tqvar arg){
+		if (arg.d==1){
+			stack.clear;
+		}
+	}
 	void jmp(Tqvar arg){
 		ind = cast(uinteger)arg.d;
 	}
@@ -187,9 +193,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		/*debug{
+		debug{
 			writeln("Calling ",fName);
-		}*/
+		}
 		if (func){
 			(*func)(args);
 		}else
@@ -206,9 +212,9 @@ private:
 		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
 		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
-		/*debug{
+		debug{
 			writeln("Calling ",fName);
-		}*/
+		}
 		if (func){
 			stack.push((*func)(args));
 		}else
@@ -245,6 +251,7 @@ private:
 
 		inst[string] mList = [
 			"psh":&push,
+			"clr":&clear,
 			"jmp":&jmp,
 			"exf":&exf,
 			"exa":&exa
@@ -352,10 +359,10 @@ public:
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		byteCode = compileQScript(script);
+		byteCode = compileQScript(script/*, true*/);
 		string[] r;
-		if ("#####" in calls){
-			r = byteCode["#####"];
+		if ("#errors" in byteCode){
+			r = byteCode["#errors"];
 		}else{
 			finalCompile(byteCode);
 		}

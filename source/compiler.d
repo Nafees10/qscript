@@ -12,6 +12,9 @@ import misc;
 import lists;
 import std.conv:to;
 import std.algorithm:canFind;
+debug{
+	import std.stdio;
+}
 
 private List!Token tokens;
 private List!string errors;
@@ -485,7 +488,7 @@ private bool checkSyntax(){
 					vars.clear;
 				}
 				expectedTokens = [TokenType.BracketClose,TokenType.VarDef,TokenType.FunctionCall,
-					TokenType.FunctionDef,TokenType.Identifier];
+					TokenType.FunctionDef,TokenType.Identifier,TokenType.StatementEnd];
 			}else{//is obviously a square bracket
 				expectedTokens = [TokenType.BracketClose,TokenType.Comma,TokenType.Operator,
 					TokenType.StatementEnd,TokenType.BracketOpen];//BrOpen cuz i`[0][0]` =...; 
@@ -618,10 +621,20 @@ private void operatorsToFunctionCalls(){
 			if (token.type == TokenType.Operator && token.token in curOperators){
 				//read first operand 'a'+b -> 'a'
 				operand[0] = readOperand(i-1,false);
-				//operand[0] = operand[0].IdentifiersToString;
+				/*debug{
+					write("Operartor:'",token.token,"'\noperand[0]:");
+					foreach(op; operand[0]){
+						write(op.token,' ');
+					}write('\n');
+				}*/
 				//read second operand a+'b' -> 'b'
 				operand[1] = readOperand(i+1);
-				//operand[1] = operand[1].IdentifiersToString;
+				/*debug{
+					write("operand[1]:");
+					foreach(op; operand[1]){
+						write(op.token,' ');
+					}readln;
+				}*/
 				//First, change the operator into a comma! NO MESSING WITH THIS ORDER!
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;
@@ -670,7 +683,7 @@ private void operatorsToFunctionCalls(){
 			tmpToken[0].type = TokenType.Comma;
 			tokens.set(i,tmpToken[0]);
 			tokens.remove(j);
-			till--;
+			till = tokens.length;
 			i = j-1;//so it doesnt mess up with contents inside []
 			continue;
 		}
@@ -681,13 +694,14 @@ private void operatorsToFunctionCalls(){
 				//remove it!
 				tokens.remove(j);
 				tokens.remove(i);
-				till-=2;
+				till = tokens.length;
 				i-=3;//cuz `for` will do +1
 				continue;
 			}
 		}
 	}
 	isInAssignment = false;
+	till = tokens.length;
 	//put `_?` for vars
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
@@ -714,6 +728,7 @@ private void operatorsToFunctionCalls(){
 			tmpToken[1].token = "(";
 			tmpToken[1].type = TokenType.BracketOpen;
 			tokens.insert(i,tmpToken);
+			till = tokens.length;
 		}
 		//arrays
 		if (token.type == TokenType.BracketOpen && token.token=="["){
@@ -735,7 +750,7 @@ private void operatorsToFunctionCalls(){
 			tmpToken[1].type = TokenType.BracketOpen;
 			tmpToken[1].token = "(";
 			tokens.insert(j,tmpToken);
-			till+=2;
+			till = tokens.length;
 			i-=3;
 			continue;
 		}
@@ -764,6 +779,7 @@ private string[][string] toByteCode(){
 		if (token.type==TokenType.BracketOpen && token.token=="{"){
 			blockDepth++;
 			if (addIfJump.length>0){
+				calls.add("clr 1");
 				calls.add("jmp foo");//will be later replaced
 				addIfJump.set(addIfJump.length-1,[addIfJump.readLast[0],calls.length-1]);
 			}
@@ -776,6 +792,7 @@ private string[][string] toByteCode(){
 				//just add a jmp statement
 				tmint = addJump.readLast;
 				if (tmint[0]==blockDepth){
+					calls.add("clr 1");
 					calls.add("jmp "~to!string(tmint[1]));
 					addJump.removeLast;
 				}
@@ -818,7 +835,7 @@ private string[][string] toByteCode(){
 			if (token.token=="if" || token.token=="while"){
 				addIfJump.add([blockDepth+1,0]);//0 will be later replaced
 				if (token.token=="while"){
-					addJump.add([blockDepth,calls.length-1]);
+					addJump.add([blockDepth+1,calls.length-1]);
 					//change while to if
 					tmpToken.token = "if";
 					tmpToken.type = TokenType.FunctionCall;
@@ -854,14 +871,36 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
+	debug{
+		if (showOutput){
+			writeln("Press enter to display tokens");readln;
+			foreach(tk; tokens.toArray){
+				writeln(tk.token,'\t',tk.type.TokenTypeToString);
+			}
+			writeln("<over>");
+			readln;
+		}
+	}
 	if (!checkSyntax){
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
 	operatorsToFunctionCalls;
+	debug{
+		if (showOutput){
+			writeln("Press enter to display fCalls");readln;
+			foreach(tk; tokens.toArray){
+				write(tk.token,' ');
+				if (tk.type==TokenType.StatementEnd){
+					write("\n");
+				}
+			}
+			writeln("<over>");
+			readln;
+		}
+	}
 	r = toByteCode;
 	debug{
-		import std.stdio;
 		if (showOutput){
 			foreach(func; r.keys){
 				writeln("ByteCode for ",func);
@@ -872,11 +911,63 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 				readln;
 			}
 		}
+		//save the output, showOutput doesn't matter
+		List!string lst = new List!string;
+		foreach(key; r.keys){
+			lst.loadArray(r[key]);
+			lst.saveFile("/tmp/byteCode."~key,"\n");
+		}
+		delete lst;
 	}
 
 skipIt:
+	delete tokens;
 	delete errors;
 	return r;
+}
+
+debug{
+	private string TokenTypeToString(TokenType type){
+		string r;
+		switch(type){
+			case TokenType.BracketClose:
+				r = "Bracket Close";
+				break;
+			case TokenType.BracketOpen:
+				r = "Bracket Open";
+				break;
+			case TokenType.Comma:
+				r = "Comma";
+				break;
+			case TokenType.FunctionCall:
+				r = "Function Call";
+				break;
+			case TokenType.FunctionDef:
+				r = "Function Definition";
+				break;
+			case TokenType.Identifier:
+				r = "Identifier";
+				break;
+			case TokenType.Number:
+				r = "Number";
+				break;
+			case TokenType.Operator:
+				r = "Operator";
+				break;
+			case TokenType.StatementEnd:
+				r = "Statement End";
+				break;
+			case TokenType.String:
+				r = "String";
+				break;
+			case TokenType.VarDef:
+				r = "Variable Definition";
+				break;
+			default:
+				break;
+		}
+		return r;
+	}
 }
 
 /*
@@ -887,9 +978,11 @@ main{
 }
 Interpreter instructions:
 psh - push element(s) to stack
+clr - empty the stack
 exf - execute function(s), don't push return to stack. take fName from stack, and argC from given args
 exa - execute function(s), push retur to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
 Rules:
 An instruction can recieve dynamic amount of arguments! No limit
+AND: right before jmp, clr must be called, to prevent a possible mem-leak
 */
