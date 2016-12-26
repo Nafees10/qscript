@@ -10,7 +10,6 @@ module compiler;
 
 import misc;
 import lists;
-import std.stdio;
 import std.conv:to;
 import std.algorithm:canFind;
 
@@ -784,7 +783,7 @@ private string[][string] toByteCode(){
 			if (addIfJump.length>0){
 				tmint = addIfJump.readLast;
 				if (tmint[0]==blockDepth){
-					calls.set(tmint[1],"jmp "~to!string(calls.length-1));
+					calls.set(tmint[1],"jmp "~to!string(calls.length));
 					addIfJump.removeLast;
 				}
 			}
@@ -805,7 +804,7 @@ private string[][string] toByteCode(){
 				//push the last argument, if any
 				//calls.add("psh "~tokens.read(i-1).token);
 			}
-			calls.add("psh "~tmpToken.token);
+			calls.add("psh \""~tmpToken.token~'"');
 			if (brackDepth>1){
 				//is a function-as-arg
 				calls.add("exa "~to!string(argC.readLast));
@@ -847,7 +846,7 @@ private string[][string] toByteCode(){
 	return r;
 }
 
-public string[][string] compileQScript(List!string script){
+public string[][string] compileQScript(List!string script, bool showOutput=false){
 	string[][string] r;
 	errors = new List!string;
 	 if (!toTokens(script)){
@@ -861,6 +860,19 @@ public string[][string] compileQScript(List!string script){
 	}
 	operatorsToFunctionCalls;
 	r = toByteCode;
+	debug{
+		import std.stdio;
+		if (showOutput){
+			foreach(func; r.keys){
+				writeln("ByteCode for ",func);
+				foreach(inst; r[func]){
+					writeln(inst);
+				}
+				write("Press Enter to continue...");
+				readln;
+			}
+		}
+	}
 
 skipIt:
 	delete errors;
