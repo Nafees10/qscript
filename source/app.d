@@ -40,7 +40,7 @@ public:
 }
 
 void main(string[] args){
-	/*args.length = 2;
+	args.length = 2;
 	args[1] = "/home/nafees/Desktop/q.qod";
 	Tqscript scr = new Tqscript;
 	Tqfuncs scrF = new Tqfuncs;
@@ -59,8 +59,8 @@ void main(string[] args){
 		writeln("\nExecution ended in ",sw.peek().msecs," msecs!");
 	}
 	delete scr;
-	delete scrF;*/
-	debug{
+	delete scrF;
+	/*debug{
 		import compiler;
 		import lists;
 		import misc;
@@ -83,5 +83,5 @@ void main(string[] args){
 			}
 		}
 		readln;
-	}
+	}*/
 }
