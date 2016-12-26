@@ -319,7 +319,7 @@ private:
 				calls[fName][ind](callsArgs[fName][ind]);
 			}catch(Exception e){
 				writeln("Something went wrong in instruction:",ind,":\n",e.msg);
-				writeln("Enter y to ignore, or just hit enter to abort.");
+				write("Enter y to ignore, or just hit enter to abort:");
 				if (readln!="y\n"){
 					throw e;
 				}
@@ -367,7 +367,7 @@ public:
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		byteCode = compileQScript(script/*, true*/);
+		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		string[] r;
 		if ("#errors" in byteCode){
 			r = byteCode["#errors"];
