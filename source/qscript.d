@@ -180,24 +180,37 @@ private:
 	void push(Tqvar arg){
 		stack.push(arg);
 	}
-	void clr(Tqvar arg){
-		stack.clear;
-	}
 	void jmp(Tqvar arg){
 		ind = cast(uinteger)arg.d;
 	}
-	void exe(Tqvar arg){
-		string fName = arg.s;
+	void exf(Tqvar arg){
+		string fName = stack.pop.s;
 		scrFunction* func = fName in fList;
-		Tqvar[] args = stack.pop(cast(uinteger)stack.pop.d);
+		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
 		if (func){
-			stack.push((*func)(args));
+			(*func)(args);
 		}else
 		if (fName in calls){
 			execF(fName,args);
 		}else
 		if (onExec){
 			onExec(fName,args);
+		}else{
+			throw new Exception("unrecognized function call "~fName);
+		}
+	}
+	void exa(Tqvar arg){
+		string fName = stack.pop.s;
+		scrFunction* func = fName in fList;
+		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		if (func){
+			stack.push((*func)(args));
+		}else
+		if (fName in calls){
+			stack.push(execF(fName,args));
+		}else
+		if (onExec){
+			stack.push(onExec(fName,args));
 		}else{
 			throw new Exception("unrecognized function call "~fName);
 		}
@@ -225,10 +238,10 @@ private:
 		List!Tqvar tmpArgs = new List!Tqvar;
 
 		inst[string] mList = [
-			"PSH":&push,
-			"CLR":&clr,
-			"JMP":&jmp,
-			"EXE":&exe
+			"psh":&push,
+			"jmp":&jmp,
+			"exf":&exf,
+			"exa":&exa
 		];
 
 		foreach(fName; script.keys){
@@ -307,27 +320,26 @@ private:
 public:
 	this(){
 		fList = [
-			"!/":&divOp,
-			"!*":&mulOp,
-			"!+":&plusOp,
-			"!-":&minusOp,
-			"!%":&modulusOp,
-			"!~":&strConcat,
-			"!if":&doIf,
-			"!while":&doIf,
-			"!==":&isEqual,
-			"!>":&isBigger,
-			"!<":&isSmaller,
-			"!>=":&isBiggerEqual,
-			"!<=":&isSmalerEqual,
-			"!string":&toString,
-			"!double":&toDouble,
-			"!setLength":&setLength,
-			"!getLength":&getLength,
-			"!new":&newVar,
-			"![":&readArray,
-			"!?":&getVar,
-			"!=":&setVar,
+			"_/":&divOp,
+			"_*":&mulOp,
+			"_+":&plusOp,
+			"_-":&minusOp,
+			"_%":&modulusOp,
+			"_~":&strConcat,
+			"if":&doIf,
+			"_==":&isEqual,
+			"_>":&isBigger,
+			"_<":&isSmaller,
+			"_>=":&isBiggerEqual,
+			"_<=":&isSmalerEqual,
+			"string":&toString,
+			"double":&toDouble,
+			"setLength":&setLength,
+			"getLength":&getLength,
+			"new":&newVar,
+			"_readArray":&readArray,
+			"_?":&getVar,
+			"_=":&setVar,
 		];
 	}
 	string[] loadScript(string fName){
