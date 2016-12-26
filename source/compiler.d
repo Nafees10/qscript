@@ -296,6 +296,7 @@ private bool toTokens(List!string script){
 					tokenCount++;
 				}
 				addFrom = i+1;
+				continue;
 			}
 			//comments
 			if (i<line.length-1 && line[i..i+2]=="//"){
@@ -303,6 +304,7 @@ private bool toTokens(List!string script){
 					token.token = line[addFrom..i];
 					tokens.add(token);
 					tokenCount++;
+					continue;
 				}
 				break;
 			}
@@ -339,6 +341,7 @@ private bool toTokens(List!string script){
 				tokens.add(token);
 				tokenCount++;
 				addFrom = i+1;
+				continue;
 			}
 			//and operators
 			if (isOperator([line[i]])){// it works cuz 2char operator's for char is an operator
@@ -356,6 +359,7 @@ private bool toTokens(List!string script){
 					tokens.add(token);
 					tokenCount++;
 					addFrom = i+2;//it's a 2char operator!
+					i++;
 				}else{
 					//is 1 char operator
 					if (addFrom!=i){
@@ -370,6 +374,7 @@ private bool toTokens(List!string script){
 					tokenCount++;
 					addFrom = i+1;
 				}
+				continue;
 			}
 		}
 		lineLength[lineno] = tokenCount;
@@ -800,7 +805,7 @@ private string[][string] toByteCode(){
 			if (addIfJump.length>0){
 				tmint = addIfJump.readLast;
 				if (tmint[0]==blockDepth){
-					calls.set(tmint[1],"jmp "~to!string(calls.length));
+					calls.set(tmint[1],"jmp "~to!string(calls.length-1));
 					addIfJump.removeLast;
 				}
 			}

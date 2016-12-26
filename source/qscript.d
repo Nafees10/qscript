@@ -3,8 +3,8 @@ module qscript;
 import misc;
 import lists;
 import compiler;
-import std.conv:to;
 import std.stdio;
+import std.conv:to;
 
 
 alias scrFunction = Tqvar delegate(Tqvar[]);
@@ -315,7 +315,11 @@ private:
 		Tqvar arg;
 		//start executing
 		for (ind = 0;ind<calls[fName].length;ind++){
-			calls[fName][ind](callsArgs[fName][ind]);
+			try{
+				calls[fName][ind](callsArgs[fName][ind]);
+			}catch(Exception e){
+				writeln("Something went wrong in instruction#",ind,":\n",e.msg);
+			}
 		}
 		delete stack;
 		//restote previous state
