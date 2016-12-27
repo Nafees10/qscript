@@ -8,12 +8,15 @@
 6. Dynamic typed, yet very fast.
 
 ---
+
 ### Where to report bugs?
 Use the issues tab at the top!
-  
----  
-### Where to learn QScript from (Since QScript is a language itself)?  
-Use the wiki!  
-  
- ---  
+
+---
+
+### Where to learn QScript from (Since QScript is a language itself)?
+Use the wiki!
+
+---
+
 P.S: Updates have slowed down, a lot, because I am nowadays very busy with my studies.
