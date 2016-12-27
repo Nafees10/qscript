@@ -736,14 +736,16 @@ private void operatorsToFunctionCalls(){
 		}
 		if (token.type == TokenType.BracketClose && token.token==")"){
 			j = bracketPos(i,false);
-			tmpToken[0] = tokens.read(j-1);
-			if ([TokenType.BracketOpen,TokenType.Comma].hasElement(token.type)){
-				//remove it!
-				tokens.remove(j);
-				tokens.remove(i);
-				till = tokens.length;
-				i-=3;//cuz `for` will do +1
-				continue;
+			if (j>0){
+				tmpToken[0] = tokens.read(j-1);
+				if ([TokenType.BracketOpen,TokenType.Comma].hasElement(tmpToken[0].type)){
+					//remove it!
+					tokens.remove(i);
+					tokens.remove(j);
+					till-=2;
+					i-=2;//cuz `for` will do +1
+					continue;
+				}
 			}
 		}
 	}
