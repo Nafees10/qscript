@@ -126,11 +126,11 @@ private string lowercase(string s){
 }
 
 private bool isNum(string s){
-	bool r=false;
+	bool r=true;
 	uinteger i;
 	for (i=0;i<s.length;i++){
-		if ("0123456789.".canFind(s[i])){
-			r = true;
+		if (!"0123456789.".canFind(s[i])){
+			r = false;
 			break;
 		}
 	}
