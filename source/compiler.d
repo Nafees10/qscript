@@ -171,7 +171,7 @@ private bool isBracketClose(char b){
 	return ['}',']',')'].hasElement(b);
 }
 
-private Token[] IdentifiersToString(Token[] ident){
+/*private Token[] IdentifiersToString(Token[] ident){
 	for (uinteger i = 0;i < ident.length; i++){
 		if (ident[i].type==TokenType.Identifier){
 			ident[i].token = '"'~ident[i].token~'"';
@@ -179,6 +179,48 @@ private Token[] IdentifiersToString(Token[] ident){
 		}
 	}
 	return ident;
+}*/
+
+private string TokenTypeToString(TokenType type){
+	string r;
+	switch(type){
+		case TokenType.BracketClose:
+			r = "Bracket Close";
+			break;
+		case TokenType.BracketOpen:
+			r = "Bracket Open";
+			break;
+		case TokenType.Comma:
+			r = "Comma";
+			break;
+		case TokenType.FunctionCall:
+			r = "Function Call";
+			break;
+		case TokenType.FunctionDef:
+			r = "Function Definition";
+			break;
+		case TokenType.Identifier:
+			r = "Identifier";
+			break;
+		case TokenType.Number:
+			r = "Number";
+			break;
+		case TokenType.Operator:
+			r = "Operator";
+			break;
+		case TokenType.StatementEnd:
+			r = "Statement End";
+			break;
+		case TokenType.String:
+			r = "String";
+			break;
+		case TokenType.VarDef:
+			r = "Variable Definition";
+			break;
+		default:
+			break;
+	}
+	return r;
 }
 
 private integer bracketPos(uinteger start, bool forward = true){
@@ -461,7 +503,13 @@ private bool checkSyntax(){
 		token = tokens.read(i);
 		//die at unexpected tokens
 		if (!expectedTokens.hasElement(token.type)){
-			addError(i,"unexpected token found");
+			string tmStr = token.type.TokenTypeToString~" found, expected:\n";
+			foreach(tk; expectedTokens){
+				tmStr~=tk.TokenTypeToString~" or ";
+			}
+			tmStr.length-=4;//to remove the last 'or'
+
+			addError(i,token.type.TokenTypeToString~" found, expected:\n");
 			hasError = true;
 			break;//That's it! No more compiling, first fix this, then I'll compile!
 		}
@@ -550,8 +598,8 @@ private bool checkSyntax(){
 				break;
 			}
 			i=end+1;
-			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,
-				TokenType.Identifier];
+			expectedTokens = [TokenType.VarDef,TokenType.FunctionCall,TokenType.Identifier,
+				TokenType.BracketClose];
 			continue;//to skip the semicolon at end
 			
 		}else if (token.type == TokenType.Comma){
@@ -923,50 +971,6 @@ skipIt:
 	delete tokens;
 	delete errors;
 	return r;
-}
-
-debug{
-	private string TokenTypeToString(TokenType type){
-		string r;
-		switch(type){
-			case TokenType.BracketClose:
-				r = "Bracket Close";
-				break;
-			case TokenType.BracketOpen:
-				r = "Bracket Open";
-				break;
-			case TokenType.Comma:
-				r = "Comma";
-				break;
-			case TokenType.FunctionCall:
-				r = "Function Call";
-				break;
-			case TokenType.FunctionDef:
-				r = "Function Definition";
-				break;
-			case TokenType.Identifier:
-				r = "Identifier";
-				break;
-			case TokenType.Number:
-				r = "Number";
-				break;
-			case TokenType.Operator:
-				r = "Operator";
-				break;
-			case TokenType.StatementEnd:
-				r = "Statement End";
-				break;
-			case TokenType.String:
-				r = "String";
-				break;
-			case TokenType.VarDef:
-				r = "Variable Definition";
-				break;
-			default:
-				break;
-		}
-		return r;
-	}
 }
 
 /*

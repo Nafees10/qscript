@@ -312,9 +312,10 @@ private:
 			try{
 				calls[fName][ind](callsArgs[fName][ind]);
 			}catch(Exception e){
-				writeln("Something went wrong in instruction:",ind,":\n",e.msg);
+				writeln("Something went wrong in instruction: ",ind,":\n",e.msg);
 				write("Enter y to ignore, or just hit enter to abort:");
 				if (readln!="y\n"){
+					//they didn't enter 'y', they want me to die :(
 					throw e;
 				}
 			}
