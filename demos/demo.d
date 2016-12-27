@@ -42,10 +42,6 @@ public:
  * './demo' '/path/to/the/script/file'
  */
 void main(string[] args){
-	debug{//This is only for me, comment this out if you plan to use -debug
-		args.length = 2;
-		args[1] = "/home/nafees/Desktop/q.qod";
-	}
 	Tqscript scr = new Tqscript;
 	Tqfuncs scrF = new Tqfuncs;
 	string[] errors = scr.loadScript(args[1]);
