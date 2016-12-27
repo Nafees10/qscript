@@ -361,6 +361,7 @@ public:
 	string[] loadScript(string fName){
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
+		delete script;
 		string[][string] byteCode;
 		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		string[] r;
