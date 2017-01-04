@@ -2,7 +2,7 @@
 ### Features:
 1. Easy and unique (a bit like C) syntax
 2. Arrays - Dynamic Arrays, length can be changed at runtime
-3. Fast execution - or should I say, very fast. At averge, QScript takes 3.7% more time than D code compiled with DMD.
+3. Fast execution - or should I say, very fast. The `demo.qscript` takes just 0.05 seconds more than it's D (compiled) equaivalent!
 4. More features on the way, qscript is still in beta
 5. One script can have several functions, making it usable for 'event-based scripting' - and those functions can call each other.
 6. Dynamic typed, yet very fast.
