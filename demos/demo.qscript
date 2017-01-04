@@ -5,5 +5,5 @@ main{
   while (i<100000){
     i = i + 1;
   }
-  qwrite("That was fast, right?");
+  qwrite("That was fast, right? It should've taken around 1300 msecs, while the D equaivalent of this code takes just 50 msecs less!");
 }
