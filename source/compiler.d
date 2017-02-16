@@ -976,18 +976,13 @@ skipIt:
 }
 
 /*
-Sample QScript:
-main{
-	newString someStringVar;//It's a string!
-	double 
-}
 Interpreter instructions:
 psh - push element(s) to stack
 clr - empty the stack
-exf - execute function(s), don't push return to stack. take fName from stack, and argC from given args
-exa - execute function(s), push retur to stack. take fName from stack, and argC from given args
+exf - execute function, don't push return to stack. take fName from stack, and argC from given args
+exa - execute function, push return to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
 Rules:
-An instruction can recieve dynamic amount of arguments! No limit
+An instruction can recieve one argument!
 AND: right before jmp, clr must be called, to prevent a possible mem-leak
 */

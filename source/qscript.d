@@ -135,6 +135,11 @@ private:
 		r.d = args[0].array.length;
 		return r;
 	}
+	Tqvar initArray(Tqvar[] args){
+		Tqvar r;
+		r.array = args;
+		return r;
+	}
 	//Vars
 	Tqvar newVar(Tqvar[] args){
 		Tqvar r;
@@ -352,6 +357,7 @@ public:
 			"double":&toDouble,
 			"setLength":&setLength,
 			"getLength":&getLength,
+			"array":&initArray,
 			"new":&newVar,
 			"_readArray":&readArray,
 			"_?":&getVar,
