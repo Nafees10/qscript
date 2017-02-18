@@ -644,12 +644,13 @@ private bool checkSyntax(){
 	return hasError;
 }
 
-private void operatorsToFunctionCalls(){
+private bool operatorsToFunctionCalls(){
 	uinteger i, till=tokens.length;
 	Token token;
 	Token[2] tmpToken;
 	Token[][2] operand;
 	uinteger j;
+	bool hasError = false;
 
 	string[string][] operators;//[operator priority][operator name]->compiled name
 	operators.length = 3;
@@ -671,9 +672,7 @@ private void operatorsToFunctionCalls(){
 	operators[2] = [
 		"=":"_="
 	];
-	/*Note to future self: `=` operator is not compiled here,
-	 *there is the `setv` instruction for it, so it is compiled
-	 *by the `toByteCode` function!*/
+
 	foreach(curOperators; operators){//compile all priority functions, one by one
 		for (i=0;i<till;i++){
 			token = tokens.read(i);
@@ -707,33 +706,80 @@ private void operatorsToFunctionCalls(){
 			}
 		}
 	}
-	//remove unnecessary brackets, and `[]` from assignment calls
-	bool isInAssignment=false;
 	operators.length=0;//free mem(?)
+	till = tokens.length;
+
+	List!string varList = new List!string;
+	uinteger[string] varScope;
+	uinteger blockDepth = 0;
+	//put `_?` for vars, remove unnecessary brackets, and rename vars
+	/* Plus: this is how `array[a] = SomeValue;` works:
+	 * The expression will be modified to:
+	 * `array = modifyArray(array,a,SomeValue);`
+	 * Note to future self:
+	 * modifyArray takes 3 args, then returns the modified array
+	 * 1. the array for which the element will be changed
+	 * 2. the index of the element to change
+	 * 3. the new value for the element at `a`.
+	*/
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
-		if (token.type==TokenType.FunctionCall && ["setLength","_="].hasElement(token.token)){
-			isInAssignment = true;
+		if (token.type == TokenType.BracketOpen && token.token == "{"){
+			blockDepth++;
 		}
-		if (isInAssignment && token.type==TokenType.Comma){
-			isInAssignment = false;
+		if (token.type == TokenType.BracketClose && token.token == "}"){
+			//remove variables from this block's Scope
+			string tmStr;
+			uinteger varCount = varList.length;
+			for (j=0;j<varCount;j++){
+				tmStr = varList.read(j);
+				if (varScope[tmStr] == blockDepth){
+					varScope.remove(tmStr);
+					varList.remove(j);
+					j--;
+				}
+			}
+			blockDepth--;
 		}
-		if (isInAssignment && token.type==TokenType.Identifier){
-			token.type = TokenType.String;
-			token.token = '"'~token.token~'"';
-			tokens.set(i,token);
+		//modify `=` expression containing arrays:
+		if (token.type == TokenType.FunctionCall && token.token == "_="){
+
 		}
-		if (isInAssignment && token.type==TokenType.BracketOpen && token.token=="["){
-			j = bracketPos(i);
-			//convert these to comma
-			tmpToken[0].token = ",";
-			tmpToken[0].type = TokenType.Comma;
-			tokens.set(i,tmpToken[0]);
-			tokens.remove(j);
-			till = tokens.length;
-			i = j-1;//so it doesnt mess up with contents inside []
-			continue;
+		//change var names to var IDs in `new`
+		if (token.type == TokenType.VarDef){
+			j = bracketPos(i+1);
+			//replace all var names with ID
+			for (;i<j;i++){
+				token = tokens.read(i);
+				if (token.type==TokenType.Identifier){
+					if (varList.indexOf(token.token)>=0){
+						addError(i,"variable '"~token.token~"' declared more than once in single scope");
+						hasError = true;
+					}else{
+						//everything's fine, add it
+						varList.add(token.token);
+						varScope[token.token] = blockDepth;
+						//replace the name
+						token.token = 'v'~to!string(varList.length-1);
+						tokens.set(i,token);
+					}
+				}
+			}
+			i=j;
 		}
+		//change var names to their IDs
+		if (token.type == TokenType.Identifier){
+			j = varList.indexOf(token.token);
+			if (j>=0){
+				//it was defined, replace it's name
+				token.token = 'v'~to!string(j);
+				tokens.set(i,token);
+			}else{
+				addError(i,"variable "~token.token~" never declared, but used");
+				hasError = true;
+			}
+		}
+		//remove un-needed brackets
 		if (token.type == TokenType.BracketClose && token.token==")"){
 			j = bracketPos(i,false);
 			if (j>0){
@@ -747,37 +793,6 @@ private void operatorsToFunctionCalls(){
 					continue;
 				}
 			}
-		}
-	}
-	isInAssignment = false;
-	till = tokens.length;
-	//put `_?` for vars
-	for (i=0;i<till;i++){
-		token = tokens.read(i);
-		//skip if in `new`
-		if (token.type == TokenType.VarDef){
-			j = bracketPos(i+1);
-			i=j;
-			continue;
-		}
-		//now replace
-		//vars
-		if (token.type == TokenType.Identifier){
-			//change from Identifier to String
-			token.type = TokenType.String;
-			token.token = '"'~token.token~'"';
-			tokens.set(i,token);
-			//put the bracket at end
-			tmpToken[0].token = ")";
-			tmpToken[0].type = TokenType.BracketClose;
-			tokens.insert(i+1,[tmpToken[0]]);
-			//put _?( at start:
-			tmpToken[0].token = "_?";
-			tmpToken[0].type = TokenType.FunctionCall;
-			tmpToken[1].token = "(";
-			tmpToken[1].type = TokenType.BracketOpen;
-			tokens.insert(i,tmpToken);
-			till = tokens.length;
 		}
 		//arrays
 		if (token.type == TokenType.BracketOpen && token.token=="["){
@@ -804,6 +819,7 @@ private void operatorsToFunctionCalls(){
 			continue;
 		}
 	}
+	return hasError;
 }
 
 private string[][string] toByteCode(){
