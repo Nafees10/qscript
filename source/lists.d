@@ -109,7 +109,7 @@ public:
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
-				if (i==taken){i=-1;}
+				if (i==taken-1){i=-1;}
 			}
 		}else{
 			for (;i>=0;i--){
