@@ -261,7 +261,8 @@ private:
 				line = script[fName][lineno];
 				for (i=0;i<line.length;i++){
 					if (line[i]==' '){
-						token = line[0..i];
+						token = line[0..i];/*Be sure to not tamper with `token`'s value!
+											it's a slice, so it'll modify line[0..i] too!*/
 						if (token in mList){
 							tmpCalls.add(mList[token]);
 						}else{
