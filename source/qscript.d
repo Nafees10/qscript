@@ -266,7 +266,7 @@ private:
 						if (token in mList){
 							tmpCalls.add(mList[token]);
 						}else{
-							throw new Exception("unrecognized function call "~token);
+							throw new Exception("unrecognized instruction: "~token);
 						}
 						if (i==line.length-1){
 							tmpArgs.add(arg);
