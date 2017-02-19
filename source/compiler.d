@@ -757,7 +757,7 @@ private bool operatorsToFunctionCalls(){
 			operand[0] = [];
 			operand[1] = [];
 			uinteger brEnd = bracketPos(i+1);
-			for (j=i+1; j<brEnd; j++){
+			for (j=i+2; j<brEnd; j++){
 				tmpToken[0] = tokens.read(j);
 				if (tmpToken[0].type == TokenType.BracketOpen){
 					j = bracketPos(j);
@@ -769,16 +769,16 @@ private bool operatorsToFunctionCalls(){
 						//get last ind
 						operand[1] = tokens.readRange(bracketPos(j-1,false),j);
 						//get the rest of the ind
-						operand[0] = tokens.readRange(i+2,(j-operand[1].length)+1);
+						operand[0] = tokens.readRange(i+3,(j-operand[1].length));
 						//remove both ind's
-						tokens.remove(i+2,operand[0].length+operand[1].length);
+						tokens.remove(i+3,operand[0].length+operand[1].length);
 						//remove [ & ] from last ind, those won't be required:
 						operand[1] = operand[1][1..operand[1].length-1];
 						break;
 					}
 				}
 			}
-			if (operand[0].length>0){
+			if (operand[1].length>0){
 				//now the statement is like:
 				// _= ( array , val ) ;
 				//insert bracketEnd after `val` for the `modifyArray`;
@@ -787,6 +787,9 @@ private bool operatorsToFunctionCalls(){
 				tokens.insert(bracketPos(i+1),[tmpToken[0]]);
 				//now insert the modifyArray function
 				List!Token toAdd = new List!Token;
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				toAdd.add(tmpToken[0]);
 				tmpToken[0].token = "modifyArray";
 				tmpToken[0].type = TokenType.FunctionCall;
 				tmpToken[1].token = "(";
@@ -797,11 +800,12 @@ private bool operatorsToFunctionCalls(){
 				//now just need to add the comma and last ind
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;
-				toAdd.addArray([tmpToken[0]]~operand[1]~[tmpToken[0]]);
-				//add toAdd to tokens, to 'aply the changes!';
+				toAdd.addArray([tmpToken[0]]~operand[1]);
+				//add toAdd to tokens, to 'apply the changes!';
 				tokens.insert(i+3,toAdd.toArray);
 				delete toAdd;
 			}
+			debug{outputTokens;}
 		}
 		//change var names to var IDs in `new`
 		if (token.type == TokenType.VarDef){
@@ -1047,6 +1051,20 @@ skipIt:
 	delete tokens;
 	delete errors;
 	return r;
+}
+
+debug{
+	private void outputTokens(){
+		writeln("Press enter to display fCalls");readln;
+		foreach(tk; tokens.toArray){
+			write(tk.token,' ');
+			if (tk.type==TokenType.StatementEnd){
+				write("\n");
+			}
+		}
+		writeln("<over>");
+		readln;
+	}
 }
 
 /*
