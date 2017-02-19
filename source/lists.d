@@ -109,12 +109,12 @@ public:
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
-				if (i==taken-1){i=-1;}
+				if (i==taken-1){i=-1;break;}
 			}
 		}else{
 			for (;i>=0;i--){
 				if (list[i]==dat){break;}
-				if (i==0){i=-1;}
+				if (i==0){i=-1;break;}
 			}
 		}
 		if (taken==0){
