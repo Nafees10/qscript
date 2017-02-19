@@ -74,7 +74,10 @@ public:
 		return list[taken-1];
 	}
 	T[] readLast(uinteger count){
-		return list[taken-count..taken];
+		T[] r;
+		r.length = count;
+		r[0 .. r.length] = list[taken-count..taken];
+		return r;
 	}
 	integer length(){
 		return taken;
