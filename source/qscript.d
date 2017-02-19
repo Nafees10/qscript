@@ -46,7 +46,7 @@ private:
 		r.d = args[0].d * args[1].d;
 		return r;
 	}
-	Tqvar modulusOp(Tqvar[] args){
+	Tqvar moduloOp(Tqvar[] args){
 		Tqvar r;
 		r.d = args[0].d % args[1].d;
 		return r;
@@ -140,6 +140,13 @@ private:
 		r.array = args;
 		return r;
 	}
+	Tqvar readArray(Tqvar[] args){
+		if (args[0].array.length<=args[1].d){
+			throw new Exception("index out of limit: "~to!string(args[1].d)~"/"~
+				to!string(args[0].array.length));
+		}
+		return args[0].array[cast(uinteger)args[1].d];
+	}
 	//Vars
 	Tqvar newVar(Tqvar[] args){
 		Tqvar r;
@@ -147,13 +154,6 @@ private:
 			vars[var.s] = r;
 		}
 		return r;
-	}
-	Tqvar readArray(Tqvar[] args){
-		if (args[0].array.length<=args[1].d){
-			throw new Exception("index out of limit: "~to!string(args[1].d)~"/"~
-				to!string(args[0].array.length));
-		}
-		return args[0].array[cast(uinteger)args[1].d];
 	}
 	Tqvar getVar(Tqvar[] args){
 		if (!(args[0].s in vars)){
@@ -228,7 +228,7 @@ private:
 	}
 
 	//sdfsdf:
-	Tqvar[string] vars;
+	Tqvar[string] vars;//this is where the variables live
 
 	//List!Tqvar stack;
 	Stack!Tqvar stack;
@@ -325,8 +325,8 @@ private:
 				}
 			}
 		}
-		delete stack;
 		//restote previous state
+		delete stack;
 		stack = oldStack;
 		r = vars["result"];
 		foreach(key; vars.keys){
@@ -345,7 +345,7 @@ public:
 			"_*":&mulOp,
 			"_+":&plusOp,
 			"_-":&minusOp,
-			"_%":&modulusOp,
+			"_%":&moduloOp,
 			"_~":&strConcat,
 			"if":&doIf,
 			"_==":&isEqual,
@@ -368,7 +368,7 @@ public:
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
+		byteCode = compileQScript(script, true);//uncomment to see compiled output
 		delete script;
 		string[] r;
 		if ("#errors" in byteCode){

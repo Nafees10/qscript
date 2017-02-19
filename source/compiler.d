@@ -736,6 +736,7 @@ private bool operatorsToFunctionCalls(){
 				if (varScope[tmStr] == blockDepth){
 					varScope.remove(tmStr);
 					varList.remove(j);
+					varCount--;
 					j--;
 				}
 			}
@@ -743,25 +744,82 @@ private bool operatorsToFunctionCalls(){
 		}
 		//modify `=` expression containing arrays:
 		if (token.type == TokenType.FunctionCall && token.token == "_="){
+			//TODO: finish this!
+			/* Previous state:
+			 * _= ( array [ ind ] [ ind1 ] , val ) ;
+			 * new state:
+			 * _= ( array , modifyArray ( array [ ind ] , ind1 , val ) ) ;
+			 */
+			//operand[0] = the index part of array, except for the last one
+			//operand[1] = the last index of an array
 
+			//check if it's an assignment to an array
+			operand[0] = [];
+			operand[1] = [];
+			uinteger brEnd = bracketPos(i+1);
+			for (j=i+1; j<brEnd; j++){
+				tmpToken[0] = tokens.read(j);
+				if (tmpToken[0].type == TokenType.BracketOpen){
+					j = bracketPos(j);
+					continue;
+				}
+				if (tmpToken[0].type == TokenType.Comma){
+					tmpToken[1] = tokens.read(j-1);
+					if (tmpToken[1].type == TokenType.BracketClose && tmpToken[1].token == "]"){
+						//get last ind
+						operand[1] = tokens.readRange(bracketPos(j-1,false),j);
+						//get the rest of the ind
+						operand[0] = tokens.readRange(i+2,(j-operand[1].length)+1);
+						//remove both ind's
+						tokens.remove(i+2,operand[0].length+operand[1].length);
+						//remove [ & ] from last ind, those won't be required:
+						operand[1] = operand[1][1..operand[1].length-1];
+						break;
+					}
+				}
+			}
+			if (operand[0].length>0){
+				//now the statement is like:
+				// _= ( array , val ) ;
+				//insert bracketEnd after `val` for the `modifyArray`;
+				tmpToken[0].token = ")";
+				tmpToken[0].type = TokenType.BracketClose;
+				tokens.insert(bracketPos(i+1),[tmpToken[0]]);
+				//now insert the modifyArray function
+				List!Token toAdd = new List!Token;
+				tmpToken[0].token = "modifyArray";
+				tmpToken[0].type = TokenType.FunctionCall;
+				tmpToken[1].token = "(";
+				tmpToken[1].type = TokenType.BracketOpen;
+				toAdd.addArray(tmpToken~[tokens.read(i+2)]~operand[0]);
+				//now, if toAdd was added, the statement is like:
+				// _= ( array , modifyArray ( array [ ind ] val ) ) ;
+				//now just need to add the comma and last ind
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				toAdd.addArray([tmpToken[0]]~operand[1]~[tmpToken[0]]);
+				//add toAdd to tokens, to 'aply the changes!';
+				tokens.insert(i+3,toAdd.toArray);
+				delete toAdd;
+			}
 		}
 		//change var names to var IDs in `new`
 		if (token.type == TokenType.VarDef){
 			j = bracketPos(i+1);
 			//replace all var names with ID
 			for (;i<j;i++){
-				token = tokens.read(i);
-				if (token.type==TokenType.Identifier){
-					if (varList.indexOf(token.token)>=0){
-						addError(i,"variable '"~token.token~"' declared more than once in single scope");
+				tmpToken[0] = tokens.read(i);
+				if (tmpToken[0].type==TokenType.Identifier){
+					if (varList.indexOf(tmpToken[0].token)>=0){
+						addError(i,"variable '"~tmpToken[0].token~"' declared more than once in single scope");
 						hasError = true;
 					}else{
 						//everything's fine, add it
-						varList.add(token.token);
-						varScope[token.token] = blockDepth;
+						varList.add(tmpToken[0].token);
+						varScope[tmpToken[0].token] = blockDepth;
 						//replace the name
-						token.token = 'v'~to!string(varList.length-1);
-						tokens.set(i,token);
+						tmpToken[0].token = 'v'~to!string(varList.length-1);
+						tokens.set(i,tmpToken[0]);
 					}
 				}
 			}
