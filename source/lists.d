@@ -117,6 +117,9 @@ public:
 				if (i==0){i=-1;}
 			}
 		}
+		if (taken==-1){
+			i=-1;
+		}
 		return i;
 	}
 }
