@@ -65,7 +65,10 @@ public:
 		return list[index];
 	}
 	T[] readRange(uinteger index,uinteger i2){
-		return list[index..i2];
+		T[] r;
+		r.length = (i2-index);
+		r[0 .. r.length] = list[index .. i2];
+		return r;
 	}
 	T readLast(){
 		return list[taken-1];
@@ -140,7 +143,8 @@ public:
 	T[] pop(uinteger count){
 		T[] r;
 		uinteger tmp = pos - count;
-		r = list[tmp+1..pos+1];
+		r.length = count;
+		r[0..count] = list[tmp+1..pos+1];
 		pos -= count;
 		return r;
 	}
