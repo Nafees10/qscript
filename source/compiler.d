@@ -635,12 +635,6 @@ private bool checkSyntax(){
 		}
 	}
 	delete vars;
-
-	if (hasError){
-		hasError = false;
-	}else{
-		hasError = true;
-	}
 	return hasError;
 }
 
@@ -744,7 +738,6 @@ private bool operatorsToFunctionCalls(){
 		}
 		//modify `=` expression containing arrays:
 		if (token.type == TokenType.FunctionCall && token.token == "_="){
-			//TODO: finish this!
 			/* Previous state:
 			 * _= ( array [ ind ] [ ind1 ] , val ) ;
 			 * new state:
@@ -805,7 +798,6 @@ private bool operatorsToFunctionCalls(){
 				tokens.insert(i+3,toAdd.toArray);
 				delete toAdd;
 			}
-			debug{outputTokens;}
 		}
 		//change var names to var IDs in `new`
 		if (token.type == TokenType.VarDef){
@@ -831,10 +823,16 @@ private bool operatorsToFunctionCalls(){
 		}
 		//change var names to their IDs
 		if (token.type == TokenType.Identifier){
-			j = varList.indexOf(token.token);
-			if (j>=0){
+			integer tmInt = varList.indexOf(token.token);
+			if (tmInt>=0){
 				//it was defined, replace it's name
-				token.token = 'v'~to!string(j);
+				debug{
+					write(token.token,'=');
+				}
+				token.token = 'v'~to!string(tmInt);
+				debug{
+					write(token.token,";\n");
+				}
 				tokens.set(i,token);
 			}else{
 				addError(i,"variable "~token.token~" never declared, but used");
@@ -970,13 +968,14 @@ private string[][string] toByteCode(){
 				}
 			}
 			//Deal with normal functions
+			//nothing to deal with normal functions :P
 		}
 		if (token.type == TokenType.String){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Identifier){
-			calls.add("psh \""~token.token~'"');
+			calls.add("rtv \""~token.token~'"');
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
 			//increment in argC
@@ -993,12 +992,13 @@ private string[][string] toByteCode(){
 public string[][string] compileQScript(List!string script, bool showOutput=false){
 	string[][string] r;
 	errors = new List!string;
-	 if (!toTokens(script)){
+	if (!toTokens(script)){
 		//was an error
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
 	debug{
+		//`outputTokens` can't be used, we need to show the TokenType too!
 		if (showOutput){
 			writeln("Press enter to display tokens");readln;
 			foreach(tk; tokens.toArray){
@@ -1008,23 +1008,16 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 			readln;
 		}
 	}
-	if (!checkSyntax){
+	if (checkSyntax){//true=hasError! false=noError
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
-	operatorsToFunctionCalls;
+	if (operatorsToFunctionCalls){
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
 	debug{
-		if (showOutput){
-			writeln("Press enter to display fCalls");readln;
-			foreach(tk; tokens.toArray){
-				write(tk.token,' ');
-				if (tk.type==TokenType.StatementEnd){
-					write("\n");
-				}
-			}
-			writeln("<over>");
-			readln;
-		}
+		outputTokens;
 	}
 	r = toByteCode;
 	debug{
@@ -1038,7 +1031,7 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 				readln;
 			}
 		}
-		//save the output, showOutput doesn't matter
+		//save the output for debugging, commented out
 		/*List!string lst = new List!string;
 		foreach(key; r.keys){
 			lst.loadArray(r[key]);
@@ -1054,6 +1047,7 @@ skipIt:
 }
 
 debug{
+	//I put it at several places while debugging, it makes it a bit easier
 	private void outputTokens(){
 		writeln("Press enter to display fCalls");readln;
 		foreach(tk; tokens.toArray){
@@ -1074,6 +1068,8 @@ clr - empty the stack
 exf - execute function, don't push return to stack. take fName from stack, and argC from given args
 exa - execute function, push return to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
+stv - set a variable's value, val name=arg, new value = from stack
+gtv - push a variable's value to stack
 Rules:
 An instruction can recieve one argument!
 AND: right before jmp, clr must be called, to prevent a possible mem-leak
