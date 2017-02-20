@@ -814,7 +814,7 @@ private bool operatorsToFunctionCalls(){
 						varList.add(tmpToken[0].token);
 						varScope[tmpToken[0].token] = blockDepth;
 						//replace the name
-						tmpToken[0].token = 'v'~to!string(varList.length-1);
+						tmpToken[0].token = "_v"~to!string(varList.length-1);
 						tokens.set(i,tmpToken[0]);
 					}
 				}
@@ -822,17 +822,11 @@ private bool operatorsToFunctionCalls(){
 			i=j;
 		}
 		//change var names to their IDs
-		if (token.type == TokenType.Identifier){
+		if (token.type == TokenType.Identifier && token.token[0] != '_'){
 			integer tmInt = varList.indexOf(token.token);
 			if (tmInt>=0){
 				//it was defined, replace it's name
-				debug{
-					write(token.token,'=');
-				}
-				token.token = 'v'~to!string(tmInt);
-				debug{
-					write(token.token,";\n");
-				}
+				token.token = "_v"~to!string(tmInt);
 				tokens.set(i,token);
 			}else{
 				addError(i,"variable "~token.token~" never declared, but used");
