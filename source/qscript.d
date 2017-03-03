@@ -348,7 +348,7 @@ public:
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
 		string[][string] byteCode;
-		byteCode = compileQScript(script, true);//uncomment to see compiled output
+		byteCode = compileQScript(script/*, true*/);//uncomment to see compiled output
 		delete script;
 		string[] r;
 		if ("#errors" in byteCode){
