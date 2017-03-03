@@ -46,7 +46,7 @@ private:
 		r.d = args[0].d * args[1].d;
 		return r;
 	}
-	Tqvar modulusOp(Tqvar[] args){
+	Tqvar moduloOp(Tqvar[] args){
 		Tqvar r;
 		r.d = args[0].d % args[1].d;
 		return r;
@@ -116,19 +116,8 @@ private:
 	}
 	//arrays
 	Tqvar setLength(Tqvar[] args){
-		Tqvar* curVar = &vars[args[0].s];
-		if (args.length>2){
-			uinteger i;
-			uinteger till = args.length-1;
-			for (i=1;i<till;i++){
-				if (args[i].d >= curVar.array.length){
-					throw new Exception("index out of limit");
-				}
-				curVar = &curVar.array[cast(uinteger)args[i].d];
-			}
-		}
-		(*curVar).array.length = cast(uinteger)args[args.length-1].d;
-		return args[1];
+		args[0].array.length = cast(uinteger)args[1].d;
+		return args[0];
 	}
 	Tqvar getLength(Tqvar[] args){
 		Tqvar r;
@@ -140,46 +129,24 @@ private:
 		r.array = args;
 		return r;
 	}
-	//Vars
-	Tqvar newVar(Tqvar[] args){
-		Tqvar r;
-		foreach(var; args){
-			vars[var.s] = r;
-		}
-		return r;
-	}
 	Tqvar readArray(Tqvar[] args){
 		if (args[0].array.length<=args[1].d){
-			throw new Exception("index out of limit: "~to!string(args[1].d)~"/"~
+			throw new Exception("array index out of limit: "~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
 		return args[0].array[cast(uinteger)args[1].d];
 	}
-	Tqvar getVar(Tqvar[] args){
-		if (!(args[0].s in vars)){
-			throw new Exception("undefined variable "~args[0].s);
-		}
-		return vars[args[0].s];
+	Tqvar modifyArray(Tqvar[] args){
+		Tqvar r = args[0];
+		r.array[cast(uinteger)args[1].d] = args[2];
+		return r;
 	}
-	Tqvar setVar(Tqvar[] args){
-		Tqvar val = args[args.length-1];
-		if (!(args[0].s in vars)){
-			throw new Exception("undefined variable "~args[0].s);
-		}
-		Tqvar* curVar = &vars[args[0].s];
+	//Vars
+	Tqvar newVar(Tqvar[] args){
 		Tqvar r;
-		if (args.length>2){
-			uinteger i;
-			uinteger till = args.length-1;//cuz below, it's a `<`, not a `<=`
-			for (i=1;i<till;i++){
-				if (args[i].d >= curVar.array.length){
-					throw new Exception("index out of limit: "~to!string(args[i].d)~'/'~
-						to!string(curVar.array.length-1));
-				}
-				curVar = &curVar.array[cast(uinteger)args[i].d];
-			}
+		foreach(var; args){
+			vars[cast(uinteger)var.d] = r;
 		}
-		(*curVar) = val;
 		return r;
 	}
 	//misc functions
@@ -226,9 +193,20 @@ private:
 			throw new Exception("unrecognized function call "~fName);
 		}
 	}
+	void rtv(Tqvar arg){
+		try{
+			stack.push(vars[cast(uinteger)arg.d]);
+		}catch(Exception e){
+			throw e;
+		}
+	}
+	void stv(Tqvar arg){
+		Tqvar newVal = stack.pop();
+		vars[cast(uinteger)arg.d] = newVal;
+	}
 
 	//sdfsdf:
-	Tqvar[string] vars;
+	Tqvar[uinteger] vars;//this is where the variables live
 
 	//List!Tqvar stack;
 	Stack!Tqvar stack;
@@ -253,7 +231,9 @@ private:
 			"clr":&clear,
 			"jmp":&jmp,
 			"exf":&exf,
-			"exa":&exa
+			"exa":&exa,
+			"rtv":&rtv,
+			"stv":&stv
 		];
 
 		foreach(fName; script.keys){
@@ -261,11 +241,12 @@ private:
 				line = script[fName][lineno];
 				for (i=0;i<line.length;i++){
 					if (line[i]==' '){
-						token = line[0..i];
+						token = line[0..i];/*Be sure to not tamper with `token`'s value!
+											it's a slice, so it'll modify line[0..i] too!*/
 						if (token in mList){
 							tmpCalls.add(mList[token]);
 						}else{
-							throw new Exception("unrecognized function call "~token);
+							throw new Exception("unrecognized instruction: "~token);
 						}
 						if (i==line.length-1){
 							tmpArgs.add(arg);
@@ -297,7 +278,7 @@ private:
 		uinteger oldInd = ind;
 		stack = new Stack!Tqvar;
 		//clear vars
-		Tqvar[string] oldVars;
+		Tqvar[uinteger] oldVars;
 		foreach(key; vars.keys){
 			oldVars[key] = vars[key];
 			vars.remove(key);
@@ -305,9 +286,9 @@ private:
 		//set args
 		Tqvar r;
 		r.d = 0;
-		vars["result"] = r;
+		vars[0] = r;//0 = result
 		r.array = args;
-		vars["args"] = r;
+		vars[1] = r;//1 = args
 
 		Tqvar[] tmArgs;
 		inst* func;
@@ -325,10 +306,10 @@ private:
 				}
 			}
 		}
-		delete stack;
 		//restote previous state
+		delete stack;
 		stack = oldStack;
-		r = vars["result"];
+		r = vars[0];//o = result
 		foreach(key; vars.keys){
 			vars.remove(key);
 		}
@@ -345,7 +326,7 @@ public:
 			"_*":&mulOp,
 			"_+":&plusOp,
 			"_-":&minusOp,
-			"_%":&modulusOp,
+			"_%":&moduloOp,
 			"_~":&strConcat,
 			"if":&doIf,
 			"_==":&isEqual,
@@ -358,10 +339,9 @@ public:
 			"setLength":&setLength,
 			"getLength":&getLength,
 			"array":&initArray,
+			"_modifyArray":&modifyArray,
 			"new":&newVar,
 			"_readArray":&readArray,
-			"_?":&getVar,
-			"_=":&setVar,
 		];
 	}
 	string[] loadScript(string fName){

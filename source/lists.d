@@ -65,13 +65,19 @@ public:
 		return list[index];
 	}
 	T[] readRange(uinteger index,uinteger i2){
-		return list[index..i2];
+		T[] r;
+		r.length = (i2-index);
+		r[0 .. r.length] = list[index .. i2];
+		return r;
 	}
 	T readLast(){
 		return list[taken-1];
 	}
 	T[] readLast(uinteger count){
-		return list[taken-count..taken];
+		T[] r;
+		r.length = count;
+		r[0 .. r.length] = list[taken-count..taken];
+		return r;
 	}
 	integer length(){
 		return taken;
@@ -103,13 +109,17 @@ public:
 		if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
+				if (i==taken-1){i=-1;break;}
 			}
 		}else{
-			for (;i<taken;i--){
+			for (;i>=0;i--){
 				if (list[i]==dat){break;}
+				if (i==0){i=-1;break;}
 			}
 		}
-		if (i==taken){i=-1;}
+		if (taken==0){
+			i=-1;
+		}
 		return i;
 	}
 }
@@ -139,8 +149,8 @@ public:
 	}
 	T[] pop(uinteger count){
 		T[] r;
-		uinteger tmp = pos - count;
-		r = list[tmp+1..pos+1];
+		r.length = count;
+		r[0..count] = list[(pos - count)+1..pos+1];
 		pos -= count;
 		return r;
 	}

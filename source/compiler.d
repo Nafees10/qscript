@@ -48,7 +48,7 @@ private struct Token{
 private void addError(uinteger pos, string msg){
 	uinteger i = 0, chars = 0;
 	pos++;
-	for (; chars<pos;i++){
+	for (; chars<pos && i<lineLength.length;i++){
 		chars+=lineLength[i];
 	}
 	errors.add("Line: "~to!string(i)~": "~msg);
@@ -635,21 +635,16 @@ private bool checkSyntax(){
 		}
 	}
 	delete vars;
-
-	if (hasError){
-		hasError = false;
-	}else{
-		hasError = true;
-	}
 	return hasError;
 }
 
-private void operatorsToFunctionCalls(){
+private bool operatorsToFunctionCalls(){
 	uinteger i, till=tokens.length;
 	Token token;
 	Token[2] tmpToken;
 	Token[][2] operand;
 	uinteger j;
+	bool hasError = false;
 
 	string[string][] operators;//[operator priority][operator name]->compiled name
 	operators.length = 3;
@@ -671,9 +666,7 @@ private void operatorsToFunctionCalls(){
 	operators[2] = [
 		"=":"_="
 	];
-	/*Note to future self: `=` operator is not compiled here,
-	 *there is the `setv` instruction for it, so it is compiled
-	 *by the `toByteCode` function!*/
+
 	foreach(curOperators; operators){//compile all priority functions, one by one
 		for (i=0;i<till;i++){
 			token = tokens.read(i);
@@ -707,33 +700,152 @@ private void operatorsToFunctionCalls(){
 			}
 		}
 	}
-	//remove unnecessary brackets, and `[]` from assignment calls
-	bool isInAssignment=false;
 	operators.length=0;//free mem(?)
+	till = tokens.length;
+
+	List!string varList = new List!string;
+	uinteger[string] varScope;
+	uinteger blockDepth = 0;
+	//add reserve space for result var and arguments passed
+	varList.add("result");
+	varList.add("args");
+	varScope["result"] = 0;
+	varScope["args"] = 0;
+	//put `_?` for vars, remove unnecessary brackets, and rename vars
+	/* Plus: this is how `array[a] = SomeValue;` works:
+	 * The expression will be modified to:
+	 * `array = modifyArray(array,a,SomeValue);`
+	 * Note to future self:
+	 * modifyArray takes 3 args, then returns the modified array
+	 * 1. the array for which the element will be changed
+	 * 2. the index of the element to change
+	 * 3. the new value for the element at `a`.
+	*/
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
-		if (token.type==TokenType.FunctionCall && ["setLength","_="].hasElement(token.token)){
-			isInAssignment = true;
+		if (token.type == TokenType.BracketOpen && token.token == "{"){
+			blockDepth++;
 		}
-		if (isInAssignment && token.type==TokenType.Comma){
-			isInAssignment = false;
+		if (token.type == TokenType.BracketClose && token.token == "}"){
+			//remove variables from this block's Scope
+			string tmStr;
+			uinteger varCount = varList.length;
+			for (j=0;j<varCount;j++){
+				tmStr = varList.read(j);
+				if (varScope[tmStr] == blockDepth){
+					varScope.remove(tmStr);
+					varList.remove(j);
+					varCount--;
+					j--;
+				}
+			}
+			//add reserve space for result var and arguments passed
+			/*varList.add("result");//^no need, cuz their scope is global
+			varList.add("args");*/
+			blockDepth--;
 		}
-		if (isInAssignment && token.type==TokenType.Identifier){
-			token.type = TokenType.String;
-			token.token = '"'~token.token~'"';
-			tokens.set(i,token);
+
+		//modify `=` expression containing arrays:
+		if (token.type == TokenType.FunctionCall && token.token == "_="){
+			/* Previous state:
+			 * _= ( array [ ind ] [ ind1 ] , val ) ;
+			 * new state:
+			 * _= ( array , modifyArray ( array [ ind ] , ind1 , val ) ) ;
+			 */
+			//operand[0] = the index part of array, except for the last one
+			//operand[1] = the last index of an array
+
+			//check if it's an assignment to an array
+			operand[0] = [];
+			operand[1] = [];
+			uinteger brEnd = bracketPos(i+1);
+			for (j=i+2; j<brEnd; j++){
+				tmpToken[0] = tokens.read(j);
+				if (tmpToken[0].type == TokenType.BracketOpen){
+					j = bracketPos(j);
+					continue;
+				}
+				if (tmpToken[0].type == TokenType.Comma){
+					tmpToken[1] = tokens.read(j-1);
+					if (tmpToken[1].type == TokenType.BracketClose && tmpToken[1].token == "]"){
+						//get last ind
+						operand[1] = tokens.readRange(bracketPos(j-1,false),j);
+						//get the rest of the ind
+						operand[0] = tokens.readRange(i+3,(j-operand[1].length));
+						//remove both ind's
+						tokens.remove(i+3,operand[0].length+operand[1].length);
+						//remove [ & ] from last ind, those won't be required:
+						operand[1] = operand[1][1..operand[1].length-1];
+						break;
+					}
+				}
+			}
+			if (operand[1].length>0){
+				//now the statement is like:
+				// _= ( array , val ) ;
+				//insert bracketEnd after `val` for the `modifyArray`;
+				tmpToken[0].token = ")";
+				tmpToken[0].type = TokenType.BracketClose;
+				tokens.insert(bracketPos(i+1),[tmpToken[0]]);
+				//now insert the modifyArray function
+				List!Token toAdd = new List!Token;
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				toAdd.add(tmpToken[0]);
+				tmpToken[0].token = "_modifyArray";
+				tmpToken[0].type = TokenType.FunctionCall;
+				tmpToken[1].token = "(";
+				tmpToken[1].type = TokenType.BracketOpen;
+				toAdd.addArray(tmpToken~[tokens.read(i+2)]~operand[0]);
+				//now, if toAdd was added, the statement is like:
+				// _= ( array , modifyArray ( array [ ind ] val ) ) ;
+				//now just need to add the comma and last ind
+				tmpToken[0].token = ",";
+				tmpToken[0].type = TokenType.Comma;
+				toAdd.addArray([tmpToken[0]]~operand[1]);
+				//add toAdd to tokens, to 'apply the changes!';
+				tokens.insert(i+3,toAdd.toArray);
+				delete toAdd;
+			}
 		}
-		if (isInAssignment && token.type==TokenType.BracketOpen && token.token=="["){
-			j = bracketPos(i);
-			//convert these to comma
-			tmpToken[0].token = ",";
-			tmpToken[0].type = TokenType.Comma;
-			tokens.set(i,tmpToken[0]);
-			tokens.remove(j);
-			till = tokens.length;
-			i = j-1;//so it doesnt mess up with contents inside []
-			continue;
+
+		//change var names to var IDs in `new`
+		if (token.type == TokenType.VarDef){
+			j = bracketPos(i+1);
+			//replace all var names with ID
+			for (;i<j;i++){
+				tmpToken[0] = tokens.read(i);
+				if (tmpToken[0].type==TokenType.Identifier){
+					if (varList.indexOf(tmpToken[0].token)>=0){
+						addError(i,"variable '"~tmpToken[0].token~"' declared more than once in single scope");
+						hasError = true;
+					}else{
+						//everything's fine, add it
+						varList.add(tmpToken[0].token);
+						varScope[tmpToken[0].token] = blockDepth;
+						//replace the name
+						tmpToken[0].token = to!string(varList.length-1);
+						tmpToken[0].type = TokenType.String;
+						tokens.set(i,tmpToken[0]);
+					}
+				}
+			}
+			i=j;
 		}
+		//change var names to their IDs
+		if (token.type == TokenType.Identifier && token.token[0..2] != "_v"){
+			integer tmInt = varList.indexOf(token.token);
+
+			if (tmInt>=0){
+				//it was defined, replace it's name
+				token.token = "_v"~to!string(tmInt);
+				tokens.set(i,token);
+			}else{
+				addError(i,"variable "~token.token~" never declared, but used");
+				hasError = true;
+			}
+		}
+		//remove un-needed brackets
 		if (token.type == TokenType.BracketClose && token.token==")"){
 			j = bracketPos(i,false);
 			if (j>0){
@@ -747,37 +859,6 @@ private void operatorsToFunctionCalls(){
 					continue;
 				}
 			}
-		}
-	}
-	isInAssignment = false;
-	till = tokens.length;
-	//put `_?` for vars
-	for (i=0;i<till;i++){
-		token = tokens.read(i);
-		//skip if in `new`
-		if (token.type == TokenType.VarDef){
-			j = bracketPos(i+1);
-			i=j;
-			continue;
-		}
-		//now replace
-		//vars
-		if (token.type == TokenType.Identifier){
-			//change from Identifier to String
-			token.type = TokenType.String;
-			token.token = '"'~token.token~'"';
-			tokens.set(i,token);
-			//put the bracket at end
-			tmpToken[0].token = ")";
-			tmpToken[0].type = TokenType.BracketClose;
-			tokens.insert(i+1,[tmpToken[0]]);
-			//put _?( at start:
-			tmpToken[0].token = "_?";
-			tmpToken[0].type = TokenType.FunctionCall;
-			tmpToken[1].token = "(";
-			tmpToken[1].type = TokenType.BracketOpen;
-			tokens.insert(i,tmpToken);
-			till = tokens.length;
 		}
 		//arrays
 		if (token.type == TokenType.BracketOpen && token.token=="["){
@@ -804,6 +885,7 @@ private void operatorsToFunctionCalls(){
 			continue;
 		}
 	}
+	return hasError;
 }
 
 private string[][string] toByteCode(){
@@ -817,6 +899,9 @@ private string[][string] toByteCode(){
 	string fname = null;
 	string[][string] r;
 	uinteger[2] tmint;
+
+	bool isInAssignment = false;
+	string assignmentTo = null;
 
 	uinteger i, till;
 	till = tokens.length;
@@ -870,12 +955,17 @@ private string[][string] toByteCode(){
 				//push the last argument, if any
 				//calls.add("psh "~tokens.read(i-1).token);
 			}
-			calls.add("psh \""~tmpToken.token~'"');
-			if (brackDepth>1){
-				//is a function-as-arg
-				calls.add("exa "~to!string(argC.readLast));
+			if (tmpToken.token=="_="){
+				calls.add("stv "~assignmentTo);
+				assignmentTo = null;
 			}else{
-				calls.add("exf "~to!string(argC.readLast));
+				calls.add("psh \""~tmpToken.token~'"');
+				if (brackDepth>1){
+					//is a function-as-arg
+					calls.add("exa "~to!string(argC.readLast));
+				}else{
+					calls.add("exf "~to!string(argC.readLast));
+				}
 			}
 			argC.removeLast;
 			brackDepth--;
@@ -892,13 +982,21 @@ private string[][string] toByteCode(){
 				}
 			}
 			//Deal with normal functions
+			if (token.token == "_="){
+				isInAssignment = true;
+			}
 		}
 		if (token.type == TokenType.String){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Identifier){
-			calls.add("psh \""~token.token~'"');
+			if (isInAssignment){
+				assignmentTo = token.token[2 .. token.token.length];
+				isInAssignment = false;
+			}else{
+				calls.add("rtv "~token.token[2 .. token.token.length]);//add only the var ID
+			}
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
 			//increment in argC
@@ -915,12 +1013,13 @@ private string[][string] toByteCode(){
 public string[][string] compileQScript(List!string script, bool showOutput=false){
 	string[][string] r;
 	errors = new List!string;
-	 if (!toTokens(script)){
+	if (!toTokens(script)){
 		//was an error
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
 	debug{
+		//`outputTokens` can't be used, we need to show the TokenType too!
 		if (showOutput){
 			writeln("Press enter to display tokens");readln;
 			foreach(tk; tokens.toArray){
@@ -930,23 +1029,17 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 			readln;
 		}
 	}
-	if (!checkSyntax){
+	if (checkSyntax){//true=hasError! false=noError
 		r["#errors"] = errors.toArray;
 		goto skipIt;
 	}
-	operatorsToFunctionCalls;
+	if (operatorsToFunctionCalls){
+		r["#errors"] = errors.toArray;
+		goto skipIt;
+	}
 	debug{
-		if (showOutput){
-			writeln("Press enter to display fCalls");readln;
-			foreach(tk; tokens.toArray){
-				write(tk.token,' ');
-				if (tk.type==TokenType.StatementEnd){
-					write("\n");
-				}
-			}
-			writeln("<over>");
-			readln;
-		}
+		if (showOutput)
+			outputTokens;
 	}
 	r = toByteCode;
 	debug{
@@ -960,7 +1053,7 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 				readln;
 			}
 		}
-		//save the output, showOutput doesn't matter
+		//save the output for debugging, commented out
 		/*List!string lst = new List!string;
 		foreach(key; r.keys){
 			lst.loadArray(r[key]);
@@ -975,6 +1068,21 @@ skipIt:
 	return r;
 }
 
+debug{
+	//I put it at several places while debugging, it makes it a bit easier
+	private void outputTokens(){
+		writeln("Press enter to display fCalls");readln;
+		foreach(tk; tokens.toArray){
+			write(tk.token,' ');
+			if (tk.type==TokenType.StatementEnd){
+				write("\n");
+			}
+		}
+		writeln("<over>");
+		readln;
+	}
+}
+
 /*
 Interpreter instructions:
 psh - push element(s) to stack
@@ -982,6 +1090,8 @@ clr - empty the stack
 exf - execute function, don't push return to stack. take fName from stack, and argC from given args
 exa - execute function, push return to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
+stv - set a variable's value, val name=arg, new value = from stack
+rtv - push a variable's value to stack
 Rules:
 An instruction can recieve one argument!
 AND: right before jmp, clr must be called, to prevent a possible mem-leak
