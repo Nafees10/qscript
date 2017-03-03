@@ -815,6 +815,7 @@ private bool operatorsToFunctionCalls(){
 						varScope[tmpToken[0].token] = blockDepth;
 						//replace the name
 						tmpToken[0].token = "\"_v"~to!string(varList.length-1)~'\"';
+						tmpToken[0].type = TokenType.String;
 						tokens.set(i,tmpToken[0]);
 					}
 				}
