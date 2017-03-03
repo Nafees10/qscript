@@ -833,7 +833,7 @@ private bool operatorsToFunctionCalls(){
 			i=j;
 		}
 		//change var names to their IDs
-		if (token.type == TokenType.Identifier && token.token[0..2] != "_v"){
+		if (token.type == TokenType.Identifier && token.token[0] != '_'){
 			integer tmInt = varList.indexOf(token.token);
 
 			if (tmInt>=0){
