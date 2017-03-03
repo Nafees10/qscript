@@ -706,6 +706,11 @@ private bool operatorsToFunctionCalls(){
 	List!string varList = new List!string;
 	uinteger[string] varScope;
 	uinteger blockDepth = 0;
+	//add reserve space for result var and arguments passed
+	varList.add("result");
+	varList.add("args");
+	varScope["result"] = 0;
+	varScope["args"] = 0;
 	//put `_?` for vars, remove unnecessary brackets, and rename vars
 	/* Plus: this is how `array[a] = SomeValue;` works:
 	 * The expression will be modified to:
@@ -734,8 +739,12 @@ private bool operatorsToFunctionCalls(){
 					j--;
 				}
 			}
+			//add reserve space for result var and arguments passed
+			/*varList.add("result");//^no need, cuz their scope is global
+			varList.add("args");*/
 			blockDepth--;
 		}
+
 		//modify `=` expression containing arrays:
 		if (token.type == TokenType.FunctionCall && token.token == "_="){
 			/* Previous state:
@@ -783,7 +792,7 @@ private bool operatorsToFunctionCalls(){
 				tmpToken[0].token = ",";
 				tmpToken[0].type = TokenType.Comma;
 				toAdd.add(tmpToken[0]);
-				tmpToken[0].token = "modifyArray";
+				tmpToken[0].token = "_modifyArray";
 				tmpToken[0].type = TokenType.FunctionCall;
 				tmpToken[1].token = "(";
 				tmpToken[1].type = TokenType.BracketOpen;
@@ -799,6 +808,7 @@ private bool operatorsToFunctionCalls(){
 				delete toAdd;
 			}
 		}
+
 		//change var names to var IDs in `new`
 		if (token.type == TokenType.VarDef){
 			j = bracketPos(i+1);
@@ -814,7 +824,7 @@ private bool operatorsToFunctionCalls(){
 						varList.add(tmpToken[0].token);
 						varScope[tmpToken[0].token] = blockDepth;
 						//replace the name
-						tmpToken[0].token = "\"_v"~to!string(varList.length-1)~'\"';
+						tmpToken[0].token = to!string(varList.length-1);
 						tmpToken[0].type = TokenType.String;
 						tokens.set(i,tmpToken[0]);
 					}
@@ -890,6 +900,9 @@ private string[][string] toByteCode(){
 	string[][string] r;
 	uinteger[2] tmint;
 
+	bool isInAssignment = false;
+	string assignmentTo = null;
+
 	uinteger i, till;
 	till = tokens.length;
 	for (i=0;i<till;i++){
@@ -942,7 +955,12 @@ private string[][string] toByteCode(){
 				//push the last argument, if any
 				//calls.add("psh "~tokens.read(i-1).token);
 			}
-			calls.add("psh \""~tmpToken.token~'"');
+			if (tmpToken.token=="_="){
+				calls.add("stv "~assignmentTo);
+				assignmentTo = null;
+			}else{
+				calls.add("psh \""~tmpToken.token~'"');
+			}
 			if (brackDepth>1){
 				//is a function-as-arg
 				calls.add("exa "~to!string(argC.readLast));
@@ -964,14 +982,21 @@ private string[][string] toByteCode(){
 				}
 			}
 			//Deal with normal functions
-			//nothing to deal with normal functions :P
+			if (token.token == "_="){
+				isInAssignment = true;
+			}
 		}
 		if (token.type == TokenType.String){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Number){
 			calls.add("psh "~token.token);
 		}else if (token.type == TokenType.Identifier){
-			calls.add("rtv \""~token.token~'"');
+			if (isInAssignment){
+				assignmentTo = token.token[2 .. token.token.length];
+				isInAssignment = false;
+			}else{
+				calls.add("rtv "~token.token[2 .. token.token.length]);//add only the var ID
+			}
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){
 			//increment in argC
@@ -1065,7 +1090,7 @@ exf - execute function, don't push return to stack. take fName from stack, and a
 exa - execute function, push return to stack. take fName from stack, and argC from given args
 jmp - jump to another index, and start execution from there, used in loops, and if
 stv - set a variable's value, val name=arg, new value = from stack
-gtv - push a variable's value to stack
+rtv - push a variable's value to stack
 Rules:
 An instruction can recieve one argument!
 AND: right before jmp, clr must be called, to prevent a possible mem-leak
