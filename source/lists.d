@@ -149,9 +149,8 @@ public:
 	}
 	T[] pop(uinteger count){
 		T[] r;
-		uinteger tmp = pos - count;
 		r.length = count;
-		r[0..count] = list[tmp+1..pos+1];
+		r[0..count] = list[(pos - count)+1..pos+1];
 		pos -= count;
 		return r;
 	}
