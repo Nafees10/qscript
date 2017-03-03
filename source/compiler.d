@@ -1038,7 +1038,8 @@ public string[][string] compileQScript(List!string script, bool showOutput=false
 		goto skipIt;
 	}
 	debug{
-		outputTokens;
+		if (showOutput)
+			outputTokens;
 	}
 	r = toByteCode;
 	debug{
