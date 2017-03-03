@@ -132,6 +132,9 @@ public:
 	this(uinteger size=512){
 		list = new T[size];
 	}
+	~this(){
+		delete list;
+	}
 	void push(T dat){
 		pos ++;
 		list[pos] = dat;
