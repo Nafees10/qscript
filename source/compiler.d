@@ -48,7 +48,7 @@ private struct Token{
 private void addError(uinteger pos, string msg){
 	uinteger i = 0, chars = 0;
 	pos++;
-	for (; chars<pos;i++){
+	for (; chars<pos && i<lineLength.length;i++){
 		chars+=lineLength[i];
 	}
 	errors.add("Line: "~to!string(i)~": "~msg);
@@ -814,7 +814,7 @@ private bool operatorsToFunctionCalls(){
 						varList.add(tmpToken[0].token);
 						varScope[tmpToken[0].token] = blockDepth;
 						//replace the name
-						tmpToken[0].token = "_v"~to!string(varList.length-1);
+						tmpToken[0].token = "\"_v"~to!string(varList.length-1)~'\"';
 						tokens.set(i,tmpToken[0]);
 					}
 				}
@@ -822,8 +822,9 @@ private bool operatorsToFunctionCalls(){
 			i=j;
 		}
 		//change var names to their IDs
-		if (token.type == TokenType.Identifier && token.token[0] != '_'){
+		if (token.type == TokenType.Identifier && token.token[0..2] != "_v"){
 			integer tmInt = varList.indexOf(token.token);
+
 			if (tmInt>=0){
 				//it was defined, replace it's name
 				token.token = "_v"~to!string(tmInt);
