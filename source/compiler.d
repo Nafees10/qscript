@@ -960,12 +960,12 @@ private string[][string] toByteCode(){
 				assignmentTo = null;
 			}else{
 				calls.add("psh \""~tmpToken.token~'"');
-			}
-			if (brackDepth>1){
-				//is a function-as-arg
-				calls.add("exa "~to!string(argC.readLast));
-			}else{
-				calls.add("exf "~to!string(argC.readLast));
+				if (brackDepth>1){
+					//is a function-as-arg
+					calls.add("exa "~to!string(argC.readLast));
+				}else{
+					calls.add("exf "~to!string(argC.readLast));
+				}
 			}
 			argC.removeLast;
 			brackDepth--;
