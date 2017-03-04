@@ -316,6 +316,7 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 }
 
 //Functions below is where the 'magic' happens
+//toTokens returns false on error
 private bool toTokens(List!string script){
 	if (tokens){
 		delete tokens;
@@ -491,6 +492,7 @@ skipConversion:
 	return hasError;
 }
 
+//checkSyntax returns false on no errors
 private bool checkSyntax(){
 	List!string vars = new List!string;
 	uinteger i, till = tokens.length;
@@ -720,7 +722,7 @@ private bool operatorsToFunctionCalls(){
 	 * 1. the array for which the element will be changed
 	 * 2. the index of the element to change
 	 * 3. the new value for the element at `a`.
-	*/
+	 */
 	for (i=0;i<till;i++){
 		token = tokens.read(i);
 		if (token.type == TokenType.BracketOpen && token.token == "{"){
@@ -1006,6 +1008,7 @@ private string[][string] toByteCode(){
 
 	delete calls;
 	delete addJump;
+	delete addIfJump;
 	delete argC;
 	return r;
 }
