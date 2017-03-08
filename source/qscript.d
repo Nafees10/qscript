@@ -8,6 +8,12 @@ import std.conv:to;
 
 
 alias scrFunction = Tqvar delegate(Tqvar[]);
+alias errorFunction = void delegate(QScriptError);
+
+struct QScriptError{
+	string message;
+	uinteger instructionIndex;
+}
 
 private alias inst = void delegate(Tqvar);
 
@@ -174,7 +180,7 @@ private:
 		if (onExec){
 			onExec(fName,args);
 		}else{
-			throw new Exception("unrecognized function call "~fName);
+			throw new Exception("unrecognized function call: "~fName);
 		}
 	}
 	void exa(Tqvar arg){
@@ -190,12 +196,17 @@ private:
 		if (onExec){
 			stack.push(onExec(fName,args));
 		}else{
-			throw new Exception("unrecognized function call "~fName);
+			throw new Exception("unrecognized function call: "~fName);
 		}
 	}
 	void rtv(Tqvar arg){
 		try{
-			stack.push(vars[cast(uinteger)arg.d]);
+			Tqvar* v = cast(uinteger)arg.d in vars;
+			if (v){
+				stack.push(*v);
+			}else{
+				throw new Exception("trying to retrieve value of undefined variable at index: "~to!string(arg.d));
+			}
 		}catch(Exception e){
 			throw e;
 		}
@@ -217,6 +228,7 @@ private:
 	scrFunction[string] fList;
 
 	Tqvar delegate(string, Tqvar[]) onExec = null;
+	errorFunction onError = null;
 
 	//compile2 & all the other functions
 	void finalCompile(string[][string] script){
@@ -298,11 +310,18 @@ private:
 			try{
 				calls[fName][ind](callsArgs[fName][ind]);
 			}catch(Exception e){
-				writeln("Something went wrong in instruction: ",ind,":\n",e.msg);
-				write("Enter y to ignore, or just hit enter to abort:");
-				if (readln!="y\n"){
-					//they didn't enter 'y', they want me to die :(
-					throw e;
+				if (onError){
+					QScriptError error;
+					error.message = e.msg;
+					error.instructionIndex = ind;
+					onError(error);
+				}else{
+					writeln("Something went wrong in instruction: ",ind,":\n",e.msg);
+					write("Enter y to ignore, or just hit enter to abort:");
+					if (readln!="y\n"){
+						//they didn't enter 'y', they want me to die :(
+						throw e;
+					}
 				}
 			}
 		}
@@ -363,5 +382,8 @@ public:
 	}
 	void setOnExec(Tqvar delegate(string, Tqvar[]) e){
 		onExec = e;
+	}
+	void setOnError(errorFunction e){
+		onError = e;
 	}
 }
