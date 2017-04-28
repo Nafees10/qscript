@@ -916,7 +916,7 @@ private string[][string] toByteCode(){
 			blockDepth++;
 			if (addIfJump.length>0){
 				calls.add("clr 1");
-				calls.add("jmp foo");//will be later replaced
+				calls.add("jmp foo");//foo will be later replaced
 				addIfJump.set(addIfJump.length-1,[addIfJump.readLast[0],calls.length-1]);
 			}
 		}else if (token.type==TokenType.BracketOpen && token.token=="("){
@@ -997,7 +997,7 @@ private string[][string] toByteCode(){
 				assignmentTo = token.token[2 .. token.token.length];
 				isInAssignment = false;
 			}else{
-				calls.add("rtv "~token.token[2 .. token.token.length]);//add only the var ID
+				calls.add("rtv "~token.token[2 .. token.token.length]);//add only the var ID, remove the '_v'
 			}
 		}
 		if (token.type == TokenType.Comma && brackDepth!=0){

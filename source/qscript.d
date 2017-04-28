@@ -7,65 +7,66 @@ import std.stdio;
 import std.conv:to;
 
 
-alias scrFunction = Tqvar delegate(Tqvar[]);
-alias errorFunction = void delegate(QScriptError);
+private alias ScriptFunction = QVar delegate(QVar[]);
+public alias OnExecuteFunction = QVar delegate(string, QVar[]);
+public alias OnErrorFunction = void delegate(QScriptError);
 
 struct QScriptError{
 	string message;
 	uinteger instructionIndex;
 }
 
-private alias inst = void delegate(Tqvar);
+private alias Instruction = void delegate(QVar);
 
-union Tqvar{
+union QVar{
 	double d;
 	string s;
-	Tqvar[] array;
+	QVar[] array;
 }
 
-class Tqscript{
+class QScript{
 private:
 	//script functions//String
-	Tqvar strConcat(Tqvar[] args){
-		Tqvar r;
+	QVar strConcat(QVar[] args){
+		QVar r;
 		r.s = args[0].s~args[1].s;
 		return r;
 	}
 	//MATHS
-	Tqvar plusOp(Tqvar[] args){
-		Tqvar r;
+	QVar plusOp(QVar[] args){
+		QVar r;
 		r.d = args[0].d + args[1].d;
 		return r;
 	}
-	Tqvar minusOp(Tqvar[] args){
-		Tqvar r;
+	QVar minusOp(QVar[] args){
+		QVar r;
 		r.d = args[0].d - args[1].d;
 		return r;
 	}
-	Tqvar divOp(Tqvar[] args){
-		Tqvar r;
+	QVar divOp(QVar[] args){
+		QVar r;
 		r.d = args[0].d / args[1].d;
 		return r;
 	}
-	Tqvar mulOp(Tqvar[] args){
-		Tqvar r;
+	QVar mulOp(QVar[] args){
+		QVar r;
 		r.d = args[0].d * args[1].d;
 		return r;
 	}
-	Tqvar moduloOp(Tqvar[] args){
-		Tqvar r;
+	QVar moduloOp(QVar[] args){
+		QVar r;
 		r.d = args[0].d % args[1].d;
 		return r;
 	}
 	//IF
-	Tqvar doIf(Tqvar[] args){
+	QVar doIf(QVar[] args){
 		if (args[0].d==1){
 			ind+=2;//skip the JMP-to-end
 		}
 		return args[0];
 	}
-	Tqvar isEqual(Tqvar[] args){
-		Tqvar r;
+	QVar isEqual(QVar[] args){
+		QVar r;
 		if (args[0].d==args[1].d || args[0].s == args[1].s){
 			r.d=1;
 		}else{
@@ -73,8 +74,8 @@ private:
 		}
 		return r;
 	}
-	Tqvar isBigger(Tqvar[] args){
-		Tqvar r;
+	QVar isBigger(QVar[] args){
+		QVar r;
 		if (args[0].d>args[1].d){
 			r.d=1;
 		}else{
@@ -82,8 +83,8 @@ private:
 		}
 		return r;
 	}
-	Tqvar isBiggerEqual(Tqvar[] args){
-		Tqvar r;
+	QVar isBiggerEqual(QVar[] args){
+		QVar r;
 		if (args[0].d>=args[1].d){
 			r.d=1;
 		}else{
@@ -91,8 +92,8 @@ private:
 		}
 		return r;
 	}
-	Tqvar isSmaller(Tqvar[] args){
-		Tqvar r;
+	QVar isSmaller(QVar[] args){
+		QVar r;
 		if (args[0].d<args[1].d){
 			r.d=1;
 		}else{
@@ -100,8 +101,8 @@ private:
 		}
 		return r;
 	}
-	Tqvar isSmalerEqual(Tqvar[] args){
-		Tqvar r;
+	QVar isSmalerEqual(QVar[] args){
+		QVar r;
 		if (args[0].d<=args[1].d){
 			r.d=1;
 		}else{
@@ -109,68 +110,68 @@ private:
 		}
 		return r;
 	}
-	//Conversion
-	Tqvar toString(Tqvar[] args){
-		Tqvar r;
+	//Datatype Conversion
+	QVar toString(QVar[] args){
+		QVar r;
 		r.s = to!string(args[0].d);
 		return r;
 	}
-	Tqvar toDouble(Tqvar[] args){
-		Tqvar r;
+	QVar toDouble(QVar[] args){
+		QVar r;
 		r.d = to!double(args[0].s);
 		return r;
 	}
 	//arrays
-	Tqvar setLength(Tqvar[] args){
+	QVar setLength(QVar[] args){
 		args[0].array.length = cast(uinteger)args[1].d;
 		return args[0];
 	}
-	Tqvar getLength(Tqvar[] args){
-		Tqvar r;
+	QVar getLength(QVar[] args){
+		QVar r;
 		r.d = args[0].array.length;
 		return r;
 	}
-	Tqvar initArray(Tqvar[] args){
-		Tqvar r;
+	QVar initArray(QVar[] args){
+		QVar r;
 		r.array = args;
 		return r;
 	}
-	Tqvar readArray(Tqvar[] args){
+	QVar readArray(QVar[] args){
 		if (args[0].array.length<=args[1].d){
 			throw new Exception("array index out of limit: "~to!string(args[1].d)~"/"~
 				to!string(args[0].array.length));
 		}
 		return args[0].array[cast(uinteger)args[1].d];
 	}
-	Tqvar modifyArray(Tqvar[] args){
-		Tqvar r = args[0];
+	QVar modifyArray(QVar[] args){
+		QVar r = args[0];
 		r.array[cast(uinteger)args[1].d] = args[2];
 		return r;
 	}
 	//Vars
-	Tqvar newVar(Tqvar[] args){
-		Tqvar r;
+	QVar newVar(QVar[] args){
+		QVar r;
 		foreach(var; args){
 			vars[cast(uinteger)var.d] = r;
 		}
 		return r;
 	}
 	//misc functions
-	void push(Tqvar arg){
+	void push(QVar arg){
 		stack.push(arg);
 	}
-	void clear(Tqvar arg){
+	void clear(QVar arg){
 		if (arg.d==1){
 			stack.clear;
 		}
 	}
-	void jmp(Tqvar arg){
+	void jmp(QVar arg){
 		ind = cast(uinteger)arg.d;
 	}
-	void exf(Tqvar arg){
+	void exf(QVar arg){
 		string fName = stack.pop.s;
-		scrFunction* func = fName in fList;
-		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		ScriptFunction* func = fName in fList;
+		QVar[] args = stack.pop(cast(uinteger)arg.d);
 		if (func){
 			(*func)(args);
 		}else
@@ -183,10 +184,10 @@ private:
 			throw new Exception("unrecognized function call: "~fName);
 		}
 	}
-	void exa(Tqvar arg){
+	void exa(QVar arg){
 		string fName = stack.pop.s;
-		scrFunction* func = fName in fList;
-		Tqvar[] args = stack.pop(cast(uinteger)arg.d);
+		ScriptFunction* func = fName in fList;
+		QVar[] args = stack.pop(cast(uinteger)arg.d);
 		if (func){
 			stack.push((*func)(args));
 		}else
@@ -199,9 +200,9 @@ private:
 			throw new Exception("unrecognized function call: "~fName);
 		}
 	}
-	void rtv(Tqvar arg){
+	void rtv(QVar arg){
 		try{
-			Tqvar* v = cast(uinteger)arg.d in vars;
+			QVar* v = cast(uinteger)arg.d in vars;
 			if (v){
 				stack.push(*v);
 			}else{
@@ -211,34 +212,34 @@ private:
 			throw e;
 		}
 	}
-	void stv(Tqvar arg){
-		Tqvar newVal = stack.pop();
+	void stv(QVar arg){
+		QVar newVal = stack.pop();
 		vars[cast(uinteger)arg.d] = newVal;
 	}
 
 	//sdfsdf:
-	Tqvar[uinteger] vars;//this is where the variables live
+	QVar[uinteger] vars;//this is where the variables live
 
-	//List!Tqvar stack;
-	Stack!Tqvar stack;
-	inst[][string] calls;
+	//List!QVar stack;
+	Stack!QVar stack;
+	Instruction[][string] calls;
 	uinteger ind;//stores the index of function-to-call from calls
-	Tqvar[][string] callsArgs;
+	QVar[][string] callsArgs;
 
-	scrFunction[string] fList;
+	ScriptFunction[string] fList;
 
-	Tqvar delegate(string, Tqvar[]) onExec = null;
-	errorFunction onError = null;
+	QVar delegate(string, QVar[]) onExec = null;
+	OnErrorFunction onErrorF = null;
 
-	//compile2 & all the other functions
+	//compile the bytecode into even simpler instructions - final stage of compiling
 	void finalCompile(string[][string] script){
 		uinteger i, lineno;
 		string token, line;
-		Tqvar arg;
-		List!inst tmpCalls = new List!inst;
-		List!Tqvar tmpArgs = new List!Tqvar;
+		QVar arg;
+		List!Instruction tmpCalls = new List!Instruction;
+		List!QVar tmpArgs = new List!QVar;
 
-		inst[string] mList = [
+		Instruction[string] mList = [
 			"psh":&push,
 			"clr":&clear,
 			"jmp":&jmp,
@@ -285,36 +286,36 @@ private:
 		delete tmpCalls;
 		delete tmpArgs;
 	}
-	Tqvar execF(string fName, Tqvar[] args){
-		Stack!Tqvar oldStack = stack;
+	QVar execF(string fName, QVar[] args){
+		Stack!QVar oldStack = stack;
 		uinteger oldInd = ind;
-		stack = new Stack!Tqvar;
+		stack = new Stack!QVar;
 		//clear vars
-		Tqvar[uinteger] oldVars;
+		QVar[uinteger] oldVars;
 		foreach(key; vars.keys){
 			oldVars[key] = vars[key];
 			vars.remove(key);
 		}
 		//set args
-		Tqvar r;
+		QVar r;
 		r.d = 0;
 		vars[0] = r;//0 = result
 		r.array = args;
 		vars[1] = r;//1 = args
 
-		Tqvar[] tmArgs;
-		inst* func;
-		Tqvar arg;
+		QVar[] tmArgs;
+		Instruction* func;
+		QVar arg;
 		//start executing
 		for (ind = 0;ind<calls[fName].length;ind++){
 			try{
 				calls[fName][ind](callsArgs[fName][ind]);
 			}catch(Exception e){
-				if (onError){
+				if (onErrorF){
 					QScriptError error;
 					error.message = e.msg;
 					error.instructionIndex = ind;
-					onError(error);
+					onErrorF(error);
 				}else{
 					writeln("Something went wrong in instruction: ",ind,":\n",e.msg);
 					write("Enter y to ignore, or just hit enter to abort:");
@@ -377,13 +378,13 @@ public:
 		}
 		return r;
 	}
-	Tqvar executeFunction(string name, Tqvar[] args){
+	QVar executeFunction(string name, QVar[] args){
 		return execF(name,args);
 	}
-	void setOnExec(Tqvar delegate(string, Tqvar[]) e){
-		onExec = e;
+	@property OnExecuteFunction onExecute(OnExecuteFunction execHandler){
+		return onExec = execHandler;
 	}
-	void setOnError(errorFunction e){
-		onError = e;
+	@property OnErrorFunction onError(OnErrorFunction errorHandler){
+		return onErrorF = errorHandler;
 	}
 }
