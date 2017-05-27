@@ -20,31 +20,40 @@ private List!Token tokens;
 private List!string errors;
 private uinteger[] lineLength;
 
+/// Speifies the type of bracket of TokenType == BracketOpen || BracketClose
+/// 
+/// used only in compiler
 private enum BracketType{
-	Square,
-	Round,
-	Block
+	Square,/// [these]
+	Round,/// (these)
+	Block/// {these}
 }
 
+/// Specifie type of token
+/// 
+/// used only in compiler
 private enum TokenType{
-	String,
-	Number,
-	Identifier,
-	Operator,
-	Comma,
-	VarDef,
-	StatementEnd,
-	BracketOpen,
-	BracketClose,
-	FunctionCall,
-	FunctionDef,
+	String,/// That the token is: `"SOME STRING"`
+	Number,/// That the token a number, float also included
+	Identifier,/// That the token is an identifier. i.e token is a variable name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
+	Operator,/// That the token is an operator, like `+`, `==` etc
+	Comma,/// That its a comma: `,`
+	VarDef,/// That the token is a 'new'
+	StatementEnd,/// A semicolon
+	BracketOpen,/// A bracket open, type is specified using `BracketType`
+	BracketClose,/// A bracket close, type is specified using `BracketType`
+	FunctionCall,/// Token is a function call, i.e, it looks like: `someFunction`(someArguments);
+	FunctionDef,/// Token is a function definition, i.e, it looks like: `someFunction`{functionBody}
 }
 
+/// Each token is stored as a `Token` with the type and the actual token
 private struct Token{
-	TokenType type;
-	string token;
+	TokenType type;/// type of token
+	string token;/// token
 }
+
 //These functions below are used by compiler
+/// Called by compiler to add an error to the final list that will be reported
 private void addError(uinteger pos, string msg){
 	uinteger i = 0, chars = 0;
 	pos++;
@@ -54,6 +63,9 @@ private void addError(uinteger pos, string msg){
 	errors.add("Line: "~to!string(i)~": "~msg);
 }
 
+/// Called by compiler when new tokens have been inserted
+/// 
+/// It must be caled or else, checking the position of error (line and char number) will be bugged
 private void incLineLength(uinteger pos, uinteger n=1){
 	uinteger i = 0, chars = 0;
 	pos++;
@@ -85,6 +97,9 @@ private void decLineLength(uinteger pos, uinteger n=1){
 	}
 }
 */
+/// Returns the index of the quotation mark that ends a string
+/// 
+/// Returns -1 if not found
 private integer strEnd(string s, uinteger i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
@@ -98,6 +113,7 @@ private integer strEnd(string s, uinteger i){
 	return i;
 }
 
+/// Returns true if an aray has an element, false if no
 private bool hasElement(T)(T[] array, T element){
 	bool r = false;
 	foreach(cur; array){
@@ -109,6 +125,7 @@ private bool hasElement(T)(T[] array, T element){
 	return r;
 }
 
+/// Returns a string with al uppercase letters changed into lowercase
 private string lowercase(string s){
 	string tmstr;
 	ubyte tmbt;
@@ -125,6 +142,7 @@ private string lowercase(string s){
 	return tmstr;
 }
 
+/// Returns true if a string contains a valid number, float or integer
 private bool isNum(string s){
 	bool r=true;
 	uinteger i;
@@ -137,6 +155,7 @@ private bool isNum(string s){
 	return r;
 }
 
+/// Returns true if a string is valid for use as a variable name in QScript(i.e as an identifier)
 private bool isIdentifier(string s){
 	ubyte aStart = cast(ubyte)'a';
 	ubyte aEnd = cast(ubyte)'z';
@@ -155,18 +174,26 @@ private bool isIdentifier(string s){
 	return r;
 }
 
+/// Returns true if a string is a valid QScript operator
+/// 
+/// All operators are cheched against, including ones like `==`, `+` ...
 private bool isOperator(string s){
 	return ["/","*","+","-","%","~","=","<",">","<=","==",">="].hasElement(s);
 }
 
+/// Returns true if a string is a valid QScript comparision operator
+/// 
+/// Only operators like `==`, `>=` etc are checked against
 private bool isCompareOperator(string s){
 	return ["<",">","<=","==",">="].hasElement(s);
 }
 
+/// Returns true if a character is an opening bracket
 private bool isBracketOpen(char b){
 	return ['{','[','('].hasElement(b);
 }
 
+/// Returns true if a character is a closing bracket
 private bool isBracketClose(char b){
 	return ['}',']',')'].hasElement(b);
 }
@@ -180,7 +207,7 @@ private bool isBracketClose(char b){
 	}
 	return ident;
 }*/
-
+/// Returns the name type of operator, in string, from TokenType
 private string TokenTypeToString(TokenType type){
 	string r;
 	switch(type){
@@ -223,6 +250,10 @@ private string TokenTypeToString(TokenType type){
 	return r;
 }
 
+/// Returns the index where a bracket started or ended by using the index of it's matching bracket
+/// 
+/// Returns -1 if not found
+/// Also, if it detects that brackets are not in corrct order (something like `abc(bla[)];`), it will add an error
 private integer bracketPos(uinteger start, bool forward = true){
 	List!BracketType bracks = new List!BracketType;
 	integer i;
@@ -279,6 +310,7 @@ private integer bracketPos(uinteger start, bool forward = true){
 	return i;
 }
 
+/// Reads and returns (in a Token[]) the tokens that form one of the two (or just one) operand for an operator.
 private Token[] readOperand(uinteger pos, bool forward = true){
 	integer i;
 	Token[] r;
@@ -317,6 +349,9 @@ private Token[] readOperand(uinteger pos, bool forward = true){
 
 //Functions below is where the 'magic' happens
 //toTokens returns false on error
+/// First step in compilation
+/// Converts the script into tokens, identifies the TokenType, and stores them for future steps
+/// Returns false on failure
 private bool toTokens(List!string script){
 	if (tokens){
 		delete tokens;
@@ -485,14 +520,17 @@ private bool toTokens(List!string script){
 
 skipConversion:
 	if (hasError){
-		hasError = false;
+		return false;
 	}else{
-		hasError = true;
+		return true;
 	}
-	return hasError;
 }
 
 //checkSyntax returns false on no errors
+/// Second step in compilation.
+/// The syntax of the whole script is checked
+/// Returns true if an error is detected
+/// Returns false on no errors
 private bool checkSyntax(){
 	List!string vars = new List!string;
 	uinteger i, till = tokens.length;
@@ -640,6 +678,8 @@ private bool checkSyntax(){
 	return hasError;
 }
 
+/// The third step. All operators are converted to functions.
+/// Returns true if there was an error
 private bool operatorsToFunctionCalls(){
 	uinteger i, till=tokens.length;
 	Token token;
@@ -890,6 +930,7 @@ private bool operatorsToFunctionCalls(){
 	return hasError;
 }
 
+/// The last (almost last) step in compilation. All code is converted into a byte code.
 private string[][string] toByteCode(){
 	List!(uinteger[2]) addIfJump = new List!(uinteger[2]);//1:blockDepth; 2:whereTheJMPis
 	List!(uinteger[2]) addJump = new List!(uinteger[2]);//First element for onBlockToAdd, second: whatToAdd
@@ -1013,6 +1054,7 @@ private string[][string] toByteCode(){
 	return r;
 }
 
+/// Compiles q Qcript into byte code, returning errors in index="#errors" if any.
 public string[][string] compileQScript(List!string script, bool showOutput=false){
 	string[][string] r;
 	errors = new List!string;
@@ -1072,7 +1114,7 @@ skipIt:
 }
 
 debug{
-	//I put it at several places while debugging, it makes it a bit easier
+	///I put it at several places while debugging, it makes it a bit easier
 	private void outputTokens(){
 		writeln("Press enter to display fCalls");readln;
 		foreach(tk; tokens.toArray){

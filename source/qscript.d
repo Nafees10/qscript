@@ -6,24 +6,30 @@ import compiler;
 import std.stdio;
 import std.conv:to;
 
-
+/// This is the type of each script function, used in this module
 private alias ScriptFunction = QVar delegate(QVar[]);
+/// The type for `onExec`
 public alias OnExecuteFunction = QVar delegate(string, QVar[]);
+/// The type for `onError`
 public alias OnErrorFunction = void delegate(QScriptError);
 
+/// Each error is stored in `QScriptError`
 struct QScriptError{
-	string message;
-	uinteger instructionIndex;
+	string message;/// A short message teling what went wrong
+	uinteger instructionIndex;/// And the instruction number (starting from zero)
 }
 
+/// Each interpreter instruction is stored in array as `Instruction`
 private alias Instruction = void delegate(QVar);
 
+///All variables and stuff are stored as QVar
 union QVar{
 	double d;
 	string s;
 	QVar[] array;
 }
 
+/// The main class you need
 class QScript{
 private:
 	//script functions//String
@@ -364,6 +370,7 @@ public:
 			"_readArray":&readArray,
 		];
 	}
+	/// Loads and compiles a QScript from it's filename
 	string[] loadScript(string fName){
 		List!string script = new List!string;
 		script.loadArray(fileToArray(fName));
@@ -378,12 +385,19 @@ public:
 		}
 		return r;
 	}
+	/// Executes a function from the loaded QScript, that was loaded using `loadScript`
+	/// 
+	/// Returns what the function returned in the `result` variable
 	QVar executeFunction(string name, QVar[] args){
 		return execF(name,args);
 	}
+	/// Specifies the function to call when an undefined function has been called
+	/// 
+	/// This can be used to add new functions to QScript, and to create an error-reporter
 	@property OnExecuteFunction onExecute(OnExecuteFunction execHandler){
 		return onExec = execHandler;
 	}
+	/// Specifies the function to call when an error has occured
 	@property OnErrorFunction onError(OnErrorFunction errorHandler){
 		return onErrorF = errorHandler;
 	}
