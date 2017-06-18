@@ -1,15 +1,7 @@
-﻿/*
- * uinteger will be used instead of uint. If uint was used, 
- * then array.length would have to be casted to uint, plus,
- * less elements could be used. uintger is uint on 32 bit, 
- * and ulong on 64 bit. integer is int on 32 bit, and long 
- * on 64 bit.
-*/
+﻿module compiler;
 
-module compiler;
-
-import misc;
-import lists;
+import utils.misc;
+import utils.lists;
 import std.conv:to;
 import std.algorithm:canFind;
 debug{

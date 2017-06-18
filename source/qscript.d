@@ -1,7 +1,7 @@
 module qscript;
 
-import misc;
-import lists;
+import utils.misc;
+import utils.lists;
 import compiler;
 import std.stdio;
 import std.conv:to;
@@ -239,6 +239,30 @@ private:
 
 	//compile the bytecode into even simpler instructions - final stage of compiling
 	void finalCompile(string[][string] script){
+		string parseStr(string s){
+			string r;
+			for (uinteger i=0;i<s.length;i++){
+				if (s[i]=='\\'){
+					i++;
+					switch (s[i]){
+						case '\\':
+							r~='\\';
+							break;
+						case 'n':
+							r~='\n';
+							break;
+						case '"':
+							r~='"';
+							break;
+						default:
+							break;
+					}
+				}else{
+					r~=s[i];
+				}
+			}
+			return r;
+		}
 		uinteger i, lineno;
 		string token, line;
 		QVar arg;
