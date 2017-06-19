@@ -1,8 +1,8 @@
-module qscript;
+module qscript.qscript;
 
 import utils.misc;
 import utils.lists;
-import compiler;
+import qscript.compiler;
 import std.stdio;
 import std.conv:to;
 

@@ -1,4 +1,4 @@
-﻿module compiler;
+﻿module qscript.compiler;
 
 import utils.misc;
 import utils.lists;
