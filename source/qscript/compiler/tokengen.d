@@ -1,4 +1,7 @@
-﻿module qscript.compiler;
+﻿/+ This module deals with co
+ + 
+ +/
+module qscript.compiler.tokengen;
 
 import utils.misc;
 import utils.lists;
@@ -8,22 +11,18 @@ debug{
 	import std.stdio;
 }
 
-private List!Token tokens;
-private List!string errors;
-private uinteger[] lineLength;
-
 /// Speifies the type of bracket of TokenType == BracketOpen || BracketClose
 /// 
-/// used only in compiler
+/// used only in `compiler.tokengen`
 private enum BracketType{
 	Square,/// [these]
 	Round,/// (these)
 	Block/// {these}
 }
 
-/// Specifie type of token
+/// Specifies type of token
 /// 
-/// used only in compiler
+/// used only in `compiler.tokengen`
 private enum TokenType{
 	String,/// That the token is: `"SOME STRING"`
 	Number,/// That the token a number, float also included
@@ -43,52 +42,6 @@ private struct Token{
 	TokenType type;/// type of token
 	string token;/// token
 }
-
-//These functions below are used by compiler
-/// Called by compiler to add an error to the final list that will be reported
-private void addError(uinteger pos, string msg){
-	uinteger i = 0, chars = 0;
-	pos++;
-	for (; chars<pos && i<lineLength.length;i++){
-		chars+=lineLength[i];
-	}
-	errors.add("Line: "~to!string(i)~": "~msg);
-}
-
-/// Called by compiler when new tokens have been inserted
-/// 
-/// It must be caled or else, checking the position of error (line and char number) will be bugged
-private void incLineLength(uinteger pos, uinteger n=1){
-	uinteger i = 0, chars = 0;
-	pos++;
-	for (; chars<pos;i++){
-		chars+=lineLength[i];
-	}
-	lineLength[i] += n;
-}
-/*
-private void decLineLength(uinteger pos, uinteger n=1){
-	uinteger i = 0, chars = 0;
-	for (; i<=pos;i++){
-		if (chars>i || chars==i){
-			break;
-		}else{
-			chars+=lineLength[i];
-		}
-	}
-	//Decrement could be from several lines:
-	while (n>0){
-		if (lineLength[i]<n){
-			n -= lineLength[i];
-			lineLength[i] = 0;
-		}else{
-			lineLength[i] -= n;
-			n = 0;
-		}
-		i++;
-	}
-}
-*/
 /// Returns the index of the quotation mark that ends a string
 /// 
 /// Returns -1 if not found
@@ -105,43 +58,19 @@ private integer strEnd(string s, uinteger i){
 	return i;
 }
 
-/// Returns true if an aray has an element, false if no
-private bool hasElement(T)(T[] array, T element){
-	bool r = false;
-	foreach(cur; array){
-		if (cur == element){
-			r = true;
-			break;
-		}
-	}
-	return r;
-}
-
-/// Returns a string with al uppercase letters changed into lowercase
-private string lowercase(string s){
-	string tmstr;
-	ubyte tmbt;
-	for (integer i=0;i<s.length;i++){
-		tmbt = cast(ubyte) s[i];
-		if (tmbt>=65 && tmbt<=90){//is in range of capital letters
-			tmbt+=32;//small letters are +32 of their capitals
-			tmstr ~= cast(char) tmbt;
-		}else{
-			tmstr ~= s[i];
-		}
-	}
-	
-	return tmstr;
-}
-
 /// Returns true if a string contains a valid number, float or integer
 private bool isNum(string s){
 	bool r=true;
 	uinteger i;
+	bool hasDecimalPoint = false;
 	for (i=0;i<s.length;i++){
-		if (!"0123456789.".canFind(s[i])){
-			r = false;
-			break;
+		if (!"0123456789".canFind(s[i])){
+			if (hasDecimalPoint){
+				r = false;
+				break;
+			}else if (s[i] == '.'){
+				hasDecimalPoint = false;
+			}
 		}
 	}
 	return r;
@@ -189,16 +118,6 @@ private bool isBracketOpen(char b){
 private bool isBracketClose(char b){
 	return ['}',']',')'].hasElement(b);
 }
-
-/*private Token[] IdentifiersToString(Token[] ident){
-	for (uinteger i = 0;i < ident.length; i++){
-		if (ident[i].type==TokenType.Identifier){
-			ident[i].token = '"'~ident[i].token~'"';
-			ident[i].type = TokenType.String;
-		}
-	}
-	return ident;
-}*/
 /// Returns the name type of operator, in string, from TokenType
 private string TokenTypeToString(TokenType type){
 	string r;
@@ -302,47 +221,10 @@ private integer bracketPos(uinteger start, bool forward = true){
 	return i;
 }
 
-/// Reads and returns (in a Token[]) the tokens that form one of the two (or just one) operand for an operator.
-private Token[] readOperand(uinteger pos, bool forward = true){
-	integer i;
-	Token[] r;
-	if (forward){
-		uinteger till = tokens.length;
-		for (i=pos;i<till;i++){
-			Token token = tokens.read(i);
-			if ([TokenType.BracketClose,TokenType.Comma,TokenType.StatementEnd,
-					TokenType.Operator].hasElement(token.type)){
-				break;
-			}else if (token.type == TokenType.BracketOpen){
-				if (token.token=="{"){
-					break;
-				}
-				i = bracketPos(i);
-			}
-		}
-		r = tokens.readRange(pos,i);
-	}else{
-		for (i=pos;i>=0;i--){
-			Token token = tokens.read(i);
-			if ([TokenType.BracketOpen,TokenType.Comma,TokenType.StatementEnd,
-					TokenType.Operator].hasElement(token.type)){
-				break;
-			}else if (token.type == TokenType.BracketClose){
-				if (token.token=="}"){
-					break;
-				}
-				i = bracketPos(i,false);
-			}
-		}
-		r = tokens.readRange(i+1,pos+1);
-	}
-	return r;
-}
-
 //Functions below is where the 'magic' happens
 //toTokens returns false on error
 /// First step in compilation
-/// Converts the script into tokens, identifies the TokenType, and stores them for future steps
+/// Converts the script into tokens, identifies the TokenType, and stores them
 /// Returns false on failure
 private bool toTokens(List!string script){
 	if (tokens){

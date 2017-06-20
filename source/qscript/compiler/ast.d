@@ -1,4 +1,4 @@
-﻿module qscript.compilerast;
+﻿module qscript.compiler.ast;
 
 import utils.misc;
 
@@ -15,6 +15,7 @@ package struct ASTNode{
 		FunctionCall, /// Function Call,
 		StringLiteral, /// String Literal
 		NumberLiteral, /// Number Literal
+		HexLiteral, /// A Literal in form `0x1AB`
 		VarDeclare, /// For variable declaration
 		Variable, /// variable name
 		Arguments, /// stores arguments for a function
