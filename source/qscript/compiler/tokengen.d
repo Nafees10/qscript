@@ -14,72 +14,71 @@ debug{
 /// First step in compilation
 /// Converts the script into tokens, identifies the TokenType, returns the tokens in a `Token[]`
 /// adds error to `misc.compilerErrors` in case of error, and returns empty array or null
-package string[] toTokens(List!string script){
+package Token[] toTokens(List!string script){
 	LinkedList!Token tokens = new LinkedList!Token;
-	LinkedList!CompileError errors = new LinkedList!CompileError;
 	//First convert everything to 'tokens', TokenType will be set later
-	for (uinteger lineno=0; lineno<till; lineno++){
-		string line = script.read(i);
+	for (uinteger lineno=0, lineCount = script.length; lineno < lineCount; lineno++){
+		string line = script.read(lineno);
+		bool prevIsIdent = false; /// Stores if the previous char read was present in IDENT_CHARS
+		bool isIdent; /// Stores if the current char is present in IDENT_CHARS
 		for (uinteger i = 0, readFrom = 0; i < line.length; i ++){
-
+			// stop at tabs, spaces, and line-endings
+			if (line[i] == ' '|| line[i] == '\t' || i == line.length-1){
+				// check if there is any token to be inserted
+				if (readFrom < i){
+					// insert this token
+					Token t;
+					t.token = line[readFrom .. i].dup;// use .dup instead of just `=` to avoid horrible memory issues
+					tokens.append(t);
+				}
+				// skip the current char for the next token
+				readFrom = i + 1;
+			}
+			// stop at brackets, and commas
+			if (['{', '[', '(', ')', ']', '}', ','].hasElement(line[i])){
+				Token t;
+				// add the previous token first
+				if (readFrom < i){
+					t.token = line[readFrom .. i].dup;
+					tokens.append(t);
+				}
+				t.token = cast(string)[line[i]];
+				tokens.append(t);
+				//move readFrom to next token's position
+				readFrom = i + 1;
+			}
+			// stop and add if a string is seen
+			if (line[i] == '"'){
+				// check if string has an ending
+				integer strEndPos = strEnd(line, i);
+				if (strEndPos == -1){
+					// error
+					CompileError error = CompileError(i + 1, "unterminated string");
+					compileErrors.append(error);
+					break;
+				}else{
+					// everything's good
+					Token t;
+					//t.token = line[]
+					//TODO continue from here
+				}
+			}
+			prevIsIdent = isIdent;
 		}
 	}
 
 	// now identify token types, only if there were no errors
-	if (errors.count == 0){
-		Token tmpToken;
-		till = tokens.count;
-		for (i=0; i<till; i++){
-			token = tokens.read(i);
-			if (token.token.isNum){
-				//Numbers:
-				token.type = TokenType.Number;
-			}else if (token.token == "new"){
-				//is a data type
-				token.type = TokenType.VarDef;
-			}else if (token.token.isIdentifier){
-				//Identifiers & FunctionCall & FunctionCall
-				token.type = TokenType.Identifier;
-				if (i<till-1){
-					tmpToken = tokens.read(i+1);
-					if (tmpToken.token=="("){
-						token.type = TokenType.FunctionCall;
-					}else if (tmpToken.token=="{"){
-						token.type = TokenType.FunctionDef;
-					}
-				}
-			}else if (token.token.isOperator){
-				//Operator
-				token.type = TokenType.Operator;
-			}else if (token.token[0]=='"'){
-				//string
-				token.type = TokenType.String;
-			}else if (token.token.length == 1){
-				//comma, semicolon, brackets
-				switch (token.token[0]){
-					case ',':
-						token.type = TokenType.Comma;
-						break;
-					case ';':
-						token.type = TokenType.StatementEnd;
-						break;
-					default:
-						if (isBracketOpen(token.token[0])){
-							token.type = TokenType.BracketOpen;
-						}else if (isBracketClose(token.token[0])){
-							token.type = TokenType.BracketClose;
-						}
-						break;
-				}
-			}
-			tokens.set(i,token);
-		}
+	if (compileErrors.count == 0){
+		// identify token types
 	}
 
-	if (errors.count == 0){
-		return false;
+	// return tokens if no error
+	Token[] r = tokens.toArray;
+	tokens.destroy();
+	if (compileErrors.count == 0){
+		return r;
 	}else{
-		return true;
+		return null;
 	}
 }
 
