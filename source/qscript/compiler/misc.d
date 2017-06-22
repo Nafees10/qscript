@@ -7,6 +7,13 @@ import std.range;
 
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
+/// An array containing another array conatining all operators
+/// Index0 for array0 means the operators are of highest precedence
+package const string[][] OPERATORS = [
+	["/", "*", "+", "-", "%", "~"],
+	["<", ">", "==", "<=", ">="],
+	["="]
+];
 
 /// Used by compiler's functions to return error
 package struct CompileError{
@@ -27,21 +34,22 @@ package LinkedList!CompileError compileErrors;
 package enum TokenType{
 	String,/// That the token is: `"SOME STRING"`
 	Number,/// That the token a number, float also included
-	Identifier,/// That the token is an identifier. i.e token is a variable name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
+	Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 	Operator,/// That the token is an operator, like `+`, `==` etc
 	Comma,/// That its a comma: `,`
-	VarDef,/// That the token is a 'new'
 	StatementEnd,/// A semicolon
-	BracketOpen,/// A bracket open, type is specified using `BracketType`
-	BracketClose,/// A bracket close, type is specified using `BracketType`
-	FunctionCall,/// Token is a function call, i.e, it looks like: `someFunction`(someArguments);
-	FunctionDef,/// Token is a function definition, i.e, it looks like: `someFunction`{functionBody}
+	BracketOpen,/// A bracket open, type can be determined by matching `Token.token` against ['{', '[', '(']
+	BracketClose,/// A bracket close
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
 	TokenType type;/// type of token
 	string token;/// token
+	this(TokenType tType, string tToken){
+		type = tType;
+		token = tToken;
+	}
 }
 
 /// Returns true if a string is valid for use as a variable name in QScript(i.e as an identifier)
