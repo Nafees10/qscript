@@ -104,14 +104,7 @@ unittest{
 package Token[] toTokens(List!string script){
 	/// Returns true if a string has chars that only identifiers can have
 	bool isIdentifier(string s){
-		bool r = true;
-		foreach(c; s){
-			if (!IDENT_CHARS.hasElement(c)){
-				r = false;
-				break;
-			}
-		}
-		return r;
+		return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
 	}
 	/// Returns tru is a string is an operator
 	bool isOperator(string s){
@@ -142,7 +135,19 @@ package Token[] toTokens(List!string script){
 				tokens[i].type = TokenType.Operator;
 			}else if (token[0] == '"'){
 				tokens[i].type = TokenType.String;
-			}else if ()
+			}else if (token.isNum){
+				tokens[i].type = TokenType.Number;
+			}else if (token == ";"){
+				tokens[i].type = TokenType.StatementEnd;
+			}else if (token == ","){
+				tokens[i].type = TokenType.Comma;
+			}else if (["{", "[", "("].hasElement(token)){
+				tokens[i].type = TokenType.BracketOpen;
+			}else if ([")", "]", "}"].hasElement(token)){
+				tokens[i].type = TokenType.BracketClose;
+			}else{
+				CompileError error = CompileError(0/*TODO: get token-index-to-lineno-conversion*/, "unidentified token type");
+			}
 		}
 	}
 }
