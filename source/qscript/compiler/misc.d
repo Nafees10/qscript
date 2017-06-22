@@ -3,6 +3,11 @@
 import utils.misc;
 import utils.lists;
 
+import std.range;
+
+/// An array containing all chars that an identifier can contain
+package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
+
 /// Used by compiler's functions to return error
 package struct CompileError{
 	string msg; /// The error stored in a string
@@ -44,37 +49,13 @@ package bool isIdentifier(string s){
 	bool r=true;
 	for (uinteger i=0;i<s.length;i++){
 		if ((s[i]<'a' || s[i]>'z') && (s[i]<'A' || s[i]>'Z')){
-			if ("0123456789_".hasElement(s[i])==false){
+			if (IDENT_CHARS.hasElement(s[i])==false){
 				r=false;
 				break;
 			}
 		}
 	}
 	return r;
-}
-
-/// Returns true if a string is a valid QScript operator
-/// 
-/// All operators are cheched against, including ones like `==`, `+` ...
-package bool isOperator(string s){
-	return ["/","*","+","-","%","~","=","<",">","<=","==",">="].hasElement(s);
-}
-
-/// Returns true if a string is a valid QScript comparision operator
-/// 
-/// Only operators like `==`, `>=` etc are checked against
-package bool isCompareOperator(string s){
-	return ["<",">","<=","==",">="].hasElement(s);
-}
-
-/// Returns true if a character is an opening bracket
-package bool isBracketOpen(char b){
-	return ['{','[','('].hasElement(b);
-}
-
-/// Returns true if a character is a closing bracket
-package bool isBracketClose(char b){
-	return ['}',']',')'].hasElement(b);
 }
 /// Returns the index of the quotation mark that ends a string
 /// 
