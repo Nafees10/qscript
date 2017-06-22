@@ -51,20 +51,6 @@ package struct Token{
 		token = tToken;
 	}
 }
-
-/// Returns true if a string is valid for use as a variable name in QScript(i.e as an identifier)
-package bool isIdentifier(string s){
-	bool r=true;
-	for (uinteger i=0;i<s.length;i++){
-		if ((s[i]<'a' || s[i]>'z') && (s[i]<'A' || s[i]>'Z')){
-			if (IDENT_CHARS.hasElement(s[i])==false){
-				r=false;
-				break;
-			}
-		}
-	}
-	return r;
-}
 /// Returns the index of the quotation mark that ends a string
 /// 
 /// Returns -1 if not found
