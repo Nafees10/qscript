@@ -11,11 +11,9 @@ debug{
 	import std.stdio;
 }
 
-/// First step in compilation
-/// Converts the script into tokens, identifies the TokenType, returns the tokens in a `Token[]`
-/// adds error to `misc.compilerErrors` in case of error, and returns empty array or null
-package Token[] toTokens(List!string script){
-	LinkedList!Token tokens = new LinkedList!Token;
+/// Reads script, and separates tokens
+private string[] separateTokens(List!string script){
+	LinkedList!string tokens = new LinkedList!string;
 	//First convert everything to 'tokens', TokenType will be set later
 	for (uinteger lineno=0, lineCount = script.length; lineno < lineCount; lineno++){
 		string line = script.read(lineno);
@@ -27,58 +25,125 @@ package Token[] toTokens(List!string script){
 				// check if there is any token to be inserted
 				if (readFrom < i){
 					// insert this token
-					Token t;
-					t.token = line[readFrom .. i].dup;// use .dup instead of just `=` to avoid horrible memory issues
+					string t = line[readFrom .. i].dup;// use .dup instead of just `=` to avoid horrible memory issues
 					tokens.append(t);
 				}
 				// skip the current char for the next token
 				readFrom = i + 1;
-			}
+			}else
 			// stop at brackets, and commas
 			if (['{', '[', '(', ')', ']', '}', ','].hasElement(line[i])){
-				Token t;
+				string t;
 				// add the previous token first
 				if (readFrom < i){
-					t.token = line[readFrom .. i].dup;
+					t = line[readFrom .. i].dup;
 					tokens.append(t);
 				}
-				t.token = cast(string)[line[i]];
+				t = cast(string)[line[i]];
 				tokens.append(t);
 				//move readFrom to next token's position
 				readFrom = i + 1;
-			}
+			}else
 			// stop and add if a string is seen
 			if (line[i] == '"'){
-				// check if string has an ending
-				integer strEndPos = strEnd(line, i);
-				if (strEndPos == -1){
-					// error
-					CompileError error = CompileError(i + 1, "unterminated string");
+				//check if there was a previous "unterminated" token before string
+				if (readFrom < i){
+					// :(
+					CompileError error = CompileError(i + 1, "found unexpected token before string");
 					compileErrors.append(error);
 					break;
 				}else{
-					// everything's good
-					Token t;
-					//t.token = line[]
-					//TODO continue from here
+					// check if string has an ending
+					integer strEndPos = strEnd(line, i);
+					if (strEndPos == -1){
+						// error
+						CompileError error = CompileError(i + 1, "unterminated string");
+						compileErrors.append(error);
+						break;
+					}else{
+						// everything's good
+						string t;
+						t = line[i .. strEndPos + 1].dup;// we added the quotation marks around the string too!
+						tokens.append(t);
+						// skip string
+						i = strEndPos;
+						// move readFrom too
+						readFrom = i + 1;
+					}
 				}
+			}
+			// finally, check if the previous char's isIdent is different from this one's, then it means they're different tokens
+			isIdent = IDENT_CHARS.hasElement(line[i]);
+			if (prevIsIdent != isIdent){
+				string t;
+				t = line[readFrom .. i];
+				tokens.append(t);
+				// move readFrom
+				readFrom = i + 1;
 			}
 			prevIsIdent = isIdent;
 		}
 	}
 
-	// now identify token types, only if there were no errors
-	if (compileErrors.count == 0){
-		// identify token types
-	}
-
 	// return tokens if no error
-	Token[] r = tokens.toArray;
+	string[] r = tokens.toArray;
 	tokens.destroy();
 	if (compileErrors.count == 0){
 		return r;
 	}else{
 		return null;
+	}
+}
+///
+unittest{
+
+}
+
+/// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
+/// in an array
+package Token[] toTokens(List!string script){
+	/// Returns true if a string has chars that only identifiers can have
+	bool isIdentifier(string s){
+		bool r = true;
+		foreach(c; s){
+			if (!IDENT_CHARS.hasElement(c)){
+				r = false;
+				break;
+			}
+		}
+		return r;
+	}
+	/// Returns tru is a string is an operator
+	bool isOperator(string s){
+		bool r = false;
+		foreach(operators; OPERATORS){
+			if (operators.hasElement(s)){
+				r = true;
+				break;
+			}
+		}
+		return r;
+	}
+	string[] tokenStrings = separateTokens(script);
+	if (tokenStrings == null){
+		// there's error
+		return null;
+	}else{
+		// continue with identiying tokens
+		Token[] tokens;
+		tokens.length = tokenStrings.length;
+		// fill in tokens with tokenStrings' strings, and identify their type
+		foreach(i, token; tokenStrings){
+			tokens[i].token = token;
+			// identify type
+			if (isIdentifier(token)){
+				tokens[i].type = TokenType.Identifier;
+			}else if (isOperator(token)){
+				tokens[i].type = TokenType.Operator;
+			}else if (token[0] == '"'){
+				tokens[i].type = TokenType.String;
+			}else if ()
+		}
 	}
 }
 
