@@ -234,7 +234,7 @@ unittest{
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
 /// in an array
-public TokenList toTokens(string[] script){
+package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
 	if (tokens.tokens == null){
