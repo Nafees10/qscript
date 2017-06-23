@@ -16,7 +16,7 @@ package const string[][] OPERATORS = [
 ];
 
 /// Used by compiler's functions to return error
-package struct CompileError{
+public struct CompileError{
 	string msg; /// The error stored in a string
 	uinteger lineno; /// The line number on which the error is
 	this(uinteger lineNumber, string errorMessage){
@@ -54,19 +54,4 @@ package struct Token{
 		type = tType;
 		token = tToken;
 	}
-}
-/// Returns the index of the quotation mark that ends a string
-/// 
-/// Returns -1 if not found
-package integer strEnd(string s, uinteger i){
-	for (i++;i<s.length;i++){
-		if (s[i]=='\\'){
-			i++;
-			continue;
-		}else if (s[i]=='"'){
-			break;
-		}
-	}
-	if (i==s.length){i=-1;}
-	return i;
 }
