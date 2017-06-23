@@ -38,8 +38,12 @@ package enum TokenType{
 	Operator,/// That the token is an operator, like `+`, `==` etc
 	Comma,/// That its a comma: `,`
 	StatementEnd,/// A semicolon
-	BracketOpen,/// A bracket open, type can be determined by matching `Token.token` against ['{', '[', '(']
-	BracketClose,/// A bracket close
+	ParanthesesOpen,/// `(`
+	ParanthesesClose,/// `)`
+	IndexBracketOpen,/// `[`
+	IndexBracketClose,///`]`
+	BlockStart,///`{`
+	BlockEnd,///`}`
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
