@@ -28,15 +28,23 @@ package struct TokenList{
 }
 
 /// Reads script, and separates tokens
-private TokenList separateTokens(string[] script){
+/// TODO mark it private
+public TokenList separateTokens(string[] script){
 	LinkedList!string tokens = new LinkedList!string;
+	if (compileErrors is null){
+		compileErrors = new LinkedList!CompileError;
+	}
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
 	// make space in lineTokenCount to store number of tokens in each line, which will be used in error-reporting
 	for (uinteger lineno=0, lineCount = script.length; lineno < lineCount; lineno++){
 		string line = script[lineno];
-		bool prevIsIdent = false; /// Stores if the previous char read was present in IDENT_CHARS
+		bool prevIsIdent; /// Stores if the previous char read was present in IDENT_CHARS
 		bool isIdent; /// Stores if the current char is present in IDENT_CHARS
+		if (line.length > 0){
+			prevIsIdent = IDENT_CHARS.hasElement(line[0]);
+			isIdent = prevIsIdent;
+		}
 		uinteger tokenCount = tokens.count;
 		for (uinteger i = 0, readFrom = 0; i < line.length; i ++){
 			// stop at tabs, spaces, and line-endings
@@ -44,22 +52,23 @@ private TokenList separateTokens(string[] script){
 				// check if there is any token to be inserted
 				if (readFrom < i){
 					// insert this token
-					string t = line[readFrom .. i].dup;// use .dup instead of just `=` to avoid horrible memory issues
-					tokens.append(t);
+					tokens.append(line[readFrom .. i].dup);
+					readFrom = i;
+				}
+				if (readFrom == i && i == line.length - 1 && ![' ', '\t'].hasElement(line[i])){
+					//add this token which is at end (this condition is for one-char token at end of line)
+					tokens.append(cast(string)[line[i]]);
 				}
 				// skip the current char for the next token
 				readFrom = i + 1;
 			}else
 			// stop at brackets, and commas
 			if (['{', '[', '(', ')', ']', '}', ','].hasElement(line[i])){
-				string t;
 				// add the previous token first
 				if (readFrom < i){
-					t = line[readFrom .. i].dup;
-					tokens.append(t);
+					tokens.append(line[readFrom .. i].dup);
 				}
-				t = cast(string)[line[i]];
-				tokens.append(t);
+				tokens.append(cast(string)[line[i]]);
 				//move readFrom to next token's position
 				readFrom = i + 1;
 			}else
@@ -68,37 +77,30 @@ private TokenList separateTokens(string[] script){
 				//check if there was a previous "unterminated" token before string
 				if (readFrom < i){
 					// :(
-					CompileError error = CompileError(i + 1, "found unexpected token before string");
-					compileErrors.append(error);
+					tokens.append(line[readFrom .. i].dup);
+				}
+				// check if string has an ending
+				integer strEndPos = strEnd(line, i);
+				if (strEndPos == -1){
+					// error
+					compileErrors.append(CompileError(i + 1, "unterminated string"));
 					break;
 				}else{
-					// check if string has an ending
-					integer strEndPos = strEnd(line, i);
-					if (strEndPos == -1){
-						// error
-						CompileError error = CompileError(i + 1, "unterminated string");
-						compileErrors.append(error);
-						break;
-					}else{
-						// everything's good
-						string t;
-						t = line[i .. strEndPos + 1].dup;// we added the quotation marks around the string too!
-						tokens.append(t);
-						// skip string
-						i = strEndPos;
-						// move readFrom too
-						readFrom = i + 1;
-					}
+					// everything's good-
+					tokens.append(line[i .. strEndPos + 1].dup);
+					// skip string
+					i = strEndPos;
+					// move readFrom too
+					readFrom = i + 1;
 				}
+
 			}
 			// finally, check if the previous char's isIdent is different from this one's, then it means they're different tokens
 			isIdent = IDENT_CHARS.hasElement(line[i]);
-			if (prevIsIdent != isIdent){
-				string t;
-				t = line[readFrom .. i];
-				tokens.append(t);
+			if (readFrom < i && prevIsIdent != isIdent){
+				tokens.append(line[readFrom .. i].dup);
 				// move readFrom
-				readFrom = i + 1;
+				readFrom = i;
 			}
 			prevIsIdent = isIdent;
 		}
@@ -116,7 +118,9 @@ private TokenList separateTokens(string[] script){
 		while (ptr !is null && i < list.tokens.length){
 			list.tokens[i].token = *ptr;
 			i ++;
+			ptr = tokens.read;
 		}
+		tokens.destroy;
 		// put in tokenPerLine
 		list.tokenPerLine = tokenPerLine;
 		return list;
@@ -169,6 +173,7 @@ unittest{
 	//make sure the expected result and actual result is same
 	Token[] r = separateTokens(script).tokens;
 	foreach(i, rToken; r){
+		writeln(rToken.token," == ",expectedResults[i]);
 		assert(rToken.token == expectedResults[i]);
 	}
 }
@@ -217,7 +222,7 @@ package TokenList toTokens(string[] script){
 			}else if ([")", "]", "}"].hasElement(token.token)){
 				tokens.tokens[i].type = TokenType.BracketClose;
 			}else{
-				CompileError error = CompileError(tokens.getTokenLine(i), "unidentified token type");
+				compileErrors.append(CompileError(tokens.getTokenLine(i), "unidentified token type"));
 			}
 		}
 		return tokens;
