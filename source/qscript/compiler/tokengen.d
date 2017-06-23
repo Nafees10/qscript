@@ -28,13 +28,13 @@ package struct TokenList{
 }
 
 /// Reads script, and separates tokens
-private TokenList separateTokens(List!string script){
+private TokenList separateTokens(string[] script){
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
 	// make space in lineTokenCount to store number of tokens in each line, which will be used in error-reporting
 	for (uinteger lineno=0, lineCount = script.length; lineno < lineCount; lineno++){
-		string line = script.read(lineno);
+		string line = script[lineno];
 		bool prevIsIdent = false; /// Stores if the previous char read was present in IDENT_CHARS
 		bool isIdent; /// Stores if the current char is present in IDENT_CHARS
 		uinteger tokenCount = tokens.count;
@@ -134,7 +134,7 @@ unittest{
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
 /// in an array
-package TokenList toTokens(List!string script){
+package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	bool isIdentifier(string s){
 		return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
