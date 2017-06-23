@@ -75,6 +75,23 @@ private TokenType getTokenType(string token){
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
+	/// Returns the index of the quotation mark that ends a string
+	/// 
+	/// Returns -1 if not found
+	integer strEnd(string s, uinteger i){
+		for (i++;i<s.length;i++){
+			if (s[i]=='\\'){
+				i++;
+				continue;
+			}else if (s[i]=='"'){
+				break;
+			}
+		}
+		if (i==s.length){i=-1;}
+		return i;
+	}
+
+
 	LinkedList!string tokens = new LinkedList!string;
 	if (compileErrors is null){
 		compileErrors = new LinkedList!CompileError;
@@ -224,9 +241,11 @@ unittest{
 		"if ( i[2]>=2){}",
 		"if ( i[2]>2){}",
 		"if ( i[2]==2){}",
+		"}"
 	];
 	//make sure the expected result and actual result is same
 	Token[] r = separateTokens(script).tokens;
+	assert(r.length == expectedResults.length);
 	foreach(i, rToken; r){
 		assert(rToken.token == expectedResults[i]);
 	}
