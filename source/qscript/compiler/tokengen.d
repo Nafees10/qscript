@@ -129,7 +129,48 @@ private TokenList separateTokens(string[] script){
 }
 ///
 unittest{
-
+	string[] expectedResults;
+	expectedResults = [
+		"main", "{",
+		"new", "(", "i", ",", "i2", ")", ";",
+		"if", "(", "i", "<", "2", ")", "{", "}",
+		"if", "(", "i", "<=", "2", ")", "{", "}",
+		"if", "(", "i", ">=", "2", ")", "{", "}",
+		"if", "(", "i", ">", "2", ")", "{", "}",
+		"if", "(", "i", "==", "2", ")", "{", "}",
+		"i", "=", "6", ";",
+		"i2", "[", "i", "]", "=", "2", ";",
+		"if", "(", "i", "[", "2", "]", "<", "2", ")", "{", "}",
+		"if", "(", "i", "[", "2", "]", "<=", "2", ")", "{", "}",
+		"if", "(", "i", "[", "2", "]", ">=", "2", ")", "{", "}",
+		"if", "(", "i", "[", "2", "]", ">", "2", ")", "{", "}",
+		"if", "(", "i", "[", "2", "]", "==", "2", ")", "{", "}",
+		"}"
+	];
+	string[] script = [
+		"main{",
+		"\tnew (i, i2);",
+		"\tif (i < 2){}",
+		"\tif(i<=2){}",
+		"\tif(i >= 2) { }",
+		"if \t(i > 2)",
+		"{",
+		"}",
+		"if ( i == 2 ) { } ",
+		"i=6;",
+		"i2[i]=2;",
+		"if (i [ 2 ] < 2)",
+		"\t{}",
+		"if ( i[2]<=2){}",
+		"if ( i[2]>=2){}",
+		"if ( i[2]>2){}",
+		"if ( i[2]==2){}",
+	];
+	//make sure the expected result and actual result is same
+	Token[] r = separateTokens(script).tokens;
+	foreach(i, rToken; r){
+		assert(rToken.token == expectedResults[i]);
+	}
 }
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
