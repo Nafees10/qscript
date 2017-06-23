@@ -31,7 +31,12 @@ package struct TokenList{
 /// returns token type, if fails, throws exception
 private TokenType getTokenType(string token){
 	bool isIdentifier(string s){
-		return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
+		// token that qualifies as a number can qualify as an identifier, but not vice versa, so this if statement
+		if (!token.isNum){
+			return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
+		}else{
+			return false;
+		}
 	}
 	/// Returns tru is a string is an operator
 	bool isOperator(string s){
@@ -71,6 +76,15 @@ private TokenType getTokenType(string token){
 	}else{
 		throw new Exception("unidentified token type");
 	}
+}
+///
+unittest{
+	assert("thisIsAVar_1234".getTokenType == TokenType.Identifier);
+	assert("24.5".getTokenType == TokenType.Number);
+	assert("\"This is a string\"".getTokenType == TokenType.String);
+	assert("==".getTokenType == TokenType.Operator);
+	assert(";".getTokenType == TokenType.StatementEnd);
+	assert(",".getTokenType == TokenType.Comma);
 }
 
 /// Reads script, and separates tokens
