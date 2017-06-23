@@ -27,9 +27,54 @@ package struct TokenList{
 	}
 }
 
+/// Attempts to identify a token type by the token (string).
+/// returns token type, if fails, throws exception
+private TokenType getTokenType(string token){
+	bool isIdentifier(string s){
+		return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
+	}
+	/// Returns tru is a string is an operator
+	bool isOperator(string s){
+		bool r = false;
+		foreach(operators; OPERATORS){
+			if (operators.hasElement(s)){
+				r = true;
+				break;
+			}
+		}
+		return r;
+	}
+	if (token.isNum){
+		return TokenType.Number;
+	}else if (isIdentifier(token)){
+		return TokenType.Identifier;
+	}else if (isOperator(token)){
+		return TokenType.Operator;
+	}else if (token[0] == '"'){
+		return TokenType.String;
+	}else if (token == ";"){
+		return TokenType.StatementEnd;
+	}else if (token == ","){
+		return TokenType.Comma;
+	}else if (token == "("){
+		return TokenType.ParanthesesOpen;
+	}else if (token == ")"){
+		return TokenType.ParanthesesClose;
+	}else if (token == "["){
+		return TokenType.IndexBracketOpen;
+	}else if (token == "]"){
+		return TokenType.IndexBracketClose;
+	}else if (token == "{"){
+		return TokenType.BlockStart;
+	}else if (token == "]"){
+		return TokenType.BlockEnd;
+	}else{
+		throw new Exception("unidentified token type");
+	}
+}
+
 /// Reads script, and separates tokens
-/// TODO mark it private
-public TokenList separateTokens(string[] script){
+private TokenList separateTokens(string[] script){
 	LinkedList!string tokens = new LinkedList!string;
 	if (compileErrors is null){
 		compileErrors = new LinkedList!CompileError;
@@ -46,8 +91,16 @@ public TokenList separateTokens(string[] script){
 			isIdent = prevIsIdent;
 		}
 		uinteger tokenCount = tokens.count;
+
 		for (uinteger i = 0, readFrom = 0; i < line.length; i ++){
-			// stop at tabs, spaces, and line-endings
+			// end at comments
+			if (i+2 < line.length && line[i .. i + 2] == "//"){
+				if (readFrom < i){
+					tokens.append(line[readFrom .. i].dup);
+				}
+				break;
+			}
+			// stop at tabs, spaces, and line-endings, and comments
 			if (line[i] == ' '|| line[i] == '\t' || i == line.length-1){
 				// check if there is any token to be inserted
 				if (readFrom < i){
@@ -107,6 +160,7 @@ public TokenList separateTokens(string[] script){
 		tokenCount = tokens.count - tokenCount;
 		tokenPerLine[lineno] = tokenCount;
 	}
+
 	// check if error-free
 	if (compileErrors.count == 0){
 		// put all tokens in a Token[] from string[]
@@ -156,7 +210,8 @@ unittest{
 		"\tnew (i, i2);",
 		"\tif (i < 2){}",
 		"\tif(i<=2){}",
-		"\tif(i >= 2) { }",
+		"\tif(i >= 2) {//comment }",
+		"}",
 		"if \t(i > 2)",
 		"{",
 		"}",
@@ -173,29 +228,14 @@ unittest{
 	//make sure the expected result and actual result is same
 	Token[] r = separateTokens(script).tokens;
 	foreach(i, rToken; r){
-		writeln(rToken.token," == ",expectedResults[i]);
 		assert(rToken.token == expectedResults[i]);
 	}
 }
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
 /// in an array
-package TokenList toTokens(string[] script){
+public TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
-	bool isIdentifier(string s){
-		return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
-	}
-	/// Returns tru is a string is an operator
-	bool isOperator(string s){
-		bool r = false;
-		foreach(operators; OPERATORS){
-			if (operators.hasElement(s)){
-				r = true;
-				break;
-			}
-		}
-		return r;
-	}
 	TokenList tokens = separateTokens(script);
 	if (tokens.tokens == null){
 		// there's error
@@ -204,25 +244,10 @@ package TokenList toTokens(string[] script){
 		// continue with identiying tokens
 		// fill in tokens with tokenStrings' strings, and identify their type
 		foreach(i, token; tokens.tokens){
-			// identify type
-			if (isIdentifier(token.token)){
-				tokens.tokens[i].type = TokenType.Identifier;
-			}else if (isOperator(token.token)){
-				tokens.tokens[i].type = TokenType.Operator;
-			}else if (token.token[0] == '"'){
-				tokens.tokens[i].type = TokenType.String;
-			}else if (token.token.isNum){
-				tokens.tokens[i].type = TokenType.Number;
-			}else if (token.token == ";"){
-				tokens.tokens[i].type = TokenType.StatementEnd;
-			}else if (token.token == ","){
-				tokens.tokens[i].type = TokenType.Comma;
-			}else if (["{", "[", "("].hasElement(token.token)){
-				tokens.tokens[i].type = TokenType.BracketOpen;
-			}else if ([")", "]", "}"].hasElement(token.token)){
-				tokens.tokens[i].type = TokenType.BracketClose;
-			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(i), "unidentified token type"));
+			try{
+				tokens.tokens[i].type = getTokenType(token.token);
+			}catch(Exception e){
+				compileErrors.append(CompileError(tokens.getTokenLine(i), e.msg));
 			}
 		}
 		return tokens;
