@@ -55,3 +55,82 @@ package struct Token{
 		token = tToken;
 	}
 }
+/// To store Tokens with Types where the line number of each token is required8
+package struct TokenList{
+	Token[] tokens; /// Stores the tokens
+	uinteger[] tokenPerLine; /// Stores the number of tokens in each line
+	/// Returns the line number a token is in by usin the index of the token in `tokens`
+	/// 
+	/// The returned value is the line-number, not index, it starts from 1, not zero
+	uinteger getTokenLine(uinteger tokenIndex){
+		uinteger i = 0, chars = 0;
+		tokenIndex ++;
+		for (; chars < tokenIndex && i < tokenPerLine.length; i ++){
+			chars += tokenPerLine[i];
+		}
+		return i;
+	}
+}
+
+/// Used to get index of opening/closing bracket using index of opposite bracket
+/// Checks for wrong-bracket order too, and adds error to `misc.compileErrors` and returns -1 if error
+/// else, returns index of the oppposite bracket
+/// 
+/// `start` is the index of the bracket to get the opposite of
+/// `forward`, if true, searches for the closing bracket, else, for the opening bracket
+private integer bracketPos(TokenList tokens, uinteger start, bool forward = true){
+	enum BracketType{
+		Round,
+		Square,
+		Block
+	}
+	Stack!BracketType bracks = new Stack!BracketType;
+	integer i;
+	BracketType curType;
+	BracketType[TokenType] brackOpenIdent = [
+		TokenType.ParanthesesOpen: BracketType.Round,
+		TokenType.IndexBracketOpen: BracketType.Square,
+		TokenType.BlockStart: BracketType.Block
+	];
+	BracketType[TokenType] brackCloseIdent = [
+		TokenType.ParanthesesClose: BracketType.Round,
+		TokenType.IndexBracketClose: BracketType.Square,
+		TokenType.BlockEnd:BracketType.Block
+	];
+	if (forward){
+		for (i=start; i<tokens.tokens.length; i++){
+			if (tokens.tokens[i].type in brackOpenIdent){
+				bracks.push(brackOpenIdent[tokens.tokens[i].type]);
+			}else if (tokens.tokens[i].type in brackCloseIdent){
+				if (bracks.pop != brackCloseIdent[tokens.tokens[i].type]){
+					compileErrors.append(CompileError(tokens.getTokenLine(i),
+							"brackets order is wrong; first opened must be last closed"));
+					i = -1;
+					break;
+				}
+			}
+			if (bracks.count == 0){
+				break;
+			}
+		}
+	}else{
+		for (i=start; i>=0; i--){
+			if (tokens.tokens[i].type in brackCloseIdent){
+				bracks.push(brackCloseIdent[tokens.tokens[i].type]);
+			}else if (tokens.tokens[i].type in brackOpenIdent){
+				if (bracks.pop != brackOpenIdent[tokens.tokens[i].type]){
+					compileErrors.append(CompileError(tokens.getTokenLine(i),
+							"brackets order is wrong; first opened must be last closed"));
+					i = -1;
+					break;
+				}
+			}
+			if (bracks.count == 0){
+				break;
+			}
+		}
+	}
+
+	.destroy(bracks);
+	return i;
+}
