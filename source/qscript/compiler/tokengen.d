@@ -11,22 +11,6 @@ debug{
 	import std.stdio;
 }
 
-package struct TokenList{
-	Token[] tokens; /// Stores the tokens
-	uinteger[] tokenPerLine; /// Stores the number of tokens in each line
-	/// Returns the line number a token is in by usin the index of the token in `tokens`
-	/// 
-	/// The returned value is the line-number, not index, it starts from 1, not zero
-	uinteger getTokenLine(uinteger tokenIndex){
-		uinteger i = 0, chars = 0;
-		tokenIndex ++;
-		for (; chars < tokenIndex && i < tokenPerLine.length; i ++){
-			chars += tokenPerLine[i];
-		}
-		return i;
-	}
-}
-
 /// Attempts to identify a token type by the token (string).
 /// returns token type, if fails, throws exception
 private TokenType getTokenType(string token){
