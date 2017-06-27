@@ -20,6 +20,24 @@ private enum TokenSets{
 	FunctionDefinitions,
 }
 
+/// Used by syntax checking functions to match TokenTypes
+/// Returns true if the types matched, else, false
+/// 
+/// `tokens` is the TokenList which has to be checked
+/// `types` is the TokenType[] containing types to match against
+/// `startIndex` is index in `tokens` from which checking will start, tokens before that index are ignored
+private bool matchTokenTypes(TokenList tokens, TokenType[] types, uinteger startIndex){
+	bool hasError = false;
+	for (uinteger i = 0; i < types.length; i ++){
+		if (tokens.tokens[startIndex + i].type != types[i]){
+			// not matching
+			compileErrors.append(CompileError(tokens.getTokenLine(startIndex + i), "syntax error, unexpected token"));
+			hasError = true;
+		}
+	}
+	return !hasError;
+}
+
 
 /// Checks a function (definition) for syntax errors
 /// Adds error, if any, to misc.compileErrors
@@ -31,13 +49,7 @@ private uinteger checkFunctionDefinition(TokenList tokens, uinteger index){
 	TokenType[] expectedTokens = [TokenType.Identifier, TokenType.BlockStart];// afer this comes the function body which will be checked by `checkBlock`
 	bool hasError = false;
 	// make sure that expectedTokens match
-	for (uinteger i = 0; i < expectedTokens.length; i ++){
-		if (tokens.tokens[index + i].type != expectedTokens[i]){
-			//add error, and break
-			compileErrors.append(CompileError(tokens.getTokenLine(index + i), "syntax error, unexpected token"));
-			hasError = true;
-		}
-	}
+	hasError = matchTokenTypes(tokens, expectedTokens, index);
 	// check if brackets are properly closed, if not, the `bracketPos` will itself put an error in `compileErrors`
 	tokens.bracketPos(index + 1);
 	return expectedTokens.length + checkBlock(tokens, index + 1);
