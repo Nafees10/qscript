@@ -78,7 +78,7 @@ package struct TokenList{
 /// 
 /// `start` is the index of the bracket to get the opposite of
 /// `forward`, if true, searches for the closing bracket, else, for the opening bracket
-private integer bracketPos(TokenList tokens, uinteger start, bool forward = true){
+package integer bracketPos(TokenList tokens, uinteger start, bool forward = true){
 	enum BracketType{
 		Round,
 		Square,
