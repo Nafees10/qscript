@@ -73,8 +73,9 @@ package struct TokenList{
 }
 
 /// Used to get index of opening/closing bracket using index of opposite bracket
-/// Checks for wrong-bracket order too, and adds error to `misc.compileErrors` and returns -1 if error, -2 if brackets order was wrong
-/// else, returns index of the oppposite bracket
+/// In case brackets order is wrong; appends error to `compileErrors` and returns -2
+/// In case bracket is not closed; appends error to `compileErrors` and returns -1
+/// otherwise, returns index of the opposite bracket
 /// 
 /// `start` is the index of the bracket to get the opposite of
 /// `forward`, if true, searches for the closing bracket, else, for the opening bracket
@@ -85,8 +86,8 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 		Block
 	}
 	Stack!BracketType bracks = new Stack!BracketType;
-	integer i;
 	BracketType curType;
+	uinteger i = start;
 	BracketType[TokenType] brackOpenIdent = [
 		TokenType.ParanthesesOpen: BracketType.Round,
 		TokenType.IndexBracketOpen: BracketType.Square,
@@ -98,23 +99,29 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 		TokenType.BlockEnd:BracketType.Block
 	];
 	if (forward){
-		for (i=start; i<tokens.tokens.length; i++){
+		for (uinteger lastInd = tokens.tokens.length-1; i<tokens.tokens.length; i++){
 			if (tokens.tokens[i].type in brackOpenIdent){
 				bracks.push(brackOpenIdent[tokens.tokens[i].type]);
 			}else if (tokens.tokens[i].type in brackCloseIdent){
 				if (bracks.pop != brackCloseIdent[tokens.tokens[i].type]){
 					compileErrors.append(CompileError(tokens.getTokenLine(i),
 							"brackets order is wrong; first opened must be last closed"));
-					i = -2;
+					i = -1;
 					break;
 				}
 			}
 			if (bracks.count == 0){
 				break;
 			}
+			if (i == lastInd){
+				// no bracket ending
+				i = -2;
+				compileErrors.append(CompileError(tokens.getTokenLine(start), "bracket not closed"));
+				break;
+			}
 		}
 	}else{
-		for (i=start; i>=0; i--){
+		for (uinteger lastInd = 0; i>=0; i--){
 			if (tokens.tokens[i].type in brackCloseIdent){
 				bracks.push(brackCloseIdent[tokens.tokens[i].type]);
 			}else if (tokens.tokens[i].type in brackOpenIdent){
@@ -126,6 +133,12 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 				}
 			}
 			if (bracks.count == 0){
+				break;
+			}
+			if (i == lastInd){
+				// no bracket ending/opening
+				i = -1;
+				compileErrors.append(CompileError(tokens.getTokenLine(start), "bracket not closed/opened"));
 				break;
 			}
 		}
