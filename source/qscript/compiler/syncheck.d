@@ -28,13 +28,18 @@ private enum TokenSets{
 /// `startIndex` is index in `tokens` from which checking will start, tokens before that index are ignored
 private bool matchTokenTypes(TokenList tokens, TokenType[] types, uinteger startIndex){
 	bool hasError = false;
-	/// TODO: add a length check to `tokens` against `types.length`
-	for (uinteger i = 0; i < types.length; i ++){
-		if (tokens.tokens[startIndex + i].type != types[i]){
-			// not matching
-			compileErrors.append(CompileError(tokens.getTokenLine(startIndex + i), "syntax error, unexpected token"));
-			hasError = true;
+	// first make sure there are enough tokens
+	if (tokens.tokens.length - (startIndex + 1) >= types.length){
+		for (uinteger i = 0; i < types.length; i ++){
+			if (tokens.tokens[startIndex + i].type != types[i]){
+				// not matching
+				compileErrors.append(CompileError(tokens.getTokenLine(startIndex + i), "syntax error, unexpected token"));
+				hasError = true;
+			}
 		}
+	}else{
+		compileErrors.append(CompileError(tokens.getTokenLine(startIndex), "unexpected end-of-file"));
+		hasError = true;
 	}
 	return !hasError;
 }
