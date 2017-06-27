@@ -73,7 +73,7 @@ package struct TokenList{
 }
 
 /// Used to get index of opening/closing bracket using index of opposite bracket
-/// Checks for wrong-bracket order too, and adds error to `misc.compileErrors` and returns -1 if error
+/// Checks for wrong-bracket order too, and adds error to `misc.compileErrors` and returns -1 if error, -2 if brackets order was wrong
 /// else, returns index of the oppposite bracket
 /// 
 /// `start` is the index of the bracket to get the opposite of
@@ -105,7 +105,7 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 				if (bracks.pop != brackCloseIdent[tokens.tokens[i].type]){
 					compileErrors.append(CompileError(tokens.getTokenLine(i),
 							"brackets order is wrong; first opened must be last closed"));
-					i = -1;
+					i = -2;
 					break;
 				}
 			}
@@ -121,7 +121,7 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 				if (bracks.pop != brackOpenIdent[tokens.tokens[i].type]){
 					compileErrors.append(CompileError(tokens.getTokenLine(i),
 							"brackets order is wrong; first opened must be last closed"));
-					i = -1;
+					i = -2;
 					break;
 				}
 			}
