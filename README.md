@@ -1,3 +1,5 @@
+### **Download from a stable release/tag - outside from there, it's not functional**
+
 ## QScript is a fast, and simple scripting language.
 ### Features:
 1. Easy syntax
