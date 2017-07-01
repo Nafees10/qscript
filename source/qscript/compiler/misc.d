@@ -29,30 +29,29 @@ public struct CompileError{
 /// All compilation errors are stored here
 package LinkedList!CompileError compileErrors;
 
-/// Specifies type of token
-/// 
-/// used only in `compiler.tokengen`
-package enum TokenType{
-	String,/// That the token is: `"SOME STRING"`
-	Number,/// That the token a number, float also included
-	Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
-	Operator,/// That the token is an operator, like `+`, `==` etc
-	Keyword,/// A `function` or `var` ...
-	Comma,/// That its a comma: `,`
-	StatementEnd,/// A semicolon
-	ParanthesesOpen,/// `(`
-	ParanthesesClose,/// `)`
-	IndexBracketOpen,/// `[`
-	IndexBracketClose,///`]`
-	BlockStart,///`{`
-	BlockEnd,///`}`
-}
-
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
-	TokenType type;/// type of token
+	/// Specifies type of token
+	/// 
+	/// used only in `compiler.tokengen`
+	enum Type{
+		String,/// That the token is: `"SOME STRING"`
+		Number,/// That the token a number, float also included
+		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
+		Operator,/// That the token is an operator, like `+`, `==` etc
+		Keyword,/// A `function` or `var` ...
+		Comma,/// That its a comma: `,`
+		StatementEnd,/// A semicolon
+		ParanthesesOpen,/// `(`
+		ParanthesesClose,/// `)`
+		IndexBracketOpen,/// `[`
+		IndexBracketClose,///`]`
+		BlockStart,///`{`
+		BlockEnd,///`}`
+	}
+	Type type;/// type of token
 	string token;/// token
-	this(TokenType tType, string tToken){
+	this(Type tType, string tToken){
 		type = tType;
 		token = tToken;
 	}
@@ -90,15 +89,15 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 	Stack!BracketType bracks = new Stack!BracketType;
 	BracketType curType;
 	uinteger i = start;
-	BracketType[TokenType] brackOpenIdent = [
-		TokenType.ParanthesesOpen: BracketType.Round,
-		TokenType.IndexBracketOpen: BracketType.Square,
-		TokenType.BlockStart: BracketType.Block
+	BracketType[Token.Type] brackOpenIdent = [
+		Token.Type.ParanthesesOpen: BracketType.Round,
+		Token.Type.IndexBracketOpen: BracketType.Square,
+		Token.Type.BlockStart: BracketType.Block
 	];
-	BracketType[TokenType] brackCloseIdent = [
-		TokenType.ParanthesesClose: BracketType.Round,
-		TokenType.IndexBracketClose: BracketType.Square,
-		TokenType.BlockEnd:BracketType.Block
+	BracketType[Token.Type] brackCloseIdent = [
+		Token.Type.ParanthesesClose: BracketType.Round,
+		Token.Type.IndexBracketClose: BracketType.Square,
+		Token.Type.BlockEnd:BracketType.Block
 	];
 	if (forward){
 		for (uinteger lastInd = tokens.tokens.length-1; i<tokens.tokens.length; i++){
