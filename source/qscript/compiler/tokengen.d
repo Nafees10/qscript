@@ -13,7 +13,7 @@ debug{
 
 /// Attempts to identify a token type by the token (string).
 /// returns token type, if fails, throws exception
-private TokenType getTokenType(string token){
+private Token.Type getTokenType(string token){
 	/// Returns true if a string is a keyword
 	bool isKeyword(string s){
 		return KEYWORDS.hasElement(s);
@@ -40,45 +40,45 @@ private TokenType getTokenType(string token){
 	}
 
 	if (token.isNum){
-		return TokenType.Number;
+		return Token.Type.Number;
 	}else if (isKeyword(token)){
-		return TokenType.Keyword;
+		return Token.Type.Keyword;
 	}else if (isIdentifier(token)){
-		return TokenType.Identifier;
+		return Token.Type.Identifier;
 	}else if (isOperator(token)){
-		return TokenType.Operator;
+		return Token.Type.Operator;
 	}else if (token[0] == '"'){
-		return TokenType.String;
+		return Token.Type.String;
 	}else if (token == ";"){
-		return TokenType.StatementEnd;
+		return Token.Type.StatementEnd;
 	}else if (token == ","){
-		return TokenType.Comma;
+		return Token.Type.Comma;
 	}else if (token == "("){
-		return TokenType.ParanthesesOpen;
+		return Token.Type.ParanthesesOpen;
 	}else if (token == ")"){
-		return TokenType.ParanthesesClose;
+		return Token.Type.ParanthesesClose;
 	}else if (token == "["){
-		return TokenType.IndexBracketOpen;
+		return Token.Type.IndexBracketOpen;
 	}else if (token == "]"){
-		return TokenType.IndexBracketClose;
+		return Token.Type.IndexBracketClose;
 	}else if (token == "{"){
-		return TokenType.BlockStart;
+		return Token.Type.BlockStart;
 	}else if (token == "]"){
-		return TokenType.BlockEnd;
+		return Token.Type.BlockEnd;
 	}else{
 		throw new Exception("unidentified token type");
 	}
 }
 ///
 unittest{
-	assert("thisIsAVar_1234".getTokenType == TokenType.Identifier);
-	assert("24.5".getTokenType == TokenType.Number);
-	assert("\"This is a string\"".getTokenType == TokenType.String);
-	assert("==".getTokenType == TokenType.Operator);
-	assert(";".getTokenType == TokenType.StatementEnd);
-	assert(",".getTokenType == TokenType.Comma);
-	assert("var".getTokenType == TokenType.Keyword);
-	assert("function".getTokenType == TokenType.Keyword);
+	assert("thisIsAVar_1234".getTokenType == Token.Type.Identifier);
+	assert("24.5".getTokenType == Token.Type.Number);
+	assert("\"This is a string\"".getTokenType == Token.Type.String);
+	assert("==".getTokenType == Token.Type.Operator);
+	assert(";".getTokenType == Token.Type.StatementEnd);
+	assert(",".getTokenType == Token.Type.Comma);
+	assert("var".getTokenType == Token.Type.Keyword);
+	assert("function".getTokenType == Token.Type.Keyword);
 }
 
 /// Reads script, and separates tokens
@@ -259,7 +259,7 @@ unittest{
 	}
 }
 
-/// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with TokenType
+/// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
 package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
