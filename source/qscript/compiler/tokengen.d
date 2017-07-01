@@ -14,6 +14,11 @@ debug{
 /// Attempts to identify a token type by the token (string).
 /// returns token type, if fails, throws exception
 private TokenType getTokenType(string token){
+	/// Returns true if a string is a keyword
+	bool isKeyword(string s){
+		return KEYWORDS.hasElement(s);
+	}
+	/// Returns true if a string is an identifier
 	bool isIdentifier(string s){
 		// token that qualifies as a number can qualify as an identifier, but not vice versa, so this if statement
 		if (!token.isNum && !isKeyword(token)){
@@ -32,10 +37,6 @@ private TokenType getTokenType(string token){
 			}
 		}
 		return r;
-	}
-	/// Returns true if a string is a keyword
-	bool isKeyword(string s){
-		return KEYWORDS.hasElement(s);
 	}
 
 	if (token.isNum){
@@ -76,6 +77,8 @@ unittest{
 	assert("==".getTokenType == TokenType.Operator);
 	assert(";".getTokenType == TokenType.StatementEnd);
 	assert(",".getTokenType == TokenType.Comma);
+	assert("var".getTokenType == TokenType.Keyword);
+	assert("function".getTokenType == TokenType.Keyword);
 }
 
 /// Reads script, and separates tokens
@@ -261,7 +264,7 @@ unittest{
 package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
-	if (tokens.tokens == null){
+	if (tokens.tokens == null || tokens.tokens.length == 0){
 		// there's error
 		return tokens;
 	}else{
