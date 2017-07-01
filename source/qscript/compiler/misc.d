@@ -7,6 +7,7 @@ import std.range;
 
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
+package const string[] KEYWORDS = ["function", "var"];
 /// An array containing another array conatining all operators
 /// Index0 for array0 means the operators are of highest precedence
 package const string[][] OPERATORS = [
@@ -36,6 +37,7 @@ package enum TokenType{
 	Number,/// That the token a number, float also included
 	Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 	Operator,/// That the token is an operator, like `+`, `==` etc
+	Keyword,/// A `function` or `var` ...
 	Comma,/// That its a comma: `,`
 	StatementEnd,/// A semicolon
 	ParanthesesOpen,/// `(`
