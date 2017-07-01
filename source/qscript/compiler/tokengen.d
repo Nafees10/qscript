@@ -16,13 +16,13 @@ debug{
 private TokenType getTokenType(string token){
 	bool isIdentifier(string s){
 		// token that qualifies as a number can qualify as an identifier, but not vice versa, so this if statement
-		if (!token.isNum){
+		if (!token.isNum && !isKeyword(token)){
 			return (cast(char[])s).matchElements(cast(char[])IDENT_CHARS);
 		}else{
 			return false;
 		}
 	}
-	/// Returns tru is a string is an operator
+	/// Returns true is a string is an operator
 	bool isOperator(string s){
 		bool r = false;
 		foreach(operators; OPERATORS){
@@ -33,8 +33,15 @@ private TokenType getTokenType(string token){
 		}
 		return r;
 	}
+	/// Returns true if a string is a keyword
+	bool isKeyword(string s){
+		return KEYWORDS.hasElement(s);
+	}
+
 	if (token.isNum){
 		return TokenType.Number;
+	}else if (isKeyword(token)){
+		return TokenType.Keyword;
 	}else if (isIdentifier(token)){
 		return TokenType.Identifier;
 	}else if (isOperator(token)){
