@@ -218,12 +218,49 @@ private ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteg
 		}
 		return StatementType.NoValidType;
 	}
+
+
 	ASTNode[] statementNodes;
 	LinkedList!ASTNode nodeList = new LinkedList!ASTNode;
 	// separate statements
 	for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
-
+		if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
+			StatementType type = getStatementType(tokens, readFrom, i);
+			if (type == StatementType.NoValidType){
+				break;
+			}else{
+				// act accordingly to the statement type
+			}
+		}else if (tokens.tokens[i].type == Token.Type.BlockStart){
+			// add it
+			nodeList.append(generateBlockAST(tokens, i));
+			// skip the block's body
+			i = tokens.bracketPos(i);
+			if (i == -1){
+				break;
+			}
+		}
 	}
+	statementNodes = nodeList.toArray;
 	.destroy(nodeList);
 	return statementNodes;
+}
+
+private ASTNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
+	ASTNode generateFunctionCallArgsAST(TokenList tokens, uinteger index, uinteger endIndex){
+
+	}
+	// check if is function call
+	if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
+		// check if bracket is closed and there's a semicolon
+		uinteger brackEnd = tokens.bracketPos(index + 1);
+		if (brackEnd >= 0 && brackEnd+1 <= endIndex && tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
+			ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall, tokens.tokens[index].token, tokens.getTokenLine(index));
+			functionCallNode.addChild(generateFunctionCallArgsAST(tokens, index+1, brackEnd), 
+				ASTNode.ChildType.FunctionArguments);
+
+			return functionCallNode;
+		}
+	}
+	return ASTNode(ASTNode.Type.FunctionCall, 0);
 }
