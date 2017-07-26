@@ -107,160 +107,173 @@ package struct ASTNode{
 	}
 }
 
-/// generates an AST representing a script.
-/// 
-/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
-/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
-package ASTNode generateAST(TokenList tokens){
-	ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
-	// go through the script, compile function nodes, link them to this node
-	for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
-		// look for TokenType.Keyword where token.token == "function"
-		if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
-			uinteger errorCount = compileErrors.count;
-			ASTNode functionNode = generateFunctionAST(tokens, i);
-			// check if error free
-			if (compileErrors.count > errorCount){
-				// error
-				break;
-			}else{
-				scriptNode.addSubNode(functionNode);
-			}
-		}
-	}
-	return scriptNode;
-}
-
-/// generates AST for a function definition 
-private ASTNode generateFunctionAST(TokenList tokens, uinteger index){
-	ASTNode functionNode;
-	// make sure it's a function
-	if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
-		// make sure it's followed by a function-name which is followed by block
-		if (index+3 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.Identifier && 
-			tokens.tokens[index+2].type == Token.Type.BlockStart){
-			// everything's good
-			// add name
-			functionNode = ASTNode(ASTNode.Type.Function, tokens.tokens[index+1].token, tokens.getTokenLine(index + 1));
-			// convert the function body to ASTNodes using generateBlockAST
-			functionNode.addSubNode(generateBlockAST(tokens, index+2).getSubNodes);
-		}else{
-			// not followed by a block of code and/or followed by EOF
-			compileErrors.append(CompileError(tokens.getTokenLine(index), "function definition incomplete"));
-		}
-	}else{
-		compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
-	}
-	return functionNode;
-}
-
-private ASTNode generateBlockAST(TokenList tokens, uinteger index){
-	ASTNode blockNode;
-	// make sure it's a block
-	if (tokens.tokens[index].type == Token.Type.BlockStart){
-		uinteger brackEnd = tokens.bracketPos(index);
-		if (brackEnd >= 0){
-			// everything's good
-			// use generateStatementsAST to generateAST for statements
-			blockNode.addSubNode(generateStatementsAST(tokens, index, brackEnd-1));
-		}/*else{
-			//error
-		}*/
-	}else{
-		compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
-	}
-	return blockNode;
-}
-
-private ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
-	enum StatementType{
-		FunctionCall,
-		IfWhile,
-		Assignment,
-		VarDeclare,
-		NoValidType
-	}
-	StatementType getStatementType(TokenList tokens, uinteger index, uinteger endIndex){
-		// check if its a function call, or if/while
-		if (tokens.tokens.length-index >= 3 && tokens.tokens[index].type == Token.Type.Identifier && 
-			tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-			// is a function call
-			return StatementType.FunctionCall;
-		}else if (tokens.tokens[index].type == Token.Type.Keyword){
-			if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
-				return StatementType.IfWhile;
-			}else if (tokens.tokens[index].token == "var"){
-				return StatementType.VarDeclare;
-			}
-		}else{
-			// go through and check if it's an assignment
-			for (uinteger i = index; i <= endIndex; i ++){
-				if (tokens.tokens[i].type != Token.Type.Identifier){
-					if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
-						// is a valid statement till now
-						i = tokens.bracketPos(i);
-						if (i >= 0){
-							// brackets are ok, check if is an assignment statement
-							if (i < endIndex && tokens.tokens[i+1].type == Token.Type.Operator && 
-								tokens.tokens[i+1].token == "="){
-								return StatementType.Assignment;
-							}else{
-								compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
-							}
-						}
-					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
-					}
+/// contains functions and stuff to convert a QScript from tokens to Syntax Trees
+static struct ASTGen{
+	/// generates an AST representing a script.
+	/// 
+	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
+	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
+	public ASTNode generateAST(TokenList tokens){
+		ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
+		// go through the script, compile function nodes, link them to this node
+		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
+			// look for TokenType.Keyword where token.token == "function"
+			if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
+				uinteger errorCount = compileErrors.count;
+				ASTNode functionNode = generateFunctionAST(tokens, i);
+				// check if error free
+				if (compileErrors.count > errorCount){
+					// error
+					break;
 				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
+					scriptNode.addSubNode(functionNode);
 				}
 			}
 		}
-		return StatementType.NoValidType;
+		return scriptNode;
 	}
-
-
-	ASTNode[] statementNodes;
-	LinkedList!ASTNode nodeList = new LinkedList!ASTNode;
-	// separate statements
-	for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
-		if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
-			StatementType type = getStatementType(tokens, readFrom, i);
-			if (type == StatementType.NoValidType){
-				break;
+	private{
+		/// contains a list of vars that are available in the block currently being converted
+		/// generates AST for a function definition 
+		ASTNode generateFunctionAST(TokenList tokens, uinteger index){
+			ASTNode functionNode;
+			// make sure it's a function
+			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+				// make sure it's followed by a function-name which is followed by block
+				if (index+3 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.Identifier && 
+					tokens.tokens[index+2].type == Token.Type.BlockStart){
+					// everything's good
+					// add name
+					functionNode = ASTNode(ASTNode.Type.Function, tokens.tokens[index+1].token, tokens.getTokenLine(index + 1));
+					// convert the function body to ASTNodes using generateBlockAST
+					functionNode.addSubNode(generateBlockAST(tokens, index+2).getSubNodes);
+				}else{
+					// not followed by a block of code and/or followed by EOF
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "function definition incomplete"));
+				}
 			}else{
-				// act accordingly to the statement type
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
 			}
-		}else if (tokens.tokens[i].type == Token.Type.BlockStart){
-			// add it
-			nodeList.append(generateBlockAST(tokens, i));
-			// skip the block's body
-			i = tokens.bracketPos(i);
-			if (i == -1){
-				break;
+			return functionNode;
+		}
+		
+		ASTNode generateBlockAST(TokenList tokens, uinteger index){
+			ASTNode blockNode;
+			// make sure it's a block
+			if (tokens.tokens[index].type == Token.Type.BlockStart){
+				uinteger brackEnd = tokens.bracketPos(index);
+				if (brackEnd >= 0){
+					// everything's good
+					// use generateStatementsAST to generateAST for statements
+					blockNode.addSubNode(generateStatementsAST(tokens, index, brackEnd-1));
+				}else{
+					// an error that should have been killed in tokengen escaped here :(
+				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 			}
+			return blockNode;
+		}
+		
+		ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
+			enum StatementType{
+				FunctionCall,
+				IfWhile,
+				Assignment,
+				VarDeclare,
+				NoValidType
+			}
+			StatementType getStatementType(TokenList tokens, uinteger index, uinteger endIndex){
+				// check if its a function call, or if/while
+				if (tokens.tokens.length-index >= 3 && tokens.tokens[index].type == Token.Type.Identifier && 
+					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+					// is a function call
+					return StatementType.FunctionCall;
+				}else if (tokens.tokens[index].type == Token.Type.Keyword){
+					if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
+						return StatementType.IfWhile;
+					}else if (tokens.tokens[index].token == "var"){
+						return StatementType.VarDeclare;
+					}
+				}else{
+					// go through and check if it's an assignment
+					for (uinteger i = index; i <= endIndex; i ++){
+						if (tokens.tokens[i].type != Token.Type.Identifier){
+							if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
+								// is a valid statement till now
+								i = tokens.bracketPos(i);
+								if (i >= 0){
+									// brackets are ok, check if is an assignment statement
+									if (i < endIndex && tokens.tokens[i+1].type == Token.Type.Operator && 
+										tokens.tokens[i+1].token == "="){
+										return StatementType.Assignment;
+									}else{
+										compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
+									}
+								}
+							}else{
+								compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
+							}
+						}else{
+							compileErrors.append(CompileError(tokens.getTokenLine(i), "not an assignment statement"));
+						}
+					}
+				}
+				return StatementType.NoValidType;
+			}
+			
+			
+			ASTNode[] statementNodes;
+			LinkedList!ASTNode nodeList = new LinkedList!ASTNode;
+			// separate statements
+			for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
+				if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
+					StatementType type = getStatementType(tokens, readFrom, i);
+					if (type == StatementType.NoValidType){
+						break;
+					}else{
+						//TODO act accordingly to the statement type
+					}
+				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
+					// add it
+					nodeList.append(generateBlockAST(tokens, i));
+					// skip the block's body
+					i = tokens.bracketPos(i);
+					if (i == -1){
+						break;
+					}
+				}
+			}
+			statementNodes = nodeList.toArray;
+			.destroy(nodeList);
+			return statementNodes;
+		}
+		
+		ASTNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
+			// check if is function call
+			if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
+				// check if bracket is closed and there's a semicolon
+				uinteger brackEnd = tokens.bracketPos(index + 1);
+				if (brackEnd >= 0 && brackEnd+1 <= endIndex && tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
+					ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall, tokens.tokens[index].token, tokens.getTokenLine(index));
+					functionCallNode.addChild(generateCodeAST(tokens, index+1, brackEnd-1), 
+						ASTNode.ChildType.FunctionArguments);
+					
+					return functionCallNode;
+				}
+			}
+			return ASTNode(ASTNode.Type.FunctionCall, 0);
+		}
+		
+		/// generates AST for "actual code" like `2 + 2 - 6`.
+		ASTNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode r;
+			ASTNode* lastNode = null;
+			foreach (i, token; tokens.tokens){
+				//TODO continue from here
+				//if (token.type == Token.Type.)
+			}
+			return r;
 		}
 	}
-	statementNodes = nodeList.toArray;
-	.destroy(nodeList);
-	return statementNodes;
-}
-
-private ASTNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
-	ASTNode generateFunctionCallArgsAST(TokenList tokens, uinteger index, uinteger endIndex){
-
-	}
-	// check if is function call
-	if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
-		// check if bracket is closed and there's a semicolon
-		uinteger brackEnd = tokens.bracketPos(index + 1);
-		if (brackEnd >= 0 && brackEnd+1 <= endIndex && tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
-			ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall, tokens.tokens[index].token, tokens.getTokenLine(index));
-			functionCallNode.addChild(generateFunctionCallArgsAST(tokens, index+1, brackEnd), 
-				ASTNode.ChildType.FunctionArguments);
-
-			return functionCallNode;
-		}
-	}
-	return ASTNode(ASTNode.Type.FunctionCall, 0);
 }
