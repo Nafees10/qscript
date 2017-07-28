@@ -1,4 +1,4 @@
-### **Download from a stable release/tag - outside from there, it's not functional**
+### **Download from a stable release/tag - at this moment, the master branch is not stable (The compiler is being rewritten)**
 
 ## QScript is a fast, and simple scripting language.
 ### Features:
