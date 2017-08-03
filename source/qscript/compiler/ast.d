@@ -23,23 +23,11 @@ package struct ASTNode{
 		Arguments, /// stores arguments for a function
 		ArrayIndex, /// Stores index for an array, in an `ASTNode`
 	}
-	/// Enum defining types of child-nodes
-	enum ChildType{
-		Function, /// Function inside a Script
-		Condition, /// To point to conition for IfStatement and WhileStatement
-		AssignLValue, /// To point to lvalue for Assign
-		AssignRValue, /// To point to rvalue for Assign
-		OperatorOperand1, /// To point to the first oprand for an Operator
-		OperatorOperand2, /// To point to the second operand for an operator
-		FunctionArguments, /// To point to arguments for a function
-		ArrayIndex, /// To point to index
-	}
 
 	private{
 		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
 		Type nodeType;
 		string nodeData; /// For storing data for some nodes, like functionName for `Type.Function`
-		ASTNode[ChildType] childNodes; /// used for things like storing the FunctionBody (Block) for a Function and Function inside Script
 		ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
 
 		uinteger ln; /// Stores the line number on which the node is - for error reporting
@@ -76,18 +64,9 @@ package struct ASTNode{
 	@property Type type(){
 		return nodeType;
 	}
-	/// returns the child-nodes of this node by the type of child node
-	ASTNode getChild(ChildType t){
-		return childNodes[t];
-	}
 	/// Returns an array of subnodes that come under this node
 	ASTNode[] getSubNodes(){
 		return subNodes.dup;
-	}
-	//functions to moditfy node contents
-	/// Adds a child node, with the childType
-	void addChild(ASTNode child, ChildType cType){
-		childNodes[cType] = child;
 	}
 	/// Adds a body node. Use only with Node.Type.Body
 	void addSubNode(ASTNode bNode){
@@ -108,12 +87,14 @@ package struct ASTNode{
 }
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
-static struct ASTGen{
+struct ASTGen{
 	/// generates an AST representing a script.
 	/// 
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
 	public ASTNode generateAST(TokenList tokens){
+		varList = new LinkedList!string;
+
 		ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
 		// go through the script, compile function nodes, link them to this node
 		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
@@ -130,10 +111,12 @@ static struct ASTGen{
 				}
 			}
 		}
+		.destroy(varList);
 		return scriptNode;
 	}
 	private{
 		/// contains a list of vars that are available in the block currently being converted
+		LinkedList!string varList;
 		/// generates AST for a function definition 
 		ASTNode generateFunctionAST(TokenList tokens, uinteger index){
 			ASTNode functionNode;
@@ -256,8 +239,7 @@ static struct ASTGen{
 				uinteger brackEnd = tokens.bracketPos(index + 1);
 				if (brackEnd >= 0 && brackEnd+1 <= endIndex && tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
 					ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall, tokens.tokens[index].token, tokens.getTokenLine(index));
-					functionCallNode.addChild(generateCodeAST(tokens, index+1, brackEnd-1), 
-						ASTNode.ChildType.FunctionArguments);
+					functionCallNode.addSubNode(generateCodeAST(tokens, index+1, brackEnd-1));
 					
 					return functionCallNode;
 				}
@@ -268,12 +250,50 @@ static struct ASTGen{
 		/// generates AST for "actual code" like `2 + 2 - 6`.
 		ASTNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode r;
-			ASTNode* lastNode = null;
-			foreach (i, token; tokens.tokens){
+			ASTNode lastNode;
+			bool separatorExpected = false;
+			for (uinteger i = index; i <= endIndex; i ++){
+				Token token = tokens.tokens[i];
 				//TODO continue from here
-				//if (token.type == Token.Type.)
+				if (token.type == Token.Type.Identifier){
+					// check if a "separator" like operator or something was expected
+					if (separatorExpected){
+						// bad syntax
+						compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
+					}else // check if it's a function-call
+					if (i < endIndex && tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
+						integer brackEnd = tokens.bracketPos(i+1);
+						if (brackEnd >= 0){
+							lastNode = generateFunctionCallAST(tokens, i, brackEnd);
+						}
+					}else{
+						// just a var, make sure that the var was defined
+						if (varList.hasElement(token.token)){
+							// OK
+							lastNode = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
+						}else{
+							// var was not declared
+							compileErrors.append(CompileError(tokens.getTokenLine(i), "variable '"~token.token~"' not declared"));
+						}
+					}
+					separatorExpected = true;
+				}else if (token.type == Token.Typ)
 			}
 			return r;
+		}
+
+		/// generates AST for a variable (or array) and changes value of index to the token aft
+		ASTNode generateVariableAST(TokenList tokens, ref uinteger index){
+			ASTNode var;
+			// check if index is specified
+			if (index + 1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.IndexBracketOpen){
+				// has an index
+				uinteger brackEnd = tokens.bracketPos(index+1);
+				if (brackEnd >= 0){
+					// look if there are 1+ indexes
+
+				}
+			}
 		}
 	}
 }
