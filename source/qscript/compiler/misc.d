@@ -73,22 +73,15 @@ package struct TokenList{
 	}
 }
 
-/// Used to get index of opening/closing bracket using index of opposite bracket
-/// In case brackets order is wrong; appends error to `compileErrors` and returns -2
-/// In case bracket is not closed; appends error to `compileErrors` and returns -1
-/// otherwise, returns index of the opposite bracket
+/// Checks if the brackets in a tokenlist are in correct order, and are closed
 /// 
-/// `start` is the index of the bracket to get the opposite of
-/// `forward`, if true, searches for the closing bracket, else, for the opening bracket
-package integer bracketPos(TokenList tokens, uinteger start, bool forward = true){
+/// In case not, returns false, and appends error to `errorLog`
+package bool checkBrackets(TokenList tokens, LinkedList!CompileError errors){
 	enum BracketType{
 		Round,
 		Square,
 		Block
 	}
-	Stack!BracketType bracks = new Stack!BracketType;
-	BracketType curType;
-	uinteger i = start;
 	BracketType[Token.Type] brackOpenIdent = [
 		Token.Type.ParanthesesOpen: BracketType.Round,
 		Token.Type.IndexBracketOpen: BracketType.Square,
@@ -99,52 +92,66 @@ package integer bracketPos(TokenList tokens, uinteger start, bool forward = true
 		Token.Type.IndexBracketClose: BracketType.Square,
 		Token.Type.BlockEnd:BracketType.Block
 	];
-	if (forward){
-		for (uinteger lastInd = tokens.tokens.length-1; i<tokens.tokens.length; i++){
-			if (tokens.tokens[i].type in brackOpenIdent){
-				bracks.push(brackOpenIdent[tokens.tokens[i].type]);
-			}else if (tokens.tokens[i].type in brackCloseIdent){
-				if (bracks.pop != brackCloseIdent[tokens.tokens[i].type]){
-					compileErrors.append(CompileError(tokens.getTokenLine(i),
-							"brackets order is wrong; first opened must be last closed"));
-					i = -1;
-					break;
-				}
-			}
-			if (bracks.count == 0){
+	Stack!BracketType bracks = new Stack!BracketType;
+	Stack!uinteger bracksStartIndex = new Stack!uinteger;
+	BracketType curType;
+	bool r = true;
+	for (uinteger lastInd = tokens.tokens.length-1, i = 0; i<=lastInd; i++){
+		if (tokens.tokens[i].type in brackOpenIdent){
+			bracks.push(brackOpenIdent[tokens.tokens[i].type]);
+			bracksStartIndex.push(i);
+		}else if (tokens.tokens[i].type in brackCloseIdent){
+			bracksStartIndex.pop();
+			if (bracks.pop != brackCloseIdent[tokens.tokens[i].type]){
+				errors.append(CompileError(tokens.getTokenLine(i),
+						"brackets order is wrong; first opened must be last closed"));
+				r = false;
 				break;
 			}
-			if (i == lastInd){
-				// no bracket ending
-				i = -2;
-				compileErrors.append(CompileError(tokens.getTokenLine(start), "bracket not closed"));
-				break;
-			}
-		}
-	}else{
-		for (uinteger lastInd = 0; i>=0; i--){
-			if (tokens.tokens[i].type in brackCloseIdent){
-				bracks.push(brackCloseIdent[tokens.tokens[i].type]);
-			}else if (tokens.tokens[i].type in brackOpenIdent){
-				if (bracks.pop != brackOpenIdent[tokens.tokens[i].type]){
-					compileErrors.append(CompileError(tokens.getTokenLine(i),
-							"brackets order is wrong; first opened must be last closed"));
-					i = -2;
-					break;
-				}
-			}
-			if (bracks.count == 0){
-				break;
-			}
-			if (i == lastInd){
-				// no bracket ending/opening
-				i = -1;
-				compileErrors.append(CompileError(tokens.getTokenLine(start), "bracket not closed/opened"));
-				break;
-			}
+		}else if (i == lastInd && bracks.count > 0){
+			// no bracket ending
+			i = -2;
+			errors.append(CompileError(tokens.getTokenLine(bracksStartIndex.pop), "bracket not closed"));
+			r = false;
+			break;
 		}
 	}
 
 	.destroy(bracks);
+	.destroy(bracksStartIndex);
+	return r;
+}
+
+/// Returns index of closing/openinig bracket of the provided bracket  
+/// 
+/// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
+/// `tokens` is the array of tokens to search in
+/// `index` is the index of the opposite bracket
+/// 
+/// It only works correctly if the brackets are in correct order, and the closing bracket is present  
+/// so, before calling this, `compiler.misc.checkBrackets` should be called
+package uinteger bracketPos(bool forward=true)(Token[] tokens, uinteger index){
+	Token.Type[] closingBrackets = [
+		Token.Type.BlockEnd,
+		Token.Type.IndexBracketClose,
+		Token.Type.ParanthesesClose
+	];
+	Token.Type[] openingBrackets = [
+		Token.Type.BlockStart,
+		Token.Type.IndexBracketOpen,
+		Token.Type.ParanthesesOpen
+	];
+	uinteger count; // stores how many closing/opening brackets before we reach the desired one
+	uinteger i = index;
+	for (uinteger lastInd = (forward ? tokens.length : 0); i != lastInd; (forward ? i ++: i --)){
+		if ((forward ? openingBrackets : closingBrackets).hasElement(tokens[i].type)){
+			count ++;
+		}else if ((forward ? closingBrackets : openingBrackets).hasElement(tokens[i].type)){
+			count --;
+		}
+		if (count == 0){
+			break;
+		}
+	}
 	return i;
 }
