@@ -261,6 +261,8 @@ unittest{
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
+/// 
+/// As a plus, it also checks if the brackets are in correct order (and properly closed)
 package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
@@ -277,6 +279,8 @@ package TokenList toTokens(string[] script){
 				compileErrors.append(CompileError(tokens.getTokenLine(i), e.msg));
 			}
 		}
+		// now check brackets
+		tokens.checkBrackets(compileErrors);
 		return tokens;
 	}
 }
