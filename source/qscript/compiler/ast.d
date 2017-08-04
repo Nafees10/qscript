@@ -246,16 +246,20 @@ struct ASTGen{
 		/// generates AST for a variable (or array) and changes value of index to the token aft
 		ASTNode generateVariableAST(TokenList tokens, ref uinteger index){
 			ASTNode var;
-			// check if index is specified
-			if (index + 1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.IndexBracketOpen){
-				// has an index
-				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
-				if (brackEnd >= 0){
-					// look if there are 1+ indexes
-
+			// set var name
+			var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
+			// check if indexes are specified, case yes, add em
+			for (uinteger i = index+1; i < tokens.tokens.length; i ++){
+				if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
+					// add it
+					ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(i));
+					uinteger brackEnd = tokens.tokens.bracketPos!true(i);
+					var.addSubNode(indexNode);
 				}
 			}
 			return var;
 		}
+
+
 	}
 }
