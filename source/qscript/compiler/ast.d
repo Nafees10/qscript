@@ -93,8 +93,6 @@ struct ASTGen{
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
 	public ASTNode generateAST(TokenList tokens){
-		varList = new LinkedList!string;
-
 		ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
 		// go through the script, compile function nodes, link them to this node
 		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
@@ -111,12 +109,9 @@ struct ASTGen{
 				}
 			}
 		}
-		.destroy(varList);
 		return scriptNode;
 	}
 	private{
-		/// contains a list of vars that are available in the block currently being converted
-		LinkedList!string varList;
 		/// generates AST for a function definition 
 		ASTNode generateFunctionAST(TokenList tokens, uinteger index){
 			ASTNode functionNode;
@@ -267,14 +262,8 @@ struct ASTGen{
 							lastNode = generateFunctionCallAST(tokens, i, brackEnd);
 						}
 					}else{
-						// just a var, make sure that the var was defined
-						if (varList.hasElement(token.token)){
-							// OK
-							lastNode = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
-						}else{
-							// var was not declared
-							compileErrors.append(CompileError(tokens.getTokenLine(i), "variable '"~token.token~"' not declared"));
-						}
+						// just a var
+						lastNode = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
 					}
 					separatorExpected = true;
 				}//TODO else if (token.type == Token.Typ)
