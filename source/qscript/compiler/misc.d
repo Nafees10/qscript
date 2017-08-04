@@ -155,3 +155,15 @@ package uinteger bracketPos(bool forward=true)(Token[] tokens, uinteger index){
 	}
 	return i;
 }
+///
+unittest{
+	Token[] tokens;
+	tokens = [
+		Token(Token.Type.Comma, ","), Token(Token.Type.BlockStart,"{"), Token(Token.Type.Comma,","),
+		Token(Token.Type.IndexBracketOpen,"["),Token(Token.Type.IndexBracketClose,"]"),Token(Token.Type.BlockEnd,"}")
+	];
+	assert(tokens.bracketPos!true(1) == 5);
+	assert(tokens.bracketPos!false(5) == 1);
+	assert(tokens.bracketPos!true(3) == 4);
+	assert(tokens.bracketPos!false(4) == 3);
+}
