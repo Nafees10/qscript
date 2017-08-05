@@ -243,19 +243,26 @@ struct ASTGen{
 			return r;
 		}
 
-		/// generates AST for a variable (or array) and changes value of index to the token aft
+		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
 		ASTNode generateVariableAST(TokenList tokens, ref uinteger index){
 			ASTNode var;
-			// set var name
-			var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
-			// check if indexes are specified, case yes, add em
-			for (uinteger i = index+1; i < tokens.tokens.length; i ++){
-				if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
-					// add it
-					ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(i));
-					uinteger brackEnd = tokens.tokens.bracketPos!true(i);
-					var.addSubNode(indexNode);
+			// make sure first token is identifier
+			if (tokens.tokens[index].type == Token.Type.Identifier){
+				// set var name
+				var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
+				// check if indexes are specified, case yes, add em
+				for (index = index+1; index < tokens.tokens.length; index ++){
+					if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+						// add it
+						ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(index));
+						uinteger brackEnd = tokens.tokens.bracketPos!true(index);
+						var.addSubNode(indexNode);
+					}else{
+						break;
+					}
 				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
 			}
 			return var;
 		}
