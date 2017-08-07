@@ -224,23 +224,54 @@ struct ASTGen{
 			for (uinteger i = index; i <= endIndex; i ++){
 				Token token = tokens.tokens[i];
 				//TODO continue from here
-				if (token.type == Token.Type.Identifier){
-					// check if a "separator" like operator or something was expected
-					if (separatorExpected){
-						// bad syntax
-						compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
-					}else // check if it's a function-call
-					if (i < endIndex && tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
-						integer brackEnd = tokens.tokens.bracketPos(i+1);
-						lastNode = generateFunctionCallAST(tokens, i, brackEnd);
+				if (!separatorExpected){
+					// an identifier, or literal (i.e some data) was expected
+					if (token.type == Token.Type.Identifier){
+						if (i < endIndex && tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
+							uinteger brackEnd = tokens.tokens.bracketPos(i+1);
+							lastNode = generateFunctionCallAST(tokens, i, brackEnd);
+						}else{
+							// just a var
+							lastNode = generateVariableAST(tokens, i);
+						}
+						separatorExpected = true;
+
+					}else if (token.type == Token.Type.ParanthesesOpen){
+						uinteger brackEnd = tokens.tokens.bracketPos(i);
+						lastNode = generateCodeAST(tokens, i+1, brackEnd-1);
+
+					}else if (token.type == Token.Type.Number){
+						lastNode = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(i));
+
+					}else if (token.type == Token.Type.String){
+						lastNode = ASTNode(ASTNode.Type.StringLiteral, token.token, tokens.getTokenLine(i));
+
 					}else{
-						// just a var
-						lastNode = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
+						compileErrors.append(CompileError(tokens.getTokenLine(i), "unecxpted token"));
+						break;
 					}
-					separatorExpected = true;
-				}//TODO else if (token.type == Token.Typ)
+				}else{
+					// an operator or something that deals with data was expected
+					if (token.type == Token.Type.Operator){
+
+					}
+				}
 			}
 			return r;
+		}
+
+		/// generates AST for operators like +, -...
+		/// 
+		/// `firstOperand` is the first operand for the operator.
+		/// `index` is the index of the token which is the operator
+		/// 
+		/// changes `index` to the index of the token after the last token related to the operator
+		ASTNode generateOperatorAST(TokenList tokens, ASTNode firstOperand, ref uinteger index){
+			ASTNode operator = ASTNode(ASTNode.Type.Operator, tokens.tokens[index].token, tokens.getTokenLine(index));
+			// make sure it's an operator
+			if (tokens.tokens[index].type == Token.Type.Operator){
+
+			}
 		}
 
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
@@ -250,6 +281,7 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Identifier){
 				// set var name
 				var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
+				index ++;
 				// check if indexes are specified, case yes, add em
 				for (index = index+1; index < tokens.tokens.length; index ++){
 					if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
