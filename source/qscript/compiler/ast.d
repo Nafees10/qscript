@@ -170,6 +170,22 @@ struct ASTGen{
 				}else{
 					// go through and check if it's an assignment
 					// TODO implement a check to see if it's an asignment statement
+					// check if first token is var
+					if (tokens.tokens[index].type == Token.Type.Identifier){
+						// index brackets are expected
+						uinteger i;
+						for (i = index+1; i < endIndex; i ++){
+							if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
+								i = tokens.tokens.bracketPos(i);
+							}else{
+								return StatementType.NoValidType;
+							}
+						}
+						// if it reached here, it means previous checks passed, now to see if there's an `=` token or not
+						if (tokens.tokens[i].type == Token.Type.Operator && tokens.tokens[i].token == "="){
+							return StatementType.Assignment;
+						}
+					}
 				}
 				return StatementType.NoValidType;
 			}
@@ -186,7 +202,13 @@ struct ASTGen{
 					}else if (type == StatementType.Assignment){
 						// TODO implement a function to generate AST for assignment
 					}else if (type == StatementType.FunctionCall){
-
+						nodeList.append(generateFunctionCallAST(tokens, readFrom, i-1));
+					}else if (type == StatementType.VarDeclare){
+						// TODO implement a function to generate AST for variable declarations
+					}else if (type == StatementType.IfWhile){
+						// TODO implement a function to generate AST for if and while statements
+					}else if (type == StatementType.NoValidType){
+						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
 					}
 				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
 					// add it
