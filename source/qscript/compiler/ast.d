@@ -183,8 +183,10 @@ struct ASTGen{
 					StatementType type = getStatementType(tokens, readFrom, i);
 					if (type == StatementType.NoValidType){
 						break;
-					}else{
-						//TODO act accordingly to the statement type
+					}else if (type == StatementType.Assignment){
+						// TODO implement a function to generate AST for assignment
+					}else if (type == StatementType.FunctionCall){
+
 					}
 				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
 					// add it
@@ -223,7 +225,6 @@ struct ASTGen{
 			bool separatorExpected = false;
 			for (uinteger i = index; i <= endIndex; i ++){
 				Token token = tokens.tokens[i];
-				//TODO continue from here
 				if (!separatorExpected){
 					// an identifier, or literal (i.e some data) was expected
 					lastNode = generateNodeAST(tokens, i);
@@ -232,7 +233,10 @@ struct ASTGen{
 				}else{
 					// an operator or something that deals with data was expected
 					if (token.type == Token.Type.Operator){
-
+						lastNode = generateOperatorAST(tokens, lastNode, i);
+						i --;
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
 					}
 				}
 			}
