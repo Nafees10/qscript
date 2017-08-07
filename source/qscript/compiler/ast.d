@@ -226,30 +226,9 @@ struct ASTGen{
 				//TODO continue from here
 				if (!separatorExpected){
 					// an identifier, or literal (i.e some data) was expected
-					if (token.type == Token.Type.Identifier){
-						if (i < endIndex && tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
-							uinteger brackEnd = tokens.tokens.bracketPos(i+1);
-							lastNode = generateFunctionCallAST(tokens, i, brackEnd);
-						}else{
-							// just a var
-							lastNode = generateVariableAST(tokens, i);
-						}
-						separatorExpected = true;
-
-					}else if (token.type == Token.Type.ParanthesesOpen){
-						uinteger brackEnd = tokens.tokens.bracketPos(i);
-						lastNode = generateCodeAST(tokens, i+1, brackEnd-1);
-
-					}else if (token.type == Token.Type.Number){
-						lastNode = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(i));
-
-					}else if (token.type == Token.Type.String){
-						lastNode = ASTNode(ASTNode.Type.StringLiteral, token.token, tokens.getTokenLine(i));
-
-					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(i), "unecxpted token"));
-						break;
-					}
+					lastNode = generateNodeAST(tokens, i);
+					separatorExpected = true;
+					i --;
 				}else{
 					// an operator or something that deals with data was expected
 					if (token.type == Token.Type.Operator){
@@ -268,10 +247,19 @@ struct ASTGen{
 		/// changes `index` to the index of the token after the last token related to the operator
 		ASTNode generateOperatorAST(TokenList tokens, ASTNode firstOperand, ref uinteger index){
 			ASTNode operator = ASTNode(ASTNode.Type.Operator, tokens.tokens[index].token, tokens.getTokenLine(index));
-			// make sure it's an operator
-			if (tokens.tokens[index].type == Token.Type.Operator){
-
+			// make sure it's an operator, and there is a second operand
+			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
+				// read the next operand
+				ASTNode secondOperand;
+				uinteger i = index + 1;
+				secondOperand = generateNodeAST(tokens, i);
+				index = i;
+				// put both operands under one node
+				operator.addSubNode([firstOperand, secondOperand]);
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "no second operand found"));
 			}
+			return operator;
 		}
 
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
@@ -297,6 +285,46 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
 			}
 			return var;
+		}
+
+		/// returns a node representing either of the following:
+		/// 
+		/// 1. String literal
+		/// 2. Number literal
+		/// 3. Function Call (uses `generateFunctionCallAST`)
+		/// 4. Variable (uses `generateVariableAST`)
+		/// 5. Some code inside parantheses (uses `generateCodeAST`)
+		/// 
+		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
+		ASTNode generateNodeAST(TokenList tokens, ref uinteger index){
+			Token token = tokens.tokens[index];
+			ASTNode node;
+			// an identifier, or literal (i.e some data) was expected
+			if (token.type == Token.Type.Identifier){
+				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+					uinteger brackEnd = tokens.tokens.bracketPos(index+1);
+					node = generateFunctionCallAST(tokens, index, brackEnd);
+					index = brackEnd+1;
+				}else{
+					// just a var
+					node = generateVariableAST(tokens, index);
+				}
+				
+			}else if (token.type == Token.Type.ParanthesesOpen){
+				uinteger brackEnd = tokens.tokens.bracketPos(index);
+				node = generateCodeAST(tokens, index+1, brackEnd-1);
+				index = brackEnd+1;
+
+			}else if (token.type == Token.Type.Number){
+				node = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(index));
+				index ++;
+			}else if (token.type == Token.Type.String){
+				node = ASTNode(ASTNode.Type.StringLiteral, token.token, tokens.getTokenLine(index));
+				index ++;
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
+			}
+			return node;
 		}
 
 
