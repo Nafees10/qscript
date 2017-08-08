@@ -29,7 +29,7 @@ private Token.Type getTokenType(string token){
 	}
 	/// Returns true is a string is an operator
 	bool isOperator(string s){
-		return operators.hasElement(s);
+		return OPERATORS.hasElement(s);
 	}
 
 	if (token.isNum){
