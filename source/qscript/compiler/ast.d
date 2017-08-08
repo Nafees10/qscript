@@ -178,7 +178,7 @@ struct ASTGen{
 							if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
 								i = tokens.tokens.bracketPos(i);
 							}else{
-								return StatementType.NoValidType;
+								break;
 							}
 						}
 						// if it reached here, it means previous checks passed, now to see if there's an `=` token or not
@@ -309,14 +309,16 @@ struct ASTGen{
 				var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
 				index ++;
 				// check if indexes are specified, case yes, add em
-				for (index = index+1; index < tokens.tokens.length; index ++){
-					if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
-						// add it
-						ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(index));
-						uinteger brackEnd = tokens.tokens.bracketPos!true(index);
-						var.addSubNode(indexNode);
-					}else{
-						break;
+				if (tokens.tokens[index+1].type == Token.Type.IndexBracketOpen){
+					for (index = index+1; index < tokens.tokens.length; index ++){
+						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+							// add it
+							ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(index));
+							uinteger brackEnd = tokens.tokens.bracketPos!true(index);
+							var.addSubNode(indexNode);
+						}else{
+							break;
+						}
 					}
 				}
 			}else{
@@ -336,7 +338,7 @@ struct ASTGen{
 				ASTNode val = generateCodeAST(tokens, index, endIndex);
 				assignment = ASTNode(ASTNode.Type.Assign, tokens.getTokenLine(index));
 			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment operator"));
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
 			}
 			return assignment;
 		}
