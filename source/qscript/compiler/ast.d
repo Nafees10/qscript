@@ -202,7 +202,7 @@ struct ASTGen{
 					}else if (type == StatementType.FunctionCall){
 						nodeList.append(generateFunctionCallAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.VarDeclare){
-						// TODO implement a function to generate AST for variable declarations
+						nodeList.append(generateVarDeclareAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.IfWhile){
 						// TODO implement a function to generate AST for if and while statements
 					}else if (type == StatementType.NoValidType){
@@ -325,6 +325,41 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment operator"));
 			}
 			return assignment;
+		}
+
+		/// generates AST for variable declarations
+		ASTNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode varDeclare = ASTNode(ASTNode.Type.VarDeclare, tokens.getTokenLine(index));
+			// make sure it's a var declaration, and the vars are enclosed in parantheses
+			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "var" &&
+				index+1 < endIndex && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				// check if brackEnd == endIndex
+				if (tokens.tokens.bracketPos(index+1) == endIndex){
+					// now go through all vars, check if they are vars, and are aeparated by comma
+					bool commaExpected = false;
+					for (uinteger i = index+2; i < endIndex; i ++){
+						Token token = tokens.tokens[i];
+						if (commaExpected){
+							if (token.type != Token.Type.Comma){
+								compileErrors.append(CompileError(tokens.getTokenLine(i),
+										"variable names in declaration must be separated by a comma"));
+							}
+						}else{
+							if (token.type != Token.Type.Identifier){
+								compileErrors.append(CompileError(tokens.getTokenLine(i),
+										"variable name expected in varaible declaration, unexpexted token found"));
+							}else{
+								ASTNode var = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
+								varDeclare.addSubNode(var);
+							}
+						}
+					}
+				}
+
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "variable declaration is invalid"));
+			}
+			return varDeclare;
 		}
 
 		/// returns a node representing either of the following:
