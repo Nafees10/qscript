@@ -207,7 +207,7 @@ struct ASTGen{
 					}else if (type == StatementType.VarDeclare){
 						nodeList.append(generateVarDeclareAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.IfWhile){
-						nodeList.append(generateifWhileAST(tokens, readFrom, i));
+						nodeList.append(generateIfWhileAST(tokens, readFrom, i));
 					}
 				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
 					// add it
@@ -276,9 +276,22 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
 				ASTNode secondOperand;
-				uinteger i = index + 1;
-				secondOperand = generateNodeAST(tokens, i);
-				index = i;
+				if (BOOL_OPERATORS.hasElement(tokens.tokens[index].token)){
+					// look where the operand is ending
+					uinteger i;
+					for (i = index + 1; i < tokens.tokens.length; i ++){
+						Token token = tokens.tokens[i];
+						if ([Token.Type.Comma, Token.Type.ParanthesesClose, Token.Type.StatementEnd].hasElement(token.type)){
+							break;
+						}
+					}
+					secondOperand = generateCodeAST(tokens, index + 1, i-1);
+					index = i;
+				}else{
+					uinteger i = index + 1;
+					secondOperand = generateNodeAST(tokens, i);
+					index = i;
+				}
 				// put both operands under one node
 				operator.addSubNode([firstOperand, secondOperand]);
 			}else{
@@ -364,10 +377,14 @@ struct ASTGen{
 		}
 
 		/// generates AST for if/while statements
-		/// 
-		/// changes index to the token after the if/while statement ends
-		ASTNode generateifWhileAST(TokenList tokens, ref uinteger index){
+		ASTNode generateIfWhileAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode ifWhile;
+			// check if is an if/while
+			if (tokens.tokens[index].type == Token.Type.Keyword){
+				if (tokens.tokens[index].token == "while"){
 
+				}
+			}
 		}
 
 		/// returns a node representing either of the following:
