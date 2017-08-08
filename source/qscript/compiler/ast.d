@@ -168,8 +168,6 @@ struct ASTGen{
 						return StatementType.VarDeclare;
 					}
 				}else{
-					// go through and check if it's an assignment
-					// TODO implement a check to see if it's an asignment statement
 					// check if first token is var
 					if (tokens.tokens[index].type == Token.Type.Identifier){
 						// index brackets are expected
@@ -200,7 +198,7 @@ struct ASTGen{
 					if (type == StatementType.NoValidType){
 						break;
 					}else if (type == StatementType.Assignment){
-						// TODO implement a function to generate AST for assignment
+						nodeList.append(generateAssignmentAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.FunctionCall){
 						nodeList.append(generateFunctionCallAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.VarDeclare){
@@ -311,6 +309,22 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
 			}
 			return var;
+		}
+
+		/// generates AST for assignment operator
+		ASTNode generateAssignmentAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode assignment;
+			// get the variable to assign to
+			ASTNode var = generateVariableAST(tokens, index);
+			// now at index, the token should be a `=` operator
+			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
+				// everything's ok till the `=` operator
+				ASTNode val = generateCodeAST(tokens, index, endIndex);
+				assignment = ASTNode(ASTNode.Type.Assign, tokens.getTokenLine(index));
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment operator"));
+			}
+			return assignment;
 		}
 
 		/// returns a node representing either of the following:
