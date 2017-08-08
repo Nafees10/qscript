@@ -335,8 +335,9 @@ struct ASTGen{
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
 				// everything's ok till the `=` operator
-				ASTNode val = generateCodeAST(tokens, index, endIndex);
+				ASTNode val = generateCodeAST(tokens, index+1, endIndex);
 				assignment = ASTNode(ASTNode.Type.Assign, tokens.getTokenLine(index));
+				assignment.addSubNode([var, val]);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
 			}
