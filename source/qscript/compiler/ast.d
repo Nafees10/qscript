@@ -17,7 +17,6 @@ package struct ASTNode{
 		FunctionCall, /// Function Call,
 		StringLiteral, /// String Literal
 		NumberLiteral, /// Number Literal
-		HexLiteral, /// A Literal in form `0x1AB`
 		VarDeclare, /// For variable declaration
 		Variable, /// variable name
 		Arguments, /// stores arguments for a function
@@ -27,7 +26,7 @@ package struct ASTNode{
 	private{
 		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
 		Type nodeType;
-		string nodeData; /// For storing data for some nodes, like functionName for `Type.Function`
+		string nodeData=""; /// For storing data for some nodes, like functionName for `Type.Function`
 		ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
 
 		uinteger ln; /// Stores the line number on which the node is - for error reporting
@@ -58,7 +57,7 @@ package struct ASTNode{
 	/// for `Type.NumberLiteral`, it is the number (in a string)
 	/// for `Type.Variable`, it is the variable name
 	@property string data(){
-		return nodeData;
+		return nodeData.dup;
 	}
 	/// returns the type of the node
 	@property Type type(){
@@ -445,5 +444,68 @@ struct ASTGen{
 		}
 
 
+	}
+}
+
+debug{
+	/// returns a string representing a type of ASTNode given the ASTNode.Type
+	string getNodeTypeString(ASTNode.Type type){
+		const string[ASTNode.Type] typeString = [
+			ASTNode.Type.Arguments: "arguments",
+			ASTNode.Type.ArrayIndex: "array-index",
+			ASTNode.Type.Assign: "assignment-statement",
+			ASTNode.Type.Block: "block",
+			ASTNode.Type.Function: "function-definition",
+			ASTNode.Type.FunctionCall: "function-call",
+			ASTNode.Type.IfStatement: "if-statement",
+			ASTNode.Type.NumberLiteral: "number-literal",
+			ASTNode.Type.Operator: "operator",
+			ASTNode.Type.Script: "script",
+			ASTNode.Type.StringLiteral: "string-literal",
+			ASTNode.Type.VarDeclare: "variable-declaration",
+			ASTNode.Type.Variable: "variable",
+			ASTNode.Type.WhileStatement: "while-statement"
+		];
+		return typeString[type];
+	}
+	/// converts an AST to an html/xml-like file, only available in debug
+	string[] toXML(ASTNode mainNode, uinteger tabLevel = 0){
+		LinkedList!string xml = new LinkedList!string;
+
+		char[] tab;
+		tab.length = tabLevel;
+		if (tab.length > 0){
+			tab[] = '\t';
+		}
+
+		string type = getNodeTypeString(mainNode.type);
+		string tag = "<node type=\""~type~"\">";
+		tag = cast(string)tab~tag;
+
+		xml.append(tag);
+
+		tag = "<type>"~type~"</type>";
+		tag = cast(string)tab~tag;
+		xml.append(tag);
+
+		if (mainNode.data != ""){
+			tag = "<data>"~mainNode.data~"</data>";
+			tag = cast(string)tab~tag;
+			xml.append(tag);
+		}
+
+		// if there are subnodes, do recursion
+		ASTNode[] subNodes = mainNode.getSubNodes();
+		if (subNodes.length > 0){
+			tabLevel ++;
+			foreach (subNode; subNodes){
+				xml.append(toXML(subNode, tabLevel));
+			}
+			tabLevel --;
+		}
+
+		string[] r = xml.toArray;
+		.destroy(xml);
+		return r;
 	}
 }
