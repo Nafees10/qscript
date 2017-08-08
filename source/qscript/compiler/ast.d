@@ -209,11 +209,13 @@ struct ASTGen{
 					}else if (type == StatementType.IfWhile){
 						nodeList.append(generateIfWhileAST(tokens, readFrom, i));
 					}
-				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
+					readFrom = i+1;
+				}else if (tokens.tokens[i].type == Token.Type.BlockStart && readFrom < i){
 					// add it
 					nodeList.append(generateBlockAST(tokens, i));
 					// skip the block's body
 					i = tokens.tokens.bracketPos(i);
+					readFrom = i+1;
 				}
 			}
 			statementNodes = nodeList.toArray;
@@ -364,7 +366,7 @@ struct ASTGen{
 						}else{
 							if (token.type != Token.Type.Identifier){
 								compileErrors.append(CompileError(tokens.getTokenLine(i),
-										"variable name expected in varaible declaration, unexpexted token found"));
+										"variable name expected in varaible declaration, unexpected token found"));
 							}else{
 								ASTNode var = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
 								varDeclare.addSubNode(var);
