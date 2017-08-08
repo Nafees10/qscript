@@ -23,16 +23,16 @@ public struct ASTNode{
 		Arguments, /// stores arguments for a function
 		ArrayIndex, /// Stores index for an array, in an `ASTNode`
 	}
-
+	
 	private{
 		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
 		Type nodeType;
 		string nodeData; /// For storing data for some nodes, like functionName for `Type.Function`
 		ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
-
+		
 		uinteger ln; /// Stores the line number on which the node is - for error reporting
 	}
-
+	
 	/// initializes the node, nType is the type of node.
 	this(Type nType, uinteger lineNumber){
 		nodeType = nType;
@@ -50,7 +50,7 @@ public struct ASTNode{
 		nodeData = nData;
 		ln = lineNumber;
 	}
-
+	
 	/// returns nodeData
 	/// for `Type.Function`, it is the name of the function declared
 	/// for `Type.FunctionCall`, it is the function name to call
@@ -134,7 +134,7 @@ struct ASTGen{
 			}
 			return functionNode;
 		}
-
+		
 		/// generates AST for a {block-of-code}
 		ASTNode generateBlockAST(TokenList tokens, uinteger index){
 			ASTNode blockNode;
@@ -147,7 +147,7 @@ struct ASTGen{
 			}
 			return blockNode;
 		}
-
+		
 		/// generates ASTs for statements in a block
 		ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
 			enum StatementType{
@@ -230,7 +230,7 @@ struct ASTGen{
 					ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall,
 						tokens.tokens[index].token, 
 						tokens.getTokenLine(index));
-
+					
 					functionCallNode.addSubNode(generateCodeAST(tokens, index+1, brackEnd-1));
 					
 					return functionCallNode;
@@ -263,7 +263,7 @@ struct ASTGen{
 			}
 			return r;
 		}
-
+		
 		/// generates AST for operators like +, -...
 		/// 
 		/// `firstOperand` is the first operand for the operator.
@@ -299,7 +299,7 @@ struct ASTGen{
 			}
 			return operator;
 		}
-
+		
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
 		ASTNode generateVariableAST(TokenList tokens, ref uinteger index){
 			ASTNode var;
@@ -324,7 +324,7 @@ struct ASTGen{
 			}
 			return var;
 		}
-
+		
 		/// generates AST for assignment operator
 		ASTNode generateAssignmentAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode assignment;
@@ -340,7 +340,7 @@ struct ASTGen{
 			}
 			return assignment;
 		}
-
+		
 		/// generates AST for variable declarations
 		ASTNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode varDeclare = ASTNode(ASTNode.Type.VarDeclare, tokens.getTokenLine(index));
@@ -358,6 +358,7 @@ struct ASTGen{
 								compileErrors.append(CompileError(tokens.getTokenLine(i),
 										"variable names in declaration must be separated by a comma"));
 							}
+							commaExpected = false;
 						}else{
 							if (token.type != Token.Type.Identifier){
 								compileErrors.append(CompileError(tokens.getTokenLine(i),
@@ -366,16 +367,17 @@ struct ASTGen{
 								ASTNode var = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
 								varDeclare.addSubNode(var);
 							}
+							commaExpected = true;
 						}
 					}
 				}
-
+				
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "variable declaration is invalid"));
 			}
 			return varDeclare;
 		}
-
+		
 		/// generates AST for if/while statements
 		ASTNode generateIfWhileAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode ifWhile;
@@ -403,7 +405,7 @@ struct ASTGen{
 			}
 			return ifWhile;
 		}
-
+		
 		/// returns a node representing either of the following:
 		/// 
 		/// 1. String literal
@@ -431,7 +433,7 @@ struct ASTGen{
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
 				node = generateCodeAST(tokens, index+1, brackEnd-1);
 				index = brackEnd+1;
-
+				
 			}else if (token.type == Token.Type.Number){
 				node = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(index));
 				index ++;
@@ -443,8 +445,8 @@ struct ASTGen{
 			}
 			return node;
 		}
-
-
+		
+		
 	}
 }
 
@@ -479,25 +481,25 @@ debug{
 			}
 			return cast(string)tab;
 		}
-
+		
 		LinkedList!string xml = new LinkedList!string;
-
+		
 		string tab = getTab(tabLevel);
-
+		
 		string type = getNodeTypeString(mainNode.type);
 		string tag = tab~"<node type=\""~type~"\">";
 		xml.append(tag);
 		tabLevel ++;
 		tab = getTab(tabLevel);
-
+		
 		tag = tab~"<type>"~type~"</type>";
 		xml.append(tag);
-
+		
 		if (mainNode.data.length > 0){
 			tag = tab~"<data>"~mainNode.data~"</data>";
 			xml.append(tag);
 		}
-
+		
 		// if there are subnodes, do recursion
 		ASTNode[] subNodes = mainNode.getSubNodes();
 		if (subNodes.length > 0){
@@ -510,7 +512,7 @@ debug{
 		// closing tag
 		tag = tab~"</node>";
 		xml.append(tag);
-
+		
 		string[] r = xml.toArray;
 		.destroy(xml);
 		return r;
