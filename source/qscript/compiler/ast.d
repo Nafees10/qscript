@@ -4,7 +4,8 @@ import utils.misc;
 import utils.lists;
 import qscript.compiler.misc;
 
-package struct ASTNode{
+/// TODO make it package instead of public
+public struct ASTNode{
 	/// Enum defining types of ASTNode
 	enum Type{
 		Script, /// The top-most node
