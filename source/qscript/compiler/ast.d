@@ -241,7 +241,6 @@ struct ASTGen{
 		
 		/// generates AST for "actual code" like `2 + 2 - 6`.
 		ASTNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
-			ASTNode r;
 			ASTNode lastNode;
 			bool separatorExpected = false;
 			for (uinteger i = index; i <= endIndex; i ++){
@@ -261,7 +260,7 @@ struct ASTGen{
 					}
 				}
 			}
-			return r;
+			return lastNode;
 		}
 		
 		/// generates AST for operators like +, -...
