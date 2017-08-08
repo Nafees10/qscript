@@ -137,7 +137,7 @@ struct ASTGen{
 		
 		/// generates AST for a {block-of-code}
 		ASTNode generateBlockAST(TokenList tokens, uinteger index){
-			ASTNode blockNode;
+			ASTNode blockNode = ASTNode(ASTNode.Type.Block, tokens.getTokenLine(index));
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
@@ -159,16 +159,16 @@ struct ASTGen{
 			}
 			StatementType getStatementType(TokenList tokens, uinteger index, uinteger endIndex){
 				// check if its a function call, or if/while
-				if (tokens.tokens.length-index >= 3 && tokens.tokens[index].type == Token.Type.Identifier && 
-					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-					// is a function call
-					return StatementType.FunctionCall;
-				}else if (tokens.tokens[index].type == Token.Type.Keyword){
+				if (tokens.tokens[index].type == Token.Type.Keyword){
 					if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
 						return StatementType.IfWhile;
 					}else if (tokens.tokens[index].token == "var"){
 						return StatementType.VarDeclare;
 					}
+				}else if (index+3 <= endIndex && tokens.tokens[index].type == Token.Type.Identifier && 
+					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+					// is a function call
+					return StatementType.FunctionCall;
 				}else{
 					// check if first token is var
 					if (tokens.tokens[index].type == Token.Type.Identifier){
@@ -195,8 +195,32 @@ struct ASTGen{
 			LinkedList!ASTNode nodeList = new LinkedList!ASTNode;
 			// separate statements
 			for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
+				// check if is a block for if/while, then skip
+				if (tokens.tokens[i].type == Token.Type.Keyword){
+					if (tokens.tokens[i].token == "if" || tokens.tokens[i].token == "while"){
+						// make sure its followed by a paranthese, then by a brace, and then skip that brace
+						if (tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
+							i = tokens.tokens.bracketPos(i+1)+1;
+							// then skip the brace
+							if (tokens.tokens[i].type == Token.Type.BlockStart){
+								i = tokens.tokens.bracketPos(i);
+							}else{
+								import std.stdio, std.conv : to;
+								compileErrors.append(CompileError(tokens.getTokenLine(i),
+										"if/while statement not followed by a block"));
+							}
+						}else{
+							compileErrors.append(CompileError(tokens.getTokenLine(i),
+									"if/while statement not complete"));
+						}
+					}
+				}
 				if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
 					StatementType type = getStatementType(tokens, readFrom, i);
+					debug{
+						import std.stdio, std.conv : to;
+						writeln("type=",to!string(type));
+					}
 					if (type == StatementType.NoValidType){
 						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
 						break;
@@ -239,12 +263,13 @@ struct ASTGen{
 					// now for the arguments
 					bool hasArgs = false;
 					for (uinteger i = index+2, readFrom = index+2; i <= endIndex; i ++){
+						Token token = tokens.tokens[i];
 						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
-							hasElement(tokens.tokens[i].type)){
+							hasElement(token.type)){
 							//skip to end of that bracket
 							i = tokens.tokens.bracketPos(i);
 						}
-						if (tokens.tokens[i].type == Token.Type.Comma || tokens.tokens[i].type == Token.Type.ParanthesesClose){
+						if (readFrom < i && (token.type == Token.Type.Comma || token.type == Token.Type.ParanthesesClose)){
 							ASTNode arg = generateCodeAST(tokens, readFrom, i-1);
 							args.addSubNode(arg);
 							readFrom = i+1;
