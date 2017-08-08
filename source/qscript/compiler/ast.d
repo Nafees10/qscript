@@ -134,7 +134,8 @@ struct ASTGen{
 			}
 			return functionNode;
 		}
-		
+
+		/// generates AST for a {block-of-code}
 		ASTNode generateBlockAST(TokenList tokens, uinteger index){
 			ASTNode blockNode;
 			// make sure it's a block
@@ -146,7 +147,8 @@ struct ASTGen{
 			}
 			return blockNode;
 		}
-		
+
+		/// generates ASTs for statements in a block
 		ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
 			enum StatementType{
 				FunctionCall,
@@ -196,6 +198,7 @@ struct ASTGen{
 				if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
 					StatementType type = getStatementType(tokens, readFrom, i);
 					if (type == StatementType.NoValidType){
+						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
 						break;
 					}else if (type == StatementType.Assignment){
 						nodeList.append(generateAssignmentAST(tokens, readFrom, i-1));
@@ -204,9 +207,7 @@ struct ASTGen{
 					}else if (type == StatementType.VarDeclare){
 						nodeList.append(generateVarDeclareAST(tokens, readFrom, i-1));
 					}else if (type == StatementType.IfWhile){
-						// TODO implement a function to generate AST for if and while statements
-					}else if (type == StatementType.NoValidType){
-						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
+						nodeList.append(generateifWhileAST(tokens, readFrom, i));
 					}
 				}else if (tokens.tokens[i].type == Token.Type.BlockStart){
 					// add it
@@ -360,6 +361,13 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "variable declaration is invalid"));
 			}
 			return varDeclare;
+		}
+
+		/// generates AST for if/while statements
+		/// 
+		/// changes index to the token after the if/while statement ends
+		ASTNode generateifWhileAST(TokenList tokens, ref uinteger index){
+
 		}
 
 		/// returns a node representing either of the following:
