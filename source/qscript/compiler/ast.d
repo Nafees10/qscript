@@ -224,21 +224,46 @@ struct ASTGen{
 		}
 		
 		ASTNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode functionCallNode;
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
-				// check if bracket is closed and there's a semicolon
+				// check if there's a bracket
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
-				if (brackEnd+1 <= endIndex && tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
-					ASTNode functionCallNode = ASTNode(ASTNode.Type.FunctionCall,
+				if (brackEnd <= endIndex){
+					functionCallNode = ASTNode(ASTNode.Type.FunctionCall,
 						tokens.tokens[index].token, 
 						tokens.getTokenLine(index));
-					
-					functionCallNode.addSubNode(generateCodeAST(tokens, index+1, brackEnd-1));
+
+					ASTNode args = ASTNode(ASTNode.Type.Arguments, tokens.getTokenLine(index));
+
+					// now for the arguments
+					bool hasArgs = false;
+					for (uinteger i = index+2, readFrom = index+2; i <= endIndex; i ++){
+						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
+							hasElement(tokens.tokens[i].type)){
+							//skip to end of that bracket
+							i = tokens.tokens.bracketPos(i);
+						}
+						if (tokens.tokens[i].type == Token.Type.Comma || tokens.tokens[i].type == Token.Type.ParanthesesClose){
+							ASTNode arg = generateCodeAST(tokens, readFrom, i-1);
+							args.addSubNode(arg);
+							readFrom = i+1;
+							hasArgs = true;
+						}
+					}
+
+					if (hasArgs){
+						functionCallNode.addSubNode(args);
+					}
 					
 					return functionCallNode;
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
 				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
 			}
-			return ASTNode(ASTNode.Type.FunctionCall, 0);
+			return functionCallNode;
 		}
 		
 		/// generates AST for "actual code" like `2 + 2 - 6`.
@@ -282,6 +307,11 @@ struct ASTGen{
 					uinteger i;
 					for (i = index + 1; i < tokens.tokens.length; i ++){
 						Token token = tokens.tokens[i];
+						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
+							hasElement(token.type)){
+							//skip to end of that bracket
+							i = tokens.tokens.bracketPos(i);
+						}
 						if ([Token.Type.Comma, Token.Type.ParanthesesClose, Token.Type.StatementEnd].hasElement(token.type)){
 							break;
 						}
@@ -496,8 +526,8 @@ debug{
 		tabLevel ++;
 		tab = getTab(tabLevel);
 		
-		tag = tab~"<type>"~type~"</type>";
-		xml.append(tag);
+		//tag = tab~"<type>"~type~"</type>";
+		//xml.append(tag);
 		
 		if (mainNode.data.length > 0){
 			tag = tab~"<data>"~mainNode.data~"</data>";
