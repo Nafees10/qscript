@@ -56,7 +56,7 @@ private Token.Type getTokenType(string token){
 		return Token.Type.IndexBracketClose;
 	}else if (token == "{"){
 		return Token.Type.BlockStart;
-	}else if (token == "]"){
+	}else if (token == "}"){
 		return Token.Type.BlockEnd;
 	}else{
 		throw new Exception("unidentified token type");
@@ -207,7 +207,7 @@ private TokenList separateTokens(string[] script){
 unittest{
 	string[] expectedResults;
 	expectedResults = [
-		"main", "{",
+		"function", "main", "{",
 		"new", "(", "i", ",", "i2", ")", ";",
 		"if", "(", "i", "<", "2", ")", "{", "}",
 		"if", "(", "i", "<=", "2", ")", "{", "}",
@@ -224,7 +224,7 @@ unittest{
 		"}"
 	];
 	string[] script = [
-		"main{",
+		"function main{",
 		"\tnew (i, i2);",
 		"\tif (i < 2){}",
 		"\tif(i<=2){}",
@@ -256,7 +256,8 @@ unittest{
 /// in an array
 /// 
 /// As a plus, it also checks if the brackets are in correct order (and properly closed)
-package TokenList toTokens(string[] script){
+/// TODO make it package instead of public
+public TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
 	if (tokens.tokens == null || tokens.tokens.length == 0){
