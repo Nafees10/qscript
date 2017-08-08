@@ -379,12 +379,29 @@ struct ASTGen{
 		/// generates AST for if/while statements
 		ASTNode generateIfWhileAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode ifWhile;
-			// check if is an if/while
-			if (tokens.tokens[index].type == Token.Type.Keyword){
-				if (tokens.tokens[index].token == "while"){
-
-				}
+			if (tokens.tokens[index].token == "while"){
+				ifWhile = ASTNode(ASTNode.Type.WhileStatement, tokens.getTokenLine(index));
+			}else if (tokens.tokens[index].token == "if"){
+				ifWhile = ASTNode(ASTNode.Type.IfStatement, tokens.getTokenLine(index));
 			}
+			// check if is an if/while
+			if (index+3 < endIndex && tokens.tokens[index].type == Token.Type.Keyword &&
+				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				// now do the real work
+				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
+				ASTNode condition = generateCodeAST(tokens, index+2, brackEnd-1);
+				ifWhile.addSubNode(condition);
+				// make sure there's a block at the end of the condition
+				if (brackEnd+1 < endIndex && tokens.tokens[brackEnd+1].type == Token.Type.BlockStart){
+					ASTNode block = generateBlockAST(tokens, brackEnd+1);
+					ifWhile.addSubNode(block);
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1), "if/while statement not followed by a block"));
+				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
+			}
+			return ifWhile;
 		}
 
 		/// returns a node representing either of the following:
