@@ -27,7 +27,7 @@ public struct ASTNode{
 	private{
 		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
 		Type nodeType;
-		string nodeData=""; /// For storing data for some nodes, like functionName for `Type.Function`
+		string nodeData; /// For storing data for some nodes, like functionName for `Type.Function`
 		ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
 
 		uinteger ln; /// Stores the line number on which the node is - for error reporting
@@ -471,39 +471,45 @@ debug{
 	}
 	/// converts an AST to an html/xml-like file, only available in debug
 	string[] toXML(ASTNode mainNode, uinteger tabLevel = 0){
-		LinkedList!string xml = new LinkedList!string;
-
-		char[] tab;
-		tab.length = tabLevel;
-		if (tab.length > 0){
-			tab[] = '\t';
+		string getTab(uinteger length){
+			char[] tab;
+			tab.length = length;
+			if (tab.length > 0){
+				tab[] = '\t';
+			}
+			return cast(string)tab;
 		}
 
+		LinkedList!string xml = new LinkedList!string;
+
+		string tab = getTab(tabLevel);
+
 		string type = getNodeTypeString(mainNode.type);
-		string tag = "<node type=\""~type~"\">";
-		tag = cast(string)tab~tag;
+		string tag = tab~"<node type=\""~type~"\">";
+		xml.append(tag);
+		tabLevel ++;
+		tab = getTab(tabLevel);
 
+		tag = tab~"<type>"~type~"</type>";
 		xml.append(tag);
 
-		tag = "<type>"~type~"</type>";
-		tag = cast(string)tab~tag;
-		xml.append(tag);
-
-		if (mainNode.data != ""){
-			tag = "<data>"~mainNode.data~"</data>";
-			tag = cast(string)tab~tag;
+		if (mainNode.data.length > 0){
+			tag = tab~"<data>"~mainNode.data~"</data>";
 			xml.append(tag);
 		}
 
 		// if there are subnodes, do recursion
 		ASTNode[] subNodes = mainNode.getSubNodes();
 		if (subNodes.length > 0){
-			tabLevel ++;
 			foreach (subNode; subNodes){
 				xml.append(toXML(subNode, tabLevel));
 			}
-			tabLevel --;
 		}
+		tabLevel --;
+		tab = getTab(tabLevel);
+		// closing tag
+		tag = tab~"</node>";
+		xml.append(tag);
 
 		string[] r = xml.toArray;
 		.destroy(xml);
