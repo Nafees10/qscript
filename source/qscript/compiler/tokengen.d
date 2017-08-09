@@ -1,7 +1,4 @@
-﻿/+ This module converts script to tokens, and does basic syntax checking
- + 
- +/
-module qscript.compiler.tokengen;
+﻿module qscript.compiler.tokengen;
 
 import utils.misc;
 import utils.lists;
