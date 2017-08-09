@@ -205,7 +205,6 @@ struct ASTGen{
 							if (tokens.tokens[i].type == Token.Type.BlockStart){
 								i = tokens.tokens.bracketPos(i);
 							}else{
-								import std.stdio, std.conv : to;
 								compileErrors.append(CompileError(tokens.getTokenLine(i),
 										"if/while statement not followed by a block"));
 							}
@@ -217,10 +216,6 @@ struct ASTGen{
 				}
 				if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
 					StatementType type = getStatementType(tokens, readFrom, i);
-					debug{
-						import std.stdio, std.conv : to;
-						writeln("type=",to!string(type));
-					}
 					if (type == StatementType.NoValidType){
 						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
 						break;
