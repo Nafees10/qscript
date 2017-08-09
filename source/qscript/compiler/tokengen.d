@@ -72,6 +72,8 @@ unittest{
 	assert(",".getTokenType == Token.Type.Comma);
 	assert("var".getTokenType == Token.Type.Keyword);
 	assert("function".getTokenType == Token.Type.Keyword);
+	assert("if".getTokenType == Token.Type.Keyword);
+	assert("while".getTokenType == Token.Type.Keyword);
 }
 
 /// Reads script, and separates tokens
