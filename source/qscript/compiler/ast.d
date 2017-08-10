@@ -362,8 +362,8 @@ struct ASTGen{
 				var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
 				index ++;
 				// check if indexes are specified, case yes, add em
-				if (tokens.tokens[index+1].type == Token.Type.IndexBracketOpen){
-					for (index = index+1; index < tokens.tokens.length; index ++){
+				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+					for (index = index; index < tokens.tokens.length; index ++){
 						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
 							// add it
 							ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(index));
@@ -461,6 +461,34 @@ struct ASTGen{
 			}
 			return ifWhile;
 		}
+
+		/// generates AST for static arrays: like: `[x, y, z]`
+		ASTNode generateStaticArrayAST(TokenList tokens, uinteger index, uinteger endIndex){
+			ASTNode array;
+			// check if is a static array
+			if (tokens.tokens[index].type == Token.Type.IndexBracketOpen &&
+				tokens.tokens.bracketPos(index) == endIndex){
+				// init the node
+				array = ASTNode(ASTNode.Type.StaticArray, tokens.getTokenLine(index));
+				// add each element using `generateNodeAST`
+				bool commaExpected = false;
+				for (uinteger i = index+1; i < endIndex; i ++){
+					if (commaExpected){
+						if (tokens.tokens[i].type != Token.Type.Comma){
+							compileErrors.append(CompileError(tokens.getTokenLine(i),
+									"elements in static arrays must be separated by a comma"));
+						}
+						commaExpected = false;
+					}else{
+						ASTNode element = generateNodeAST(tokens, i);
+						i --;
+						commaExpected = true;
+						array.addSubNode(element);
+					}
+				}
+			}
+			return array;
+		}
 		
 		/// returns a node representing either of the following:
 		/// 
@@ -469,6 +497,7 @@ struct ASTGen{
 		/// 3. Function Call (uses `generateFunctionCallAST`)
 		/// 4. Variable (uses `generateVariableAST`)
 		/// 5. Some code inside parantheses (uses `generateCodeAST`)
+		/// 6. A static array (`[x, y, z]`)
 		/// 
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
 		ASTNode generateNodeAST(TokenList tokens, ref uinteger index){
@@ -490,6 +519,11 @@ struct ASTGen{
 				node = generateCodeAST(tokens, index+1, brackEnd-1);
 				index = brackEnd+1;
 				
+			}else if (token.type == Token.Type.IndexBracketOpen){
+				uinteger brackEnd = tokens.tokens.bracketPos(index);
+				node = generateStaticArrayAST(tokens, index, brackEnd);
+				index = brackEnd+1;
+
 			}else if (token.type == Token.Type.Number){
 				node = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(index));
 				index ++;
@@ -523,7 +557,8 @@ debug{
 			ASTNode.Type.StringLiteral: "string-literal",
 			ASTNode.Type.VarDeclare: "variable-declaration",
 			ASTNode.Type.Variable: "variable",
-			ASTNode.Type.WhileStatement: "while-statement"
+			ASTNode.Type.WhileStatement: "while-statement",
+			ASTNode.Type.StaticArray: "static-array"
 		];
 		return typeString[type];
 	}
