@@ -1,4 +1,5 @@
-﻿module qscript.compiler.ast;
+﻿// TODO write a function to generate AST for static arrays
+module qscript.compiler.ast;
 
 import utils.misc;
 import utils.lists;
@@ -22,6 +23,7 @@ public struct ASTNode{
 		Variable, /// variable name
 		Arguments, /// stores arguments for a function
 		ArrayIndex, /// Stores index for an array, in an `ASTNode`
+		StaticArray, /// For storing elements of a static array, i.e: `[x, y, z]`
 	}
 	
 	private{
