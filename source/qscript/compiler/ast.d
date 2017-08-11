@@ -66,6 +66,10 @@ public struct ASTNode{
 	@property Type type(){
 		return nodeType;
 	}
+	/// returns the line number this node was on
+	@property uinteger lineno(){
+		return ln;
+	}
 	/// Returns an array of subnodes that come under this node
 	ASTNode[] getSubNodes(){
 		return subNodes.dup;
