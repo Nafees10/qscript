@@ -1,5 +1,4 @@
-﻿// TODO write a function to generate AST for static arrays
-module qscript.compiler.ast;
+﻿module qscript.compiler.ast;
 
 import utils.misc;
 import utils.lists;
