@@ -29,10 +29,10 @@ public struct ASTNode{
 		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
 		Type nodeType;
 		string nodeData; /// For storing data for some nodes, like functionName for `Type.Function`
-		ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
 		
 		uinteger ln; /// Stores the line number on which the node is - for error reporting
 	}
+	public ASTNode[] subNodes; /// This is used for .. example: in a function body to store statements like FunctionCall...
 	
 	/// initializes the node, nType is the type of node.
 	this(Type nType, uinteger lineNumber){
@@ -69,9 +69,26 @@ public struct ASTNode{
 	@property uinteger lineno(){
 		return ln;
 	}
-	/// Returns an array of subnodes that come under this node
-	ASTNode[] getSubNodes(){
-		return subNodes.dup;
+	/// returns all subNodes that match the given type
+	ASTNode[] readSubNodes(ASTNode.Type matchType){
+		LinkedList!ASTNode r = new LinkedList!ASTNode;
+		foreach (subNode; subNodes){
+			if (subNode.type == matchType){
+				r.append(subNode);
+			}
+		}
+		ASTNode[] resArray = r.toArray;
+		.destroy(r);
+		return resArray;
+	}
+	/// returns the index of the first subNode that matches with the given type, -1 if not found
+	integer readSubNode(ASTNode.Type matchType){
+		foreach (i, subNode; subNodes){
+			if (subNode.type == matchType){
+				return i;
+			}
+		}
+		return -1;
 	}
 	/// Adds a body node. Use only with Node.Type.Body
 	void addSubNode(ASTNode bNode){
@@ -129,7 +146,7 @@ struct ASTGen{
 					// add name
 					functionNode = ASTNode(ASTNode.Type.Function, tokens.tokens[index+1].token, tokens.getTokenLine(index + 1));
 					// convert the function body to ASTNodes using generateBlockAST
-					functionNode.addSubNode(generateBlockAST(tokens, index+2).getSubNodes);
+					functionNode.addSubNode(generateBlockAST(tokens, index+2).subNodes);
 				}else{
 					// not followed by a block of code and/or followed by EOF
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function definition incomplete"));
@@ -595,7 +612,7 @@ debug{
 		}
 		
 		// if there are subnodes, do recursion
-		ASTNode[] subNodes = mainNode.getSubNodes();
+		ASTNode[] subNodes = mainNode.subNodes;
 		if (subNodes.length > 0){
 			foreach (subNode; subNodes){
 				xml.append(toXML(subNode, tabLevel));
