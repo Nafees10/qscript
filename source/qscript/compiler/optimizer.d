@@ -8,7 +8,7 @@ import utils.lists;
 
 /// struct providing functions to optimize an check the AST for errors
 public struct ASTOptimize{
-	/// stpres name of functions(index) defined in script and if they were used or not (bool, true/false)
+	/// stores name of functions(index) defined in script and if they were used or not (bool, true/false)
 	private bool[string] functionsUsed;
 	/// optimizes and looks for errors in the scriptNode. returns true if successful, else false
 	/// 
@@ -88,47 +88,6 @@ public struct ASTOptimize{
 		return statement;
 	}
 
-	/// checks if a functionCall is static (i.e if all of it's arguments are constant)
-	/// TODO complete thsi function
-	private bool functionCallIsStatic(ASTNode fCall){
-		// only need to look in arguments
-		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
-		ASTNode args;
-		if (argsIndex >= 0){
-			args = fCall.subNodes[argsIndex];
-		}
-		bool r = true;
-		// check the args
-		foreach (arg; args.subNodes){
-			if (arg.type == ASTNode.Type.Operator){
-
-			}else if (arg.type == ASTNode.Type.FunctionCall){
-
-			}else if (arg.type == ASTNode.Type.Operator){
-
-			}else if (arg.type == ASTNode.Type.Variable){
-
-			}else{
-				// invalid argument
-				compileErrors.append(CompileError(arg.lineno, "invalid argument"));
-			}
-		}
-	}
-
-	/// checks if an operator is static
-	private bool operatorIsStatic(ASTNode operator){
-		// get operands
-		ASTNode[] operands = operator.subNodes;
-		if (operands.length != 2){
-			// invalid, no idea how it escaped `ast.d`
-			compileErrors.append(CompileError(operator.lineno, "operators can only receive 2 arguments"));
-			return false;
-		}else{
-			// check if static
-			// TODO finish this function
-		}
-	}
-
 	/// optimizes and looks for erros in a functionCall
 	/// TODO complete this function
 	private ASTNode optimizeFunctionCall(ASTNode fCall){
@@ -145,13 +104,105 @@ public struct ASTOptimize{
 		}
 		// go through each arg
 
+
+		return fCall;
 	}
 }
 
+
+/// provides functions to check if something can be evaluated at runtime
+/// TODO complete this
 private static struct CheckStatic{
-	/// TODO finish this
+
+	/// checks if a node is static (true), or not (false)
+	/// 
+	/// works with:
+	/// 1. FunctionCall
+	/// 2. FunctionDefinition
+	/// 3. IfStatement
+	/// 4. WhileStatement
+	/// 5. Block
+	/// 6. Assign
+	/// 7. Operator
+	/// 8. Variable
+	/// 9. StaticArray
+	/// 9. NumberLiteral (always returns true on this, obviously)
+	/// 9. StringLiteral (alwats return true no this, obviously)
+	/// 
+	/// TODO complete this
+	bool isStatic(ASTNode node){
+		if (node.type == ASTNode.Type.NumberLiteral){
+			return true;
+		}else if (node.type == ASTNode.Type.StringLiteral){
+			return true;
+		}else if (node.type == ASTNode.Type.FunctionCall){
+			return functionCallIsStatic(node);
+		}else if (node.type == ASTNode.Type.Function){
+
+		}else if (node.type == ASTNode.Type.IfStatement){
+
+		}else if (node.type == ASTNode.Type.WhileStatement){
+
+		}else if (node.type == ASTNode.Type.Block){
+
+		}else if (node.type == ASTNode.Type.Assign){
+
+		}else if (node.type == ASTNode.Type.Operator){
+
+		}else if (node.type == ASTNode.Type.Variable){
+
+		}else if (node.type == ASTNode.Type.StaticArray){
+
+		}
+	}
+
+	/// /// checks if a functionCall is static (i.e if all of it's arguments are constant)
+	private bool functionCallIsStatic(ASTNode fCall){
+		// only need to look in arguments
+		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
+		ASTNode args;
+		if (argsIndex >= 0){
+			args = fCall.subNodes[argsIndex];
+		}
+		bool r = true;
+		// check the args
+		foreach (arg; args.subNodes){
+			if (arg.type == ASTNode.Type.Operator){
+				r = operatorIsStatic(arg);
+			}else if (arg.type == ASTNode.Type.FunctionCall){
+				
+			}else if (arg.type == ASTNode.Type.Operator){
+				
+			}else if (arg.type == ASTNode.Type.Variable){
+				
+			}else{
+				// invalid argument
+				compileErrors.append(CompileError(arg.lineno, "invalid argument"));
+			}
+			if (!r){
+				break;
+			}
+		}
+		return r;
+	}
+	
+	/// checks if an operator is static
+	private bool operatorIsStatic(ASTNode operator){
+		// get operands
+		ASTNode[] operands = operator.subNodes;
+		if (operands.length != 2){
+			// invalid, no idea how it escaped `ast.d`
+			compileErrors.append(CompileError(operator.lineno, "operators can only receive 2 arguments"));
+			return false;
+		}else{
+			// check if static
+			// TODO finish this function
+		}
+	}
 }
 
+
+/// provides functions to store variables at compile time
 private static struct VarStore{
 	/// Used to store vars
 	private QData[string] vars;
