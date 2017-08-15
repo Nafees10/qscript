@@ -138,13 +138,13 @@ private static struct CheckStatic{
 		}else if (node.type == ASTNode.Type.FunctionCall){
 			return functionCallIsStatic(node);
 		}else if (node.type == ASTNode.Type.Function){
-
+			return functionIsStatic(node);
 		}else if (node.type == ASTNode.Type.IfStatement){
-
+			return ifWhileStatementIsStatic(node);
 		}else if (node.type == ASTNode.Type.WhileStatement){
-
+			return ifWhileStatementIsStatic(node);
 		}else if (node.type == ASTNode.Type.Block){
-
+			return blockIsStatic(node);
 		}else if (node.type == ASTNode.Type.Assign){
 
 		}else if (node.type == ASTNode.Type.Operator){
@@ -220,6 +220,23 @@ private static struct CheckStatic{
 			}
 		}
 		return true;
+	}
+
+	/// checks if an if/while statement is static, i.e if the condition can be evaluated at compile-time
+	private bool ifWhileStatementIsStatic(ASTNode ifStatement){
+		// make sure there are 2 nodes, one is the condition, other is the block
+		ASTNode condition;
+		if (ifStatement.subNodes.length != 2){
+			compileErrors.append(CompileError(ifStatement.lineno, "if statement has more than 2 nodes"));
+			return false;
+		}else{
+			condition = ifStatement.subNodes[1];
+			if (ifStatement.subNodes[0].type != ASTNode.Type.Block){
+				condition = ifStatement.subNodes[0];
+			}
+			// now check if it is static or not
+			return isStatic(condition);
+		}
 	}
 }
 
