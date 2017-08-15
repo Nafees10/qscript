@@ -12,9 +12,10 @@ public struct QData{
 		UnsignedInt,
 		SignedInt,
 		Double,
-		Array
+		Array,
+		Undefined
 	}
-	private Type dataType;
+	private Type dataType = QData.Type.Undefined;
 	union{
 		string strVal;
 		uinteger uintVal;
