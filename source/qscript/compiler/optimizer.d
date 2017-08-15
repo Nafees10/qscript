@@ -8,19 +8,33 @@ import utils.lists;
 
 /// struct providing functions to optimize an check the AST for errors
 public struct ASTOptimize{
+	/// stores the VarStore where all variables will be stored
+	VarStore vars;
+	/// stores a list telling whether a function is static or not
+	bool[string] staticFunctions;
+	/// stores a list of script-defined functions
+	/// the struct which will be used to check if a node is static or not
+	CheckStatic isStatic;
 	/// stores name of functions(index) defined in script and if they were used or not (bool, true/false)
 	private bool[string] functionsUsed;
-	/// optimizes and looks for errors in the scriptNode. returns true if successful, else false
-	/// 
+	/// optimizes and looks for errors in the scriptNode. Returns the optimized scriipt
 	/// Errors are appended to `qscript.compiler.misc.compileErrors`
-	public bool optimizeScript(ref ASTNode script){
+	/// 
+	/// `script` is the ASTNode with type as ASTNode.Type.Script
+	/// `staticFuncs` is a list of functions that are static, and are ok with being evaluated at compile time
+	public ASTNode optimizeScript(ASTNode script, string[] staticFuncs){
 		// make sure scriptNode was received
 		if (script.type == ASTNode.Type.Script){
-			// ok
-			// add all sctipt-defined-functions to list
+			// put all staticFuncs in staticFunctions
+			foreach (funcName; staticFuncs){
+				staticFunctions[funcName] = true;
+			}
+			// add all sctipt-defined-functions to list, and put them all in a list
 			foreach (subNode; script.subNodes){
 				functionsUsed[subNode.data] = false;
 			}
+			// now comes the time to init the Check if Static
+			isStatic = CheckStatic(&vars, staticFuncs, functionsUsed.keys.dup);
 			// make sure all suNodes are functions, and call functions to optimize & check those nodes as well
 			foreach (i, subNode; script.subNodes){
 				// optimize it
@@ -34,10 +48,10 @@ public struct ASTOptimize{
 					i --;
 				}
 			}
-			return true;
+			return script;
 		}else{
 			compileErrors.append(CompileError(script.lineno, "ASTOptimize.optimizeScript can only be called with a node of type script"));
-			return false;
+			return script;
 		}
 	}
 
@@ -114,11 +128,30 @@ public struct ASTOptimize{
 private struct CheckStatic{
 
 	/// stores a ref to the VarStore, so it can retrieve if a var is known or not
-	VarStore vars;
-
-	this(VarStore varStore){
-		vars = varStore;
+	VarStore* vars;
+	private enum IsStatic{
+		Yes,
+		No,
+		Undefined
 	}
+	/// stores a list of all functions, and if they are static or not
+	IsStatic[string] functions;
+
+
+	this(VarStore* varStore, string[] staticFuncs, string[] scriptDefinedFuncs){
+		vars = varStore;
+		// put all static functions in it now
+		foreach (funcName; staticFuncs){
+			functions[funcName] = IsStatic.Yes;
+		}
+		// put scriptDefinedFuncs in functions
+		foreach (funcName; scriptDefinedFuncs){
+			// need to determine if it's static or not, coz these are script-defined
+			functions[funcName] = IsStatic.Undefined;
+		}
+	}
+
+
 
 	/// checks if a node is static (true), or not (false)
 	/// 
