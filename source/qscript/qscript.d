@@ -9,8 +9,7 @@ import std.conv:to;
 public struct QData{
 	enum Type{
 		String,
-		UnsignedInt,
-		SignedInt,
+		Integer,
 		Double,
 		Array,
 		Undefined
@@ -18,7 +17,6 @@ public struct QData{
 	private Type dataType = QData.Type.Undefined;
 	union{
 		string strVal;
-		uinteger uintVal;
 		integer intVal;
 		double doubleVal;
 		QData[] arrayVal;
@@ -28,11 +26,8 @@ public struct QData{
 		static if (typeid(T) == typeid(string)){
 			dataType = Type.String;
 			strVal = val;
-		}else static if (typeid(T) == typeid(uinteger)){
-			dataType = Type.UnsignedInt;
-			uintVal = val;
 		}else static if (typeid(T) == typeid(integer)){
-			dataType = Type.SignedInteger;
+			dataType = Type.Integer;
 			intVal = val;
 		}else static if (typeid(T) == typeid(double) || typeid(T) == typeid(float)){
 			dataType = Type.Double;
@@ -45,17 +40,14 @@ public struct QData{
 		}
 	}
 	/// retrieves the value stored by this struct
-	@property auto value(T)(){
-		/// make sure it is the correct type
-		static if (typeid(T) == typeid(string)){
+	@property auto value(QData T)(){
+		static if (T == QData.Type.String){
 			return strVal;
-		}else static if (typeid(T) == typeid(uinteger)){
-			return uintVal;
-		}else static if (typeid(T) == typeid(integer)){
+		}else static if (T == QData.Type.Integer){
 			return intVal;
-		}else static if (typeid(T) == typeid(double) || typeid(T) == typeid(float)){
+		}else static if (T == QData.Type.Double){
 			return doubleVal;
-		}else static if (typeid(T) == typeid(QData[])){
+		}else static if (T == QData.Type.Array){
 			return arrayVal;
 		}else{
 			throw new Exception("attempting to retrieve invalid data type from QData");
@@ -65,13 +57,34 @@ public struct QData{
 	@property Type type(){
 		return dataType;
 	}
+	/// constructor
+	this(T)(T val){
+		this.value = val;
+	}
 }
 
 public abstract class QScript{
 private:
 	// operator functions
 	// TODO write operator functions, and other basic functions
+	enum OperatorType{
+		Divide,
+		Multiply,
+		Add,
+		Subtract,
+		Mod,
+		Concatenate,
+	}
+	QData numeralOperator(OperatorType T)(QData[] args){
+		QData r;
+		// identify the correct type, integer, or double
+		if (args[0].type == QData.Type.SignedInt){
 
+		}
+		static if (T == OperatorType.Divide){
+
+		}
+	}
 	// interpreter instructions
 	// TODO write interpreter instructions
 
