@@ -149,9 +149,12 @@ private static struct CheckStatic{
 		}else if (node.type == ASTNode.Type.Operator){
 			return operatorIsStatic(node);
 		}else if (node.type == ASTNode.Type.Variable){
-
+			return variableIsStatic(node);
 		}else if (node.type == ASTNode.Type.StaticArray){
-
+			return staticArrayIsStatic(node);
+		}else{
+			// anything else cannot/shouldn't be optimized
+			return false;
 		}
 	}
 
@@ -274,6 +277,7 @@ private static struct CheckStatic{
 	/// checks if a var is static, i.e if it's value is known at runtime, and if it's an array, the indexes are static
 	/// TODO complete this
 	private bool variableIsStatic(ASTNode var){
+		// check if value is known
 
 	}
 
@@ -361,5 +365,13 @@ private static struct VarStore{
 		}else{
 			return false;
 		}
+	}
+
+	/// returns true if a value of a var is known
+	bool valKnown(string name){
+		if (name is vars){
+			return true;
+		}
+		return false;
 	}
 }
