@@ -164,15 +164,13 @@ private static struct CheckStatic{
 		if (argsIndex >= 0){
 			args = fCall.subNodes[argsIndex];
 		}
-		bool r = true;
 		// check the args
 		foreach (arg; args.subNodes){
-			r = isStatic(arg);
-			if (!r){
-				break;
+			if (!isStatic(arg)){
+				return false;
 			}
 		}
-		return r;
+		return true;
 	}
 	
 	/// checks if an operator is static
