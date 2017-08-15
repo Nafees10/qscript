@@ -157,6 +157,7 @@ private static struct CheckStatic{
 	}
 
 	/// /// checks if a functionCall is static (i.e if all of it's arguments are constant)
+	/// TODO: some functions, including script-defined, wont be static, like `writeln`, or a script-defined function that calls `writeln`, need to add support for those
 	private bool functionCallIsStatic(ASTNode fCall){
 		// only need to look in arguments
 		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
