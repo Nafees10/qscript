@@ -198,22 +198,26 @@ private struct CheckStatic{
 		}
 	}
 
-	/// /// checks if a functionCall is static (i.e if all of it's arguments are constant)
-	/// TODO: some functions, including script-defined, wont be static, like `writeln`, or a script-defined function that calls `writeln`, need to add support for those
+	/// checks if a functionCall is static (i.e if all of it's arguments are constant)
 	private bool functionCallIsStatic(ASTNode fCall){
-		// only need to look in arguments
-		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
-		ASTNode args;
-		if (argsIndex >= 0){
-			args = fCall.subNodes[argsIndex];
-		}
-		// check the args
-		foreach (arg; args.subNodes){
-			if (!isStatic(arg)){
-				return false;
+		// check if is it's already stored
+		if (fCall.data in functions && functions[fCall.data] == IsStatic.No){
+			return false;
+		}else{
+			// only need to look in arguments
+			integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
+			ASTNode args;
+			if (argsIndex >= 0){
+				args = fCall.subNodes[argsIndex];
 			}
+			// check the args
+			foreach (arg; args.subNodes){
+				if (!isStatic(arg)){
+					return false;
+				}
+			}
+			return true;
 		}
-		return true;
 	}
 	
 	/// checks if an operator is static
@@ -237,17 +241,32 @@ private struct CheckStatic{
 
 	/// checks if a function is static, i.e, if it can be evaluated at compile time
 	private bool functionIsStatic(ASTNode fDef){
-		// only need to check the block
-		ASTNode block;
-		{
-			integer blockIndex = fDef.readSubNode(ASTNode.Type.Block);
-			if (blockIndex == -1){
-				compileErrors.append(CompileError(fDef.lineno, "function has no body"));
+		// check if already known
+		if (fDef.data in functions && functions[fDef.data] != IsStatic.Undefined){
+			if (functions[fDef.data] == IsStatic.Yes){
+				return true;
+			}else{
 				return false;
 			}
-			block = fDef.subNodes[blockIndex];
+		}else{
+			// only need to check the block
+			ASTNode block;
+			{
+				integer blockIndex = fDef.readSubNode(ASTNode.Type.Block);
+				if (blockIndex == -1){
+					compileErrors.append(CompileError(fDef.lineno, "function has no body"));
+					return false;
+				}
+				block = fDef.subNodes[blockIndex];
+			}
+			// mark it as static/non-static, to make stuff faster
+			bool r = blockIsStatic(block);
+			functions[fDef.data] = IsStatic.No;
+			if (r){
+				functions[fDef.data] = IsStatic.Yes;
+			}
+			return r;
 		}
-		return blockIsStatic(block);
 	}
 
 	/// checks if a block is static
