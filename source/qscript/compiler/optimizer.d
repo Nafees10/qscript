@@ -147,7 +147,7 @@ private static struct CheckStatic{
 		}else if (node.type == ASTNode.Type.Assign){
 			return assignIsStatic(node);
 		}else if (node.type == ASTNode.Type.Operator){
-
+			return operatorIsStatic(node);
 		}else if (node.type == ASTNode.Type.Variable){
 
 		}else if (node.type == ASTNode.Type.StaticArray){
@@ -273,6 +273,24 @@ private static struct CheckStatic{
 			}
 			return r;
 		}
+	}
+
+	/// checks if a var is static, i.e if it's value is known at runtime, and if it's an array, the indexes are static
+	/// TODO complete this
+	private bool variableIsStatic(ASTNode var){
+
+	}
+
+	/// checks if a static array (`[x, y, z]`) is static, i.e if all the elements in it are known at compile time
+	private bool staticArrayIsStatic(ASTNode array){
+		// just check the subNodes
+		ASTNode[] elements = array.subNodes;
+		foreach (element; elements){
+			if (!isStatic(element)){
+				return false;
+			}
+		}
+		return true;
 	}
 }
 
