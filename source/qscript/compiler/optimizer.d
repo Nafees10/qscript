@@ -185,14 +185,12 @@ private static struct CheckStatic{
 			return false;
 		}else{
 			// check if static
-			bool r = true;
 			foreach (operand; operands){
-				r = isStatic(operand);
-				if (!r){
-					break;
+				if (!isStatic(operand)){
+					return false;
 				}
 			}
-			return r;
+			return true;
 		}
 	}
 
