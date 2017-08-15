@@ -111,7 +111,14 @@ public struct ASTOptimize{
 
 
 /// provides functions to check if something can be evaluated at runtime
-private static struct CheckStatic{
+private struct CheckStatic{
+
+	/// stores a ref to the VarStore, so it can retrieve if a var is known or not
+	VarStore vars;
+
+	this(VarStore varStore){
+		vars = varStore;
+	}
 
 	/// checks if a node is static (true), or not (false)
 	/// 
@@ -276,7 +283,7 @@ private static struct CheckStatic{
 	/// checks if a var is static, i.e if it's value is known at runtime, and if it's an array, the indexes are static
 	private bool variableIsStatic(ASTNode var){
 		// check if value is known
-		if (VarStore.valKnown(var.data)){
+		if (vars.valKnown(var.data)){
 			// check indexes
 			foreach (index; var.subNodes){
 				// make sure it is an index
@@ -310,7 +317,7 @@ private static struct CheckStatic{
 
 
 /// provides functions to store variables at compile time
-private static struct VarStore{
+private struct VarStore{
 	/// Used to store vars
 	private QData[string] vars;
 
@@ -383,7 +390,7 @@ private static struct VarStore{
 
 	/// returns true if a value of a var is known
 	bool valKnown(string name){
-		if (name is vars){
+		if (name in vars){
 			return true;
 		}
 		return false;
