@@ -167,18 +167,7 @@ private static struct CheckStatic{
 		bool r = true;
 		// check the args
 		foreach (arg; args.subNodes){
-			if (arg.type == ASTNode.Type.Operator){
-				r = operatorIsStatic(arg);
-			}else if (arg.type == ASTNode.Type.FunctionCall){
-				
-			}else if (arg.type == ASTNode.Type.Operator){
-				
-			}else if (arg.type == ASTNode.Type.Variable){
-				
-			}else{
-				// invalid argument
-				compileErrors.append(CompileError(arg.lineno, "invalid argument"));
-			}
+			r = isStatic(arg);
 			if (!r){
 				break;
 			}
@@ -196,7 +185,14 @@ private static struct CheckStatic{
 			return false;
 		}else{
 			// check if static
-			// TODO finish this function
+			bool r = true;
+			foreach (operand; operands){
+				r = isStatic(operand);
+				if (!r){
+					break;
+				}
+			}
+			return r;
 		}
 	}
 }
