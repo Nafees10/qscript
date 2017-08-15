@@ -257,13 +257,12 @@ private static struct CheckStatic{
 			foreach (index; var.subNodes){
 				// make sure it is an index
 				if (index.type == ASTNode.Type.ArrayIndex){
-					r = isStatic(index);
+					if (!isStatic(index)){
+						return false;
+					}
 				}else{
 					compileErrors.append(CompileError(index.lineno, "variable can only have ArrayIndex as subNode"));
-					r = false;
-				}
-				if (!r){
-					break;
+					return false;
 				}
 			}
 			// now check the lvalue, only if indexes are static
@@ -275,10 +274,25 @@ private static struct CheckStatic{
 	}
 
 	/// checks if a var is static, i.e if it's value is known at runtime, and if it's an array, the indexes are static
-	/// TODO complete this
 	private bool variableIsStatic(ASTNode var){
 		// check if value is known
-
+		if (VarStore.valKnown(var.data)){
+			// check indexes
+			foreach (index; var.subNodes){
+				// make sure it is an index
+				if (index.type == ASTNode.Type.ArrayIndex){
+					if (!isStatic(index)){
+						return false;
+					}
+				}else{
+					compileErrors.append(CompileError(index.lineno, "variable can only have ArrayIndex as subNode"));
+					return false;
+				}
+			}
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	/// checks if a static array (`[x, y, z]`) is static, i.e if all the elements in it are known at compile time
