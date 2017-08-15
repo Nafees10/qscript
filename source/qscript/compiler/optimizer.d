@@ -1,48 +1,43 @@
 ﻿module qscript.compiler.optimizer;
 
+import qscript.qscript : QData; // for VarStore
 import qscript.compiler.ast;
 import qscript.compiler.misc;
 import utils.misc;
 import utils.lists;
 
-/// Used by ASTOptimize to temporarily store information about a var
-struct Var{
-	enum Type{
-		Number,
-		String,
-		Array,
-		Undefined
-	}
-	string name; /// the variable name
-	Type type; /// the type of data stored in the var, if not static, or not known, it is `Var.Type.Undefined`
-	bool valueKnown; /// stores whether the value of the var is static (true) or not (false)
-	union{
-		string stringValue; /// to store value if type==string
-		double numberValue; /// to store value if type==number
-		string[] stringArrayValue; /// to store value if type==array of string
-		double[] numberArrayValue; /// to store value if type==array of number
-	}
-}
-
 /// struct providing functions to optimize an check the AST for errors
 public struct ASTOptimize{
-	/// stores the variable with their types, and value (if static), the index is the name of the var
-	Var[string] vars;
-	/// optimizes and looks for errors in the scriptNode. returns the optimized scriptNode
+	/// stpres name of functions(index) defined in script and if they were used or not (bool, true/false)
+	private bool[string] functionsUsed;
+	/// optimizes and looks for errors in the scriptNode. returns true if successful, else false
 	/// 
 	/// Errors are appended to `qscript.compiler.misc.compileErrors`
-	public ASTNode optimizeScript(ASTNode script){
+	public bool optimizeScript(ref ASTNode script){
 		// make sure scriptNode was received
 		if (script.type == ASTNode.Type.Script){
 			// ok
-			// make sure all suNodes are functions, and call functions to optimize & check those nodes as well
-			ASTNode[] subNodes = script.getSubNodes();
-			foreach (subNode; subNodes){
-
+			// add all sctipt-defined-functions to list
+			foreach (subNode; script.subNodes){
+				functionsUsed[subNode.data] = false;
 			}
+			// make sure all suNodes are functions, and call functions to optimize & check those nodes as well
+			foreach (i, subNode; script.subNodes){
+				// optimize it
+				script.subNodes[i] = optimizeFunction(subNode);
+			}
+			// removed all unused functions
+			for (uinteger i = 0; i < script.subNodes.length; i ++){
+				if (script.subNodes[i].data !in functionsUsed || functionsUsed[script.subNodes[i].data] == false){
+					// not used, remove it
+					script.subNodes = script.subNodes.deleteElement(i);
+					i --;
+				}
+			}
+			return true;
 		}else{
-			compileErrors.append(CompileError("ASTOptimize.optimizeScript can only be called with a node of type script"));
-			return script;
+			compileErrors.append(CompileError(script.lineno, "ASTOptimize.optimizeScript can only be called with a node of type script"));
+			return false;
 		}
 	}
 
@@ -51,20 +46,180 @@ public struct ASTOptimize{
 		// make sure it is a function
 		if (functionNode.type == ASTNode.Type.Function){
 			// ok
-			// check and optimize each and every node
-			ASTNode[] statements = functionNode.getSubNodes;
-			foreach (statement; statements){
-
+			ASTNode block;
+			integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
+			if (blockIndex == -1){
+				compileErrors.append(CompileError(functionNode.lineno, "Function definition has no body"));
 			}
+			block = functionNode.subNodes[blockIndex];
+			// check and optimize each and every node
+			foreach (i, statement; block.subNodes){
+				block.subNodes[i] = optimizeStatement(statement);
+			}
+			functionNode.subNodes[blockIndex] = block;
+			return functionNode;
 		}else{
-			compileErrors.append(CompileError("ASTOptimize.optimizeFunction can only be called with a node of type function"));
+			compileErrors.append(CompileError(functionNode.lineno, "ASTOptimize.optimizeFunction can only be called with a node of type function"));
 			return functionNode;
 		}
 	}
 
 	/// optimizes and looks for errors in a statement
+	/// TODO complete this function
 	private ASTNode optimizeStatement(ASTNode statement){
-		// make sure it is a statement
 		// TODO continue from here
+		// check if is a functionCall
+		if (statement.type == ASTNode.Type.FunctionCall){
+			statement = optimizeFunctionCall(statement);
+		}else if (statement.type == ASTNode.Type.Assign){
+
+		}else if (statement.type == ASTNode.Type.Block){
+
+		}else if (statement.type == ASTNode.Type.IfStatement){
+
+		}else if (statement.type == ASTNode.Type.VarDeclare){
+
+		}else if (statement.type == ASTNode.Type.WhileStatement){
+
+		}else{
+			// not a valid statement
+			compileErrors.append(CompileError(statement.lineno, "Not a valid statement"));
+		}
+		return statement;
+	}
+
+	/// checks if a functionCall is static (i.e if all of it's arguments are constant)
+	/// TODO complete thsi function
+	private bool functionCallIsStatic(ASTNode fCall){
+		// only need to look in arguments
+		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
+		ASTNode args;
+		if (argsIndex >= 0){
+			args = fCall.subNodes[argsIndex];
+		}
+		bool r = true;
+		// check the args
+		foreach (arg; args.subNodes){
+			if (arg.type == ASTNode.Type.Operator){
+
+			}else if (arg.type == ASTNode.Type.FunctionCall){
+
+			}else if (arg.type == ASTNode.Type.Operator){
+
+			}else if (arg.type == ASTNode.Type.Variable){
+
+			}else{
+				// invalid argument
+				compileErrors.append(CompileError(arg.lineno, "invalid argument"));
+			}
+		}
+	}
+
+	/// checks if an operator is static
+	private bool operatorIsStatic(ASTNode operator){
+		// get operands
+		ASTNode[] operands = operator.subNodes;
+		if (operands.length != 2){
+			// invalid, no idea how it escaped `ast.d`
+			compileErrors.append(CompileError(operator.lineno, "operators can only receive 2 arguments"));
+			return false;
+		}else{
+			// check if static
+			// TODO finish this function
+		}
+	}
+
+	/// optimizes and looks for erros in a functionCall
+	/// TODO complete this function
+	private ASTNode optimizeFunctionCall(ASTNode fCall){
+		// can only optimize arguments, i.e: put in var value if static etc
+		// add it to the called list
+		if (fCall.data in functionsUsed){
+			functionsUsed[fCall.data] = true;
+		}
+		// check arguments
+		integer argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
+		ASTNode args;
+		if (argsIndex >= 0){
+			args = fCall.subNodes[argsIndex];
+		}
+		// go through each arg
+
+	}
+}
+
+private static struct CheckStatic{
+	/// TODO finish this
+}
+
+private static struct VarStore{
+	/// Used to store vars
+	private QData[string] vars;
+
+	/// adds a var to the list, with undefined type
+	/// 
+	/// returns true if var was added, false if the var with the same name already exists, or if type is invalid
+	bool addVar(string name){
+		if (name !in vars){
+			vars[name] = QData();
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	/// adds a var to the list, with a known type
+	/// 
+	/// returns true if var was added, false if the var with the same name already exists, or if type is invalid
+	bool addVar(T)(string name, T val){
+		if (name !in vars){
+			// check what type it is
+			QData var;
+			var.value = val;
+			vars[name] = var;
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	/// changes value of a var
+	/// 
+	/// returns true if var was added, false if the var does not exist, or if type is invalid
+	bool setVal(T)(string name, T newVal){
+		if (name in vars){
+			try{
+				vars[name].value = newVal;
+			}catch (Exception e){
+				.destroy(e);
+				return false;
+			}
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	/// returns value of a stored variable
+	/// 
+	/// throws Exception on failure
+	QData getVal(string name){
+		if (name in vars){
+			return vars[name];
+		}else{
+			throw new Exception("Variable does not exist");
+		}
+	}
+
+	/// removes a variable from list
+	/// 
+	/// returns true if successful, false if var did not exist
+	bool removeVar(string name){
+		if (name in vars){
+			vars.remove(name);
+			return false;
+		}else{
+			return false;
+		}
 	}
 }
