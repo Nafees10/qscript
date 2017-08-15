@@ -195,6 +195,32 @@ private static struct CheckStatic{
 			return r;
 		}
 	}
+
+	/// checks if a function is static, i.e, if it can be evaluated at compile time
+	private bool functionIsStatic(ASTNode fDef){
+		// only need to check the block
+		ASTNode block;
+		{
+			integer blockIndex = fDef.readSubNode(ASTNode.Type.Block);
+			if (blockIndex == -1){
+				compileErrors.append(CompileError(fDef.lineno, "function has no body"));
+				return false;
+			}
+			block = fDef.subNodes[blockIndex];
+		}
+		return blockIsStatic(block);
+	}
+
+	/// checks if a block is static
+	private bool blockIsStatic(ASTNode block){
+		// check each and every statement using `isStatic`
+		foreach (statement; block.subNodes){
+			if (!isStatic(statement)){
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 
