@@ -34,14 +34,14 @@ public struct QData{
 		}
 	}
 	/// retrieves the value stored by this struct
-	@property auto value(QData.Type T)(){
-		static if (T == QData.Type.String){
+	@property auto value(T)(){
+		static if (is (T == string)){
 			return strVal;
-		}else static if (T == QData.Type.Integer){
+		}else static if (is (T == integer)){
 			return intVal;
-		}else static if (T == QData.Type.Double){
+		}else static if (is (T == double)){
 			return doubleVal;
-		}else static if (T == QData.Type.Array){
+		}else static if (is (T == QData[])){
 			return arrayVal.dup;
 		}else{
 			throw new Exception("attempting to retrieve invalid data type from QData");
@@ -63,50 +63,50 @@ private:
 
 	/// adds 2 ints
 	QData operatorAddInt(QData[] args){
-		return QData(args[0].value!(QData.Type.Integer) + args[1].value!(QData.Type.Integer));
+		return QData(args[0].value!(integer) + args[1].value!(integer));
 	}
 	/// adds 2 doubles
 	QData operatorAddDouble(QData[] args){
-		return QData(args[0].value!(QData.Type.Double) + args[1].value!(QData.Type.Double));
+		return QData(args[0].value!(double) + args[1].value!(double));
 	}
 	/// subtracts ints
 	QData operatorSubtractInt(QData[] args){
-		return QData(args[0].value!(QData.Type.Integer) - args[1].value!(QData.Type.Integer));
+		return QData(args[0].value!(integer) - args[1].value!(integer));
 	}
 	/// subtracts doubles
 	QData operatorSubtractDouble(QData[] args){
-		return QData(args[0].value!(QData.Type.Double) - args[1].value!(QData.Type.Double));
+		return QData(args[0].value!(double) - args[1].value!(double));
 	}
 	/// multiplies 2 ints
 	QData operatorMultiplyInt(QData[] args){
-		return QData(args[0].value!(QData.Type.Integer) * args[1].value!(QData.Type.Integer));
+		return QData(args[0].value!(integer) * args[1].value!(integer));
 	}
 	/// multiplies 2 doubles
 	QData operatorMultiplyDouble(QData[] args){
-		return QData(args[0].value!(QData.Type.Double) * args[1].value!(QData.Type.Double));
+		return QData(args[0].value!(double) * args[1].value!(double));
 	}
 	/// divides 2 ints
 	QData operatoDivideInt(QData[] args){
-		return QData(args[0].value!(QData.Type.Integer) / args[1].value!(QData.Type.Integer));
+		return QData(args[0].value!(integer) / args[1].value!(integer));
 	}
 	/// divides 2 doubles
 	QData operatorDivideDouble(QData[] args){
-		return QData(args[0].value!(QData.Type.Double) / args[1].value!(QData.Type.Double));
+		return QData(args[0].value!(double) / args[1].value!(double));
 	}
 	/// int mod int
 	QData operatorModInt(QData[] args){
-		return QData(args[0].value!(QData.Type.Integer) % args[1].value!(QData.Type.Integer));
+		return QData(args[0].value!(integer) % args[1].value!(integer));
 	}
 	/// double mod double
 	QData operatorModDouble(QData[] args){
-		return QData(args[0].value!(QData.Type.Double) % args[1].value!(QData.Type.Double));
+		return QData(args[0].value!(double) % args[1].value!(double));
 	}
 	/// concatenates 2 string or arrays
 	QData operatorConcatenate(QData[] args){
 		if (args[0].type == QData.Type.Array){
-			return QData(args[0].value!(QData.Type.Array) ~ args[1].value!(QData.Type.Array));
+			return QData(args[0].value!(QData[]) ~ args[1].value!(QData[]));
 		}else{
-			return QData(args[0].value!(QData.Type.String) ~ args[1].value!(QData.Type.String));
+			return QData(args[0].value!(string) ~ args[1].value!(string));
 		}
 	}
 
@@ -122,8 +122,8 @@ private:
 	/// first arg is an array containing all the elemnets of the array to modify
 	/// second arg is the new length
 	QData setArrayLength(QData[] args){
-		QData[] array = args[0].value!(QData.Type.Array);
-		array.length = args[1].value!(QData.Type.Integer);
+		QData[] array = args[0].value!(QData[]);
+		array.length = args[1].value!(integer);
 		return QData(array);
 	}
 
@@ -131,7 +131,7 @@ private:
 	/// 
 	/// the first arg is the array
 	QData getArrayLength(QData[] args){
-		return QData(args[0].value!(QData.Type.Array).length);
+		return QData(args[0].value!(QData[]).length);
 	}
 
 	// functions to get args, and return a result
@@ -158,8 +158,8 @@ private:
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void executeFunctionIgnoreResult(QData[] args){
-		QData[] fArgs = stack.pop(args[1].value!(QData.Type.Integer));
-		string fName = args[0].value!(QData.Type.String);
+		QData[] fArgs = stack.pop(args[1].value!(integer));
+		string fName = args[0].value!(string);
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			executeScriptFunction(fName, fArgs);
@@ -177,8 +177,8 @@ private:
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void executeFunctionPushResult(QData[] args){
-		QData[] fArgs = stack.pop(args[1].value!(QData.Type.Integer));
-		string fName = args[0].value!(QData.Type.String);
+		QData[] fArgs = stack.pop(args[1].value!(integer));
+		string fName = args[0].value!(string);
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			stack.push(executeScriptFunction(fName, fArgs));
@@ -195,7 +195,7 @@ private:
 	/// sets the size of the variable-array. This is the first instruction in every function, that tells the max
 	/// number of vars that the function has at a point
 	void setVarsLength(QData[] args){
-		currentFunctionVars.length = args[0].value!(QData.Type.Integer);
+		currentFunctionVars.length = args[0].value!(integer);
 	}
 
 	// vars
@@ -224,6 +224,24 @@ private:
 	/// contains a list of all functions available in script, with their pointer
 	QData delegate(QData[])[string] functionPointers;
 
+protected:
+	/// called when an error occurs, return true to continue execution and ignore the error,
+	/// false to break execution of the **current function**
+	abstract bool onRuntimeError(RuntimeError error);
+	
+	/// called when an undefined function is called. return true to ignore, false to break execution of the **current function**
+	abstract bool onUndefinedFunctionCall(string fName);
+
+	/// makes a function with name `fName` available for calling through script
+	/// 
+	/// returns true if it was added, else, false (could be because fName is already used?)
+	bool addFunction(string fName, QData delegate(QData[]) fPtr){
+		if (fName !in functionPointers){
+			functionPointers[fName] = fPtr;
+			return true;
+		}
+		return false;
+	}
 
 public:
 	/// struct to store a runtime error
@@ -264,14 +282,6 @@ public:
 			"setResult": &setFunctionReturn
 		];
 	}
-
-	/// called when an error occurs, return true to continue execution and ignore the error,
-	/// false to break execution of the **current function**
-	abstract bool onRuntimeError(RuntimeError error);
-
-	/// called when an undefined function is called. return true to ignore, false to break execution of the **current function**
-	abstract bool onUndefinedFunctionCall(string fName);
-
 
 	/// executes a script-defined function, with the provided arguments, and returns the result
 	/// 
