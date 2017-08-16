@@ -112,6 +112,11 @@ private:
 
 	// array related functions
 
+	/// initializes an array, containing provided elements, returns the array
+	QData initArray(QData[] args){
+		return QData(args);
+	}
+
 	/// changes length of an array, returns the new array
 	/// 
 	/// first arg is an array containing all the elemnets of the array to modify
@@ -251,8 +256,6 @@ public:
 			error = errorMsg;
 		}
 	}
-	/// alias to compiler.misc.CompileError
-	alias CompileError = qscript.compiler.misc.CompileError;
 
 	/// constructor
 	this(){
@@ -270,6 +273,7 @@ public:
 			"_modDbl": &operatorModDouble,
 			"_concat": &operatorConcatenate,
 			// array functions
+			"array": &initArray,
 			"getLength": &getArrayLength,
 			"setLength": &setArrayLength,
 			// get function args
@@ -277,12 +281,6 @@ public:
 			// set result
 			"setResult": &setFunctionReturn
 		];
-	}
-
-	/// loads, compiles, and optimizes a script. Returns errors in any, else, returns empty array
-	CompileError[] loadScript(string[] script){
-		// TODO, after writing optimizer & toByteCode, write this
-		return [];
 	}
 
 	/// executes a script-defined function, with the provided arguments, and returns the result
