@@ -163,6 +163,13 @@ private:
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			executeScriptFunction(fName, fArgs);
+		}else if (fName in functionPointers){
+			functionPointers[fName](args);
+		}else{
+			if (!onUndefinedFunctionCall(fName)){
+				// skip to end
+				currentInstructionIndex = scriptInstructions[currentFunctionName].length;
+			}
 		}
 	}
 
@@ -175,6 +182,13 @@ private:
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			stack.push(executeScriptFunction(fName, fArgs));
+		}else if (fName in functionPointers){
+			stack.push(functionPointers[fName](args));
+		}else{
+			if (!onUndefinedFunctionCall(fName)){
+				// skip to end
+				currentInstructionIndex = scriptInstructions[currentFunctionName].length;
+			}
 		}
 	}
 
@@ -190,7 +204,8 @@ private:
 	QData[] currentFunctionArgs;
 	/// stores the result of the last script-defined function
 	QData currentFunctionResult;
-
+	/// stores the name of the current script-defined function being executed
+	string currentFunctionName;
 	/// stores pointer to the index of the current instruction (in array scriptFunctions[FNAME]),
 	/// the next instruction to execute can be set using `index = indexOfOtherCommand - 1;`
 	uinteger currentInstructionIndex;
@@ -254,6 +269,10 @@ public:
 	/// false to break execution of the **current function**
 	abstract bool onRuntimeError(RuntimeError error);
 
+	/// called when an undefined function is called. return true to ignore, false to break execution of the **current function**
+	abstract bool onUndefinedFunctionCall(string fName);
+
+
 	/// executes a script-defined function, with the provided arguments, and returns the result
 	/// 
 	/// throws Exception if the function does not exist
@@ -266,10 +285,12 @@ public:
 			uinteger prevIndex = currentInstructionIndex;
 			QData[] prevFunctionArgs = currentFunctionArgs.dup;
 			QData prevFunctionResult = currentFunctionResult;
+			string prevFunctionName = currentFunctionName;
 			// prepare a new stack, empty the vars, set args
 			stack = new Stack!QData;
 			currentFunctionVars = [];
 			currentFunctionArgs = args.dup;
+			currentFunctionName = fName;
 			// start executing instruction, one by one
 			auto byteCode = scriptInstructions[fName];
 			auto byteCodeArgs = scriptInstructionsArgs[fName];
@@ -292,6 +313,7 @@ public:
 			currentFunctionVars = prevFunctionVars;
 			currentFunctionArgs = prevFunctionArgs;
 			currentFunctionResult = prevFunctionResult;
+			currentFunctionName = prevFunctionName;
 			// return the result
 			return result;
 		}else{
