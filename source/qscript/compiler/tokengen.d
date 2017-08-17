@@ -277,17 +277,3 @@ public TokenList toTokens(string[] script){
 		return tokens;
 	}
 }
-
-/*
-Interpreter instructions:
-psh - push element(s) to stack
-clr - empty the stack
-exf - execute function, don't push return to stack. take fName from stack, and argC from given args
-exa - execute function, push return to stack. take fName from stack, and argC from given args
-jmp - jump to another index, and start execution from there, used in loops, and if
-stv - set a variable's value, val name=arg, new value = from stack
-rtv - push a variable's value to stack
-Rules:
-An instruction can recieve one argument!
-AND: right before jmp, clr must be called, to prevent a possible mem-leak
-*/
