@@ -134,19 +134,6 @@ private:
 		return QData(args[0].value!(QData[]).length);
 	}
 
-	// functions to get args, and return a result
-
-	/// returns an array of args that the function was called with
-	QData getFunctionArgs(QData[] args){
-		return QData(currentFunctionArgs.dup);
-	}
-
-	/// sets the return value of the current function
-	QData setFunctionReturn(QData[] args){
-		currentFunctionResult = args[0];
-		return QData();
-	}
-
 	// interpreter instructions
 
 	/// pushes a value or more to the stack
@@ -192,18 +179,8 @@ private:
 		}
 	}
 
-	/// sets the size of the variable-array. This is the first instruction in every function, that tells the max
-	/// number of vars that the function has at a point
-	void setVarsLength(QData[] args){
-		currentFunctionVars.length = args[0].value!(integer);
-	}
-
 	// vars
 
-	/// stores array of args that the current script-defined function was called with
-	QData[] currentFunctionArgs;
-	/// stores the result of the last script-defined function
-	QData currentFunctionResult;
 	/// stores the name of the current script-defined function being executed
 	string currentFunctionName;
 	/// stores pointer to the index of the current instruction (in array scriptFunctions[FNAME]),
@@ -218,8 +195,8 @@ private:
 	/// the stack currently being used
 	Stack!QData stack;
 
-	/// stores all the variables, the index is the ID of the var
-	QData[] currentFunctionVars;
+	/// stores all the variables, the index is the name of the var
+	QData[string] currentFunctionVars;
 
 	/// contains a list of all functions available in script, with their pointer
 	QData delegate(QData[])[string] functionPointers;
@@ -256,6 +233,8 @@ public:
 			error = errorMsg;
 		}
 	}
+	/// alias to compiler.misc.CompileError
+	alias CompileError = qscript.compiler.misc.CompileError;
 
 	/// constructor
 	this(){
@@ -276,11 +255,13 @@ public:
 			"array": &initArray,
 			"getLength": &getArrayLength,
 			"setLength": &setArrayLength,
-			// get function args
-			"getArgs": &getFunctionArgs,
-			// set result
-			"setResult": &setFunctionReturn
 		];
+	}
+
+	/// loads, compiles, and optimizes a script. Returns errors in any, else, returns empty array
+	CompileError[] loadScript(string[] script){
+		// TODO, after writing optimizer & toByteCode, write this
+		return [];
 	}
 
 	/// executes a script-defined function, with the provided arguments, and returns the result
@@ -291,16 +272,14 @@ public:
 		if (fName in scriptInstructions){
 			// copy the previous stack, previous function's vars, previous function's index, args, and result
 			Stack!QData prevStack = stack;
-			QData[] prevFunctionVars = currentFunctionVars.dup;
+			QData[string] prevFunctionVars = currentFunctionVars.dup;
 			uinteger prevIndex = currentInstructionIndex;
-			QData[] prevFunctionArgs = currentFunctionArgs.dup;
-			QData prevFunctionResult = currentFunctionResult;
 			string prevFunctionName = currentFunctionName;
 			// prepare a new stack, empty the vars, set args
 			stack = new Stack!QData;
-			currentFunctionVars = [];
-			currentFunctionArgs = args.dup;
 			currentFunctionName = fName;
+			currentFunctionVars["args"] = QData(args.dup);
+			currentFunctionVars["result"] = QData();
 			// start executing instruction, one by one
 			auto byteCode = scriptInstructions[fName];
 			auto byteCodeArgs = scriptInstructionsArgs[fName];
@@ -314,15 +293,14 @@ public:
 					}
 				}
 			}
-			QData result = currentFunctionResult;
+			// get the result of the function
+			QData result = currentFunctionVars["result"];
 			// destroy stack
 			.destroy(stack);
 			// restore previous state
 			stack = prevStack;
 			currentInstructionIndex = prevIndex;
 			currentFunctionVars = prevFunctionVars;
-			currentFunctionArgs = prevFunctionArgs;
-			currentFunctionResult = prevFunctionResult;
 			currentFunctionName = prevFunctionName;
 			// return the result
 			return result;
