@@ -5,6 +5,13 @@ import qscript.compiler.misc;
 
 import utils.misc;
 
+public struct CodeGen{
+	/// generates byte code for a script
+	public string[] generateByteCode(ASTNode node){
+
+	}
+}
+
 
 
 
@@ -32,7 +39,6 @@ function FunctionName{
 will look like:  
 ```
 FunctionName
-	setVarCount i0
 	push s"Hello" s"World"
 	execFuncI s"writeln" i2
 ```  
@@ -50,7 +56,7 @@ function FunctionName{
 will look like:  
 ```
 FunctionName
-	setVarCount i1
+	initVar s"i"
 	getVar s"i"
 	push i2
 	execFuncP s"isEqual"
@@ -59,6 +65,7 @@ FunctionName
 	getVar s"i"
 	execFuncI s"writeln"
 	if0end:
+	endVar s"i"
 ```  
 
 ### While statement
@@ -74,7 +81,7 @@ function FunctionName{
 will look like:  
 ```
 FunnctionName
-	setVarCount i1
+	initVar s"i"
 	while0start:
 	getVar s"i"
 	push i2
@@ -85,6 +92,7 @@ FunnctionName
 	execFuncI s"writeln"
 	jump s"while0start"
 	while0end:
+	endVar s"i"
 ```  
   
 ### List of instructions:
@@ -93,9 +101,10 @@ clear 		- clears the stack, pops all elements
 execFuncI 	- executes a function, arg0 is function name (string), arg1 is number (uint) of arguments to pop from
 			stack for the function. ignores the return value of the function.
 execFuncP	- same as execFuncI, except, the return value is pushed to stack
+initVar		- to declare vars, each argument is a var name as string
+endVar		- frees memory occupied by a var. All arguments are var names
 getVar		- pushes value of a variable to stack, arg0 is name (string) of the var
 setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
-setVarCount	- sets the max number of vars that will be used. The first instruction executed should be this one
 jump		- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: 
 			"%someString%:" and arg0 of jump should be that %someString% (string).
 
