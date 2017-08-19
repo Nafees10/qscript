@@ -10,8 +10,11 @@ import utils.lists;
 public struct CodeGen{
 
 	/// generates byte code for an ASTNdode
+	/// 
+	/// `node` is the node to generate AST for
+	/// `pushToStack` is to specify whether the result should be pushed to stack or not, this only works for node with type==FunctionCall
 	/// TODO add calls to other functions
-	public string[] generateByteCode(ASTNode node){
+	public string[] generateByteCode(ASTNode node, bool pushToStack = true){
 		// check the type, call the function
 		if (node.type == ASTNode.Type.Assign){
 
@@ -109,6 +112,11 @@ public struct CodeGen{
 		.destroy(byteCode);
 		return r;
 	}
+
+	/// generates byte code for a function call
+	private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
+		// first push the arguments to the stack, last arg first pushed
+	}
 }
 
 
@@ -138,7 +146,7 @@ function FunctionName{
 will look like:  
 ```
 FunctionName
-	push s"Hello" s"World"
+	push s" World" s"Hello"
 	execFuncI s"writeln" i2
 ```  
 
@@ -156,8 +164,8 @@ will look like:
 ```
 FunctionName
 	initVar s"i"
-	getVar s"i"
 	push i2
+	getVar s"i"
 	execFuncP s"isEqual"
 	execFuncI s"if"
 	jump s"if0end"
@@ -182,8 +190,8 @@ will look like:
 FunnctionName
 	initVar s"i"
 	while0start:
-	getVar s"i"
 	push i2
+	getVar s"i"
 	execFuncP s"isLesser"
 	execFuncI s"while"
 	jump s"while0end"
