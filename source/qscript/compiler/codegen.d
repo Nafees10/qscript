@@ -4,11 +4,89 @@ import qscript.compiler.ast;
 import qscript.compiler.misc;
 
 import utils.misc;
+import utils.lists;
 
+/// contains functions to generate byte code from AST
 public struct CodeGen{
-	/// generates byte code for a script
-	public string[] generateByteCode(ASTNode node){
 
+	/// generates byte code for an ASTNdode
+	/// TODO add calls to other functions
+	public string[] generateByteCode(ASTNode node){
+		// check the type, call the function
+		if (node.type == ASTNode.Type.Assign){
+
+		}else if (node.type == ASTNode.Type.Block){
+
+		}else if (node.type == ASTNode.Type.Function){
+			return generateFunctionByteCode(node);
+		}else if (node.type == ASTNode.Type.FunctionCall){
+
+		}else if (node.type == ASTNode.Type.IfStatement){
+
+		}else if (node.type == ASTNode.Type.WhileStatement){
+
+		}else if (node.type == ASTNode.Type.Operator){
+
+		}else if (node.type == ASTNode.Type.Script){
+			return generateScriptByteCode(node);
+		}else if (node.type == ASTNode.Type.VarDeclare){
+
+		}else if (node.type == ASTNode.Type.NumberLiteral){
+
+		}else if (node.type == ASTNode.Type.StringLiteral){
+
+		}else if (node.type == ASTNode.Type.StaticArray){
+
+		}else if (node.type == ASTNode.Type.Variable){
+
+		}else{
+			throw new Exception("generateByteCode called with unsupported ASTNode.Type");
+		}
+	}
+
+	/// generates byte code for a script
+	private string[] generateScriptByteCode(ASTNode scriptNode){
+		LinkedList!string byteCode = new LinkedList!string;
+		// go through all nodes/ functions, and generate byte-code for them
+		foreach (functionNode; scriptNode.subNodes){
+			// make sure its a function definition
+			if (functionNode.type == ASTNode.Type.Function){
+				// ok
+				byteCode.append(generateFunctionByteCode(functionNode));
+			}else{
+				compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
+			}
+		}
+
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
+
+	/// generates byte code for a function definition
+	private string[] generateFunctionByteCode(ASTNode functionNode){
+		LinkedList!string byteCode = new LinkedList!string;
+		if (functionNode.type == ASTNode.Type.Function){
+			// ok
+			byteCode.append(functionNode.data); // start it with the function name
+			// now the statements
+			foreach (statement; functionNode.subNodes){
+				// make sure it's an Ok statement
+				if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,
+					ASTNode.Type.IfStatement, ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
+					// type's ok
+					// append instructions for this instruction
+					byteCode.append(generateByteCode(statement));
+				}else{
+					compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
+				}
+			}
+		}else{
+			compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
+		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 }
 
