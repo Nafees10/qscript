@@ -16,7 +16,7 @@ public struct CodeGen{
 		if (node.type == ASTNode.Type.Assign){
 
 		}else if (node.type == ASTNode.Type.Block){
-
+			return generateBlockByteCode(node);
 		}else if (node.type == ASTNode.Type.Function){
 			return generateFunctionByteCode(node);
 		}else if (node.type == ASTNode.Type.FunctionCall){
@@ -69,20 +69,41 @@ public struct CodeGen{
 		if (functionNode.type == ASTNode.Type.Function){
 			// ok
 			byteCode.append(functionNode.data); // start it with the function name
+
+			ASTNode block;
+			integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
+			if (blockIndex == -1){
+				compileErrors.append(CompileError(functionNode.lineno, "function definition has no body"));
+			}
+			block = functionNode.subNodes[blockIndex];
 			// now the statements
-			foreach (statement; functionNode.subNodes){
-				// make sure it's an Ok statement
-				if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,
-					ASTNode.Type.IfStatement, ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
-					// type's ok
-					// append instructions for this instruction
+			byteCode.append(generateBlockByteCode(block));
+		}else{
+			compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
+		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
+
+	/// generates byte code for a block
+	private string[] generateBlockByteCode(ASTNode block){
+		// make sure it's a block
+		LinkedList!string byteCode = new LinkedList!string;
+		if (block.type == ASTNode.Type.Block){
+			// ok
+			foreach (statement; block.subNodes){
+				// check if is a valid statement
+				if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,ASTNode.Type.IfStatement,
+						ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
+					// type is ok
 					byteCode.append(generateByteCode(statement));
 				}else{
 					compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
 				}
 			}
 		}else{
-			compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
+			compileErrors.append(CompileError(block.lineno, "not a block"));
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
