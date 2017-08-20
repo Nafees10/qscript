@@ -55,6 +55,43 @@ public struct ASTOptimize{
 		}
 	}
 
+	/// identifies and optimizes a node
+	/// 
+	/// Works with:
+	/// 1. Assignment operator
+	/// 2. operators
+	/// 3. Function (definition)
+	/// 4. FunctionCall
+	/// 5. IfStatement
+	/// 6. WhileStatement
+	/// 7. Block
+	/// 8. Variable
+	/// TODO complete this
+	private ASTNode optimizeNode(ASTNode node){
+		if (node.type == ASTNode.Type.Assign){
+
+		}else if (node.type == ASTNode.Type.Operator){
+
+		}else if (node.type == ASTNode.Type.Function){
+
+		}else if (node.type == ASTNode.Type.FunctionCall){
+
+		}else if (node.type == ASTNode.Type.IfStatement){
+
+		}else if (node.type == ASTNode.Type.WhileStatement){
+
+		}else if (node.type == ASTNode.Type.Variable){
+
+		}else if (node.type == ASTNode.Type.Block){
+
+		}else{
+			compileErrors.append(CompileError(node.lineno, "attempting to optimize unsupported node type"));
+			return node;
+		}
+		// TODO remove the line below, it's just there so it compiles:
+		return node;
+	}
+
 	/// optimizes and looks for errors in functions nodes
 	private ASTNode optimizeFunction(ASTNode functionNode){
 		// make sure it is a function
@@ -81,7 +118,6 @@ public struct ASTOptimize{
 	/// optimizes and looks for errors in a statement
 	/// TODO complete this function
 	private ASTNode optimizeStatement(ASTNode statement){
-		// TODO continue from here
 		// check if is a functionCall
 		if (statement.type == ASTNode.Type.FunctionCall){
 			statement = optimizeFunctionCall(statement);
@@ -117,7 +153,11 @@ public struct ASTOptimize{
 			args = fCall.subNodes[argsIndex];
 		}
 		// go through each arg
-
+		foreach (arg; args.subNodes){
+			if (isStatic.isStatic(arg)){
+				// optimize here
+			}
+		}
 
 		return fCall;
 	}
@@ -167,8 +207,6 @@ private struct CheckStatic{
 	/// 9. StaticArray
 	/// 9. NumberLiteral (always returns true on this, obviously)
 	/// 9. StringLiteral (alwats return true no this, obviously)
-	/// 
-	/// TODO complete this
 	bool isStatic(ASTNode node){
 		if (node.type == ASTNode.Type.NumberLiteral){
 			return true;
