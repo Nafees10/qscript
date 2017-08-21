@@ -6,6 +6,8 @@ import qscript.compiler.misc;
 import utils.misc;
 import utils.lists;
 
+import std.conv : to;
+
 /// contains functions to generate byte code from AST
 public struct CodeGen{
 
@@ -116,6 +118,25 @@ public struct CodeGen{
 	/// generates byte code for a function call
 	private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
 		// first push the arguments to the stack, last arg first pushed
+		uinteger argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
+		ASTNode args;
+		LinkedList!string byteCode = new LinkedList!string;
+		if (argsIndex > 0){
+			args = fCall.subNodes[argsIndex];
+			uinteger argCount = 0;
+			argCount = args.subNodes.length;
+			// now start pushing them
+			foreach_reverse(arg; args.subNodes){
+				generateByteCode(arg);
+			}
+			/// now exec this function
+			byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" "~to!string(argCount));
+		}else{
+			compileErrors.append(CompileError(fCall.lineno, "function call has no arguments"));
+		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 }
 
