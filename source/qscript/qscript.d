@@ -59,46 +59,41 @@ public struct QData{
 
 public abstract class QScript{
 private:
-	// operator functions
+	// operator functions/instructions
 
-	/// adds 2 ints
-	QData operatorAddInt(QData[] args){
-		return QData(args[0].value!(integer) + args[1].value!(integer));
-	}
-	/// adds 2 doubles
-	QData operatorAddDouble(QData[] args){
+	/// adds 2 ints/doubles
+	QData operatorAdd(QData[] args){
+		if (args[0].type == QData.Type.Integer){
+			return QData(args[0].value!(integer) + args[1].value!(integer));
+		}
 		return QData(args[0].value!(double) + args[1].value!(double));
 	}
-	/// subtracts ints
-	QData operatorSubtractInt(QData[] args){
-		return QData(args[0].value!(integer) - args[1].value!(integer));
-	}
-	/// subtracts doubles
-	QData operatorSubtractDouble(QData[] args){
+	/// subtracts ints/doubles
+	QData operatorSubtract(QData[] args){
+		if (args[0].type == QData.Type.Integer){
+			return QData(args[0].value!(integer) - args[1].value!(integer));
+		}
 		return QData(args[0].value!(double) - args[1].value!(double));
 	}
-	/// multiplies 2 ints
-	QData operatorMultiplyInt(QData[] args){
-		return QData(args[0].value!(integer) * args[1].value!(integer));
-	}
-	/// multiplies 2 doubles
-	QData operatorMultiplyDouble(QData[] args){
+	/// multiplies 2 ints/doubles
+	QData operatorMultiply(QData[] args){
+		if (args[0].type == QData.Type.Integer){
+			return QData(args[0].value!(integer) * args[1].value!(integer));
+		}
 		return QData(args[0].value!(double) * args[1].value!(double));
 	}
-	/// divides 2 ints
-	QData operatoDivideInt(QData[] args){
-		return QData(args[0].value!(integer) / args[1].value!(integer));
-	}
-	/// divides 2 doubles
-	QData operatorDivideDouble(QData[] args){
+	/// divides 2 ints/doubles
+	QData operatorDivide(QData[] args){
+		if (args[0].type == QData.Type.Integer){
+			return QData(args[0].value!(integer) / args[1].value!(integer));
+		}
 		return QData(args[0].value!(double) / args[1].value!(double));
 	}
-	/// int mod int
-	QData operatorModInt(QData[] args){
-		return QData(args[0].value!(integer) % args[1].value!(integer));
-	}
-	/// double mod double
-	QData operatorModDouble(QData[] args){
+	/// int/double mod int/double
+	QData operatorMod(QData[] args){
+		if (args[0].type == QData.Type.Integer){
+			return QData(args[0].value!(integer) % args[1].value!(integer));
+		}
 		return QData(args[0].value!(double) % args[1].value!(double));
 	}
 	/// concatenates 2 string or arrays
@@ -240,16 +235,11 @@ public:
 	this(){
 		functionPointers = [
 			// operators
-			"_addInt": &operatorAddInt,
-			"_addDble": &operatorAddDouble,
-			"_subInt": &operatorSubtractInt,
-			"_subDble": &operatorSubtractDouble,
-			"_mulInt": &operatorMultiplyInt,
-			"_mulDble": &operatorMultiplyDouble,
-			"_divInt": &operatoDivideInt,
-			"_divDbl": &operatorDivideDouble,
-			"_modInt": &operatorModInt,
-			"_modDbl": &operatorModDouble,
+			"_add": &operatorAdd,
+			"_sub": &operatorSubtract,
+			"_mul": &operatorMultiply,
+			"_div": &operatorDivide,
+			"_mod": &operatorMod,
 			"_concat": &operatorConcatenate,
 			// array functions
 			"array": &initArray,
