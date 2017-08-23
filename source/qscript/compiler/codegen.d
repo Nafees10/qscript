@@ -25,7 +25,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.Function){
 			return generateFunctionByteCode(node);
 		}else if (node.type == ASTNode.Type.FunctionCall){
-
+			return generateFunctionCallByteCode(node, pushToStack);
 		}else if (node.type == ASTNode.Type.IfStatement){
 
 		}else if (node.type == ASTNode.Type.WhileStatement){
@@ -224,17 +224,36 @@ FunnctionName
 ```  
   
 ### List of instructions:
-push 		- pushes all arguments to stack
-clear 		- clears the stack, pops all elements
-execFuncI 	- executes a function, arg0 is function name (string), arg1 is number (uint) of arguments to pop from
-			stack for the function. ignores the return value of the function.
-execFuncP	- same as execFuncI, except, the return value is pushed to stack
-initVar		- to declare vars, each argument is a var name as string
-endVar		- frees memory occupied by a var. All arguments are var names
-getVar		- pushes value of a variable to stack, arg0 is name (string) of the var
-setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
-jump		- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: 
-			"%someString%:" and arg0 of jump should be that %someString% (string).
+#### Instructions for executing functions:
+* execFuncI 	- executes a function, arg0 is function name (string), arg1 is number (uint) of arguments to pop from stack for the function. ignores the return value of the function.
+* execFuncP		- same as execFuncI, except, the return value is pushed to stack
+
+#### Instructions for handling variables:
+* initVar		- to declare vars, each argument is a var name as string
+* endVar		- frees memory occupied by a var. All arguments are var names
+* getVar		- pushes value of a variable to stack, arg0 is name (string) of the var
+* setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
+
+#### Instructions for mathematical operators:
+* add			- adds last two inegers/doubles pushed to stack, pushes the result to stack
+* subtract		- subtracts last two inegers/doubles pushed to stack, pushes the result to stack
+* multiply		- multiplies last two inegers/doubles pushed to stack, pushes the result to stack
+* divide		- divides last two inegers/doubles pushed to stack, pushes the result to stack
+* mod			- divides last two inegers/doubles pushed to stack, pushes the remainder to stack
+* concat		- concatenates last two arrays/strings pushed to stack, pushes the result to stack
+
+#### Misc. instructions:
+* push 			- pushes all arguments to stack
+* clear 		- clears the stack, pops all elements
+* pop			- clears a number of elements from the stack, the number is arg0 (integer)
+* jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" and arg0 of jump should be that %someString% (string).
+
+#### Instructions for arrays
+* setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
+* getLen		- pops array from stack, pushes the length (integer) of the array
+* readElement	- pops an array from stack, and the element-index, pushes that element to the stack
+
+---
 
 ### Format for arguments:  
 string:			s"%STRING%"
