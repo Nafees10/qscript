@@ -11,6 +11,10 @@ import std.conv : to;
 /// contains functions to generate byte code from AST
 public struct CodeGen{
 
+	/// stores a list of available vars, linked list, because we only need to check if a var exists or not, so linked is better
+	LinkedList!string varsList = null;
+
+
 	/// generates byte code for an ASTNdode
 	/// 
 	/// `node` is the node to generate AST for
@@ -37,9 +41,9 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.VarDeclare){
 
 		}else if (node.type == ASTNode.Type.NumberLiteral){
-
+			return generateLiteralByteCode(node);
 		}else if (node.type == ASTNode.Type.StringLiteral){
-
+			return generateLiteralByteCode(node);
 		}else if (node.type == ASTNode.Type.StaticArray){
 
 		}else if (node.type == ASTNode.Type.Variable){
@@ -137,6 +141,28 @@ public struct CodeGen{
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
+	}
+
+	/// generates byte code for a string/number literal
+	private string[] generateLiteralByteCode(ASTNode literal){
+		/// returns true if a number in a string is a double or int
+		private bool isDouble(string s){
+			foreach (c; s){
+				if (c == '.'){
+					return true;
+				}
+			}
+			return false;
+		}
+		if (literal.type == ASTNode.Type.NumberLiteral){
+			if (isDouble(literal.data)){
+				return ["\tpush d"~literal.data];
+			}else{
+				return ["\tpush i"~literal.data];
+			}
+		}else{
+			return ["\tpush s\""~literal.data~'"'];
+		}
 	}
 }
 
