@@ -30,7 +30,7 @@ public struct QData{
 		}else static if (is (T == string)){
 			strVal = val;
 		}else static if (is (T == QData[])){
-			arrayVal = val.dup;
+			arrayVal = val;
 		}
 	}
 	/// retrieves the value stored by this struct
@@ -42,7 +42,7 @@ public struct QData{
 		}else static if (is (T == double)){
 			return doubleVal;
 		}else static if (is (T == QData[])){
-			return arrayVal.dup;
+			return &arrayVal;
 		}else{
 			throw new Exception("attempting to retrieve invalid data type from QData");
 		}
