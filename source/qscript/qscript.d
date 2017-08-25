@@ -99,7 +99,7 @@ private:
 	/// concatenates 2 string or arrays
 	QData operatorConcatenate(QData[] args){
 		if (args[0].type == QData.Type.Array){
-			return QData(args[0].value!(QData[]) ~ args[1].value!(QData[]));
+			return QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[]));
 		}else{
 			return QData(args[0].value!(string) ~ args[1].value!(string));
 		}
@@ -117,7 +117,7 @@ private:
 	/// first arg is an array containing all the elemnets of the array to modify
 	/// second arg is the new length
 	QData setArrayLength(QData[] args){
-		QData[] array = args[0].value!(QData[]);
+		QData[] array = *args[0].value!(QData[]);
 		array.length = args[1].value!(integer);
 		return QData(array);
 	}
