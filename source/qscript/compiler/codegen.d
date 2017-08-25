@@ -146,7 +146,7 @@ public struct CodeGen{
 	/// generates byte code for a string/number literal
 	private string[] generateLiteralByteCode(ASTNode literal){
 		/// returns true if a number in a string is a double or int
-		private bool isDouble(string s){
+		bool isDouble(string s){
 			foreach (c; s){
 				if (c == '.'){
 					return true;
@@ -162,6 +162,28 @@ public struct CodeGen{
 			}
 		}else{
 			return ["\tpush s\""~literal.data~'"'];
+		}
+	}
+
+	/// generates byte code for a var
+	private string[] generateVariableByteCode(ASTNode var){
+		// make sure it's a var
+		if (var.type == ASTNode.Type.Variable){
+			// ok, push the var, deal with the indexes later (if any)
+			string[] r = ["\tgetVar "~var.data];
+			// now if there's indexes, add them
+			if (var.subNodes.length > 0){
+				LinkedList!string indexes = new LinkedList!string;
+				foreach (index; var.subNodes){
+					indexes.append(generateByteCode(index));
+					indexes.append("\treadElement");
+				}
+				r ~= indexes.toArray;
+			}
+			return r;
+		}else{
+			compileErrors.append(CompileError(var.lineno, "not a variable"));
+			return [];
 		}
 	}
 }
