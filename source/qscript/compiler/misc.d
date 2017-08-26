@@ -10,9 +10,9 @@ package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array
 /// An array containing all keywords
 package const string[] KEYWORDS = ["function", "var", "if", "while"];
 /// An array containing another array conatining all operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "<=", ">=", "="];
+package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "!=", "<=", ">=", "="];
 /// An array containing all bool-operators (operators that return true/false)
-package const string[] BOOL_OPERATORS = ["<", ">", "==", "<=", ">="];
+package const string[] BOOL_OPERATORS = ["<", ">", "==", "!=", "<=", ">="];
 
 /// Used by compiler's functions to return error
 public struct CompileError{
