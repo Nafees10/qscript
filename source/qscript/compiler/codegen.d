@@ -266,7 +266,7 @@ FunctionName
 	initVar s"i"
 	push i2
 	getVar s"i"
-	execFuncP s"isEqual" i2
+	isSame
 	skipTrue i1
 	jump s"if0end"
 	getVar s"i"
@@ -291,7 +291,7 @@ FunnctionName
 	while0start:
 	push i2
 	getVar s"i"
-	execFuncP s"isLesser" i2
+	isLesser
 	skipTrue i1
 	jump s"while0end"
 	getVar s"i"
