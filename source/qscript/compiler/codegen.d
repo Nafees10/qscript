@@ -39,7 +39,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.Script){
 			return generateScriptByteCode(node);
 		}else if (node.type == ASTNode.Type.VarDeclare){
-
+			return generateVarDeclareByteCode(node);
 		}else if (node.type == ASTNode.Type.NumberLiteral){
 			return generateLiteralByteCode(node);
 		}else if (node.type == ASTNode.Type.StringLiteral){
@@ -47,7 +47,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.StaticArray){
 
 		}else if (node.type == ASTNode.Type.Variable){
-
+			return generateVariableByteCode(node);
 		}else{
 			throw new Exception("generateByteCode called with unsupported ASTNode.Type");
 		}
@@ -186,6 +186,28 @@ public struct CodeGen{
 			return [];
 		}
 	}
+
+	/// generates byte code for a varDeclare
+	private string[] generateVarDeclareByteCode(ASTNode varDeclare){
+		// make sure it is a varDeclare
+		if (varDeclare.type == ASTNode.Type.VarDeclare){
+			// make sure there are vars
+			if (varDeclare.subNodes.length > 0){
+				// make sure all subNodes are vars, and generate the instruction
+				string r = "\tinitVar";
+				foreach (var; varDeclare.subNodes){
+					r ~= " s\""~var.data~'"';
+				}
+				return [r];
+			}else{
+				compileErrors.append(CompileError(varDeclare.lineno, "no variables declared in var()"));
+				return [];
+			}
+		}else{
+			compileErrors.append(CompileError(varDeclare.lineno, "not a variable declaration"));
+			return [];
+		}
+	}
 }
 
 
@@ -241,7 +263,6 @@ FunctionName
 	getVar s"i"
 	execFuncI s"writeln"
 	if0end:
-	endVar s"i"
 ```  
 
 ### While statement
@@ -268,7 +289,6 @@ FunnctionName
 	execFuncI s"writeln"
 	jump s"while0start"
 	while0end:
-	endVar s"i"
 ```  
   
 ### List of instructions:
@@ -278,7 +298,6 @@ FunnctionName
 
 #### Instructions for handling variables:
 * initVar		- to declare vars, each argument is a var name as string
-* endVar		- frees memory occupied by a var. All arguments are var names
 * getVar		- pushes value of a variable to stack, arg0 is name (string) of the var
 * setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
 
