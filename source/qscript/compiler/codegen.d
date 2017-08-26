@@ -211,7 +211,11 @@ public struct CodeGen{
 
 	/// generates byte code for an if statement
 	private string[] generateIfByteCode(ASTNode ifStatement){
-
+		// make sure it's an if statement
+		if (ifStatement.type == ASTNode.Type.IfStatement){
+			static uinteger ifCount = 0;
+			// first, push the 
+		}
 	}
 }
 
@@ -313,6 +317,14 @@ FunnctionName
 * divide		- divides last two inegers/doubles pushed to stack, pushes the result to stack
 * mod			- divides last two inegers/doubles pushed to stack, pushes the remainder to stack
 * concat		- concatenates last two arrays/strings pushed to stack, pushes the result to stack
+
+#### Instructions for comparing 2 vals:
+* isSame 		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
+* isLesser 		- pops 2 values(int), if second value is less, pushes 1(int) to stack, else, pushes 0(int)
+* isGreater		- pops 2 values(int), if second value is larger, pushes 1(int) to stack, else, pushes 0(int)
+* isLesserSame	- pops 2 values(int), if second value is less or equal, pushes 1(int) to stack, else, pushes 0(int)
+* isGreaterSame	- pops 2 values(int), if second value is larger or equal, pushes 1(int) to stack, else, pushes 0(int)
+* isNotSame		- pops 2 values, if both are not same, pushes 1(int) to stack, else, pushes 0(int)
 
 #### Misc. instructions:
 * push 			- pushes all arguments to stack
