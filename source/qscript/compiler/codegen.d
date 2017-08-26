@@ -262,11 +262,11 @@ FunctionName
 	initVar s"i"
 	push i2
 	getVar s"i"
-	execFuncP s"isEqual"
-	execFuncI s"if"
+	execFuncP s"isEqual" i2
+	skipTrue i1
 	jump s"if0end"
 	getVar s"i"
-	execFuncI s"writeln"
+	execFuncI s"writeln" i1
 	if0end:
 ```  
 
@@ -287,11 +287,11 @@ FunnctionName
 	while0start:
 	push i2
 	getVar s"i"
-	execFuncP s"isLesser"
-	execFuncI s"while"
+	execFuncP s"isLesser" i2
+	skipTrue i1
 	jump s"while0end"
 	getVar s"i"
-	execFuncI s"writeln"
+	execFuncI s"writeln" i1
 	jump s"while0start"
 	while0end:
 ```  
