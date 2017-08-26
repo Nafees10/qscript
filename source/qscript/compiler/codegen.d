@@ -208,6 +208,11 @@ public struct CodeGen{
 			return [];
 		}
 	}
+
+	/// generates byte code for an if statement
+	private string[] generateIfByteCode(ASTNode ifStatement){
+
+	}
 }
 
 
@@ -314,6 +319,7 @@ FunnctionName
 * clear 		- clears the stack, pops all elements
 * pop			- clears a number of elements from the stack, the number is arg0 (integer)
 * jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" and arg0 of jump should be that %someString% (string).
+* skipTrue		- pops a number of nodes (ints) from stack, the number is arg0(int). If each of them ==1, then the next instruction is skipped. This is used to construct if/while statements
 
 #### Instructions for arrays
 * setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
