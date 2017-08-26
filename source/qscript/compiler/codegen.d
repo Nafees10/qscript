@@ -33,7 +33,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.IfStatement){
 			return generateIfByteCode(node);
 		}else if (node.type == ASTNode.Type.WhileStatement){
-
+			return generateWhileByteCode(node);
 		}else if (node.type == ASTNode.Type.Operator){
 
 		}else if (node.type == ASTNode.Type.Script){
@@ -215,19 +215,55 @@ public struct CodeGen{
 			byteCode.append(generateByteCode(condition));
 			// then add the skipTrue
 			byteCode.append([
-					"\tskipTrue",
+					"\tskipTrue i1",
 					"\tjump s\"if"~to!string(ifCount)~"end\""
 				]);
 			// then comes the block
 			byteCode.append(generateByteCode(block));
 			// then end the end
 			byteCode.append("\tif"~to!string(ifCount)~"end:");
+			ifCount ++;
 			// then return it!
 			string[] r = byteCode.toArray;
 			.destroy(byteCode);
 			return r;
 		}else{
 			compileErrors.append(CompileError(ifStatement.lineno, "not an if statement"));
+			return [];
+		}
+	}
+
+	/// generates byte code for while statement
+	private string[] generateWhileByteCode(ASTNode whileStatement){
+		// make sure it's a while statement
+		if (whileStatement.type == ASTNode.Type.WhileStatement){
+			static uinteger whileCount = 0;
+			ASTNode block = whileStatement.subNodes[1], condition = whileStatement.subNodes[0];
+			if (whileStatement.subNodes[0].type == ASTNode.Type.Block){
+				block = whileStatement.subNodes[0];
+				condition = whileStatement.subNodes[1];
+			}
+			LinkedList!string byteCode = new LinkedList!string;
+			// first push the loop start position
+			byteCode.append("\twhile"~to!string(whileCount)~"start:");
+			// then push the condition
+			byteCode.append(generateByteCode(condition));
+			// then add the skipTrue
+			byteCode.append([
+					"\tskipTrue i1",
+					"\tjump s\"while"~to!string(whileCount)~"end\""
+				]);
+			// then the block
+			byteCode.append(generateByteCode(block));
+			//  then end it!
+			byteCode.append("\twhile"~to!string(whileCount)~"end:");
+			whileCount ++;
+			// now return it
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
+		}else{
+			compileErrors.append(CompileError(whileStatement.lineno, "not a while statement"));
 			return [];
 		}
 	}
