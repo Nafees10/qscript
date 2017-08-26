@@ -31,7 +31,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.FunctionCall){
 			return generateFunctionCallByteCode(node, pushToStack);
 		}else if (node.type == ASTNode.Type.IfStatement){
-
+			return generateIfByteCode(node);
 		}else if (node.type == ASTNode.Type.WhileStatement){
 
 		}else if (node.type == ASTNode.Type.Operator){
@@ -80,11 +80,7 @@ public struct CodeGen{
 			byteCode.append(functionNode.data); // start it with the function name
 
 			ASTNode block;
-			integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
-			if (blockIndex == -1){
-				compileErrors.append(CompileError(functionNode.lineno, "function definition has no body"));
-			}
-			block = functionNode.subNodes[blockIndex];
+			block = functionNode.subNodes[functionNode.readSubNode(ASTNode.Type.Block)];
 			// now the statements
 			byteCode.append(generateBlockByteCode(block));
 		}else{
@@ -122,22 +118,17 @@ public struct CodeGen{
 	/// generates byte code for a function call
 	private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
 		// first push the arguments to the stack, last arg first pushed
-		uinteger argsIndex = fCall.readSubNode(ASTNode.Type.Arguments);
 		ASTNode args;
 		LinkedList!string byteCode = new LinkedList!string;
-		if (argsIndex > 0){
-			args = fCall.subNodes[argsIndex];
-			uinteger argCount = 0;
-			argCount = args.subNodes.length;
-			// now start pushing them
-			foreach_reverse(arg; args.subNodes){
-				generateByteCode(arg);
-			}
-			/// now exec this function
-			byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" "~to!string(argCount));
-		}else{
-			compileErrors.append(CompileError(fCall.lineno, "function call has no arguments"));
+		args = fCall.subNodes[fCall.readSubNode(ASTNode.Type.Arguments)];
+		uinteger argCount = 0;
+		argCount = args.subNodes.length;
+		// now start pushing them
+		foreach_reverse(arg; args.subNodes){
+			generateByteCode(arg);
 		}
+		/// now exec this function
+		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" "~to!string(argCount));
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
@@ -214,7 +205,30 @@ public struct CodeGen{
 		// make sure it's an if statement
 		if (ifStatement.type == ASTNode.Type.IfStatement){
 			static uinteger ifCount = 0;
-			// first, push the 
+			ASTNode block = ifStatement.subNodes[1], condition = ifStatement.subNodes[0];
+			if (ifStatement.subNodes[0].type == ASTNode.Type.Block){
+				block = ifStatement.subNodes[0];
+				condition = ifStatement.subNodes[1];
+			}
+			LinkedList!string byteCode = new LinkedList!string;
+			// first, push the condition
+			byteCode.append(generateByteCode(condition));
+			// then add the skipTrue
+			byteCode.append([
+					"\tskipTrue",
+					"\tjump s\"if"~to!string(ifCount)~"end\""
+				]);
+			// then comes the block
+			byteCode.append(generateByteCode(block));
+			// then end the end
+			byteCode.append("\tif"~to!string(ifCount)~"end:");
+			// then return it!
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
+		}else{
+			compileErrors.append(CompileError(ifStatement.lineno, "not an if statement"));
+			return [];
 		}
 	}
 }
