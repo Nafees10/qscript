@@ -124,7 +124,7 @@ public struct CodeGen{
 		uinteger argCount = 0;
 		argCount = args.subNodes.length;
 		// now start pushing them
-		foreach_reverse(arg; args.subNodes){
+		foreach(arg; args.subNodes){
 			generateByteCode(arg);
 		}
 		/// now exec this function
@@ -267,6 +267,21 @@ public struct CodeGen{
 			return [];
 		}
 	}
+
+	/// generates byte code for assignment statement
+	private string[] generateAssignmentByteCode(ASTNode assign){
+		// make sure it's an assigment
+		if (assign.type == ASTNode.Type.Assign){
+			ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
+			// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
+			if (var.subNodes.length > 0){
+				// is array, needs to use `modifyElement` + `setVar`
+
+			}
+		}else{
+			compileErrors.append(CompileError(assign.lineno, "not an assignment statement"));
+		}
+	}
 }
 
 
@@ -370,10 +385,10 @@ FunnctionName
 
 #### Instructions for comparing 2 vals:
 * isSame 		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
-* isLesser 		- pops 2 values(int), if second value is less, pushes 1(int) to stack, else, pushes 0(int)
-* isGreater		- pops 2 values(int), if second value is larger, pushes 1(int) to stack, else, pushes 0(int)
-* isLesserSame	- pops 2 values(int), if second value is less or equal, pushes 1(int) to stack, else, pushes 0(int)
-* isGreaterSame	- pops 2 values(int), if second value is larger or equal, pushes 1(int) to stack, else, pushes 0(int)
+* isLesser 		- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
+* isGreater		- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
+* isLesserSame	- pops 2 values(int), if first value is less or equal, pushes 1(int) to stack, else, pushes 0(int)
+* isGreaterSame	- pops 2 values(int), if first value is larger or equal, pushes 1(int) to stack, else, pushes 0(int)
 * isNotSame		- pops 2 values, if both are not same, pushes 1(int) to stack, else, pushes 0(int)
 
 #### Misc. instructions:
@@ -381,12 +396,13 @@ FunnctionName
 * clear 		- clears the stack, pops all elements
 * pop			- clears a number of elements from the stack, the number is arg0 (integer)
 * jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" and arg0 of jump should be that %someString% (string).
-* skipTrue		- pops a number of nodes (ints) from stack, the number is arg0(int). If each of them ==1, then the next instruction is skipped. This is used to construct if/while statements
+* skipTrue		- pops a number of nodes (ints) from stack, the number is arg0(int). If each of them ==1(int), then the next instruction is skipped. This is used to construct if/while statements
 
 #### Instructions for arrays
 * setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
 * getLen		- pops array from stack, pushes the length (integer) of the array
-* readElement	- pops an array from stack, and the element-index, pushes that element to the stack
+* readElement	- pops an array, and element-index(int), pushes that element to the stack
+* modifyElement	- pops an array, index(int), and newVal from stack. then does: `array[index] = newVal`, pushes the array back to stack
 
 ---
 
