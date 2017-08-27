@@ -134,7 +134,14 @@ package struct ASTCheck{
 				// not fatal, still need to check the val, but skip the var
 			}else{
 				// check the var
-				r = /* TODO check var*/true;
+				if (keyVars.hasElement(assign.subNodes[0].data) || definedVars.hasElement(assign.subNodes[0].data)){
+					r = /* TODO check var*/true;
+				}else{
+					// var wasn't defined
+					compileErrors.append(CompileError(assign.subNodes[0].lineno,
+							"variable `"~assign.subNodes[0].data~"` not defined"));
+					r = false;
+				}
 			}
 			// check the val
 			if (dataNodeTypes.hasElement(assign.subNodes[1].type)){
