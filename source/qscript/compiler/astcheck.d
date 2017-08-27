@@ -15,6 +15,15 @@ package struct ASTCheck{
 		"args",
 		"result"
 	];
+	/// contains types of nodes that return some data, like functionCall, stringLiteral...
+	const static ASTNode.Type[] dataNodeTypes = [
+		ASTNode.Type.FunctionCall,
+		ASTNode.Type.NumberLiteral,
+		ASTNode.Type.Operator,
+		ASTNode.Type.StaticArray,
+		ASTNode.Type.StringLiteral,
+		ASTNode.Type.Variable
+	];
 	/// checks a script, and all subNodes, returns true if no error, otherwise, error is appended to misc.compileErrors
 	bool checkScript(ASTNode script){
 		bool r = true;
@@ -64,9 +73,9 @@ package struct ASTCheck{
 		if (block.type == ASTNode.Type.Block){
 			foreach (statement; block.subNodes){
 				if (statement.type == ASTNode.Type.FunctionCall){
-					// TODO add check function call
+					return checkFunctionCall(statement);
 				}else if (statement.type == ASTNode.Type.Assign){
-					// TODO add check assignment
+					return checkAssignment(statement);
 				}else if (statement.type == ASTNode.Type.Block){
 					return checkBlock(statement);
 				}else if (statement.type == ASTNode.Type.IfStatement){
@@ -99,8 +108,7 @@ package struct ASTCheck{
 				bool r = true;
 				foreach (arg; fCall.subNodes[0].subNodes){
 					// make sure it's of correct type
-					if ([ASTNode.Type.FunctionCall, ASTNode.Type.NumberLiteral, ASTNode.Type.Operator,
-						ASTNode.Type.StaticArray, ASTNode.Type.StringLiteral, ASTNode.Type.Variable].hasElement(arg.type)){
+					if (dataNodeTypes.hasElement(arg.type)){
 						// type's ok, need to check the node
 						r = checkNode(arg);
 					}
@@ -110,6 +118,34 @@ package struct ASTCheck{
 
 		}else{
 			compileErrors.append(CompileError(fCall.lineno, "function call expected"));
+			return false;
+		}
+	}
+
+	/// checks an assignment statement
+	private bool checkAssignment(ASTNode assign){
+		// make sure it's an assignment
+		if (assign.type == ASTNode.Type.Assign){
+			// ok, check the if the var exists, and check the val, and there should be only s subNodes
+			bool r = true;
+			if (assign.subNodes.length != 2 || assign.subNodes[0].type != ASTNode.Type.Variable){
+				compileErrors.append(CompileError(assign.lineno, "invalid assignment statement"));
+				r = false;
+				// not fatal, still need to check the val, but skip the var
+			}else{
+				// check the var
+				r = /* TODO check var*/true;
+			}
+			// check the val
+			if (dataNodeTypes.hasElement(assign.subNodes[1].type)){
+				r = checkNode(assign.subNodes[1]);
+			}else{
+				compileErrors.append(CompileError(assign.lineno, "invalid assignment statement"));
+				r = false;
+			}
+			return r;
+		}else{
+			compileErrors.append(CompileError(assign.lineno, "assignment statement expected"));
 			return false;
 		}
 	}
