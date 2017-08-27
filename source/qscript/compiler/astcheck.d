@@ -78,12 +78,10 @@ package struct ASTCheck{
 					return checkAssignment(statement);
 				}else if (statement.type == ASTNode.Type.Block){
 					return checkBlock(statement);
-				}else if (statement.type == ASTNode.Type.IfStatement){
-					// TODO add check if statement
+				}else if (statement.type == ASTNode.Type.IfStatement || statement.type == ASTNode.Type.WhileStatement){
+					return checkIfWhileStatement(statement);
 				}else if (statement.type == ASTNode.Type.VarDeclare){
 					// TODO add check varDeclare
-				}else if (statement.type == ASTNode.Type.WhileStatement){
-					// TODO add check while statement
 				}else{
 					// not a valid statement
 					compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
@@ -153,6 +151,36 @@ package struct ASTCheck{
 			return r;
 		}else{
 			compileErrors.append(CompileError(assign.lineno, "assignment statement expected"));
+			return false;
+		}
+	}
+
+	/// checks an if or while statement
+	private bool checkIfWhileStatement(ASTNode ifStatement){
+		// make sure it's an if statement
+		if (ifStatement.type == ASTNode.Type.IfStatement){
+			// ok
+			// check that there are only 2 subNodes, the condition, and the block
+			if (ifStatement.subNodes.length != 2 || ifStatement.subNodes[1].type != ASTNode.Type.Block){
+				compileErrors.append(CompileError(ifStatement.lineno, "invalid if/while statement"));
+				// that's a wierd error, so it's fatal
+				return false;
+			}
+			bool r = true;
+			// check the condition's type
+			if (dataNodeTypes.hasElement(ifStatement.subNodes[0].type)){
+				// check the condition
+				r = checkNode(ifStatement.subNodes[0]);
+			}else{
+				// bad conditoin
+				compileErrors.append(CompileError(ifStatement.subNodes[0].lineno, "invalid condition for if/while statement"));
+				r = false;
+				// keep checking the block;
+			}
+			r = checkBlock(ifStatement.subNodes[1]);
+			return r;
+		}else{
+			compileErrors.append(CompileError(ifStatement.lineno, "if/while statement expected"));
 			return false;
 		}
 	}
