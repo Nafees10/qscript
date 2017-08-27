@@ -35,7 +35,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.WhileStatement){
 			return generateWhileByteCode(node);
 		}else if (node.type == ASTNode.Type.Operator){
-
+			return generateOperatorByteCode(node);
 		}else if (node.type == ASTNode.Type.Script){
 			return generateScriptByteCode(node);
 		}else if (node.type == ASTNode.Type.VarDeclare){
@@ -300,6 +300,40 @@ public struct CodeGen{
 			return r;
 		}else{
 			compileErrors.append(CompileError(assign.lineno, "not an assignment statement"));
+			return [];
+		}
+	}
+
+	/// generates byte code for operators
+	private string[] generateOperatorByteCode(ASTNode operator){
+		const static string[string] operatorInstructions = [
+			"/": "divide",
+			"*": "multiply",
+			"+": "add",
+			"-": "subtract",
+			"%": "mod",
+			"~": "concat",
+			// bool operators
+			"==": "isSame",
+			"!=": "isNotSame",
+			">": "isLesser",
+			"<": "isGreater",
+			">=": "isGreaterSame",
+			"<=": "isLesserSame"
+		];
+		// make sure it's an operator
+		if (operator.type == ASTNode.Type.Operator){
+			LinkedList!string byteCode = new LinkedList!string;
+			// push the operands first
+			byteCode.append(generateByteCode(operator.subNodes[0]));
+			byteCode.append(generateByteCode(operator.subNodes[1]));
+			// then do the operation
+			byteCode.append("\t"~operatorInstructions[operator.data]);
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
+		}else{
+			compileErrors.append(CompileError(operator.lineno, "not an operator"));
 			return [];
 		}
 	}
