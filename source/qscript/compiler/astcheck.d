@@ -26,6 +26,7 @@ package struct ASTCheck{
 	];
 	/// checks a script, and all subNodes, returns true if no error, otherwise, error is appended to misc.compileErrors
 	bool checkScript(ASTNode script){
+		definedVars = new LinkedList!string;
 		bool r = true;
 		// make sure all subNodes are functions, and check those functions
 		foreach (node; script.subNodes){
@@ -39,6 +40,7 @@ package struct ASTCheck{
 				r = checkFunction(node);
 			}
 		}
+		.destroy(definedVars);
 		return r;
 	}
 
