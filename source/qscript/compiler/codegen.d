@@ -424,6 +424,7 @@ FunnctionName
 * getLen		- pops array from stack, pushes the length (integer) of the array
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
+* makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 
 ---
 
