@@ -25,8 +25,7 @@ public struct CompileError{
 }
 
 /// All compilation errors are stored here
-/// TODO make it package instead of public
-public LinkedList!CompileError compileErrors;
+package LinkedList!CompileError compileErrors;
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
@@ -56,8 +55,7 @@ package struct Token{
 	}
 }
 /// To store Tokens with Types where the line number of each token is required
-/// TODO make it package instead of public
-public struct TokenList{
+package struct TokenList{
 	Token[] tokens; /// Stores the tokens
 	uinteger[] tokenPerLine; /// Stores the number of tokens in each line
 	/// Returns the line number a token is in by usin the index of the token in `tokens`

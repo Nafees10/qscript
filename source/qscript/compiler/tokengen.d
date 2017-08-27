@@ -255,8 +255,7 @@ unittest{
 /// in an array
 /// 
 /// As a plus, it also checks if the brackets are in correct order (and properly closed)
-/// TODO make it package instead of public
-public TokenList toTokens(string[] script){
+package TokenList toTokens(string[] script){
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
 	if (tokens.tokens == null || tokens.tokens.length == 0){

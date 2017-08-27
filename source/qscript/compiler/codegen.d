@@ -19,7 +19,6 @@ public struct CodeGen{
 	/// 
 	/// `node` is the node to generate AST for
 	/// `pushToStack` is to specify whether the result should be pushed to stack or not, this only works for node with type==FunctionCall
-	/// TODO add calls to other functions
 	public string[] generateByteCode(ASTNode node, bool pushToStack = true){
 		// check the type, call the function
 		if (node.type == ASTNode.Type.Assign){
@@ -394,6 +393,8 @@ public struct CodeGen{
 		}
 	}
 }
+
+
 
 
 
