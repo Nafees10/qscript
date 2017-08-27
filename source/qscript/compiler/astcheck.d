@@ -81,14 +81,17 @@ package struct ASTCheck{
 				}else if (statement.type == ASTNode.Type.IfStatement || statement.type == ASTNode.Type.WhileStatement){
 					return checkIfWhileStatement(statement);
 				}else if (statement.type == ASTNode.Type.VarDeclare){
-					// TODO add check varDeclare
+					return checkVarDeclare(statement);
 				}else{
 					// not a valid statement
 					compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
+					return false;
 				}
 			}
+			return true;
 		}else{
 			compileErrors.append(CompileError(block.lineno, "block expected"));
+			return false;
 		}
 	}
 
@@ -187,6 +190,27 @@ package struct ASTCheck{
 
 	/// checks varDeclare
 	private bool checkVarDeclare(ASTNode varDeclare){
-		// make sure TODO continue from here
+		// make sure its a varDeclare
+		if (varDeclare.type == ASTNode.Type.VarDeclare){
+			// ok, make sure there's at least one var, all subNodes are vars, and no var is being shadowed
+			if (varDeclare.subNodes.length > 0){
+				bool r = true;
+				foreach (var; varDeclare.subNodes){
+					if (keyVars.hasElement(var.data) || definedVars.hasElement(var.data)){
+						// var's being shadowed
+						compileErrors.append(CompileError(var.lineno, "variable `"~var.data~"` is being shadowed"));
+						r = false;
+					}
+				}
+				return r;
+			}else{
+				compileErrors.append(CompileError(varDeclare.lineno, "variables expected"));
+				return false;
+			}
+
+		}else{
+			compileErrors.append(CompileError(varDeclare.lineno, "variable declaration expected"));
+			return false;
+		}
 	}
 }
