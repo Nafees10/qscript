@@ -64,13 +64,12 @@ package struct ASTCheck{
 		}else if (node.type == ASTNode.Type.StringLiteral){
 			return true;
 		}else if (node.type == ASTNode.Type.StaticArray){
-			// TODO add function to check static array
+			return checkStaticArray(node);
 		}else if (node.type == ASTNode.Type.Variable){
-			// TODO add function to check var
+			return checkVariable(node);
 		}else{
 			throw new Exception("checkNode called with unsupported ASTNode.Type");
 		}
-		return false;
 	}
 
 	/// checks a function definition
@@ -161,7 +160,7 @@ package struct ASTCheck{
 			}else{
 				// check the var
 				if (keyVars.hasElement(assign.subNodes[0].data) || definedVars.hasElement(assign.subNodes[0].data)){
-					r = /* TODO check var*/true;
+					r = checkVariable(assign.subNodes[0]);
 				}else{
 					// var wasn't defined
 					compileErrors.append(CompileError(assign.subNodes[0].lineno,
@@ -269,6 +268,46 @@ package struct ASTCheck{
 			}
 		}else{
 			compileErrors.append(CompileError(operator.lineno, "operator expected"));
+			return false;
+		}
+	}
+
+	/// checks a static-length array (something like: `[a. b, c]`)
+	private bool checkStaticArray(ASTNode array){
+		// make sure it's a static array
+		if (array.type == ASTNode.Type.StaticArray){
+			// ok
+			bool r = true;
+			// check all it's subNodes
+			foreach (element; array.subNodes){
+				if (!dataNodeTypes.hasElement(element.type)){
+					compileErrors.append(CompileError(element.lineno, "invalid element type"));
+					r = false;
+					// check other operands
+				}else{
+					// check this element
+					r = checkNode(element);
+				}
+			}
+			return r;
+		}else{
+			compileErrors.append(CompileError(array.lineno, "static-length array expected"));
+			return false;
+		}
+	}
+
+	/// checks a variable
+	private bool checkVariable(ASTNode var){
+		// make sure it's a var
+		if (var.type == ASTNode.Type.Variable){
+			// make sure it was defined
+			if (!keyVars.hasElement(var.data) || !definedVars.hasElement(var.data)){
+				compileErrors.append(CompileError(var.lineno, "variable `"~var.data~"` not defined"));
+				return false;
+			}
+			return true;
+		}else{
+			compileErrors.append(CompileError(var.lineno, "variable expected"));
 			return false;
 		}
 	}
