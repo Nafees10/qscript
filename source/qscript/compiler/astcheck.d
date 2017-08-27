@@ -158,7 +158,7 @@ package struct ASTCheck{
 	/// checks an if or while statement
 	private bool checkIfWhileStatement(ASTNode ifStatement){
 		// make sure it's an if statement
-		if (ifStatement.type == ASTNode.Type.IfStatement){
+		if (ifStatement.type == ASTNode.Type.IfStatement || ifStatement.type == ASTNode.Type.WhileStatement){
 			// ok
 			// check that there are only 2 subNodes, the condition, and the block
 			if (ifStatement.subNodes.length != 2 || ifStatement.subNodes[1].type != ASTNode.Type.Block){
@@ -183,5 +183,10 @@ package struct ASTCheck{
 			compileErrors.append(CompileError(ifStatement.lineno, "if/while statement expected"));
 			return false;
 		}
+	}
+
+	/// checks varDeclare
+	private bool checkVarDeclare(ASTNode varDeclare){
+		// make sure TODO continue from here
 	}
 }
