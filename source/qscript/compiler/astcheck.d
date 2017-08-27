@@ -44,7 +44,32 @@ package struct ASTCheck{
 
 	/// identifies and checks an ASTNode
 	private bool checkNode(ASTNode node){
-		// TODO
+		// check the type, call the function
+		if (node.type == ASTNode.Type.Assign){
+			return checkAssignment(node);
+		}else if (node.type == ASTNode.Type.Block){
+			return checkBlock(node);
+		}else if (node.type == ASTNode.Type.Function){
+			return checkFunction(node);
+		}else if (node.type == ASTNode.Type.FunctionCall){
+			return checkFunctionCall(node);
+		}else if (node.type == ASTNode.Type.IfStatement || node.type == ASTNode.Type.WhileStatement){
+			return checkIfWhileStatement(node);
+		}else if (node.type == ASTNode.Type.Operator){
+			return checkOperator(node);
+		}else if (node.type == ASTNode.Type.VarDeclare){
+			return checkVarDeclare(node);
+		}else if (node.type == ASTNode.Type.NumberLiteral){
+			return true;
+		}else if (node.type == ASTNode.Type.StringLiteral){
+			return true;
+		}else if (node.type == ASTNode.Type.StaticArray){
+			// TODO add function to check static array
+		}else if (node.type == ASTNode.Type.Variable){
+			// TODO add function to check var
+		}else{
+			throw new Exception("checkNode called with unsupported ASTNode.Type");
+		}
 		return false;
 	}
 
@@ -210,6 +235,40 @@ package struct ASTCheck{
 
 		}else{
 			compileErrors.append(CompileError(varDeclare.lineno, "variable declaration expected"));
+			return false;
+		}
+	}
+
+	/// checks operator
+	private bool checkOperator(ASTNode operator){
+		// make sure it's an operator
+		if (operator.type == ASTNode.Type.Operator){
+			// ok, make sure there's two operands
+			if (operator.subNodes.length != 2){
+				compileErrors.append(CompileError(operator.lineno, "operator must have 2 operands"));
+				// no need to check them
+				return false;
+			}else{
+				bool r = true;
+				// check if the operator is a valid one
+				if (!OPERATORS.hasElement(operator.data)){
+					compileErrors.append(CompileError(operator.lineno, "invalid operator"));
+					r = false;
+					// check the operands
+				}
+				foreach (operand; operator.subNodes){
+					if (!dataNodeTypes.hasElement(operand.type)){
+						compileErrors.append(CompileError(operand.lineno, "invalid operand type"));
+						r = false;
+					}else{
+						// check it
+						r = checkNode(operand);
+					}
+				}
+				return r;
+			}
+		}else{
+			compileErrors.append(CompileError(operator.lineno, "operator expected"));
 			return false;
 		}
 	}
