@@ -45,7 +45,7 @@ public struct CodeGen{
 		}else if (node.type == ASTNode.Type.StringLiteral){
 			return generateLiteralByteCode(node);
 		}else if (node.type == ASTNode.Type.StaticArray){
-
+			return generateStaticArrayByteCode(node);
 		}else if (node.type == ASTNode.Type.Variable){
 			return generateVariableByteCode(node);
 		}else{
@@ -306,7 +306,7 @@ public struct CodeGen{
 
 	/// generates byte code for operators
 	private string[] generateOperatorByteCode(ASTNode operator){
-		const static string[string] operatorInstructions = [
+		const string[string] operatorInstructions = [
 			"/": "divide",
 			"*": "multiply",
 			"+": "add",
@@ -334,6 +334,62 @@ public struct CodeGen{
 			return r;
 		}else{
 			compileErrors.append(CompileError(operator.lineno, "not an operator"));
+			return [];
+		}
+	}
+	
+	/// generates byte code for static array, i.e `[x, y, z]`
+	private string[] generateStaticArrayByteCode(ASTNode array){
+		/// returns true if the value of a static array is literal
+		bool isStatic(ASTNode array){
+			foreach(node; array.subNodes){
+				if (![ASTNode.Type.NumberLiteral, ASTNode.Type.StringLiteral].hasElement(node.type)){
+					if (node.type == ASTNode.Type.StaticArray && !isStatic(node)){
+						return false;
+					}
+					return false;
+				}
+			}
+			return true;
+		}
+		/// returns an ASTNode array encoded in a string, only works if isStatic returned true on it
+		string arrayToString(ASTNode array){
+			char[] r = ['['];
+			foreach (node; array.subNodes){
+				if (node.type == ASTNode.Type.StaticArray){
+					r ~= cast(char[])arrayToString(node)~',';
+				}
+				r ~= cast(char[])node.data~',';
+			}
+			if (r.length <= 1){
+				r = cast(char[])"[]";
+			}else{
+				r[r.length - 1] = ']';
+			}
+			return cast(string)r;
+		}
+
+		// check if is an array
+		if (array.type == ASTNode.Type.StaticArray){
+			// check if needs to use `makeArray` or it's static
+			if (isStatic(array)){
+				return ["\tpush "~arrayToString(array)];
+			}else{
+				LinkedList!string byteCode = new LinkedList!string;
+				uinteger elementCount = 0;
+				// push all the subNodes, then call makeArray
+				foreach (node; array.subNodes){
+					byteCode.append(generateByteCode(node));
+					elementCount ++;
+				}
+				// call `makeArray`
+				byteCode.append("\tmakeArray i"~to!string(elementCount));
+				string[] r = byteCode.toArray;
+				.destroy(byteCode);
+				return r;
+			}
+		}else{
+			compileErrors.append(CompileError(array.lineno, "not an array"));
 			return [];
 		}
 	}
