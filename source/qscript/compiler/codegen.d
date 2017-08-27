@@ -23,7 +23,7 @@ public struct CodeGen{
 	public string[] generateByteCode(ASTNode node, bool pushToStack = true){
 		// check the type, call the function
 		if (node.type == ASTNode.Type.Assign){
-
+			return generateAssignmentByteCode(node);
 		}else if (node.type == ASTNode.Type.Block){
 			return generateBlockByteCode(node);
 		}else if (node.type == ASTNode.Type.Function){
@@ -273,13 +273,34 @@ public struct CodeGen{
 		// make sure it's an assigment
 		if (assign.type == ASTNode.Type.Assign){
 			ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
+			LinkedList!string byteCode = new LinkedList!string;
 			// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
 			if (var.subNodes.length > 0){
 				// is array, needs to use `modifyElement` + `setVar`
-
+				byteCode.append("\tgetVar s\""~var.data~'"');
+				uinteger indexCount = 0;
+				foreach (index; var.subNodes){
+					indexCount ++;
+					byteCode.append(generateByteCode(index));
+				}
+				// then call `modifyArray` with new value,and set the new val
+				byteCode.append(generateByteCode(val));
+				byteCode.append([
+						"\tmodifyArray i"~to!string(indexCount),
+						"\tsetVar s\""~var.data~'"'
+					]);
+				// done
+			}else{
+				// just set the new Val
+				byteCode.append(generateByteCode(val));
+				byteCode.append("\tsetVar s\""~var.data~'"');
 			}
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
 		}else{
 			compileErrors.append(CompileError(assign.lineno, "not an assignment statement"));
+			return [];
 		}
 	}
 }
@@ -402,7 +423,7 @@ FunnctionName
 * setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
 * getLen		- pops array from stack, pushes the length (integer) of the array
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
-* modifyElement	- pops an array, index(int), and newVal from stack. then does: `array[index] = newVal`, pushes the array back to stack
+* modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 
 ---
 
