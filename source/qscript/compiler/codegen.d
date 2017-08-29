@@ -333,6 +333,10 @@ package struct CodeGen{
 /// unittests for CodeGen
 unittest{
 	import qscript.compiler.tokengen, qscript.compiler.misc, qscript.compiler.ast;
+
+	if (compileErrors is null){
+		compileErrors = new LinkedList!CompileError;
+	}
 	// start checking, first, convert an error-free script to tokens
 	TokenList tokens = toTokens([
 			"function main{",
@@ -354,6 +358,61 @@ unittest{
 	assert (compileErrors.count == 0);
 	// do the thing
 	string[] byteCode = CodeGen.generateByteCode(tokens);
+	// make sure no errors occurred
+	if (compileErrors.count > 0){
+		import std.stdio;
+		writeln("CodeGen.generateByteCode reported errors:");
+		foreach (error; compileErrors.toArray){
+			writeln("line#", error.lineno, " : ", error.msg);
+		}
+		assert (false, "CodeGen.generateByteCode failed");
+	}
+	// continue checking
+	string[] expectedByteCode = [
+		"main",
+		"\tinitVar s\"i\"",
+
+		"\tpush i2",
+		"\tsetVar s\"i\"",
+
+		"\tgetVar s\"i\"",
+		"\tpush i1",
+		"\tsubtract",
+		"\tsetVar s\"i\"",
+
+		"\tgetVar s\"i\"",
+		"\tpush i1",
+		"\tisSame",
+		"\tskipTrue",
+		"\tjump s\"if0end\"",
+
+		"\tpush i1",
+		"\texecFuncI s\"writeln\" i1",
+		"\tif0end:",
+
+		"\twhile0start:",
+		"\tgetVar s\"i\"",
+		"\tpush i2",
+		"\tisLesser",
+		"\tskipTrue",
+		"\tjump s\"while0end\"",
+
+		"\tgetVar \"i\"",
+		"\tpush i1",
+		"\tadd",
+		"\tsetVar s\"i\"",
+		"\tjump s\"while0start\"",
+		"\twhile0end:",
+
+		"test",
+		"\tpush i1",
+		"\tsetVar s\"result\""
+	];
+	assert (byteCode.length == expectedByteCode.length, "byteCode.length does not match expected length");
+	// start matching
+	for (uinteger i = 0; i < byteCode.length; i ++){
+		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result");
+	}
 }
 
 
@@ -449,11 +508,11 @@ FunnctionName
 * setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
 
 #### Instructions for mathematical operators:
-* add			- adds last two inegers/doubles pushed to stack, pushes the result to stack
-* subtract		- subtracts last two inegers/doubles pushed to stack, pushes the result to stack
-* multiply		- multiplies last two inegers/doubles pushed to stack, pushes the result to stack
-* divide		- divides last two inegers/doubles pushed to stack, pushes the result to stack
-* mod			- divides last two inegers/doubles pushed to stack, pushes the remainder to stack
+* add			- adds last two integers/doubles pushed to stack, pushes the result to stack
+* subtract		- subtracts last two integers/doubles pushed to stack, pushes the result to stack
+* multiply		- multiplies last two integers/doubles pushed to stack, pushes the result to stack
+* divide		- divides last two integers/doubles pushed to stack, pushes the result to stack
+* mod			- divides last two integers/doubles pushed to stack, pushes the remainder to stack
 * concat		- concatenates last two arrays/strings pushed to stack, pushes the result to stack
 
 #### Instructions for comparing 2 vals:
