@@ -113,7 +113,7 @@ struct ASTGen{
 	/// 
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
-	public ASTNode generateAST(TokenList tokens){
+	static public ASTNode generateAST(TokenList tokens){
 		ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
 		// go through the script, compile function nodes, link them to this node
 		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
@@ -132,7 +132,7 @@ struct ASTGen{
 		}
 		return scriptNode;
 	}
-	private{
+	static private{
 		/// generates AST for a function definition 
 		ASTNode generateFunctionAST(TokenList tokens, uinteger index){
 			ASTNode functionNode;
