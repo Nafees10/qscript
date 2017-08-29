@@ -357,7 +357,7 @@ unittest{
 	// now comes the time, since the script was syntax-error free, compileErrors should be empty
 	assert (compileErrors.count == 0);
 	// do the thing
-	string[] byteCode = CodeGen.generateByteCode(tokens);
+	string[] byteCode = CodeGen.generateByteCode(scriptNode);
 	// make sure no errors occurred
 	if (compileErrors.count > 0){
 		import std.stdio;
