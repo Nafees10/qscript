@@ -215,6 +215,8 @@ package struct CodeGen{
 			]);
 		// then the block
 		byteCode.append(generateByteCode(block));
+		// then jump to beginning, if it has to terminate, it will jump to the below position appended
+		byteCode.append("\tjump s\""~to!string(whileCount)~"start\"");
 		//  then end it!
 		byteCode.append("\twhile"~to!string(whileCount)~"end:");
 		whileCount ++;
