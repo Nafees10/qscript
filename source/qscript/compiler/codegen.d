@@ -216,7 +216,7 @@ package struct CodeGen{
 		// then the block
 		byteCode.append(generateByteCode(block));
 		// then jump to beginning, if it has to terminate, it will jump to the below position appended
-		byteCode.append("\tjump s\""~to!string(whileCount)~"start\"");
+		byteCode.append("\tjump s\"while"~to!string(whileCount)~"start\"");
 		//  then end it!
 		byteCode.append("\twhile"~to!string(whileCount)~"end:");
 		whileCount ++;
@@ -402,7 +402,7 @@ unittest{
 		"\tskipTrue i1",
 		"\tjump s\"while0end\"",
 
-		"\tgetVar \"i\"",
+		"\tgetVar s\"i\"",
 		"\tpush i1",
 		"\tadd",
 		"\tsetVar s\"i\"",
