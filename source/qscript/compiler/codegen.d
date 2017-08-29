@@ -9,7 +9,7 @@ import utils.lists;
 import std.conv : to;
 
 /// contains functions to generate byte code from AST
-public struct CodeGen{
+package struct CodeGen{
 	/// generates byte code for an ASTNdode
 	/// 
 	/// `node` is the node to generate AST for
@@ -353,7 +353,7 @@ unittest{
 	// now comes the time, since the script was syntax-error free, compileErrors should be empty
 	assert (compileErrors.count == 0);
 	// do the thing
-	// TODO
+	string[] byteCode = CodeGen.generateByteCode(tokens);
 }
 
 
