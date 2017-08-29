@@ -247,7 +247,7 @@ unittest{
 	Token[] r = separateTokens(script).tokens;
 	assert(r.length == expectedResults.length);
 	foreach(i, rToken; r){
-		assert(rToken.token == expectedResults[i]);
+		assert(rToken.token == expectedResults[i], "toTokens result does not match expected result");
 	}
 }
 
