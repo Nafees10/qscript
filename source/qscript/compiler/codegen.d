@@ -345,10 +345,10 @@ unittest{
 			"i = i - 1;",
 			"if (i == 1){",
 			"writeln(1);",
-			"}",
+			"};",
 			"while (i < 2){",
 			"i = i + 1",
-			"}",
+			"};",
 			"}",
 			"function test{result = 1;}"
 		]);
@@ -383,7 +383,7 @@ unittest{
 		"\tgetVar s\"i\"",
 		"\tpush i1",
 		"\tisSame",
-		"\tskipTrue",
+		"\tskipTrue i1",
 		"\tjump s\"if0end\"",
 
 		"\tpush i1",
@@ -394,7 +394,7 @@ unittest{
 		"\tgetVar s\"i\"",
 		"\tpush i2",
 		"\tisLesser",
-		"\tskipTrue",
+		"\tskipTrue i1",
 		"\tjump s\"while0end\"",
 
 		"\tgetVar \"i\"",
