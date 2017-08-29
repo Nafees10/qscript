@@ -266,8 +266,8 @@ package struct CodeGen{
 			// bool operators
 			"==": "isSame",
 			"!=": "isNotSame",
-			">": "isLesser",
-			"<": "isGreater",
+			"<": "isLesser",
+			">": "isGreater",
 			">=": "isGreaterSame",
 			"<=": "isLesserSame"
 		];
