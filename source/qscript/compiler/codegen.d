@@ -105,7 +105,7 @@ package struct CodeGen{
 			byteCode.append(generateByteCode(arg));
 		}
 		/// now exec this function
-		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" i"~to!string(argCount));
+		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" s\""~fCall.data~"\" i"~to!string(argCount));
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
@@ -422,7 +422,8 @@ unittest{
 	assert (byteCode.length == expectedByteCode.length, "byteCode.length does not match expected length");
 	// start matching
 	for (uinteger i = 0; i < byteCode.length; i ++){
-		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result");
+		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
+			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
 	}
 }
 
