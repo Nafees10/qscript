@@ -93,9 +93,6 @@ private TokenList separateTokens(string[] script){
 
 
 	LinkedList!string tokens = new LinkedList!string;
-	if (compileErrors is null){
-		compileErrors = new LinkedList!CompileError;
-	}
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
 	// make space in lineTokenCount to store number of tokens in each line, which will be used in error-reporting

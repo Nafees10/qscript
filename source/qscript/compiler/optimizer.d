@@ -7,7 +7,7 @@ import utils.misc;
 import utils.lists;
 
 /// struct providing functions to optimize an check the AST for errors
-public struct ASTOptimize{
+package struct ASTOptimize{
 	/// stores the VarStore where all variables will be stored
 	VarStore vars;
 	/// stores a list telling whether a function is static or not
