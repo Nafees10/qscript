@@ -136,7 +136,7 @@ package struct CodeGen{
 	/// generates byte code for a var
 	static private string[] generateVariableByteCode(ASTNode var){
 		// ok, push the var, deal with the indexes later (if any)
-		string[] r = ["\tgetVar "~var.data];
+		string[] r = ["\tgetVar s\""~var.data~'"'];
 		// now if there's indexes, add them
 		if (var.subNodes.length > 0){
 			LinkedList!string indexes = new LinkedList!string;
@@ -408,6 +408,12 @@ unittest{
 		"\tpush i1",
 		"\tsetVar s\"result\""
 	];
+	//TODO remove following block
+	{
+		import utils.misc;
+		arrayToFile("/home/nafees/Desktop/bCode", byteCode);
+		arrayToFile("/home/nafees/Desktop/q.xml", toXML(scriptNode));
+	}
 	assert (byteCode.length == expectedByteCode.length, "byteCode.length does not match expected length");
 	// start matching
 	for (uinteger i = 0; i < byteCode.length; i ++){
