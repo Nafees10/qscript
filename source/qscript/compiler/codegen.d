@@ -10,11 +10,6 @@ import std.conv : to;
 
 /// contains functions to generate byte code from AST
 public struct CodeGen{
-
-	/// stores a list of available vars, linked list, because we only need to check if a var exists or not, so linked is better
-	LinkedList!string varsList = null;
-
-
 	/// generates byte code for an ASTNdode
 	/// 
 	/// `node` is the node to generate AST for
@@ -73,41 +68,24 @@ public struct CodeGen{
 
 	/// generates byte code for a function definition
 	private string[] generateFunctionByteCode(ASTNode functionNode){
-		LinkedList!string byteCode = new LinkedList!string;
-		if (functionNode.type == ASTNode.Type.Function){
-			// ok
-			byteCode.append(functionNode.data); // start it with the function name
-
-			ASTNode block;
-			block = functionNode.subNodes[functionNode.readSubNode(ASTNode.Type.Block)];
-			// now the statements
-			byteCode.append(generateBlockByteCode(block));
-		}else{
-			compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
-		}
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
+		ASTNode block;
+		block = functionNode.subNodes[functionNode.readSubNode(ASTNode.Type.Block)];
+		return [functionNode.data]~generateBlockByteCode(block);
 	}
 
 	/// generates byte code for a block
 	private string[] generateBlockByteCode(ASTNode block){
 		// make sure it's a block
 		LinkedList!string byteCode = new LinkedList!string;
-		if (block.type == ASTNode.Type.Block){
-			// ok
-			foreach (statement; block.subNodes){
-				// check if is a valid statement
-				if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,ASTNode.Type.IfStatement,
-						ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
-					// type is ok
-					byteCode.append(generateByteCode(statement));
-				}else{
-					compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
-				}
+		foreach (statement; block.subNodes){
+			// check if is a valid statement
+			if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,ASTNode.Type.IfStatement,
+					ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
+				// type is ok
+				byteCode.append(generateByteCode(statement));
+			}else{
+				compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
 			}
-		}else{
-			compileErrors.append(CompileError(block.lineno, "not a block"));
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -157,150 +135,120 @@ public struct CodeGen{
 
 	/// generates byte code for a var
 	private string[] generateVariableByteCode(ASTNode var){
-		// make sure it's a var
-		if (var.type == ASTNode.Type.Variable){
-			// ok, push the var, deal with the indexes later (if any)
-			string[] r = ["\tgetVar "~var.data];
-			// now if there's indexes, add them
-			if (var.subNodes.length > 0){
-				LinkedList!string indexes = new LinkedList!string;
-				foreach (index; var.subNodes){
-					indexes.append(generateByteCode(index));
-					indexes.append("\treadElement");
-				}
-				r ~= indexes.toArray;
+		// ok, push the var, deal with the indexes later (if any)
+		string[] r = ["\tgetVar "~var.data];
+		// now if there's indexes, add them
+		if (var.subNodes.length > 0){
+			LinkedList!string indexes = new LinkedList!string;
+			foreach (index; var.subNodes){
+				indexes.append(generateByteCode(index));
+				indexes.append("\treadElement");
 			}
-			return r;
-		}else{
-			compileErrors.append(CompileError(var.lineno, "not a variable"));
-			return [];
+			r ~= indexes.toArray;
 		}
+		return r;
 	}
 
 	/// generates byte code for a varDeclare
 	private string[] generateVarDeclareByteCode(ASTNode varDeclare){
-		// make sure it is a varDeclare
-		if (varDeclare.type == ASTNode.Type.VarDeclare){
-			// make sure there are vars
-			if (varDeclare.subNodes.length > 0){
-				// make sure all subNodes are vars, and generate the instruction
-				string r = "\tinitVar";
-				foreach (var; varDeclare.subNodes){
-					r ~= " s\""~var.data~'"';
-				}
-				return [r];
-			}else{
-				compileErrors.append(CompileError(varDeclare.lineno, "no variables declared in var()"));
-				return [];
+		// make sure there are vars
+		if (varDeclare.subNodes.length > 0){
+			// make sure all subNodes are vars, and generate the instruction
+			string r = "\tinitVar";
+			foreach (var; varDeclare.subNodes){
+				r ~= " s\""~var.data~'"';
 			}
+			return [r];
 		}else{
-			compileErrors.append(CompileError(varDeclare.lineno, "not a variable declaration"));
+			compileErrors.append(CompileError(varDeclare.lineno, "no variables declared in var()"));
 			return [];
 		}
 	}
 
 	/// generates byte code for an if statement
 	private string[] generateIfByteCode(ASTNode ifStatement){
-		// make sure it's an if statement
-		if (ifStatement.type == ASTNode.Type.IfStatement){
-			static uinteger ifCount = 0;
-			ASTNode block = ifStatement.subNodes[1], condition = ifStatement.subNodes[0];
-			if (ifStatement.subNodes[0].type == ASTNode.Type.Block){
-				block = ifStatement.subNodes[0];
-				condition = ifStatement.subNodes[1];
-			}
-			LinkedList!string byteCode = new LinkedList!string;
-			// first, push the condition
-			byteCode.append(generateByteCode(condition));
-			// then add the skipTrue
-			byteCode.append([
-					"\tskipTrue i1",
-					"\tjump s\"if"~to!string(ifCount)~"end\""
-				]);
-			// then comes the block
-			byteCode.append(generateByteCode(block));
-			// then end the end
-			byteCode.append("\tif"~to!string(ifCount)~"end:");
-			ifCount ++;
-			// then return it!
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
-		}else{
-			compileErrors.append(CompileError(ifStatement.lineno, "not an if statement"));
-			return [];
+		static uinteger ifCount = 0;
+		ASTNode block = ifStatement.subNodes[1], condition = ifStatement.subNodes[0];
+		if (ifStatement.subNodes[0].type == ASTNode.Type.Block){
+			block = ifStatement.subNodes[0];
+			condition = ifStatement.subNodes[1];
 		}
+		LinkedList!string byteCode = new LinkedList!string;
+		// first, push the condition
+		byteCode.append(generateByteCode(condition));
+		// then add the skipTrue
+		byteCode.append([
+				"\tskipTrue i1",
+				"\tjump s\"if"~to!string(ifCount)~"end\""
+			]);
+		// then comes the block
+		byteCode.append(generateByteCode(block));
+		// then end the end
+		byteCode.append("\tif"~to!string(ifCount)~"end:");
+		ifCount ++;
+		// then return it!
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 
 	/// generates byte code for while statement
 	private string[] generateWhileByteCode(ASTNode whileStatement){
-		// make sure it's a while statement
-		if (whileStatement.type == ASTNode.Type.WhileStatement){
-			static uinteger whileCount = 0;
-			ASTNode block = whileStatement.subNodes[1], condition = whileStatement.subNodes[0];
-			if (whileStatement.subNodes[0].type == ASTNode.Type.Block){
-				block = whileStatement.subNodes[0];
-				condition = whileStatement.subNodes[1];
-			}
-			LinkedList!string byteCode = new LinkedList!string;
-			// first push the loop start position
-			byteCode.append("\twhile"~to!string(whileCount)~"start:");
-			// then push the condition
-			byteCode.append(generateByteCode(condition));
-			// then add the skipTrue
-			byteCode.append([
-					"\tskipTrue i1",
-					"\tjump s\"while"~to!string(whileCount)~"end\""
-				]);
-			// then the block
-			byteCode.append(generateByteCode(block));
-			//  then end it!
-			byteCode.append("\twhile"~to!string(whileCount)~"end:");
-			whileCount ++;
-			// now return it
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
-		}else{
-			compileErrors.append(CompileError(whileStatement.lineno, "not a while statement"));
-			return [];
+		static uinteger whileCount = 0;
+		ASTNode block = whileStatement.subNodes[1], condition = whileStatement.subNodes[0];
+		if (whileStatement.subNodes[0].type == ASTNode.Type.Block){
+			block = whileStatement.subNodes[0];
+			condition = whileStatement.subNodes[1];
 		}
+		LinkedList!string byteCode = new LinkedList!string;
+		// first push the loop start position
+		byteCode.append("\twhile"~to!string(whileCount)~"start:");
+		// then push the condition
+		byteCode.append(generateByteCode(condition));
+		// then add the skipTrue
+		byteCode.append([
+				"\tskipTrue i1",
+				"\tjump s\"while"~to!string(whileCount)~"end\""
+			]);
+		// then the block
+		byteCode.append(generateByteCode(block));
+		//  then end it!
+		byteCode.append("\twhile"~to!string(whileCount)~"end:");
+		whileCount ++;
+		// now return it
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 
 	/// generates byte code for assignment statement
 	private string[] generateAssignmentByteCode(ASTNode assign){
-		// make sure it's an assigment
-		if (assign.type == ASTNode.Type.Assign){
-			ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
-			LinkedList!string byteCode = new LinkedList!string;
-			// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
-			if (var.subNodes.length > 0){
-				// is array, needs to use `modifyElement` + `setVar`
-				byteCode.append("\tgetVar s\""~var.data~'"');
-				uinteger indexCount = 0;
-				foreach (index; var.subNodes){
-					indexCount ++;
-					byteCode.append(generateByteCode(index));
-				}
-				// then call `modifyArray` with new value,and set the new val
-				byteCode.append(generateByteCode(val));
-				byteCode.append([
-						"\tmodifyArray i"~to!string(indexCount),
-						"\tsetVar s\""~var.data~'"'
-					]);
-				// done
-			}else{
-				// just set the new Val
-				byteCode.append(generateByteCode(val));
-				byteCode.append("\tsetVar s\""~var.data~'"');
+		ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
+		LinkedList!string byteCode = new LinkedList!string;
+		// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
+		if (var.subNodes.length > 0){
+			// is array, needs to use `modifyElement` + `setVar`
+			byteCode.append("\tgetVar s\""~var.data~'"');
+			uinteger indexCount = 0;
+			foreach (index; var.subNodes){
+				indexCount ++;
+				byteCode.append(generateByteCode(index));
 			}
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
+			// then call `modifyArray` with new value,and set the new val
+			byteCode.append(generateByteCode(val));
+			byteCode.append([
+					"\tmodifyArray i"~to!string(indexCount),
+					"\tsetVar s\""~var.data~'"'
+				]);
+			// done
 		}else{
-			compileErrors.append(CompileError(assign.lineno, "not an assignment statement"));
-			return [];
+			// just set the new Val
+			byteCode.append(generateByteCode(val));
+			byteCode.append("\tsetVar s\""~var.data~'"');
 		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 
 	/// generates byte code for operators
@@ -320,21 +268,15 @@ public struct CodeGen{
 			">=": "isGreaterSame",
 			"<=": "isLesserSame"
 		];
-		// make sure it's an operator
-		if (operator.type == ASTNode.Type.Operator){
-			LinkedList!string byteCode = new LinkedList!string;
-			// push the operands first
-			byteCode.append(generateByteCode(operator.subNodes[0]));
-			byteCode.append(generateByteCode(operator.subNodes[1]));
-			// then do the operation
-			byteCode.append("\t"~operatorInstructions[operator.data]);
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
-		}else{
-			compileErrors.append(CompileError(operator.lineno, "not an operator"));
-			return [];
-		}
+		LinkedList!string byteCode = new LinkedList!string;
+		// push the operands first
+		byteCode.append(generateByteCode(operator.subNodes[0]));
+		byteCode.append(generateByteCode(operator.subNodes[1]));
+		// then do the operation
+		byteCode.append("\t"~operatorInstructions[operator.data]);
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 	
 	/// generates byte code for static array, i.e `[x, y, z]`
@@ -368,28 +310,22 @@ public struct CodeGen{
 			return cast(string)r;
 		}
 
-		// check if is an array
-		if (array.type == ASTNode.Type.StaticArray){
-			// check if needs to use `makeArray` or it's static
-			if (isStatic(array)){
-				return ["\tpush "~arrayToString(array)];
-			}else{
-				LinkedList!string byteCode = new LinkedList!string;
-				uinteger elementCount = 0;
-				// push all the subNodes, then call makeArray
-				foreach (node; array.subNodes){
-					byteCode.append(generateByteCode(node));
-					elementCount ++;
-				}
-				// call `makeArray`
-				byteCode.append("\tmakeArray i"~to!string(elementCount));
-				string[] r = byteCode.toArray;
-				.destroy(byteCode);
-				return r;
-			}
+		// check if needs to use `makeArray` or it's static
+		if (isStatic(array)){
+			return ["\tpush "~arrayToString(array)];
 		}else{
-			compileErrors.append(CompileError(array.lineno, "not an array"));
-			return [];
+			LinkedList!string byteCode = new LinkedList!string;
+			uinteger elementCount = 0;
+			// push all the subNodes, then call makeArray
+			foreach (node; array.subNodes){
+				byteCode.append(generateByteCode(node));
+				elementCount ++;
+			}
+			// call `makeArray`
+			byteCode.append("\tmakeArray i"~to!string(elementCount));
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
 		}
 	}
 }
