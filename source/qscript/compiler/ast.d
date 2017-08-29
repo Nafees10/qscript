@@ -145,7 +145,7 @@ struct ASTGen{
 					// add name
 					functionNode = ASTNode(ASTNode.Type.Function, tokens.tokens[index+1].token, tokens.getTokenLine(index + 1));
 					// convert the function body to ASTNodes using generateBlockAST
-					functionNode.addSubNode(generateBlockAST(tokens, index+2).subNodes);
+					functionNode.addSubNode(generateBlockAST(tokens, index+2));
 				}else{
 					// not followed by a block of code and/or followed by EOF
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function definition incomplete"));
