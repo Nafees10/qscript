@@ -14,7 +14,7 @@ public struct CodeGen{
 	/// 
 	/// `node` is the node to generate AST for
 	/// `pushToStack` is to specify whether the result should be pushed to stack or not, this only works for node with type==FunctionCall
-	public string[] generateByteCode(ASTNode node, bool pushToStack = true){
+	static public string[] generateByteCode(ASTNode node, bool pushToStack = true){
 		// check the type, call the function
 		if (node.type == ASTNode.Type.Assign){
 			return generateAssignmentByteCode(node);
@@ -48,7 +48,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a script
-	private string[] generateScriptByteCode(ASTNode scriptNode){
+	static private string[] generateScriptByteCode(ASTNode scriptNode){
 		LinkedList!string byteCode = new LinkedList!string;
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.subNodes){
@@ -67,14 +67,14 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a function definition
-	private string[] generateFunctionByteCode(ASTNode functionNode){
+	static private string[] generateFunctionByteCode(ASTNode functionNode){
 		ASTNode block;
 		block = functionNode.subNodes[functionNode.readSubNode(ASTNode.Type.Block)];
 		return [functionNode.data]~generateBlockByteCode(block);
 	}
 
 	/// generates byte code for a block
-	private string[] generateBlockByteCode(ASTNode block){
+	static private string[] generateBlockByteCode(ASTNode block){
 		// make sure it's a block
 		LinkedList!string byteCode = new LinkedList!string;
 		foreach (statement; block.subNodes){
@@ -93,7 +93,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a function call
-	private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
+	static private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
 		// first push the arguments to the stack, last arg first pushed
 		ASTNode args;
 		LinkedList!string byteCode = new LinkedList!string;
@@ -112,7 +112,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a string/number literal
-	private string[] generateLiteralByteCode(ASTNode literal){
+	static private string[] generateLiteralByteCode(ASTNode literal){
 		/// returns true if a number in a string is a double or int
 		bool isDouble(string s){
 			foreach (c; s){
@@ -134,7 +134,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a var
-	private string[] generateVariableByteCode(ASTNode var){
+	static private string[] generateVariableByteCode(ASTNode var){
 		// ok, push the var, deal with the indexes later (if any)
 		string[] r = ["\tgetVar "~var.data];
 		// now if there's indexes, add them
@@ -150,7 +150,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for a varDeclare
-	private string[] generateVarDeclareByteCode(ASTNode varDeclare){
+	static private string[] generateVarDeclareByteCode(ASTNode varDeclare){
 		// make sure there are vars
 		if (varDeclare.subNodes.length > 0){
 			// make sure all subNodes are vars, and generate the instruction
@@ -166,7 +166,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for an if statement
-	private string[] generateIfByteCode(ASTNode ifStatement){
+	static private string[] generateIfByteCode(ASTNode ifStatement){
 		static uinteger ifCount = 0;
 		ASTNode block = ifStatement.subNodes[1], condition = ifStatement.subNodes[0];
 		if (ifStatement.subNodes[0].type == ASTNode.Type.Block){
@@ -193,7 +193,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for while statement
-	private string[] generateWhileByteCode(ASTNode whileStatement){
+	static private string[] generateWhileByteCode(ASTNode whileStatement){
 		static uinteger whileCount = 0;
 		ASTNode block = whileStatement.subNodes[1], condition = whileStatement.subNodes[0];
 		if (whileStatement.subNodes[0].type == ASTNode.Type.Block){
@@ -222,7 +222,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for assignment statement
-	private string[] generateAssignmentByteCode(ASTNode assign){
+	static private string[] generateAssignmentByteCode(ASTNode assign){
 		ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
 		LinkedList!string byteCode = new LinkedList!string;
 		// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
@@ -252,7 +252,7 @@ public struct CodeGen{
 	}
 
 	/// generates byte code for operators
-	private string[] generateOperatorByteCode(ASTNode operator){
+	static private string[] generateOperatorByteCode(ASTNode operator){
 		const string[string] operatorInstructions = [
 			"/": "divide",
 			"*": "multiply",
@@ -280,7 +280,7 @@ public struct CodeGen{
 	}
 	
 	/// generates byte code for static array, i.e `[x, y, z]`
-	private string[] generateStaticArrayByteCode(ASTNode array){
+	static private string[] generateStaticArrayByteCode(ASTNode array){
 		/// returns true if the value of a static array is literal
 		bool isStatic(ASTNode array){
 			foreach(node; array.subNodes){
@@ -330,6 +330,31 @@ public struct CodeGen{
 	}
 }
 
+/// unittests for CodeGen
+unittest{
+	import qscript.compiler.tokengen, qscript.compiler.misc, qscript.compiler.ast;
+	// start checking, first, convert an error-free script to tokens
+	TokenList tokens = toTokens([
+			"function main{",
+			"var(i);",
+			"i = 2;",
+			"i = i - 1;",
+			"if (i == 1){",
+			"writeln(1);",
+			"}",
+			"while (i < 2){",
+			"i = i + 1",
+			"}",
+			"}",
+			"function test{result = 1;}"
+		]);
+	// we aint testing toTokens here, we just need to use it to get an AST, which we need for CodeGen
+	ASTNode scriptNode = ASTGen.generateAST(tokens);
+	// now comes the time, since the script was syntax-error free, compileErrors should be empty
+	assert (compileErrors.count == 0);
+	// do the thing
+	// TODO
+}
 
 
 
