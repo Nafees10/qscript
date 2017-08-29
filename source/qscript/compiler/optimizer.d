@@ -50,7 +50,8 @@ public struct ASTOptimize{
 			}
 			return script;
 		}else{
-			compileErrors.append(CompileError(script.lineno, "ASTOptimize.optimizeScript can only be called with a node of type script"));
+			compileErrors.append(CompileError(script.lineno,
+					"ASTOptimize.optimizeScript can only be called with a node of type script"));
 			return script;
 		}
 	}
@@ -94,25 +95,18 @@ public struct ASTOptimize{
 
 	/// optimizes and looks for errors in functions nodes
 	private ASTNode optimizeFunction(ASTNode functionNode){
-		// make sure it is a function
-		if (functionNode.type == ASTNode.Type.Function){
-			// ok
-			ASTNode block;
-			integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
-			if (blockIndex == -1){
-				compileErrors.append(CompileError(functionNode.lineno, "Function definition has no body"));
-			}
-			block = functionNode.subNodes[blockIndex];
-			// check and optimize each and every node
-			foreach (i, statement; block.subNodes){
-				block.subNodes[i] = optimizeStatement(statement);
-			}
-			functionNode.subNodes[blockIndex] = block;
-			return functionNode;
-		}else{
-			compileErrors.append(CompileError(functionNode.lineno, "ASTOptimize.optimizeFunction can only be called with a node of type function"));
-			return functionNode;
+		ASTNode block;
+		integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
+		if (blockIndex == -1){
+			compileErrors.append(CompileError(functionNode.lineno, "Function definition has no body"));
 		}
+		block = functionNode.subNodes[blockIndex];
+		// check and optimize each and every node
+		foreach (i, statement; block.subNodes){
+			block.subNodes[i] = optimizeStatement(statement);
+		}
+		functionNode.subNodes[blockIndex] = block;
+		return functionNode;
 	}
 
 	/// optimizes and looks for errors in a statement
