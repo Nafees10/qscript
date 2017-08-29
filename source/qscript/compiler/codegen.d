@@ -82,7 +82,7 @@ package struct CodeGen{
 			if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,ASTNode.Type.IfStatement,
 					ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
 				// type is ok
-				byteCode.append(generateByteCode(statement));
+				byteCode.append(generateByteCode(statement, false));
 			}else{
 				compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
 			}
@@ -102,10 +102,10 @@ package struct CodeGen{
 		argCount = args.subNodes.length;
 		// now start pushing them
 		foreach(arg; args.subNodes){
-			generateByteCode(arg);
+			byteCode.append(generateByteCode(arg));
 		}
 		/// now exec this function
-		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" "~to!string(argCount));
+		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" "~fCall.data~" i"~to!string(argCount));
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
@@ -128,8 +128,11 @@ package struct CodeGen{
 			}else{
 				return ["\tpush i"~literal.data];
 			}
-		}else{
+		}else if (literal.type == ASTNode.Type.StringLiteral){
 			return ["\tpush s\""~literal.data~'"'];
+		}else{
+			compileErrors.append(CompileError(literal.lineno, "literal expected"));
+			return [];
 		}
 	}
 
@@ -347,7 +350,7 @@ unittest{
 			"writeln(1);",
 			"};",
 			"while (i < 2){",
-			"i = i + 1",
+			"i = i + 1;",
 			"};",
 			"}",
 			"function test{result = 1;}"
