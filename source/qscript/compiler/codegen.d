@@ -413,12 +413,6 @@ unittest{
 		"\tpush i1",
 		"\tsetVar s\"result\""
 	];
-	//TODO remove following block
-	{
-		import utils.misc;
-		arrayToFile("/home/nafees/Desktop/bCode", byteCode);
-		arrayToFile("/home/nafees/Desktop/q.xml", toXML(scriptNode));
-	}
 	assert (byteCode.length == expectedByteCode.length, "byteCode.length does not match expected length");
 	// start matching
 	for (uinteger i = 0; i < byteCode.length; i ++){
