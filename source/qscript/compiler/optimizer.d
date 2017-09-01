@@ -23,37 +23,29 @@ package struct ASTOptimize{
 	/// `script` is the ASTNode with type as ASTNode.Type.Script
 	/// `staticFuncs` is a list of functions that are static, and are ok with being evaluated at compile time
 	public ASTNode optimizeScript(ASTNode script, string[] staticFuncs){
-		// make sure scriptNode was received
-		if (script.type == ASTNode.Type.Script){
-			// put all staticFuncs in staticFunctions
-			foreach (funcName; staticFuncs){
-				staticFunctions[funcName] = true;
-			}
-			// add all sctipt-defined-functions to list, and put them all in a list
-			foreach (subNode; script.subNodes){
-				functionsUsed[subNode.data] = false;
-			}
-			// now comes the time to init the Check if Static
-			isStatic = CheckStatic(&vars, staticFuncs, functionsUsed.keys.dup);
-			// make sure all suNodes are functions, and call functions to optimize & check those nodes as well
-			foreach (i, subNode; script.subNodes){
-				// optimize it
-				script.subNodes[i] = optimizeFunction(subNode);
-			}
-			// removed all unused functions
-			for (uinteger i = 0; i < script.subNodes.length; i ++){
-				if (script.subNodes[i].data !in functionsUsed || functionsUsed[script.subNodes[i].data] == false){
-					// not used, remove it
-					script.subNodes = script.subNodes.deleteElement(i);
-					i --;
-				}
-			}
-			return script;
-		}else{
-			compileErrors.append(CompileError(script.lineno,
-					"ASTOptimize.optimizeScript can only be called with a node of type script"));
-			return script;
+		// put all staticFuncs in staticFunctions
+		foreach (funcName; staticFuncs){
+			staticFunctions[funcName] = true;
 		}
+		// add all sctipt-defined-functions to list, and put them all in a list
+		foreach (subNode; script.subNodes){
+			functionsUsed[subNode.data] = false;
+		}
+		// now comes the time to init the Check if Static
+		isStatic = CheckStatic(&vars, staticFuncs, functionsUsed.keys.dup);
+		// optimize nodes
+		foreach (i, functionNode; script.subNodes){
+			script.subNodes[i] = optimizeNode(functionNode);
+		}
+		// removed all unused functions
+		for (uinteger i = 0; i < script.subNodes.length; i ++){
+			if (script.subNodes[i].data !in functionsUsed || functionsUsed[script.subNodes[i].data] == false){
+				// not used, remove it
+				script.subNodes = script.subNodes.deleteElement(i);
+				i --;
+			}
+		}
+		return script;
 	}
 
 	/// identifies and optimizes a node
@@ -74,7 +66,7 @@ package struct ASTOptimize{
 		}else if (node.type == ASTNode.Type.Operator){
 
 		}else if (node.type == ASTNode.Type.Function){
-
+			return optimizeFunction(node);
 		}else if (node.type == ASTNode.Type.FunctionCall){
 
 		}else if (node.type == ASTNode.Type.IfStatement){
@@ -96,40 +88,13 @@ package struct ASTOptimize{
 	/// optimizes and looks for errors in functions nodes
 	private ASTNode optimizeFunction(ASTNode functionNode){
 		ASTNode block;
-		integer blockIndex = functionNode.readSubNode(ASTNode.Type.Block);
-		if (blockIndex == -1){
-			compileErrors.append(CompileError(functionNode.lineno, "Function definition has no body"));
-		}
-		block = functionNode.subNodes[blockIndex];
+		block = functionNode.subNodes[0];
 		// check and optimize each and every node
 		foreach (i, statement; block.subNodes){
-			block.subNodes[i] = optimizeStatement(statement);
+			block.subNodes[i] = optimizeNode(statement);
 		}
-		functionNode.subNodes[blockIndex] = block;
+		functionNode.subNodes[0] = block;
 		return functionNode;
-	}
-
-	/// optimizes and looks for errors in a statement
-	/// TODO complete this function
-	private ASTNode optimizeStatement(ASTNode statement){
-		// check if is a functionCall
-		if (statement.type == ASTNode.Type.FunctionCall){
-			statement = optimizeFunctionCall(statement);
-		}else if (statement.type == ASTNode.Type.Assign){
-
-		}else if (statement.type == ASTNode.Type.Block){
-
-		}else if (statement.type == ASTNode.Type.IfStatement){
-
-		}else if (statement.type == ASTNode.Type.VarDeclare){
-
-		}else if (statement.type == ASTNode.Type.WhileStatement){
-
-		}else{
-			// not a valid statement
-			compileErrors.append(CompileError(statement.lineno, "Not a valid statement"));
-		}
-		return statement;
 	}
 
 	/// optimizes and looks for erros in a functionCall
