@@ -21,6 +21,10 @@ public struct QData{
 		double doubleVal;
 		QData[] arrayVal;
 	}
+	/// postblit
+	this(this){
+		arrayVal = arrayVal.dup;
+	}
 	/// changes the data contained by this struct
 	@property auto value(T)(T val){
 		static if (is (T == integer)){
@@ -133,14 +137,14 @@ private:
 
 	/// pushes a value or more to the stack
 	void pushStack(QData[] args){
-		stack.push(args);
+		currentCall.stack.push(args);
 	}
 
 	/// executes a function, ignores the result
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void executeFunctionIgnoreResult(QData[] args){
-		QData[] fArgs = stack.pop(args[1].value!(integer));
+		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
 		string fName = args[0].value!(string);
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
@@ -150,7 +154,7 @@ private:
 		}else{
 			if (!onUndefinedFunctionCall(fName)){
 				// skip to end
-				currentInstructionIndex = scriptInstructions[currentFunctionName].length;
+				currentCall.instructionIndex = currentCall.instructions.length;
 			}
 		}
 	}
@@ -159,42 +163,33 @@ private:
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void executeFunctionPushResult(QData[] args){
-		QData[] fArgs = stack.pop(args[1].value!(integer));
+		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
 		string fName = args[0].value!(string);
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
-			stack.push(executeScriptFunction(fName, fArgs));
+			currentCall.stack.push(executeScriptFunction(fName, fArgs));
 		}else if (fName in functionPointers){
-			stack.push(functionPointers[fName](args));
+			currentCall.stack.push(functionPointers[fName](args));
 		}else{
 			if (!onUndefinedFunctionCall(fName)){
 				// skip to end
-				currentInstructionIndex = scriptInstructions[currentFunctionName].length;
+				currentCall.instructionIndex = currentCall.instructions.length;
 			}
 		}
 	}
 
 	// vars
 
-	/// stores the name of the current script-defined function being executed
-	string currentFunctionName;
-	/// stores pointer to the index of the current instruction (in array scriptFunctions[FNAME]),
-	/// the next instruction to execute can be set using `index = indexOfOtherCommand - 1;`
-	uinteger currentInstructionIndex;
+	Stack!FunctionCallData callStack; /// call stack for the script-defined function-calls
+	FunctionCallData currentCall; /// fCall data for currently being executed function
 
+
+	/// contains a list of all functions available in script, with their pointer
+	QData delegate(QData[])[string] functionPointers;
 	/// stores compiled byte-code for each script-defined function, where index is the function name
 	void delegate(QData[])[][string] scriptInstructions;
 	/// stores arguments for the compiled byte-code for each fuction
 	QData[][][string] scriptInstructionsArgs;
-
-	/// the stack currently being used
-	Stack!QData stack;
-
-	/// stores all the variables, the index is the name of the var
-	QData[string] currentFunctionVars;
-
-	/// contains a list of all functions available in script, with their pointer
-	QData delegate(QData[])[string] functionPointers;
 
 protected:
 	/// called when an error occurs, return true to continue execution and ignore the error,
@@ -213,6 +208,37 @@ protected:
 			return true;
 		}
 		return false;
+	}
+
+package:
+	/// to store data (args, result, vars) for a call to script-defined function, and the stack
+	struct FunctionCallData{
+		QData[string] vars; /// the vars that this function has
+		Stack!QData stack; /// the stack that this call will use
+		
+		string fName; /// name of this function
+		uinteger instructionIndex; /// index of the current instruction being executed
+		void delegate(QData[])[] instructions; /// the instructions that make this function
+		QData[][] instructionArgs;
+
+		/// postblit
+		this(this){
+			vars = vars.dup;
+			instructions = instructions.dup;
+			instructionArgs = instructionArgs.dup;
+		}
+		/// constructor
+		this(string functionName, QData args){
+			vars["args"] = QData(args);
+			vars["result"] = QData();
+			fName = functionName;
+			instructionIndex = 0;
+			stack = new Stack!QData;
+		}
+		/// destructor
+		~this(){
+			.destroy(stack);
+		}
 	}
 
 public:
@@ -260,38 +286,32 @@ public:
 	QData executeScriptFunction(string fName, QData[] args){
 		// check if it exists
 		if (fName in scriptInstructions){
-			// copy the previous stack, previous function's vars, previous function's index, args, and result
-			Stack!QData prevStack = stack;
-			QData[string] prevFunctionVars = currentFunctionVars.dup;
-			uinteger prevIndex = currentInstructionIndex;
-			string prevFunctionName = currentFunctionName;
-			// prepare a new stack, empty the vars, set args
-			stack = new Stack!QData;
-			currentFunctionName = fName;
-			currentFunctionVars["args"] = QData(args.dup);
-			currentFunctionVars["result"] = QData();
+			// put previous call in call stack
+			callStack.push(currentCall);
+			// prepare a new call
+			currentCall = FunctionCallData(fName, QData(args));
+			currentCall.instructions = scriptInstructions[fName];
+			currentCall.instructionArgs = scriptInstructionsArgs[fName];
 			// start executing instruction, one by one
-			auto byteCode = scriptInstructions[fName];
-			auto byteCodeArgs = scriptInstructionsArgs[fName];
-			for (currentInstructionIndex = 0; currentInstructionIndex < byteCode.length; currentInstructionIndex ++){
+			for (; currentCall.instructionIndex < currentCall.instructions.length; currentCall.instructionIndex ++){
 				try{
-					byteCode[currentInstructionIndex](byteCodeArgs[currentInstructionIndex]);
+					currentCall.instructions[currentCall.instructionIndex]
+						(currentCall.instructionArgs[currentCall.instructionIndex]);
 				}catch (Exception e){
-					if (!onRuntimeError(RuntimeError(fName, currentInstructionIndex, e.msg))){
+					if (!onRuntimeError(RuntimeError(fName, currentCall.instructionIndex, e.msg))){
 						// break :(
 						break;
 					}
 				}
 			}
 			// get the result of the function
-			QData result = currentFunctionVars["result"];
+			QData result = currentCall.vars["result"];
 			// destroy stack
-			.destroy(stack);
-			// restore previous state
-			stack = prevStack;
-			currentInstructionIndex = prevIndex;
-			currentFunctionVars = prevFunctionVars;
-			currentFunctionName = prevFunctionName;
+			.destroy(currentCall);
+			// restore previous call
+			if (callStack.count > 0){
+				currentCall = callStack.pop;
+			}
 			// return the result
 			return result;
 		}else{
