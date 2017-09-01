@@ -48,7 +48,7 @@ package struct ASTOptimize{
 		return script;
 	}
 
-	/// identifies and optimizes a node
+	/// returns a node that will result in faster execution than the original node
 	/// 
 	/// Works with:
 	/// 1. Assignment operator
@@ -68,7 +68,7 @@ package struct ASTOptimize{
 		}else if (node.type == ASTNode.Type.Function){
 			return optimizeFunction(node);
 		}else if (node.type == ASTNode.Type.FunctionCall){
-
+			return optimizeFunctionCall(node);
 		}else if (node.type == ASTNode.Type.IfStatement){
 
 		}else if (node.type == ASTNode.Type.WhileStatement){
@@ -77,11 +77,8 @@ package struct ASTOptimize{
 
 		}else if (node.type == ASTNode.Type.Block){
 
-		}else{
-			compileErrors.append(CompileError(node.lineno, "attempting to optimize unsupported node type"));
-			return node;
 		}
-		// TODO remove the line below, it's just there so it compiles:
+		compileErrors.append(CompileError(node.lineno, "attempting to optimize unsupported node type"));
 		return node;
 	}
 
@@ -221,19 +218,13 @@ private struct CheckStatic{
 	private bool operatorIsStatic(ASTNode operator){
 		// get operands
 		ASTNode[] operands = operator.subNodes;
-		if (operands.length != 2){
-			// invalid, no idea how it escaped `ast.d`
-			compileErrors.append(CompileError(operator.lineno, "operators can only receive 2 arguments"));
-			return false;
-		}else{
-			// check if static
-			foreach (operand; operands){
-				if (!isStatic(operand)){
-					return false;
-				}
+		// check if static
+		foreach (operand; operands){
+			if (!isStatic(operand)){
+				return false;
 			}
-			return true;
 		}
+		return true;
 	}
 
 	/// checks if a function is static, i.e, if it can be evaluated at compile time
@@ -248,15 +239,8 @@ private struct CheckStatic{
 		}else{
 			// only need to check the block
 			ASTNode block;
-			{
-				integer blockIndex = fDef.readSubNode(ASTNode.Type.Block);
-				if (blockIndex == -1){
-					compileErrors.append(CompileError(fDef.lineno, "function has no body"));
-					return false;
-				}
-				block = fDef.subNodes[blockIndex];
-			}
-			// mark it as static/non-static, to make stuff faster
+			block = fDef.subNodes[0];
+			// mark it as static/non-static, to make stuff faster, next time this function is called
 			bool r = blockIsStatic(block);
 			functions[fDef.data] = IsStatic.No;
 			if (r){
@@ -279,54 +263,33 @@ private struct CheckStatic{
 
 	/// checks if an if/while statement is static, i.e if the condition can be evaluated at compile-time
 	private bool ifWhileStatementIsStatic(ASTNode ifStatement){
-		// make sure there are 2 nodes, one is the condition, other is the block
-		if (ifStatement.subNodes.length != 2){
-			compileErrors.append(CompileError(ifStatement.lineno, "if statement has other than 2 nodes"));
-			return false;
-		}else{
-			ASTNode condition = ifStatement.subNodes[0];
-			if (ifStatement.subNodes[1].type != ASTNode.Type.Block){
-				condition = ifStatement.subNodes[1];
-			}
-			// now check if it is static or not
-			return isStatic(condition);
+		ASTNode condition = ifStatement.subNodes[0];
+		if (ifStatement.subNodes[1].type != ASTNode.Type.Block){
+			condition = ifStatement.subNodes[1];
 		}
+		// now check if it is static or not
+		return isStatic(condition);
 	}
 
 	/// checks if an assignment is static
 	private bool assignIsStatic(ASTNode assign){
 		// on is var, if the var has indexes, make sure the indexes are also static, and the lvalue must also be static
-		// make sure it has only 2 subNodes
-		if (assign.subNodes.length != 2){
-			compileErrors.append(CompileError(assign.lineno, "assingment statemnt has other than 2 nodes"));
-			return false;
-		}else{
-			ASTNode var = assign.subNodes[0];
-			ASTNode lvalue = assign = assign.subNodes[1];
-			if (assign.subNodes[1].type == ASTNode.Type.Variable){
-				var = assign.subNodes[1];
-				lvalue = assign.subNodes[0];
+		ASTNode var = assign.subNodes[0];
+		ASTNode lvalue = assign = assign.subNodes[1];
+		// now the real work
+		bool r = true;
+		// check the indexes of the var
+		foreach (index; var.subNodes){
+			// make sure it is an index
+			if (!isStatic(index)){
+				return false;
 			}
-			// now the real work
-			bool r = true;
-			// check the indexes of the var
-			foreach (index; var.subNodes){
-				// make sure it is an index
-				if (index.type == ASTNode.Type.ArrayIndex){
-					if (!isStatic(index)){
-						return false;
-					}
-				}else{
-					compileErrors.append(CompileError(index.lineno, "variable can only have ArrayIndex as subNode"));
-					return false;
-				}
-			}
-			// now check the lvalue, only if indexes are static
-			if (r){
-				r = isStatic(lvalue);
-			}
-			return r;
 		}
+		// now check the lvalue, only if indexes are static
+		if (r){
+			r = isStatic(lvalue);
+		}
+		return r;
 	}
 
 	/// checks if a var is static, i.e if it's value is known at runtime, and if it's an array, the indexes are static
@@ -335,13 +298,7 @@ private struct CheckStatic{
 		if (vars.valKnown(var.data)){
 			// check indexes
 			foreach (index; var.subNodes){
-				// make sure it is an index
-				if (index.type == ASTNode.Type.ArrayIndex){
-					if (!isStatic(index)){
-						return false;
-					}
-				}else{
-					compileErrors.append(CompileError(index.lineno, "variable can only have ArrayIndex as subNode"));
+				if (!isStatic(index)){
 					return false;
 				}
 			}
