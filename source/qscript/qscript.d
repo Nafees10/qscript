@@ -38,7 +38,7 @@ public struct QData{
 		}
 	}
 	/// changes the data contained by this struct
-	@property auto value(Type T)(T val){
+	@property auto value(QData.Type T, T1)(T1 val){
 		static if (T == Type.Integer){
 			intVal = val;
 		}else static if (T == Type.Double){
@@ -65,7 +65,7 @@ public struct QData{
 		}
 	}
 	/// retrieves the value stored by this struct
-	@property auto value(Type T)(){
+	@property auto value(QData.Type T)(){
 		static if (T == Type.String){
 			return strVal;
 		}else static if (T == Type.Integer){
@@ -158,7 +158,10 @@ private:
 
 	/// `==` operator
 	QData isSame(QData[] args){
-
+		if (args[0].value!(QData.Type.Array)){
+			return QData(1);
+		}
+		return QData(0);
 	}
 
 	// array related functions
