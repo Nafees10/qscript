@@ -37,6 +37,19 @@ public struct QData{
 			arrayVal = val;
 		}
 	}
+	/// changes the data contained by this struct
+	@property auto value(Type T)(T val){
+		static if (T == Type.Integer){
+			intVal = val;
+		}else static if (T == Type.Double){
+			doubleVal = val;
+		}else static if (T == Type.String){
+			strVal = val;
+		}else static if (T == Type.Array){
+			arrayVal = val;
+		}
+	}
+
 	/// retrieves the value stored by this struct
 	@property auto value(T)(){
 		static if (is (T == string)){
@@ -51,7 +64,18 @@ public struct QData{
 			throw new Exception("attempting to retrieve invalid data type from QData");
 		}
 	}
-	/// retrieves the type of data stored in this struct
+	/// retrieves the value stored by this struct
+	@property auto value(Type T)(){
+		static if (T == Type.String){
+			return strVal;
+		}else static if (T == Type.Integer){
+			return intVal;
+		}else static if (T == Type.Double){
+			return doubleVal;
+		}else static if (T == Type.Array){
+			return &arrayVal;
+		}
+	}
 	@property Type type(){
 		return dataType;
 	}
@@ -66,47 +90,75 @@ private:
 	// operator functions/instructions
 
 	/// adds 2 ints/doubles
-	QData operatorAdd(QData[] args){
+	QData add(QData[] args){
 		if (args[0].type == QData.Type.Integer){
 			return QData(args[0].value!(integer) + args[1].value!(integer));
 		}
 		return QData(args[0].value!(double) + args[1].value!(double));
 	}
 	/// subtracts ints/doubles
-	QData operatorSubtract(QData[] args){
+	QData subtract(QData[] args){
 		if (args[0].type == QData.Type.Integer){
 			return QData(args[0].value!(integer) - args[1].value!(integer));
 		}
 		return QData(args[0].value!(double) - args[1].value!(double));
 	}
 	/// multiplies 2 ints/doubles
-	QData operatorMultiply(QData[] args){
+	QData multiply(QData[] args){
 		if (args[0].type == QData.Type.Integer){
 			return QData(args[0].value!(integer) * args[1].value!(integer));
 		}
 		return QData(args[0].value!(double) * args[1].value!(double));
 	}
 	/// divides 2 ints/doubles
-	QData operatorDivide(QData[] args){
+	QData divide(QData[] args){
 		if (args[0].type == QData.Type.Integer){
 			return QData(args[0].value!(integer) / args[1].value!(integer));
 		}
 		return QData(args[0].value!(double) / args[1].value!(double));
 	}
 	/// int/double mod int/double
-	QData operatorMod(QData[] args){
+	QData mod(QData[] args){
 		if (args[0].type == QData.Type.Integer){
 			return QData(args[0].value!(integer) % args[1].value!(integer));
 		}
 		return QData(args[0].value!(double) % args[1].value!(double));
 	}
 	/// concatenates 2 string or arrays
-	QData operatorConcatenate(QData[] args){
+	QData concat(QData[] args){
 		if (args[0].type == QData.Type.Array){
 			return QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[]));
 		}else{
 			return QData(args[0].value!(string) ~ args[1].value!(string));
 		}
+	}
+
+	// var functions:
+
+	/// makes a new var
+	QData initVar(QData[] args){
+		foreach (arg; args){
+			currentCall.vars[arg.value!(string)] = QData();
+		}
+		return QData();
+	}
+
+	/// returns value of a var
+	QData getVar(QData[] args){
+		return currentCall.vars[args[0].value!(string)];
+	}
+
+	/// sets value of a var
+	QData setVar(QData[] args){
+		currentCall.vars[args[0].value!(string)] = args[1];
+		return QData();
+	}
+
+	// instructions for comparing stuff
+
+	/// `==` operator
+	QData isSame(QData[] args){
+
 	}
 
 	// array related functions
@@ -259,19 +311,10 @@ public:
 
 	/// constructor
 	this(){
-		functionPointers = [
-			// operators
-			"_add": &operatorAdd,
-			"_sub": &operatorSubtract,
-			"_mul": &operatorMultiply,
-			"_div": &operatorDivide,
-			"_mod": &operatorMod,
-			"_concat": &operatorConcatenate,
-			// array functions
-			"array": &initArray,
-			"getLength": &getArrayLength,
-			"setLength": &setArrayLength,
-		];
+		// TODO prepare list of instructions
+		/*functionPointers = [
+
+		];*/
 	}
 
 	/// loads, compiles, and optimizes a script. Returns errors in any, else, returns empty array
