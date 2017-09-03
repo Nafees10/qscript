@@ -8,7 +8,7 @@ import std.range;
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
 /// An array containing all keywords
-package const string[] KEYWORDS = ["function", "var", "if", "while"];
+package const string[] KEYWORDS = ["function", "if", "while", "int", "string", "double"];
 /// An array containing another array conatining all operators
 package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "!=", "<=", ">=", "="];
 /// An array containing all bool-operators (operators that return true/false)

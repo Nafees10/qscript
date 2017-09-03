@@ -45,6 +45,7 @@ package struct ASTNode{
 	/// for `Type.StringLiteral`, it is the string (witout the quotation marks)
 	/// for `Type.NumberLiteral`, it is the number (in a string)
 	/// for `Type.Variable`, it is the variable name
+	/// for `Type.VarDeclare` it is the data type of the vars
 	this(Type nType, string nData, uinteger lineNumber){
 		nodeType = nType;
 		nodeData = nData;
@@ -57,6 +58,7 @@ package struct ASTNode{
 	/// for `Type.StringLiteral`, it is the string (witout the quotation marks)
 	/// for `Type.NumberLiteral`, it is the number (in a string)
 	/// for `Type.Variable`, it is the variable name
+	/// for `Type.VarDeclare` it is the data type of the vars
 	@property string data(){
 		return nodeData.dup;
 	}
@@ -183,7 +185,8 @@ struct ASTGen{
 				if (tokens.tokens[index].type == Token.Type.Keyword){
 					if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
 						return StatementType.IfWhile;
-					}else if (tokens.tokens[index].token == "var"){
+					}else if (tokens.tokens[index].token == "int" || tokens.tokens[index].token == "double" ||
+						tokens.tokens[index].token == "string"){
 						return StatementType.VarDeclare;
 					}
 				}else if (index+3 <= endIndex && tokens.tokens[index].type == Token.Type.Identifier && 
@@ -417,6 +420,7 @@ struct ASTGen{
 		}
 		
 		/// generates AST for variable declarations
+		/// TODO adapt this to the changes above
 		ASTNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode varDeclare = ASTNode(ASTNode.Type.VarDeclare, tokens.getTokenLine(index));
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
