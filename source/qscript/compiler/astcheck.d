@@ -221,6 +221,23 @@ package struct ASTCheck{
 			// ok, make sure there's at least one var, all subNodes are vars, and no var is being shadowed
 			if (varDeclare.subNodes.length > 0){
 				bool r = true;
+				// check the type
+				string type = varDeclare.data;
+				for (uinteger i = 0; i < type.length; i ++){
+					if (type[i] == '['){
+						// read the type
+						string dataType = type[0 .. i];
+						if (!["int", "double", "string"].hasElement(dataType)){
+							compileErrors.append(CompileError(varDeclare.lineno, "invalid data type"));
+							r = false;
+						}
+						// check the nest count
+						if (!type[type.length-1] == ']' || !isNum(type[i + 1 .. type.length-2])){
+							compileErrors.append(CompileError(varDeclare.lineno, "invalid data type"));
+							r = false;
+						}
+					}
+				}
 				foreach (var; varDeclare.subNodes){
 					if (keyVars.hasElement(var.data) || definedVars.hasElement(var.data)){
 						// var's being shadowed
