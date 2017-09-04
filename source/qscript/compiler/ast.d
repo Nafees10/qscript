@@ -4,6 +4,8 @@ import utils.misc;
 import utils.lists;
 import qscript.compiler.misc;
 
+import std.conv : to;
+
 package struct ASTNode{
 	/// Enum defining types of ASTNode
 	enum Type{
@@ -426,7 +428,7 @@ struct ASTGen{
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
 			if (tokens.tokens[index].type == Token.Type.Keyword && 
 				["int", "double", "string"].hasElement(tokens.tokens[index].token) &&
-				index+1 < endIndex && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				index+1 < endIndex){
 				// read the type
 				uinteger i;
 				{
@@ -438,12 +440,13 @@ struct ASTGen{
 						}else if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
 							nestCount ++;
 							i ++;
-							if (i + 1 <= endIndex && tokens.tokens[i+1].type != Token.Type.IndexBracketClose){
-								compileErrors.append(CompileError(tokens.getTokenLine(i+1), "invalid type"));
+							if (i <= endIndex && tokens.tokens[i].type != Token.Type.IndexBracketClose){
+								compileErrors.append(CompileError(tokens.getTokenLine(i), "invalid type"));
 								break;
 							}
 						}else{
 							compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
+							break;
 						}
 					}
 					varDeclare = ASTNode(ASTNode.Type.VarDeclare,
