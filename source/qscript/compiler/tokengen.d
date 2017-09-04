@@ -67,7 +67,9 @@ unittest{
 	assert("==".getTokenType == Token.Type.Operator);
 	assert(";".getTokenType == Token.Type.StatementEnd);
 	assert(",".getTokenType == Token.Type.Comma);
-	assert("var".getTokenType == Token.Type.Keyword);
+	assert("int".getTokenType == Token.Type.Keyword);
+	assert("double".getTokenType == Token.Type.Keyword);
+	assert("string".getTokenType == Token.Type.Keyword);
 	assert("function".getTokenType == Token.Type.Keyword);
 	assert("if".getTokenType == Token.Type.Keyword);
 	assert("while".getTokenType == Token.Type.Keyword);
@@ -204,7 +206,7 @@ unittest{
 	string[] expectedResults;
 	expectedResults = [
 		"function", "main", "{",
-		"new", "(", "i", ",", "i2", ")", ";",
+		"int", "(", "i", ",", "i2", ")", ";",
 		"if", "(", "i", "<", "2", ")", "{", "}",
 		"if", "(", "i", "<=", "2", ")", "{", "}",
 		"if", "(", "i", ">=", "2", ")", "{", "}",
@@ -221,7 +223,7 @@ unittest{
 	];
 	string[] script = [
 		"function main{",
-		"\tnew (i, i2);",
+		"\tint (i, i2);",
 		"\tif (i < 2){}",
 		"\tif(i<=2){}",
 		"\tif(i >= 2) {//comment }",
