@@ -45,7 +45,7 @@ package struct ASTNode{
 	/// for `Type.StringLiteral`, it is the string (witout the quotation marks)
 	/// for `Type.NumberLiteral`, it is the number (in a string)
 	/// for `Type.Variable`, it is the variable name
-	/// for `Type.VarDeclare` it is the data type of the vars
+	/// for `Type.VarDeclare` it is the data type of the vars, in the format: `%type%[n]` where `n` is the number of nested arrays. For `int[][]`, it will be: `int[2]`
 	this(Type nType, string nData, uinteger lineNumber){
 		nodeType = nType;
 		nodeData = nData;
@@ -58,7 +58,7 @@ package struct ASTNode{
 	/// for `Type.StringLiteral`, it is the string (witout the quotation marks)
 	/// for `Type.NumberLiteral`, it is the number (in a string)
 	/// for `Type.Variable`, it is the variable name
-	/// for `Type.VarDeclare` it is the data type of the vars
+	/// for `Type.VarDeclare` it is the data type of the vars, in the format: `%type%[n]` where `n` is the number of nested arrays. For `int[][]`, it will be: `int[2]`
 	@property string data(){
 		return nodeData.dup;
 	}
@@ -424,13 +424,36 @@ struct ASTGen{
 		ASTNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
 			ASTNode varDeclare = ASTNode(ASTNode.Type.VarDeclare, tokens.getTokenLine(index));
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
-			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "var" &&
+			if (tokens.tokens[index].type == Token.Type.Keyword && 
+				["int", "double", "string"].hasElement(tokens.tokens[index].token) &&
 				index+1 < endIndex && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				// read the type
+				uinteger i;
+				{
+					char[] type = cast(char[])tokens.tokens[index].token;
+					uinteger nestCount = 0;
+					for (i = index+1; i <= endIndex; i ++){
+						if (tokens.tokens[i].type == Token.Type.ParanthesesOpen){
+							break;
+						}else if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
+							nestCount ++;
+							i ++;
+							if (i + 1 <= endIndex && tokens.tokens[i+1].type != Token.Type.IndexBracketClose){
+								compileErrors.append(CompileError(tokens.getTokenLine(i+1), "invalid type"));
+								break;
+							}
+						}else{
+							compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
+						}
+					}
+					varDeclare = ASTNode(ASTNode.Type.VarDeclare,
+						cast(string)type~'['~to!string(nestCount)~']', tokens.getTokenLine(index));
+				}
 				// check if brackEnd == endIndex
-				if (tokens.tokens.bracketPos(index+1) == endIndex){
+				if (tokens.tokens.bracketPos(i) == endIndex){
 					// now go through all vars, check if they are vars, and are aeparated by comma
 					bool commaExpected = false;
-					for (uinteger i = index+2; i < endIndex; i ++){
+					for (i = i+1; i < endIndex; i ++){
 						Token token = tokens.tokens[i];
 						if (commaExpected){
 							if (token.type != Token.Type.Comma){
@@ -452,7 +475,7 @@ struct ASTGen{
 				}
 				
 			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(index), "variable declaration is invalid"));
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
 			}
 			return varDeclare;
 		}
