@@ -514,12 +514,18 @@ FunnctionName
 * setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
 
 #### Instructions for mathematical operators:
-* add			- adds last two integers/doubles pushed to stack, pushes the result to stack
-* subtract		- subtracts last two integers/doubles pushed to stack, pushes the result to stack
-* multiply		- multiplies last two integers/doubles pushed to stack, pushes the result to stack
-* divide		- divides last two integers/doubles pushed to stack, pushes the result to stack
-* mod			- divides last two integers/doubles pushed to stack, pushes the remainder to stack
-* concat		- concatenates last two arrays/strings pushed to stack, pushes the result to stack
+* addInt		- adds last two integers pushed to stack, pushes the result to stack
+* addDouble		- adds last two doubles pushed to stack, pushes the result to stack
+* subtractInt	- subtracts last two integers pushed to stack, pushes the result to stack
+* subtractDouble- subtracts last two doubles pushed to stack, pushes the result to stack
+* multiplyInt	- multiplies last two integers pushed to stack, pushes the result to stack
+* multiplyDouble- multiplies last two doubles pushed to stack, pushes the result to stack
+* divideInt		- adds last two integers pushed to stack, pushes the result to stack
+* divideDouble	- adds last two doubles pushed to stack, pushes the result to stack
+* modInt		- divides last two integers pushed to stack, pushes the remainder to stack
+* modDouble		- divides last two doubles pushed to stack, pushes the remainder to stack
+* concatArray	- concatenates last two arrays pushed to stack, pushes the result to stack
+* concatString	- concatenates last two strings pushed to stack, pushes the result to stack
 
 #### Instructions for comparing 2 vals:
 * isSame 		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
