@@ -89,48 +89,53 @@ public abstract class QScript{
 private:
 	// operator functions/instructions
 
-	/// adds 2 ints/doubles
-	QData add(QData[] args){
-		if (args[0].type == QData.Type.Integer){
-			return QData(args[0].value!(integer) + args[1].value!(integer));
-		}
+	/// adds 2 ints
+	QData addInt(QData[] args){
+		return QData(args[0].value!(integer) + args[1].value!(integer));
+	}
+	/// adds 2 doubles
+	QData addDouble(QData[] args){
 		return QData(args[0].value!(double) + args[1].value!(double));
 	}
-	/// subtracts ints/doubles
-	QData subtract(QData[] args){
-		if (args[0].type == QData.Type.Integer){
-			return QData(args[0].value!(integer) - args[1].value!(integer));
-		}
+	/// subtracts 2 ints
+	QData subtractInt(QData[] args){
+		return QData(args[0].value!(integer) - args[1].value!(integer));
+	}
+	/// subtracts 2 doubles
+	QData subtractDouble(QData[] args){
 		return QData(args[0].value!(double) - args[1].value!(double));
 	}
-	/// multiplies 2 ints/doubles
-	QData multiply(QData[] args){
-		if (args[0].type == QData.Type.Integer){
-			return QData(args[0].value!(integer) * args[1].value!(integer));
-		}
+	/// multiplies 2 ints
+	QData multiplyInt(QData[] args){
+		return QData(args[0].value!(integer) * args[1].value!(integer));
+	}
+	/// multiplies 2 doubles
+	QData multiplyDouble(QData[] args){
 		return QData(args[0].value!(double) * args[1].value!(double));
 	}
-	/// divides 2 ints/doubles
-	QData divide(QData[] args){
-		if (args[0].type == QData.Type.Integer){
-			return QData(args[0].value!(integer) / args[1].value!(integer));
-		}
+	/// divides 2 ints
+	QData divideInt(QData[] args){
+		return QData(args[0].value!(integer) / args[1].value!(integer));
+	}
+	/// divides 2 doubles
+	QData divdeDouble(QData[] args){
 		return QData(args[0].value!(double) / args[1].value!(double));
 	}
-	/// int/double mod int/double
-	QData mod(QData[] args){
-		if (args[0].type == QData.Type.Integer){
-			return QData(args[0].value!(integer) % args[1].value!(integer));
-		}
+	/// <int> mod <int>
+	QData modInt(QData[] args){
+		return QData(args[0].value!(integer) % args[1].value!(integer));
+	}
+	/// <double> mod <double>
+	QData modDouble(QData[] args){
 		return QData(args[0].value!(double) % args[1].value!(double));
 	}
-	/// concatenates 2 string or arrays
-	QData concat(QData[] args){
-		if (args[0].type == QData.Type.Array){
-			return QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[]));
-		}else{
-			return QData(args[0].value!(string) ~ args[1].value!(string));
-		}
+	/// concatenates 2 strings
+	QData concatString(QData[] args){
+		return QData(args[0].value!(string) ~ args[1].value!(string));
+	}
+	/// concatenates 2 arrays
+	QData concatArray(QData[] args){
+		return QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[]));
 	}
 
 	// var functions:
