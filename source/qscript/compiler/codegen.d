@@ -531,8 +531,6 @@ FunnctionName
 * isSame 		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
 * isLesser 		- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
 * isGreater		- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
-* isLesserSame	- pops 2 values(int), if first value is less or equal, pushes 1(int) to stack, else, pushes 0(int)
-* isGreaterSame	- pops 2 values(int), if first value is larger or equal, pushes 1(int) to stack, else, pushes 0(int)
 
 #### Misc. instructions:
 * push 			- pushes all arguments to stack
