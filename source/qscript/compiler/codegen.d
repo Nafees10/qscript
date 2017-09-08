@@ -533,7 +533,6 @@ FunnctionName
 * isGreater		- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
 * isLesserSame	- pops 2 values(int), if first value is less or equal, pushes 1(int) to stack, else, pushes 0(int)
 * isGreaterSame	- pops 2 values(int), if first value is larger or equal, pushes 1(int) to stack, else, pushes 0(int)
-* isNotSame		- pops 2 values, if both are not same, pushes 1(int) to stack, else, pushes 0(int)
 
 #### Misc. instructions:
 * push 			- pushes all arguments to stack
@@ -541,6 +540,7 @@ FunnctionName
 * pop			- clears a number of elements from the stack, the number is arg0 (integer)
 * jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" and arg0 of jump should be that %someString% (string).
 * skipTrue		- pops a number of nodes (ints) from stack, the number is arg0(int). If each of them ==1(int), then the next instruction is skipped. This is used to construct if/while statements
+* not			- if last element pushed == 1(int), then pushes 0(int), else, pushes 1(int)
 
 #### Instructions for arrays
 * setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
