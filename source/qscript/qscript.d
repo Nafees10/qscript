@@ -23,7 +23,9 @@ public struct QData{
 	}
 	/// postblit
 	this(this){
-		arrayVal = arrayVal.dup;
+		if (dataType == QData.Type.Array){
+			arrayVal = arrayVal.dup;
+		}
 	}
 	/// changes the data contained by this struct
 	@property auto value(T)(T val){
@@ -220,7 +222,24 @@ private:
 		return QData(0);
 	}
 
+	// vars:
 
+	/// inits a var
+	QData initVar(QData[] args){
+		currentCall.vars[args[0].value!(string)] = QData();
+		return QData();
+	}
+
+	/// pushes value of a var to stack
+	QData getVar(QData[] args){
+		return currentCall.vars[args[0].value!(string)];
+	}
+
+	/// sets value of a var
+	QData setVar(QData[] args){
+		currentCall.vars[args[0].value!(string)] = args[1];
+		return QData();
+	}
 
 	// array related functions
 
