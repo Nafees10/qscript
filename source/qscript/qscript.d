@@ -283,17 +283,76 @@ private:
 		return r;
 	}
 
-	// interpreter instructions
+	// stack instructions
 
 	/// pushes a value or more to the stack
-	void pushStack(QData[] args){
+	void push(QData[] args){
 		currentCall.stack.push(args);
 	}
+
+	/// clears the stack
+	void clear(QData[] args){
+		currentCall.stack.clear();
+	}
+
+	/// pops a number of elements from stack
+	void pop(QData[] args){
+		currentCall.stack.pop(args[0].value!(integer));
+	}
+
+	// misc instructions
+
+	/// jumps to another instruction using the instruction index
+	void jump(QData[] args){
+		currentCall.instructionIndex = args[0].value!(integer);
+	}
+
+	/// skipTrue, skips the next instruction in case last element on stack == 1 (int)
+	void skipTrue(QData[] args){
+		if (currentCall.stack.pop().value!(integer) == 1){
+			currentCall.instructionIndex ++;
+		}
+	}
+
+	/// if last element on stack == 1 (int), pushes 0 (int), else, pushes 1 (int)
+	void not(QData[] args){
+		if (currentCall.stack.pop().value!(integer) == 1){
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
+		}
+	}
+
+	/// if last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
+	void and(QData[] args){
+		QData toPush = QData(cast(integer)1);
+		foreach (toCheck; currentCall.stack.pop(2)){
+			if (toCheck.value!(integer) == 0){
+				toPush = QData(cast(integer)0);
+				break;
+			}
+		}
+		currentCall.stack.push(toPush);
+	}
+
+	/// if either of last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
+	void or(QData[] args){
+		QData toPush = QData(cast(integer)0);
+		foreach (toCheck; currentCall.stack.pop(2)){
+			if (toCheck.value!(integer) == 1){
+				toPush = QData(cast(integer)1);
+				break;
+			}
+		}
+		currentCall.stack.push(toPush);
+	}
+
+	// executing functions:
 
 	/// executes a function, ignores the result
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
-	void executeFunctionIgnoreResult(QData[] args){
+	void execFuncI(QData[] args){
 		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
 		string fName = args[0].value!(string);
 		/// check if the function is defined in script
@@ -312,7 +371,7 @@ private:
 	/// executes a function, pushes the result to the stack
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
-	void executeFunctionPushResult(QData[] args){
+	void ExecFuncP(QData[] args){
 		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
 		string fName = args[0].value!(string);
 		/// check if the function is defined in script
