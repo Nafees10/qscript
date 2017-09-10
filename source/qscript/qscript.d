@@ -92,71 +92,93 @@ private:
 	// operator functions/instructions
 
 	/// adds 2 ints
-	void addInt(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(integer) + args[1].value!(integer)));
+	void addInt(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(integer) + args[1].value!(integer)
+				));
 	}
 	/// adds 2 doubles
-	void addDouble(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(double) + args[1].value!(double)));
+	void addDouble(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(double) + args[1].value!(double)
+				));
 	}
+
 	/// subtracts 2 ints
-	void subtractInt(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(integer) - args[1].value!(integer)));
+	void subtractInt(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(integer) - args[1].value!(integer)
+				));
 	}
 	/// subtracts 2 doubles
-	void subtractDouble(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(double) - args[1].value!(double)));
+	void subtractDouble(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(double) - args[1].value!(double)
+				));
 	}
+
 	/// multiplies 2 ints
-	void multiplyInt(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(integer) * args[1].value!(integer)));
+	void multiplyInt(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(integer) * args[1].value!(integer)
+				));
 	}
 	/// multiplies 2 doubles
-	void multiplyDouble(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(double) * args[1].value!(double)));
+	void multiplyDouble(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(double) * args[1].value!(double)
+				));
 	}
+
 	/// divides 2 ints
-	void divideInt(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(integer) / args[1].value!(integer)));
+	void divideInt(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(integer) / args[1].value!(integer)
+				));
 	}
 	/// divides 2 doubles
-	void divdeDouble(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(double) / args[1].value!(double)));
+	void divdeDouble(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(double) / args[1].value!(double)
+				));
 	}
+
 	/// <int> mod <int>
-	void modInt(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(integer) % args[1].value!(integer)));
+	void modInt(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(integer) % args[1].value!(integer)
+				));
 	}
 	/// <double> mod <double>
-	void modDouble(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(double) % args[1].value!(double)));
+	void modDouble(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(double) % args[1].value!(double)
+				));
 	}
+
 	/// concatenates 2 strings
-	void concatString(QData[] args){
-		currentCall.stack.push(QData(args[0].value!(string) ~ args[1].value!(string)));
+	void concatString(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				args[0].value!(string) ~ args[1].value!(string)
+				));
 	}
 	/// concatenates 2 arrays
-	void concatArray(QData[] args){
-		currentCall.stack.push(QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[])));
-	}
-
-	// var functions:
-
-	/// makes a new var
-	void initVar(QData[] args){
-		foreach (arg; args){
-			currentCall.vars[arg.value!(string)] = QData();
-		}
-	}
-
-	/// returns value of a var
-	void getVar(QData[] args){
-		currentCall.stack.push(currentCall.vars[args[0].value!(string)]);
-	}
-
-	/// sets value of a var
-	void setVar(QData[] args){
-		currentCall.vars[args[0].value!(string)] = args[1];
+	void concatArray(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(QData(
+				*args[0].value!(QData[]) ~ *args[1].value!(QData[])
+				));
 	}
 
 	// instructions for comparing stuff
@@ -445,6 +467,10 @@ package:
 		/// destructor
 		~this(){
 			.destroy(stack);
+		}
+		/// reads args for the current instruction
+		@property QData[] readInstructionArgs(){
+			return instructionArgs[instructionIndex];
 		}
 	}
 
