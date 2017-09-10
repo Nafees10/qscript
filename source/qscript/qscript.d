@@ -261,20 +261,23 @@ private:
 	// vars:
 
 	/// inits a var
-	QData initVar(QData[] args){
-		currentCall.vars[args[0].value!(string)] = QData();
-		return QData();
+	void initVar(){
+		QData[] args = currentCall.readInstructionArgs();
+		foreach (arg; args){
+			currentCall.vars[arg.value!(string)] = QData();
+		}
 	}
 
 	/// pushes value of a var to stack
-	QData getVar(QData[] args){
-		return currentCall.vars[args[0].value!(string)];
+	void getVar(){
+		currentCall.stack.push(
+			currentCall.vars[currentCall.readInstructionArgs()[0].value!(string)]
+			);
 	}
 
 	/// sets value of a var
-	QData setVar(QData[] args){
-		currentCall.vars[args[0].value!(string)] = args[1];
-		return QData();
+	void setVar(){
+		currentCall.vars[currentCall.readInstructionArgs()[0].value!(string)] = currentCall.stack.pop;
 	}
 
 	// array related functions
