@@ -92,73 +92,71 @@ private:
 	// operator functions/instructions
 
 	/// adds 2 ints
-	QData addInt(QData[] args){
-		return QData(args[0].value!(integer) + args[1].value!(integer));
+	void addInt(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(integer) + args[1].value!(integer)));
 	}
 	/// adds 2 doubles
-	QData addDouble(QData[] args){
-		return QData(args[0].value!(double) + args[1].value!(double));
+	void addDouble(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(double) + args[1].value!(double)));
 	}
 	/// subtracts 2 ints
-	QData subtractInt(QData[] args){
-		return QData(args[0].value!(integer) - args[1].value!(integer));
+	void subtractInt(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(integer) - args[1].value!(integer)));
 	}
 	/// subtracts 2 doubles
-	QData subtractDouble(QData[] args){
-		return QData(args[0].value!(double) - args[1].value!(double));
+	void subtractDouble(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(double) - args[1].value!(double)));
 	}
 	/// multiplies 2 ints
-	QData multiplyInt(QData[] args){
-		return QData(args[0].value!(integer) * args[1].value!(integer));
+	void multiplyInt(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(integer) * args[1].value!(integer)));
 	}
 	/// multiplies 2 doubles
-	QData multiplyDouble(QData[] args){
-		return QData(args[0].value!(double) * args[1].value!(double));
+	void multiplyDouble(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(double) * args[1].value!(double)));
 	}
 	/// divides 2 ints
-	QData divideInt(QData[] args){
-		return QData(args[0].value!(integer) / args[1].value!(integer));
+	void divideInt(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(integer) / args[1].value!(integer)));
 	}
 	/// divides 2 doubles
-	QData divdeDouble(QData[] args){
-		return QData(args[0].value!(double) / args[1].value!(double));
+	void divdeDouble(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(double) / args[1].value!(double)));
 	}
 	/// <int> mod <int>
-	QData modInt(QData[] args){
-		return QData(args[0].value!(integer) % args[1].value!(integer));
+	void modInt(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(integer) % args[1].value!(integer)));
 	}
 	/// <double> mod <double>
-	QData modDouble(QData[] args){
-		return QData(args[0].value!(double) % args[1].value!(double));
+	void modDouble(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(double) % args[1].value!(double)));
 	}
 	/// concatenates 2 strings
-	QData concatString(QData[] args){
-		return QData(args[0].value!(string) ~ args[1].value!(string));
+	void concatString(QData[] args){
+		currentCall.stack.push(QData(args[0].value!(string) ~ args[1].value!(string)));
 	}
 	/// concatenates 2 arrays
-	QData concatArray(QData[] args){
-		return QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[]));
+	void concatArray(QData[] args){
+		currentCall.stack.push(QData(*args[0].value!(QData[]) ~ *args[1].value!(QData[])));
 	}
 
 	// var functions:
 
 	/// makes a new var
-	QData initVar(QData[] args){
+	void initVar(QData[] args){
 		foreach (arg; args){
 			currentCall.vars[arg.value!(string)] = QData();
 		}
-		return QData();
 	}
 
 	/// returns value of a var
-	QData getVar(QData[] args){
-		return currentCall.vars[args[0].value!(string)];
+	void getVar(QData[] args){
+		currentCall.stack.push(currentCall.vars[args[0].value!(string)]);
 	}
 
 	/// sets value of a var
-	QData setVar(QData[] args){
+	void setVar(QData[] args){
 		currentCall.vars[args[0].value!(string)] = args[1];
-		return QData();
 	}
 
 	// instructions for comparing stuff
@@ -269,7 +267,7 @@ private:
 	/// 
 	/// first arg is the array, second is the index of the element
 	QData readElement(QData[] args){
-		return args[0].value!(QData[])[args[1].value!(integer)];
+		return (args[0].value!(QData[]))[args[1].value!(integer)];
 	}
 
 	/// modifies an array, returns the modified array
