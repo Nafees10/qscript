@@ -184,62 +184,78 @@ private:
 	// instructions for comparing stuff
 
 	/// `==` operator for int
-	QData isSameInt(QData[] args){
+	void isSameInt(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(integer) == args[1].value!(integer)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 	/// `==` operator for double
-	QData isSameDouble(QData[] args){
+	void isSameDouble(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(double) == args[1].value!(double)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 	/// `==` operator for string
-	QData isSameString(QData[] args){
+	void isSameString(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(string) == args[1].value!(string)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 	/// `==` operator for array
-	QData isSameInt(QData[] args){
+	void isSameInt(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(QData[]) == args[1].value!(QData[])){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 
 	/// < operator for int
-	QData isLesserInt(QData[] args){
+	void isLesserInt(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(integer) < args[1].value!(integer)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 	/// < operator for double
-	QData isLesserDouble(QData[] args){
+	void isLesserDouble(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(double) < args[1].value!(double)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 
 	/// > operator for int
-	QData isGreaterInt(QData[] args){
+	void isGreaterInt(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(integer) > args[1].value!(integer)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 	/// > operator for double
-	QData isGreaterDouble(QData[] args){
+	void isGreaterDouble(){
+		QData[] args = currentCall.stack.pop(2);
 		if (args[0].value!(double) > args[1].value!(double)){
-			return QData(1);
+			currentCall.stack.push(QData(cast(integer)1));
+		}else{
+			currentCall.stack.push(QData(cast(integer)0));
 		}
-		return QData(0);
 	}
 
 	// vars:
