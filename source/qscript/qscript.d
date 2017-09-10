@@ -14,7 +14,7 @@ public struct QData{
 		Array,
 		Undefined
 	}
-	private Type dataType = QData.Type.Undefined;
+	Type type = QData.Type.Undefined;
 	union{
 		string strVal;
 		integer intVal;
@@ -23,12 +23,12 @@ public struct QData{
 	}
 	/// postblit
 	this(this){
-		if (dataType == QData.Type.Array){
+		if (type == QData.Type.Array){
 			arrayVal = arrayVal.dup;
 		}
 	}
-	/// changes the data contained by this struct
-	@property auto value(T)(T val){
+	/// constructor
+	this(T)(T val){
 		static if (is (T == integer)){
 			intVal = val;
 		}else static if (is (T == double)){
@@ -38,52 +38,6 @@ public struct QData{
 		}else static if (is (T == QData[])){
 			arrayVal = val;
 		}
-	}
-	/// changes the data contained by this struct
-	@property auto value(QData.Type T, T1)(T1 val){
-		static if (T == Type.Integer){
-			intVal = val;
-		}else static if (T == Type.Double){
-			doubleVal = val;
-		}else static if (T == Type.String){
-			strVal = val;
-		}else static if (T == Type.Array){
-			arrayVal = val;
-		}
-	}
-
-	/// retrieves the value stored by this struct
-	@property auto value(T)(){
-		static if (is (T == string)){
-			return strVal;
-		}else static if (is (T == integer)){
-			return intVal;
-		}else static if (is (T == double)){
-			return doubleVal;
-		}else static if (is (T == QData[])){
-			return &arrayVal;
-		}else{
-			throw new Exception("attempting to retrieve invalid data type from QData");
-		}
-	}
-	/// retrieves the value stored by this struct
-	@property auto value(QData.Type T)(){
-		static if (T == Type.String){
-			return strVal;
-		}else static if (T == Type.Integer){
-			return intVal;
-		}else static if (T == Type.Double){
-			return doubleVal;
-		}else static if (T == Type.Array){
-			return &arrayVal;
-		}
-	}
-	@property Type type(){
-		return dataType;
-	}
-	/// constructor
-	this(T)(T val){
-		value = val;
 	}
 }
 
@@ -95,14 +49,14 @@ private:
 	void addInt(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(integer) + args[1].value!(integer)
+				args[0].intVal + args[1].intVal
 				));
 	}
 	/// adds 2 doubles
 	void addDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(double) + args[1].value!(double)
+				args[0].doubleVal + args[1].doubleVal
 				));
 	}
 
@@ -110,14 +64,14 @@ private:
 	void subtractInt(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(integer) - args[1].value!(integer)
+				args[0].intVal - args[1].intVal
 				));
 	}
 	/// subtracts 2 doubles
 	void subtractDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(double) - args[1].value!(double)
+				args[0].doubleVal - args[1].doubleVal
 				));
 	}
 
@@ -125,14 +79,14 @@ private:
 	void multiplyInt(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(integer) * args[1].value!(integer)
+				args[0].intVal * args[1].intVal
 				));
 	}
 	/// multiplies 2 doubles
 	void multiplyDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(double) * args[1].value!(double)
+				args[0].doubleVal * args[1].doubleVal
 				));
 	}
 
@@ -140,14 +94,14 @@ private:
 	void divideInt(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(integer) / args[1].value!(integer)
+				args[0].intVal / args[1].intVal
 				));
 	}
 	/// divides 2 doubles
 	void divdeDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(double) / args[1].value!(double)
+				args[0].doubleVal / args[1].doubleVal
 				));
 	}
 
@@ -155,14 +109,14 @@ private:
 	void modInt(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(integer) % args[1].value!(integer)
+				args[0].intVal % args[1].intVal
 				));
 	}
 	/// <double> mod <double>
 	void modDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(double) % args[1].value!(double)
+				args[0].doubleVal % args[1].doubleVal
 				));
 	}
 
@@ -170,14 +124,14 @@ private:
 	void concatString(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				args[0].value!(string) ~ args[1].value!(string)
+				args[0].strVal ~ args[1].strVal
 				));
 	}
 	/// concatenates 2 arrays
 	void concatArray(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
-				*args[0].value!(QData[]) ~ *args[1].value!(QData[])
+				args[0].arrayVal ~ args[1].arrayVal
 				));
 	}
 
@@ -186,7 +140,7 @@ private:
 	/// `==` operator for int
 	void isSameInt(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(integer) == args[1].value!(integer)){
+		if (args[0].intVal == args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -195,7 +149,7 @@ private:
 	/// `==` operator for double
 	void isSameDouble(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(double) == args[1].value!(double)){
+		if (args[0].doubleVal == args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -204,7 +158,7 @@ private:
 	/// `==` operator for string
 	void isSameString(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(string) == args[1].value!(string)){
+		if (args[0].strVal == args[1].strVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -213,7 +167,7 @@ private:
 	/// `==` operator for array
 	void isSameInt(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(QData[]) == args[1].value!(QData[])){
+		if (args[0].arrayVal == args[1].arrayVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -223,7 +177,7 @@ private:
 	/// < operator for int
 	void isLesserInt(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(integer) < args[1].value!(integer)){
+		if (args[0].intVal < args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -232,7 +186,7 @@ private:
 	/// < operator for double
 	void isLesserDouble(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(double) < args[1].value!(double)){
+		if (args[0].doubleVal < args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -242,7 +196,7 @@ private:
 	/// > operator for int
 	void isGreaterInt(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(integer) > args[1].value!(integer)){
+		if (args[0].intVal > args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -251,7 +205,7 @@ private:
 	/// > operator for double
 	void isGreaterDouble(){
 		QData[] args = currentCall.stack.pop(2);
-		if (args[0].value!(double) > args[1].value!(double)){
+		if (args[0].doubleVal > args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -264,20 +218,20 @@ private:
 	void initVar(){
 		QData[] args = currentCall.readInstructionArgs();
 		foreach (arg; args){
-			currentCall.vars[arg.value!(string)] = QData();
+			currentCall.vars[arg.strVal] = QData();
 		}
 	}
 
 	/// pushes value of a var to stack
 	void getVar(){
 		currentCall.stack.push(
-			currentCall.vars[currentCall.readInstructionArgs()[0].value!(string)]
+			currentCall.vars[currentCall.readInstructionArgs()[0].strVal]
 			);
 	}
 
 	/// sets value of a var
 	void setVar(){
-		currentCall.vars[currentCall.readInstructionArgs()[0].value!(string)] = currentCall.stack.pop;
+		currentCall.vars[currentCall.readInstructionArgs()[0].strVal] = currentCall.stack.pop;
 	}
 
 	// array related functions
@@ -287,7 +241,7 @@ private:
 		currentCall.stack.push(
 			QData(
 				currentCall.stack.pop(
-					currentCall.readInstructionArgs()[0].value!(integer)
+					currentCall.readInstructionArgs()[0].intVal
 					)
 				)
 			);
@@ -299,7 +253,7 @@ private:
 	/// second arg is the new length
 	void setLen(){
 		QData[] args = currentCall.stack.pop(2);
-		args[0].value!(QData[]).length = args[1].value!(integer);
+		args[0].arrayVal.length = args[1].intVal;
 		currentCall.stack.push(args[0]);
 	}
 
@@ -309,7 +263,7 @@ private:
 	void getLen(){
 		currentCall.stack.push(
 			QData(
-				currentCall.stack.pop.value!(QData[]).length
+				currentCall.stack.pop.arrayVal.length
 				)
 			);
 	}
@@ -320,7 +274,7 @@ private:
 	void readElement(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(
-			(*args[0].value!(QData[]))[args[1].value!(integer)]
+			args[0].arrayVal[args[1].intVal]
 			);
 	}
 
@@ -331,7 +285,7 @@ private:
 	/// arg2 is the index of the element to modify
 	void modifyArray(){
 		QData[] args = currentCall.stack.pop(3);
-		args[0].value!(QData[])[args[2].value!(integer)] = args[1];
+		args[0].arrayVal[args[2].intVal] = args[1];
 		currentCall.stack.push(args[0]);
 	}
 
@@ -349,26 +303,26 @@ private:
 
 	/// pops a number of elements from stack
 	void pop(QData[] args){
-		currentCall.stack.pop(args[0].value!(integer));
+		currentCall.stack.pop(args[0].intVal);
 	}
 
 	// misc instructions
 
 	/// jumps to another instruction using the instruction index
 	void jump(QData[] args){
-		currentCall.instructionIndex = args[0].value!(integer);
+		currentCall.instructionIndex = args[0].intVal;
 	}
 
 	/// skipTrue, skips the next instruction in case last element on stack == 1 (int)
 	void skipTrue(QData[] args){
-		if (currentCall.stack.pop().value!(integer) == 1){
+		if (currentCall.stack.pop().intVal == 1){
 			currentCall.instructionIndex ++;
 		}
 	}
 
 	/// if last element on stack == 1 (int), pushes 0 (int), else, pushes 1 (int)
 	void not(QData[] args){
-		if (currentCall.stack.pop().value!(integer) == 1){
+		if (currentCall.stack.pop().intVal == 1){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
 			currentCall.stack.push(QData(cast(integer)0));
@@ -379,7 +333,7 @@ private:
 	void and(QData[] args){
 		QData toPush = QData(cast(integer)1);
 		foreach (toCheck; currentCall.stack.pop(2)){
-			if (toCheck.value!(integer) == 0){
+			if (toCheck.intVal == 0){
 				toPush = QData(cast(integer)0);
 				break;
 			}
@@ -391,7 +345,7 @@ private:
 	void or(QData[] args){
 		QData toPush = QData(cast(integer)0);
 		foreach (toCheck; currentCall.stack.pop(2)){
-			if (toCheck.value!(integer) == 1){
+			if (toCheck.intVal == 1){
 				toPush = QData(cast(integer)1);
 				break;
 			}
@@ -405,8 +359,8 @@ private:
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void execFuncI(QData[] args){
-		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
-		string fName = args[0].value!(string);
+		QData[] fArgs = currentCall.stack.pop(args[1].intVal);
+		string fName = args[0].strVal;
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			executeScriptFunction(fName, fArgs);
@@ -424,8 +378,8 @@ private:
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
 	void ExecFuncP(QData[] args){
-		QData[] fArgs = currentCall.stack.pop(args[1].value!(integer));
-		string fName = args[0].value!(string);
+		QData[] fArgs = currentCall.stack.pop(args[1].intVal);
+		string fName = args[0].strVal;
 		/// check if the function is defined in script
 		if (fName in scriptInstructions){
 			currentCall.stack.push(executeScriptFunction(fName, fArgs));
