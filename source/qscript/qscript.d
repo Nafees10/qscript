@@ -283,32 +283,45 @@ private:
 	// array related functions
 
 	/// initializes an array, containing provided elements, returns the array
-	QData makeArray(QData[] args){
-		return QData(args);
+	void makeArray(){
+		currentCall.stack.push(
+			QData(
+				currentCall.stack.pop(
+					currentCall.readInstructionArgs()[0].value!(integer)
+					)
+				)
+			);
 	}
 
 	/// changes length of an array, returns the new array
 	/// 
 	/// first arg is an array containing all the elemnets of the array to modify
 	/// second arg is the new length
-	QData setLen(QData[] args){
-		QData[] array = *args[0].value!(QData[]);
-		array.length = args[1].value!(integer);
-		return QData(array);
+	void setLen(){
+		QData[] args = currentCall.stack.pop(2);
+		args[0].value!(QData[]).length = args[1].value!(integer);
+		currentCall.stack.push(args[0]);
 	}
 
 	/// returns the length of an array
 	/// 
 	/// the first arg is the array
-	QData getLen(QData[] args){
-		return QData(args[0].value!(QData[]).length);
+	void getLen(){
+		currentCall.stack.push(
+			QData(
+				currentCall.stack.pop.value!(QData[]).length
+				)
+			);
 	}
 
 	/// returns an element from an array
 	/// 
 	/// first arg is the array, second is the index of the element
-	QData readElement(QData[] args){
-		return (args[0].value!(QData[]))[args[1].value!(integer)];
+	void readElement(){
+		QData[] args = currentCall.stack.pop(2);
+		currentCall.stack.push(
+			(*args[0].value!(QData[]))[args[1].value!(integer)]
+			);
 	}
 
 	/// modifies an array, returns the modified array
@@ -316,10 +329,10 @@ private:
 	/// arg0 is the array to modify
 	/// arg1 is the new value of the element
 	/// arg2 is the index of the element to modify
-	QData modifyArray(QData[] args){
-		QData r = args[0];
-		r.value!(QData[])[args[2].value!(integer)] = args[1];
-		return r;
+	void modifyArray(){
+		QData[] args = currentCall.stack.pop(3);
+		args[0].value!(QData[])[args[2].value!(integer)] = args[1];
+		currentCall.stack.push(args[0]);
 	}
 
 	// stack instructions
