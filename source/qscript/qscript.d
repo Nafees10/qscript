@@ -244,7 +244,7 @@ private:
 	// array related functions
 
 	/// initializes an array, containing provided elements, returns the array
-	QData initArray(QData[] args){
+	QData makeArray(QData[] args){
 		return QData(args);
 	}
 
@@ -252,7 +252,7 @@ private:
 	/// 
 	/// first arg is an array containing all the elemnets of the array to modify
 	/// second arg is the new length
-	QData setArrayLength(QData[] args){
+	QData setLen(QData[] args){
 		QData[] array = *args[0].value!(QData[]);
 		array.length = args[1].value!(integer);
 		return QData(array);
@@ -261,8 +261,26 @@ private:
 	/// returns the length of an array
 	/// 
 	/// the first arg is the array
-	QData getArrayLength(QData[] args){
+	QData getLen(QData[] args){
 		return QData(args[0].value!(QData[]).length);
+	}
+
+	/// returns an element from an array
+	/// 
+	/// first arg is the array, second is the index of the element
+	QData readElement(QData[] args){
+		return args[0].value!(QData[])[args[1].value!(integer)];
+	}
+
+	/// modifies an array, returns the modified array
+	/// 
+	/// arg0 is the array to modify
+	/// arg1 is the new value of the element
+	/// arg2 is the index of the element to modify
+	QData modifyArray(QData[] args){
+		QData r = args[0];
+		r.value!(QData[])[args[2].value!(integer)] = args[1];
+		return r;
 	}
 
 	// interpreter instructions
