@@ -292,36 +292,36 @@ private:
 	// stack instructions
 
 	/// pushes a value or more to the stack
-	void push(QData[] args){
-		currentCall.stack.push(args);
+	void push(){
+		currentCall.stack.push(currentCall.readInstructionArgs());
 	}
 
 	/// clears the stack
-	void clear(QData[] args){
+	void clear(){
 		currentCall.stack.clear();
 	}
 
 	/// pops a number of elements from stack
-	void pop(QData[] args){
-		currentCall.stack.pop(args[0].intVal);
+	void pop(){
+		currentCall.stack.pop(currentCall.readInstructionArgs()[0].intVal);
 	}
 
 	// misc instructions
 
 	/// jumps to another instruction using the instruction index
-	void jump(QData[] args){
-		currentCall.instructionIndex = args[0].intVal;
+	void jump(){
+		currentCall.instructionIndex = currentCall.readInstructionArgs()[0].intVal;
 	}
 
 	/// skipTrue, skips the next instruction in case last element on stack == 1 (int)
-	void skipTrue(QData[] args){
+	void skipTrue(){
 		if (currentCall.stack.pop().intVal == 1){
 			currentCall.instructionIndex ++;
 		}
 	}
 
 	/// if last element on stack == 1 (int), pushes 0 (int), else, pushes 1 (int)
-	void not(QData[] args){
+	void not(){
 		if (currentCall.stack.pop().intVal == 1){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -330,7 +330,7 @@ private:
 	}
 
 	/// if last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
-	void and(QData[] args){
+	void and(){
 		QData toPush = QData(cast(integer)1);
 		foreach (toCheck; currentCall.stack.pop(2)){
 			if (toCheck.intVal == 0){
@@ -342,7 +342,7 @@ private:
 	}
 
 	/// if either of last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
-	void or(QData[] args){
+	void or(){
 		QData toPush = QData(cast(integer)0);
 		foreach (toCheck; currentCall.stack.pop(2)){
 			if (toCheck.intVal == 1){
