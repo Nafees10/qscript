@@ -26,48 +26,60 @@ package struct ASTNode{
 		ArrayIndex, /// Stores index for an array, in an `ASTNode`
 		StaticArray, /// For storing elements of a static array, i.e: `[x, y, z]`
 	}
+	/// the line number on which this node was on
+	uinteger lineNumber;
+	/// the actual type of the stored node
+	ASTNode.Type type;
 
-	/// the actual node is stored here:
-	private enum{
-
-	}
-	
-	private{
-		/// Stores type of this Node. It's private so as to keep it unchanged after constructor
-		Type nodeType;
-		uinteger ln; /// Stores the line number on which the node is - for error reporting
-	}
-	
-	/// initializes the node, nType is the type of node.
-	this(Type nType, uinteger lineNumber){
-		nodeType = nType;
-		ln = lineNumber;
-	}
-	/// returns the type of the node
-	@property Type type(){
-		return nodeType;
-	}
-	/// returns the line number this node was on
-	@property uinteger lineno(){
-		return ln;
-	}
 }
 
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
-	private FunctionNode[] definedFunctions;
+	public FunctionNode[] functions;
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
 		functions = scriptFunctions.dup;
 	}
-	/// returns array of functions stored in this node
-	@property FunctionNode[] 
+	/// postblit
+	this (this){
+		this.functions = functions.dup;
+	}
 }
 
 /// a node representing a function definition
 package struct FunctionNode{
-	private StatementNode[] statements;
+	/// body block of this function
+	public BlockNode bodyBlock;
+	/// the data type of the return value of this function
+	public DataType returnType = DataType.Void;
+	/// constructor
+	this (BlockNode fBody, DataType returnDataType){
+		bodyBlock = fBody;
+		returnType = returnType;
+	}
+	/// constructor 
+	this (DataType returnDataType){
+		returnType = returnDataType;
+	}
+}
+
+/// a node representing a "set-of-statements" AKA a "block"
+package struct BlockNode{
+	/// an array of statements that make this block
+	public StatementNode[] statements;
+	/// constructor
+	this (StatementNode[] blockStatements){
+		statements = blockStatements.dup;
+	}
+	/// postblit
+	this (this){
+		this.statements = this.statements.dup;
+	}
+}
+
+/// a node representing statements, including: if, while, function-call..
+package struct StatementNode{
 
 }
 
