@@ -15,7 +15,7 @@ package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "=="
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "!=", "<=", ">="];
 
 /// Used by compiler's functions to return error
-public struct CompileError{
+package struct CompileError{
 	string msg; /// The error stored in a string
 	uinteger lineno; /// The line number on which the error is
 	this(uinteger lineNumber, string errorMessage){
@@ -23,9 +23,19 @@ public struct CompileError{
 		msg = errorMessage;
 	}
 }
-
 /// All compilation errors are stored here
 package LinkedList!CompileError compileErrors;
+
+/// enum storing all available data types
+package enum DataType{
+	Void,
+	String,
+	Integer,
+	Double,
+	StringArray,
+	IntegerArray,
+	DoubleArray
+}
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
