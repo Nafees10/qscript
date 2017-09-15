@@ -30,7 +30,6 @@ package struct ASTNode{
 	uinteger lineNumber;
 	/// the actual type of the stored node
 	ASTNode.Type type;
-
 }
 
 /// a node representing the script
@@ -80,7 +79,66 @@ package struct BlockNode{
 
 /// a node representing statements, including: if, while, function-call..
 package struct StatementNode{
-
+	/// types of a statement
+	public enum Type{
+		If,
+		While,
+		Block,
+		Assignment,
+		FunctionCall,
+		VarDeclare
+	}
+	/// type of this statement
+	private Type storedType;
+	/// the stored node, is in this union
+	private union{
+		IfNode ifNode;
+		WhileNode whileNode;
+		BlockNode blockNode;
+		FunctionCallNode functionCallNode;
+		VarDeclareNode varDeclareNode;
+	}
+	/// modifies the stored node
+	@property node(T)(T newNode){
+		if (is (T == IfNode)){
+			storedType = StatementNode.Type.If;
+			ifNode = newNode;
+		}else if (is (T == WhileNode)){
+			storedType = StatementNode.Type.While;
+			whileNode = newNode;
+		}else if (is (T == BlockNode)){
+			storedType = StatementNode.Type.Block;
+			blockNode = newNode;
+		}else if (is (T == FunctionCallNode)){
+			storedType = StatementNode.Type.FunctionCall;
+			functionCallNode = newNode;
+		}else if (is (T == VarDeclareNode)){
+			storedType = StatementNode.Type.VarDeclare;
+			varDeclareNode = newNode;
+		}else{
+			throw new Exception("attempting to assign invalid node type to StatementNode.node");
+		}
+	}
+	/// returns the stored type
+	@property node(StatementNode.Type T)(){
+		// make sure type is correct
+		if (T != storedType){
+			throw new Exception("stored type does not match with type being retrieved");
+		}
+		if (T == StatementNode.Type.If){
+			return ifNode;
+		}else if (T == StatementNode.Type.While){
+			return whileNode;
+		}else if (T == StatementNode.Type.Block){
+			return blockNode;
+		}else if (T == StatementNode.Type.FunctionCall){
+			return functionCallNode;
+		}else if (T == StatementNode.Type.VarDeclare){
+			return varDeclareNode;
+		}else{
+			throw new Exception("attempting to retrieve invalid type from StatementNode.node");
+		}
+	}
 }
 
 
