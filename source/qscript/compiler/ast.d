@@ -139,6 +139,14 @@ package struct StatementNode{
 			throw new Exception("attempting to retrieve invalid type from StatementNode.node");
 		}
 	}
+	/// returns the type of the stored node
+	@property StatementNode.Type type(){
+		return storedType;
+	}
+	/// constructor
+	this (T)(T newNode){
+		node = newNode;
+	}
 }
 
 
