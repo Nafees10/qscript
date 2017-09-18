@@ -248,6 +248,19 @@ package struct IfNode{
 	}
 }
 
+/// to store while statements
+package struct WhileNode{
+	/// the condition for this while statement
+	public CodeNode condition;
+	/// the block to execute in loop if the condition is true
+	public BlockNode block;
+	/// constructor
+	this (CodeNode conditionNode, BlockNode blockToExecute){
+		condition = conditionNode;
+		block = blockToExecute;
+	}
+}
+
 
 
 
