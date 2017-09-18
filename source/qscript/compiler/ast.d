@@ -149,6 +149,37 @@ package struct StatementNode{
 	}
 }
 
+/// to store if statements
+package struct IfNode{
+	/// the condition for this if statement
+	public CodeNode condition;
+	/// the block to execute if the condition is true
+	public BlockNode block;
+	/// the block to execute if the condition is false. This block will be empty in case there was no else block
+	public BlockNode elseBlock;
+	/// constructor
+	this (CodeNode conditionNode, BlockNode blockToExecute, BlockNode elseBlockToExecute){
+		condition = conditionNode;
+		block = blockToExecute;
+		elseBlock = elseBlockToExecute;
+	}
+	/// constructor
+	this (CodeNode conditionNode, BlockNode blockToExecute){
+		condition = conditionNode;
+		block = blockToExecute;
+		elseBlock = BlockNode([]);
+	}
+	/// returns true if the else block has a body
+	@property bool hasElse(){
+		if (elseBlock.statements.length > 0){
+			return true;
+		}
+		return false;
+	}
+}
+
+
+
 
 debug{
 	/// returns a string representing a type of ASTNode given the ASTNode.Type
