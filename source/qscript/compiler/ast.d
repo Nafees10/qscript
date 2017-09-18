@@ -261,6 +261,23 @@ package struct WhileNode{
 	}
 }
 
+/// to store functionCall nodes
+package struct FunctionCallNode{
+	/// the name of the function
+	public string fName;
+	/// the arguments for this function
+	public CodeNode[] arguments;
+	/// postblit
+	this (this){
+		arguments = arguments.dup;
+	}
+	/// constructor
+	this (string functionName, CodeNode[] functionArguments){
+		fName = functionName;
+		arguments = functionArguments.dup;
+	}
+}
+
 
 
 
