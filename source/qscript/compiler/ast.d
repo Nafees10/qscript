@@ -77,6 +77,76 @@ package struct BlockNode{
 	}
 }
 
+/// a node to represent code that evaluates to some data.
+/// 
+/// This node can contain:  
+/// 1. Function call - to only those functions that return some data
+/// 2. Literals
+/// 3. Operators
+/// 4. Variables
+package struct CodeNode{
+	/// enum defining the possible types this node can store
+	public enum Type{
+		FunctionCall,
+		Literal,
+		Operator,
+		Variable
+	}
+	/// the stored type
+	private Type storedType;
+	/// union storing all possible nodes
+	private union{
+		FunctionCallNode fCall;
+		LiteralNode literal;
+		OperatorNode operator;
+		Variable var;
+	}
+	/// returns the type of the stored type
+	@property CodeNode.Type type(){
+		return storedType;
+	}
+	/// sets the stored node
+	@property auto node(T)(T newNode){
+		static if (is (T == FunctionCallNode)){
+			fCall = newNode;
+			storedType = CodeNode.Type.FunctionCall;
+		}else static if (is (T == LiteralNode)){
+			literal = newNode;
+			storedType = CodeNode.Type.Literal;
+		}else static if (is (T == OperatorNode)){
+			operator = newNode;
+			storedType = CodeNode.Type.Operator;
+		}else static if (is (T == VariableNode)){
+			var = newNode;
+			storedType = CodeNode.Type.Variable;
+		}else{
+			throw new Exception("attempting to store unsupported type in CodeNode.node");
+		}
+	}
+	/// returns the stored type
+	@property auto node(CodeNode.Type T)(){
+		// make sure it's the correct type
+		if (T != storedType){
+			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
+		}
+		static if (T == CodeNode.Type.FunctionCall){
+			return fCall;
+		}else static if (T == CodeNode.Type.Literal){
+			return literal;
+		}else static if (T == CodeNode.Type.Operator){
+			return operator;
+		}else static if (T == CodeNode.Type.Variable){
+			return var;
+		}else{
+			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
+		}
+	}
+	/// constructor
+	this (T)(T newNode){
+		node = newNode;
+	}
+}
+
 /// a node representing statements, including: if, while, function-call..
 package struct StatementNode{
 	/// types of a statement
@@ -100,19 +170,19 @@ package struct StatementNode{
 	}
 	/// modifies the stored node
 	@property node(T)(T newNode){
-		if (is (T == IfNode)){
+		static if (is (T == IfNode)){
 			storedType = StatementNode.Type.If;
 			ifNode = newNode;
-		}else if (is (T == WhileNode)){
+		}else static if (is (T == WhileNode)){
 			storedType = StatementNode.Type.While;
 			whileNode = newNode;
-		}else if (is (T == BlockNode)){
+		}else static if (is (T == BlockNode)){
 			storedType = StatementNode.Type.Block;
 			blockNode = newNode;
-		}else if (is (T == FunctionCallNode)){
+		}else static if (is (T == FunctionCallNode)){
 			storedType = StatementNode.Type.FunctionCall;
 			functionCallNode = newNode;
-		}else if (is (T == VarDeclareNode)){
+		}else static if (is (T == VarDeclareNode)){
 			storedType = StatementNode.Type.VarDeclare;
 			varDeclareNode = newNode;
 		}else{
@@ -125,15 +195,15 @@ package struct StatementNode{
 		if (T != storedType){
 			throw new Exception("stored type does not match with type being retrieved");
 		}
-		if (T == StatementNode.Type.If){
+		static if (T == StatementNode.Type.If){
 			return ifNode;
-		}else if (T == StatementNode.Type.While){
+		}else static if (T == StatementNode.Type.While){
 			return whileNode;
-		}else if (T == StatementNode.Type.Block){
+		}else static if (T == StatementNode.Type.Block){
 			return blockNode;
-		}else if (T == StatementNode.Type.FunctionCall){
+		}else static  if (T == StatementNode.Type.FunctionCall){
 			return functionCallNode;
-		}else if (T == StatementNode.Type.VarDeclare){
+		}else static if (T == StatementNode.Type.VarDeclare){
 			return varDeclareNode;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from StatementNode.node");
