@@ -35,14 +35,22 @@ package struct ASTNode{
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
-	public FunctionNode[] functions;
+	private FunctionNode[] storedFunctions;
+	/// returns the array containing the functions
+	@property ref FunctionNode[] functions(){
+		return storedFunctions;
+	}
+	/// sets the storedFunctions array
+	@property ref FunctionNode[] functions(FunctionNode[] scriptFunctions){
+		return storedFunctions = scriptFunctions.dup;
+	}
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
-		functions = scriptFunctions.dup;
+		storedFunctions = scriptFunctions.dup;
 	}
 	/// postblit
 	this (this){
-		this.functions = functions.dup;
+		this.storedFunctions = storedFunctions.dup;
 	}
 }
 
@@ -66,14 +74,22 @@ package struct FunctionNode{
 /// a node representing a "set-of-statements" AKA a "block"
 package struct BlockNode{
 	/// an array of statements that make this block
-	public StatementNode[] statements;
+	private StatementNode[] storedStatements;
+	/// returns the array containing the statements
+	@property ref StatementNode[] statements(){
+		return storedStatements;
+	}
+	/// sets the array containing statements
+	@property ref StatementNode[] statements(StatementNode[] blockStatements){
+		return storedStatements = blockStatements.dup;
+	}
 	/// constructor
 	this (StatementNode[] blockStatements){
-		statements = blockStatements.dup;
+		storedStatements = blockStatements.dup;
 	}
 	/// postblit
 	this (this){
-		this.statements = this.statements.dup;
+		this.storedStatements = this.storedStatements.dup;
 	}
 }
 
