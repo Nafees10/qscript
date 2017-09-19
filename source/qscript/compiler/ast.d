@@ -115,7 +115,7 @@ package struct CodeNode{
 		FunctionCallNode fCall;
 		LiteralNode literal;
 		OperatorNode operator;
-		Variable var;
+		VariableNode var;
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
@@ -163,6 +163,42 @@ package struct CodeNode{
 	}
 }
 
+/// stores a variable
+package struct VariableNode{
+	/// the name of this var
+	public string varName;
+	/// stores index-es in case it is an array. For example, if code=`var[0][1]`, then the array below contains [0 (literal), 1 (literal)] 
+	private CodeNode[] storedindexes;
+	/// returns the indexes
+	@property ref CodeNode[] indexes(){
+		return storedindexes;
+	}
+	/// sets the indexes for this var
+	@property ref CodeNode[] indexes(CodeNode[] newIndexes){
+		return storedindexes = newIndexes.dup;
+	}
+	/// returns true if the var is an array-being read like: `varName[0]`
+	@property bool isArray(){
+		if (storedindexes.length > 0){
+			return true;
+		}
+		return false;
+	}
+	/// constructor
+	this (string name, CodeNode[] index){
+		varName = name;
+		storedindexes = index.dup;
+	}
+	/// constructor
+	this (string name){
+		varName = name;
+	}
+	/// postblit
+	this (this){
+		storedindexes = storedindexes.dup;
+	}
+}
+
 /// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
 package struct LiteralNode{
 	private import qscript.qscript : QData;
@@ -178,15 +214,17 @@ package struct LiteralNode{
 package struct OperatorNode{
 	/// stores the operator (like '+' ...)
 	public string operator;
-	/// the left operand
-	public CodeNode leftOperand;
-	/// the right operand
-	public CodeNode rightOperand;
+	/// operands. [0] = left, [1] = right
+	public CodeNode[] operands;
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
-		leftOperand = a;
-		rightOperand = b;
+		operands[0] = a;
+		operands[1] = b;
+	}
+	/// postblit
+	this (this){
+		operands = operands.dup;
 	}
 }
 
