@@ -174,6 +174,22 @@ package struct LiteralNode{
 	}
 }
 
+/// stores an operator with operands
+package struct OperatorNode{
+	/// stores the operator (like '+' ...)
+	public string operator;
+	/// the left operand
+	public CodeNode leftOperand;
+	/// the right operand
+	public CodeNode rightOperand;
+	/// constructor
+	this (string operatorString, CodeNode a, CodeNode b){
+		operator = operatorString;
+		leftOperand = a;
+		rightOperand = b;
+	}
+}
+
 /// a node representing statements, including: if, while, function-call..
 package struct StatementNode{
 	/// types of a statement
