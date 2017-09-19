@@ -163,6 +163,17 @@ package struct CodeNode{
 	}
 }
 
+/// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
+package struct LiteralNode{
+	private import qscript.qscript : QData;
+	/// stores the literal in a QData
+	public QData literal;
+	/// constructor
+	this (T)(T data){
+		literal.intVal = data;
+	}
+}
+
 /// a node representing statements, including: if, while, function-call..
 package struct StatementNode{
 	/// types of a statement
