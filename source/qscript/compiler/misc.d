@@ -26,15 +26,22 @@ package struct CompileError{
 /// All compilation errors are stored here
 package LinkedList!CompileError compileErrors;
 
-/// enum storing all available data types
-package enum DataType{
-	Void,
-	String,
-	Integer,
-	Double,
-	StringArray,
-	IntegerArray,
-	DoubleArray
+/// used to store data types for data at compile time
+package struct DataType{
+	enum DataType{
+		String,
+		Integer,
+		Double
+	}
+	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
+	uinteger arrayNestCount;
+	/// returns true if it's an array
+	@property bool isArray(){
+		if (arrayNestCount > 0){
+			return true;
+		}
+		return false;
+	}
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
