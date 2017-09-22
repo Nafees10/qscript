@@ -359,75 +359,19 @@ package struct FunctionCallNode{
 	}
 }
 
-
-
-
-debug{
-	/// returns a string representing a type of ASTNode given the ASTNode.Type
-	string getNodeTypeString(ASTNode.Type type){
-		const string[ASTNode.Type] typeString = [
-			ASTNode.Type.Arguments: "arguments",
-			ASTNode.Type.ArrayIndex: "array-index",
-			ASTNode.Type.Assign: "assignment-statement",
-			ASTNode.Type.Block: "block",
-			ASTNode.Type.Function: "function-definition",
-			ASTNode.Type.FunctionCall: "function-call",
-			ASTNode.Type.IfStatement: "if-statement",
-			ASTNode.Type.NumberLiteral: "number-literal",
-			ASTNode.Type.Operator: "operator",
-			ASTNode.Type.Script: "script",
-			ASTNode.Type.StringLiteral: "string-literal",
-			ASTNode.Type.VarDeclare: "variable-declaration",
-			ASTNode.Type.Variable: "variable",
-			ASTNode.Type.WhileStatement: "while-statement",
-			ASTNode.Type.StaticArray: "static-array"
-		];
-		return typeString[type];
+/// to store var declaration
+package struct VarDeclareNode{
+	/// the data typre of defined vars
+	public DataType type;
+	/// names of vars declared
+	string[] vars;
+	/// postblit
+	this (this){
+		vars = vars.dup;
 	}
-	/// converts an AST to an html/xml-like file, only available in debug
-	string[] toXML(ASTNode mainNode, uinteger tabLevel = 0){
-		string getTab(uinteger length){
-			char[] tab;
-			tab.length = length;
-			if (tab.length > 0){
-				tab[] = '\t';
-			}
-			return cast(string)tab;
-		}
-		
-		LinkedList!string xml = new LinkedList!string;
-		
-		string tab = getTab(tabLevel);
-		
-		string type = getNodeTypeString(mainNode.type);
-		string tag = tab~"<node type=\""~type~"\">";
-		xml.append(tag);
-		tabLevel ++;
-		tab = getTab(tabLevel);
-		
-		//tag = tab~"<type>"~type~"</type>";
-		//xml.append(tag);
-		
-		if (mainNode.data.length > 0){
-			tag = tab~"<data>"~mainNode.data~"</data>";
-			xml.append(tag);
-		}
-		
-		// if there are subnodes, do recursion
-		ASTNode[] subNodes = mainNode.subNodes;
-		if (subNodes.length > 0){
-			foreach (subNode; subNodes){
-				xml.append(toXML(subNode, tabLevel));
-			}
-		}
-		tabLevel --;
-		tab = getTab(tabLevel);
-		// closing tag
-		tag = tab~"</node>";
-		xml.append(tag);
-		
-		string[] r = xml.toArray;
-		.destroy(xml);
-		return r;
+	/// constructor
+	this (DataType varDataType, string[] varNames){
+		type = varDataType;
+		vars = varNames.dup;
 	}
 }
