@@ -56,18 +56,35 @@ package struct ScriptNode{
 
 /// a node representing a function definition
 package struct FunctionNode{
+	/// struct to store arguments for function
+	public struct Argument{
+		string argName; /// the name of the var storing the arg
+		DataType argType; /// the data type of the arg
+		/// constructor
+		this (string name, DataType type){
+			argName = name;
+			argType = type;
+		}
+	}
+	/// stores arguments with their data type
+	private FunctionNode.Argument[] args;
+	/// returns an array of arguments this function receives and their types
+	@property ref FunctionNode.Argument[] arguments(){
+		return args;
+	}
+	/// sets value of array containing arguments + types
+	@property ref FunctionNode.Argument[] arguments(FunctionNode.Argument[] newArgs){
+		return args = newArgs.dup;
+	}
 	/// body block of this function
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// constructor
-	this (BlockNode fBody, DataType returnDataType){
+	this (DataType returnDataType, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
+		args = funcArgs.dup;
 		returnType = returnType;
-	}
-	/// constructor 
-	this (DataType returnDataType){
-		returnType = returnDataType;
 	}
 }
 
