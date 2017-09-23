@@ -59,7 +59,7 @@ package struct FunctionNode{
 	/// body block of this function
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
-	public DataType returnType = DataType.Void;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// constructor
 	this (BlockNode fBody, DataType returnDataType){
 		bodyBlock = fBody;
