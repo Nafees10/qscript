@@ -28,11 +28,15 @@ package LinkedList!CompileError compileErrors;
 
 /// used to store data types for data at compile time
 package struct DataType{
-	enum DataType{
+	/// enum defining all data types
+	public enum Type{
+		Void,
 		String,
 		Integer,
 		Double
 	}
+	/// the actual data type
+	DataType.Type type;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
 	uinteger arrayNestCount;
 	/// returns true if it's an array
@@ -41,6 +45,11 @@ package struct DataType{
 			return true;
 		}
 		return false;
+	}
+	/// constructor
+	this (DataType.Type dataType, uinteger arrayNest = 0){
+		type = dataType;
+		arrayNestCount = arrayNest;
 	}
 }
 
