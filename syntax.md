@@ -2,15 +2,15 @@
 ## Functions
 ### Function Definition
 ```
-function TYPE (arg0_type arg0, arg1_type arg1) FUNCTION_NAME{
+function TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 	// function body
 }
 ```
 * `TYPE` is the return type of this function
+* `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
 * more arguments can be added, and are to be separated by space.
-* `FUNCTION_NAME` is the name of the function
   
 A function without any arguments would be defined like:
 ```
@@ -41,7 +41,7 @@ Varialbes can be defined as shown below:
 ```
 TYPE (var0, var1, var2);
 ```
-* `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array.
+* `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array of those types: `int[]`, or `int'[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 ### Variable Assignment
 Variables can be assigned a value like:
