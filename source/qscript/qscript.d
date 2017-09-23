@@ -6,39 +6,12 @@ import utils.lists;
 import std.stdio;
 import std.conv:to;
 
-public struct QData{
-	enum Type{
-		String,
-		Integer,
-		Double,
-		Array,
-		Undefined
-	}
-	Type type = QData.Type.Undefined;
-	union{
-		string strVal;
-		integer intVal;
-		double doubleVal;
-		QData[] arrayVal;
-	}
-	/// postblit
-	this(this){
-		if (type == QData.Type.Array){
-			arrayVal = arrayVal.dup;
-		}
-	}
-	/// constructor
-	this(T)(T val){
-		static if (is (T == integer)){
-			intVal = val;
-		}else static if (is (T == double)){
-			doubleVal = val;
-		}else static if (is (T == string)){
-			strVal = val;
-		}else static if (is (T == QData[])){
-			arrayVal = val;
-		}
-	}
+/// to store data from script at runtime
+public union QData{
+	string strVal; /// string value
+	integer intVal; /// integer value
+	double doubleVal; /// double/float value
+	QData[] arrayVal; /// array value
 }
 
 public abstract class QScript{
