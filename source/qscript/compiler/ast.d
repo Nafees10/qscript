@@ -76,6 +76,10 @@ package struct FunctionNode{
 	@property ref FunctionNode.Argument[] arguments(FunctionNode.Argument[] newArgs){
 		return args = newArgs.dup;
 	}
+	/// postblit
+	this (this){
+		args = args.dup;
+	}
 	/// body block of this function
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
