@@ -236,16 +236,24 @@ package struct OperatorNode{
 	/// stores the operator (like '+' ...)
 	public string operator;
 	/// operands. [0] = left, [1] = right
-	public CodeNode[] operands;
+	private CodeNode[] storedOperands;
+	/// returns an array of operands
+	@property ref CodeNode[] operands(){
+		return storedOperands;
+	}
+	/// sets value of array storing operands
+	@property ref CodeNode[] operands(CodeNode[] newOperands){
+		return storedOperands = newOperands.dup;
+	}
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
-		operands[0] = a;
-		operands[1] = b;
+		storedOperands[0] = a;
+		storedOperands[1] = b;
 	}
 	/// postblit
 	this (this){
-		operands = operands.dup;
+		storedOperands = operands.dup;
 	}
 }
 
@@ -379,7 +387,7 @@ package struct FunctionCallNode{
 	}
 	/// postblit
 	this (this){
-		arguments = arguments.dup;
+		storedArguments = storedArguments.dup;
 	}
 	/// constructor
 	this (string functionName, CodeNode[string] functionArguments){
