@@ -51,6 +51,43 @@ package struct DataType{
 		type = dataType;
 		arrayNestCount = arrayNest;
 	}
+	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
+	void fromString(string s){
+		string sType = null;
+		uinteger indexCount = 0;
+		// read the type
+		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
+			if (s[i] == '['){
+				sType = s[0 .. i];
+			}else if (i == lastInd){
+				sType = s;
+			}
+		}
+		// now read the index
+		for (uinteger i = sType.length; i < s.length; i ++){
+			if (s[i] == '['){
+				// make sure next char is a ']'
+				i ++;
+				if (s[i] != ']'){
+					throw new Exception("bad type format");
+				}
+				indexCount ++;
+			}
+		}
+		// now check if the type was ok or not
+		if (sType == "void"){
+			type = DataType.Type.Void;
+		}else if (sType == "string"){
+			type = DataType.Type.String;
+		}else if (sType == "integer"){
+			type = DataType.Type.Integer;
+		}else if (sType == "double"){
+			type = DataType.Type.Double;
+		}else{
+			throw new Exception("invalid data type");
+		}
+		arrayNestCount = indexCount;
+	}
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
