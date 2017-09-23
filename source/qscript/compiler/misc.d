@@ -47,9 +47,18 @@ package struct DataType{
 		return false;
 	}
 	/// constructor
+	/// 
+	/// dataType is the type to store
+	/// arrayNest is the number of nested arrays
 	this (DataType.Type dataType, uinteger arrayNest = 0){
 		type = dataType;
 		arrayNestCount = arrayNest;
+	}
+	/// constructor
+	/// 
+	/// sType is the type in string form
+	this (string sType){
+		fromString(sType);
 	}
 	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
 	void fromString(string s){
@@ -131,6 +140,22 @@ package struct TokenList{
 			chars += tokenPerLine[i];
 		}
 		return i;
+	}
+	/// reads tokens into a string
+	string toString(Token[] t){
+		char[] r;
+		// set length
+		uinteger length = 0;
+		for (uinteger i = 0; i < t.length; i ++){
+			length += t[i].token.length;
+		}
+		r.length = length;
+		// read em all into r;
+		for (uinteger i = 0, writeTo = 0; i < t.length; i ++){
+			r[writeTo .. writeTo + t[i].token.length] = t[i].token;
+			writeTo += t[i].token.length;
+		}
+		return cast(string)r;
 	}
 }
 
