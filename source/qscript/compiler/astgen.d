@@ -5,6 +5,7 @@ import qscript.compiler.tokengen;
 import qscript.compiler.ast;
 
 import utils.misc;
+import utils.lists;
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
 struct ASTGen{
@@ -12,42 +13,61 @@ struct ASTGen{
 	/// 
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
-	static public ASTNode generateAST(TokenList tokens){
-		ASTNode scriptNode = ASTNode(ASTNode.Type.Script, 0);
+	static public ScriptNode generateScriptAST(TokenList tokens){
+		ScriptNode scriptNode;
+		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
 		// go through the script, compile function nodes, link them to this node
 		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
 			// look for TokenType.Keyword where token.token == "function"
 			if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
 				uinteger errorCount = compileErrors.count;
-				ASTNode functionNode = generateFunctionAST(tokens, i);
+				FunctionNode functionNode = generateFunctionAST(tokens, i);
+				i --;
 				// check if error free
-				if (compileErrors.count > errorCount){
-					// error
-					break;
-				}else{
+				if (compileErrors.count == errorCount){
 					scriptNode.addSubNode(functionNode);
 				}
 			}
 		}
+		scriptNode = ScriptNode(functions.toArray);
+		.destroy(functions);
 		return scriptNode;
 	}
 	static private{
+		/// reads a type from TokensList
+		/// 
+		/// returns type in DataType struct, changes `index` to token after last token of type
+		DataType readType(TokenList tokens, ref uinteger index){
+			uinteger startIndex = *index;
+			for (; index < tokens.tokens.length; index ++){
+				if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
+					tokens.tokens[index].type != Token.Type.IndexBracketClose){
+					break;
+				}
+			}
+			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
+			return DataType(sType);
+		}
 		/// generates AST for a function definition 
-		ASTNode generateFunctionAST(TokenList tokens, uinteger index){
-			ASTNode functionNode;
+		/// 
+		/// changes `index` to the token after function definition
+		FunctionNode generateFunctionAST(TokenList tokens, ref uinteger index){
+			FunctionNode functionNode;
+			BlockNode fBody;
+			DataType returnType;
+			LinkedList!FunctionNode.Argument args = new LinkedList!FunctionNode.Argument;
+			string fName;
 			// make sure it's a function
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
-				// make sure it's followed by a function-name which is followed by block
-				if (index+3 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.Identifier && 
-					tokens.tokens[index+2].type == Token.Type.BlockStart){
-					// everything's good
-					// add name
-					functionNode = ASTNode(ASTNode.Type.Function, tokens.tokens[index+1].token, tokens.getTokenLine(index + 1));
-					// convert the function body to ASTNodes using generateBlockAST
-					functionNode.addSubNode(generateBlockAST(tokens, index+2));
-				}else{
-					// not followed by a block of code and/or followed by EOF
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "function definition incomplete"));
+				// read the type
+				returnType = readType(tokens, index + 1);
+				// now index is at function name
+				fName = tokens.tokens[index];
+				index ++;
+				// now for the argument types, and the functionBody
+				if (tokens.tokens[index].type == Token.Type.BlockStart){
+					// no args, just body
+					fBody = generateBlockAST(/*TODO add args*/);
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
@@ -56,8 +76,10 @@ struct ASTGen{
 		}
 		
 		/// generates AST for a {block-of-code}
-		ASTNode generateBlockAST(TokenList tokens, uinteger index){
-			ASTNode blockNode = ASTNode(ASTNode.Type.Block, tokens.getTokenLine(index));
+		/// 
+		/// changes `index` to token after block end FIXME make it work
+		BlockNode generateBlockAST(TokenList tokens, ref uinteger index){
+			BlockNode blockNode = ASTNode(ASTNode.Type.Block, tokens.getTokenLine(index));
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
