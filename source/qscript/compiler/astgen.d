@@ -67,7 +67,9 @@ struct ASTGen{
 				// now for the argument types, and the functionBody
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
 					// no args, just body
-					fBody = generateBlockAST(/*TODO add args*/);
+					fBody = generateBlockAST(tokens, index);
+				}else{
+					/// TODO add code to read arguments + types
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
@@ -77,13 +79,14 @@ struct ASTGen{
 		
 		/// generates AST for a {block-of-code}
 		/// 
-		/// changes `index` to token after block end FIXME make it work
+		/// changes `index` to token after block end
 		BlockNode generateBlockAST(TokenList tokens, ref uinteger index){
-			BlockNode blockNode = ASTNode(ASTNode.Type.Block, tokens.getTokenLine(index));
+			BlockNode blockNode;
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
-				blockNode.addSubNode(generateStatementsAST(tokens, index+1, brackEnd-1));
+				blockNode = BlockNode(generateStatementsAST(tokens, index+1, brackEnd-1));
+				index = brackEnd+1;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 			}
