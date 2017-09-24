@@ -98,6 +98,13 @@ package struct DataType{
 		arrayNestCount = indexCount;
 	}
 }
+/// unittests
+unittest{
+	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
+	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
+	assert(DataType("double[][]" == DataType(DataType.Type.Double, 2)));
+	assert(DataType("void") == DataType(DataType.Type.Void, 0));
+}
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
