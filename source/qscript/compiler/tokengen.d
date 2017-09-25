@@ -55,6 +55,8 @@ private Token.Type getTokenType(string token){
 		return Token.Type.BlockStart;
 	}else if (token == "}"){
 		return Token.Type.BlockEnd;
+	}else if (DATA_TYPES.hasElement(token)){
+		return Token.Type.DataType;
 	}else{
 		throw new Exception("unidentified token type");
 	}
