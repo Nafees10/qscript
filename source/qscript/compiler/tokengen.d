@@ -31,6 +31,8 @@ private Token.Type getTokenType(string token){
 
 	if (token.isNum){
 		return Token.Type.Number;
+	}else if (DATA_TYPES.hasElement(token)){
+		return Token.Type.DataType;
 	}else if (isKeyword(token)){
 		return Token.Type.Keyword;
 	}else if (isIdentifier(token)){
@@ -55,8 +57,6 @@ private Token.Type getTokenType(string token){
 		return Token.Type.BlockStart;
 	}else if (token == "}"){
 		return Token.Type.BlockEnd;
-	}else if (DATA_TYPES.hasElement(token)){
-		return Token.Type.DataType;
 	}else{
 		throw new Exception("unidentified token type");
 	}
