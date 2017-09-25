@@ -8,7 +8,9 @@ import std.range;
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
 /// An array containing all keywords
-package const string[] KEYWORDS = ["function", "if", "while", "int", "string", "double"];
+package const string[] KEYWORDS = ["function", "if", "while", "void", "int", "string", "double"];
+/// data types
+package const string[] DATA_TYPES = ["void", "int", "double", "string"];
 /// An array containing another array conatining all operators
 package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "!=", "<=", ">=", "="];
 /// An array containing all bool-operators (operators that return true/false)
@@ -115,6 +117,7 @@ package struct Token{
 		String,/// That the token is: `"SOME STRING"`
 		Number,/// That the token a number, float also included
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
+		DataType, /// the  token is a data type
 		Operator,/// That the token is an operator, like `+`, `==` etc
 		Keyword,/// A `function` or `var` ...
 		Comma,/// That its a comma: `,`
