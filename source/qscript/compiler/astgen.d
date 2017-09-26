@@ -60,7 +60,9 @@ struct ASTGen{
 			// make sure it's a function
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				// read the type
-				returnType = readType(tokens, index + 1);
+				index++;
+				returnType = readType(tokens, index);
+				// above functionCall moves index to fName
 				// now index is at function name
 				fName = tokens.tokens[index];
 				index ++;
@@ -222,16 +224,16 @@ struct ASTGen{
 		}
 		
 		/// generates AST for "actual code" like `2 + 2 - 6`.
-		ASTNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
-			ASTNode lastNode;
+		CodeNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
+			CodeNode lastNode;
 			bool separatorExpected = false;
 			for (uinteger i = index; i <= endIndex; i ++){
 				Token token = tokens.tokens[i];
 				if (!separatorExpected){
 					// an identifier, or literal (i.e some data) was expected
-					lastNode = generateNodeAST(tokens, i);
-					separatorExpected = true;
+					lastNode = CodeNode(generateNodeAST(tokens, i));
 					i --;
+					separatorExpected = true;
 				}else{
 					// an operator or something that deals with data was expected
 					if (token.type == Token.Type.Operator){
@@ -251,12 +253,12 @@ struct ASTGen{
 		/// `index` is the index of the token which is the operator
 		/// 
 		/// changes `index` to the index of the token after the last token related to the operator
-		ASTNode generateOperatorAST(TokenList tokens, ASTNode firstOperand, ref uinteger index){
-			ASTNode operator = ASTNode(ASTNode.Type.Operator, tokens.tokens[index].token, tokens.getTokenLine(index));
+		OperatorNode generateOperatorAST(TokenList tokens, ASTNode firstOperand, ref uinteger index){
+			OperatorNode operator;
 			// make sure it's an operator, and there is a second operand
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
-				ASTNode secondOperand;
+				CodeNode secondOperand;
 				if (BOOL_OPERATORS.hasElement(tokens.tokens[index].token)){
 					// look where the operand is ending
 					uinteger i;
@@ -275,11 +277,11 @@ struct ASTGen{
 					index = i;
 				}else{
 					uinteger i = index + 1;
-					secondOperand = generateNodeAST(tokens, i);
+					secondOperand = CodeNode(generateNodeAST(tokens, i));
 					index = i;
 				}
 				// put both operands under one node
-				operator.addSubNode([firstOperand, secondOperand]);
+				operator = OperatorNode(tokens.tokens[index].token, firstOperand, secondOperand);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "no second operand found"));
 			}
@@ -287,21 +289,20 @@ struct ASTGen{
 		}
 		
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
-		ASTNode generateVariableAST(TokenList tokens, ref uinteger index){
-			ASTNode var;
+		VariableNode generateVariableAST(TokenList tokens, ref uinteger index){
+			VariableNode var;
 			// make sure first token is identifier
 			if (tokens.tokens[index].type == Token.Type.Identifier){
 				// set var name
-				var = ASTNode(ASTNode.Type.Variable, tokens.tokens[index].token, tokens.getTokenLine(index));
+				var.varName = tokens.tokens[index].token;
 				index ++;
 				// check if indexes are specified, case yes, add em
 				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
 					for (index = index; index < tokens.tokens.length; index ++){
 						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
 							// add it
-							ASTNode indexNode = ASTNode(ASTNode.Type.ArrayIndex, tokens.getTokenLine(index));
 							uinteger brackEnd = tokens.tokens.bracketPos!true(index);
-							var.addSubNode(indexNode);
+							var.addSubNode(generateCodeAST(tokens, index+1, brackEnd - 1));
 						}else{
 							break;
 						}
