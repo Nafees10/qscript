@@ -375,14 +375,14 @@ package struct WhileNode{
 package struct FunctionCallNode{
 	/// the name of the function
 	public string fName;
-	/// the arguments for this function. The index is the name of the arg
-	private CodeNode[string] storedArguments;
+	/// the arguments for this function.
+	private CodeNode[] storedArguments;
 	/// returns the assoc_array storing values for arguments
-	@property ref CodeNode[string] arguments(){
+	@property ref CodeNode[] arguments(){
 		return storedArguments;
 	}
 	/// sets value for storedArguments
-	@property ref CodeNode[string] arguments(CodeNode[string] newArgs){
+	@property ref CodeNode[] arguments(CodeNode[] newArgs){
 		return storedArguments = newArgs.dup;
 	}
 	/// postblit
@@ -390,7 +390,7 @@ package struct FunctionCallNode{
 		storedArguments = storedArguments.dup;
 	}
 	/// constructor
-	this (string functionName, CodeNode[string] functionArguments){
+	this (string functionName, CodeNode[] functionArguments){
 		fName = functionName;
 		arguments = functionArguments;
 	}
