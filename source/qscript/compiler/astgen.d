@@ -94,7 +94,7 @@ struct ASTGen{
 		}
 		
 		/// generates ASTs for statements in a block
-		ASTNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
+		StatementNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
 			enum StatementType{
 				FunctionCall,
 				IfWhile,
@@ -107,10 +107,9 @@ struct ASTGen{
 				if (tokens.tokens[index].type == Token.Type.Keyword){
 					if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
 						return StatementType.IfWhile;
-					}else if (tokens.tokens[index].token == "int" || tokens.tokens[index].token == "double" ||
-						tokens.tokens[index].token == "string"){
-						return StatementType.VarDeclare;
 					}
+				}else if (tokens.tokens[index].type == Token.Type.DataType){
+					return StatementType.VarDeclare;
 				}else if (index+3 <= endIndex && tokens.tokens[index].type == Token.Type.Identifier && 
 					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 					// is a function call
@@ -188,21 +187,15 @@ struct ASTGen{
 			return statementNodes;
 		}
 		
-		ASTNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
-			ASTNode functionCallNode;
+		FunctionCallNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
+			FunctionCallNode functionCallNode;
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
 				// check if there's a bracket
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
 				if (brackEnd <= endIndex){
-					functionCallNode = ASTNode(ASTNode.Type.FunctionCall,
-						tokens.tokens[index].token, 
-						tokens.getTokenLine(index));
-					
-					ASTNode args = ASTNode(ASTNode.Type.Arguments, tokens.getTokenLine(index));
-					
 					// now for the arguments
-					bool hasArgs = false;
+					LinkedList!CodeNode args = new LinkedList!CodeNode;
 					for (uinteger i = index+2, readFrom = index+2; i <= endIndex; i ++){
 						Token token = tokens.tokens[i];
 						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
@@ -211,16 +204,12 @@ struct ASTGen{
 							i = tokens.tokens.bracketPos(i);
 						}
 						if (readFrom < i && (token.type == Token.Type.Comma || token.type == Token.Type.ParanthesesClose)){
-							ASTNode arg = generateCodeAST(tokens, readFrom, i-1);
-							args.addSubNode(arg);
+							args.append(generateCodeAST(tokens, readFrom, i-1));
 							readFrom = i+1;
-							hasArgs = true;
 						}
 					}
-					
-					if (hasArgs){
-						functionCallNode.addSubNode(args);
-					}
+					functionCallNode = FunctionCallNode(tokens.tokens[index], args.toArray);
+					.destroy(args);
 					
 					return functionCallNode;
 				}else{
