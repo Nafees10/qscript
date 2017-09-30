@@ -346,10 +346,10 @@ package struct AssignmentNode{
 package struct IfNode{
 	/// the condition for this if statement
 	public CodeNode condition;
-	/// the block to execute if the condition is true
-	public BlockNode block;
-	/// the block to execute if the condition is false. This block will be empty in case there was no else block
-	public BlockNode elseBlock;
+	/// the statement to execute if the condition is true
+	public StatementNode statement;
+	/// the statement to execute if the condition is false. This block will be empty in case there was no else block
+	public StatementNode elseStatement;
 	/// constructor
 	this (CodeNode conditionNode, BlockNode blockToExecute, BlockNode elseBlockToExecute){
 		condition = conditionNode;
@@ -375,8 +375,8 @@ package struct IfNode{
 package struct WhileNode{
 	/// the condition for this while statement
 	public CodeNode condition;
-	/// the block to execute in loop if the condition is true
-	public BlockNode block;
+	/// the statement to execute in loop if the condition is true
+	public StatementNode statement;
 	/// constructor
 	this (CodeNode conditionNode, BlockNode blockToExecute){
 		condition = conditionNode;
