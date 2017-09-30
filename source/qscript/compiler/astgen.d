@@ -301,8 +301,8 @@ struct ASTGen{
 					if (tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
 						index = brackEnd+2;
 					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1,
-									"variable declaration not followed by semicolon")));
+						compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1),
+									"variable declaration not followed by semicolon"));
 					}
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
@@ -314,20 +314,27 @@ struct ASTGen{
 		}
 		
 		/// generates AST for if statements
-		IfNode generateIfAST(TokenList tokens, uinteger index, uinteger endIndex){
+		IfNode generateIfAST(TokenList tokens, ref uinteger index){
 			IfNode ifNode;
 			// check if is an if
 			if (index+3 < endIndex && tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
 				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
-				ifNode.condition = generateCodeAST(tokens, index+2, brackEnd-1);
-				// make sure there's a block at the end of the condition
-				if (brackEnd+1 < endIndex && tokens.tokens[brackEnd+1].type == Token.Type.BlockStart){
-					ASTNode block = generateBlockAST(tokens, brackEnd+1);
-					ifWhile.addSubNode(block);
+				index += 2;
+				ifNode.condition = generateCodeAST(tokens, index);
+				// make sure index & brackEnd are now same
+				if (index == brackEnd){
+					index = brackEnd+1;
+					ifNode.statement = generateStatementAST(tokens, index);
+					// check if there's any else statement
+					if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "else"){
+						// add that as well
+						index ++;
+						ifNode.elseStatement = generateStatementAST(tokens, index);
+					}
 				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1), "if/while statement not followed by a block"));
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
@@ -336,16 +343,22 @@ struct ASTGen{
 		}
 
 		/// generates AST for while statements
-		WhileNode generateWhileAST(TokenList tokens, uinteger index){
+		WhileNode generateWhileAST(TokenList tokens, ref uinteger index){
 			WhileNode whileNode;
 			// check if is an if
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
+				uinteger brackEnd = tokens.tokens.bracketPos!true(index+1);
 				index += 2;
 				whileNode.condition = generateCodeAST(tokens, index);
-				// make sure condition's followed by a block
-
+				// skip the brackEnd, if index matches it
+				if (index == brackEnd){
+					index++;
+					whileNode.condition = generateStatementAST(tokens, index);
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
+				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
 			}
@@ -353,7 +366,7 @@ struct ASTGen{
 		}
 		
 		/// generates AST for static arrays: like: `[x, y, z]`
-		ASTNode generateStaticArrayAST(TokenList tokens, uinteger index, uinteger endIndex){
+		ASTNode generateStaticArrayAST(TokenList tokens, ref uinteger index){
 			ASTNode array;
 			// check if is a static array
 			if (tokens.tokens[index].type == Token.Type.IndexBracketOpen &&
