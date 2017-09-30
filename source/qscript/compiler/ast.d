@@ -346,25 +346,41 @@ package struct AssignmentNode{
 package struct IfNode{
 	/// the condition for this if statement
 	public CodeNode condition;
-	/// the statement to execute if the condition is true
-	public StatementNode statement;
-	/// the statement to execute if the condition is false. This block will be empty in case there was no else block
-	public StatementNode elseStatement;
-	/// constructor
-	this (CodeNode conditionNode, BlockNode blockToExecute, BlockNode elseBlockToExecute){
-		condition = conditionNode;
-		block = blockToExecute;
-		elseBlock = elseBlockToExecute;
+	/// the statements to execute if the condition is true
+	private StatementNode[] storedStatements;
+	/// returns array containing statements to execute
+	public @property ref StatementNode[] statements(){
+		return storedStatements;
+	}
+	/// to modify the stored statements
+	public @property ref StatementNode[] statements(StatementNode[] newArray){
+		return storedStatements = newArray.dup;
+	}
+	/// the statements to execute if the condition is false. This block will be empty in case there was no else block
+	private StatementNode[] storedElseStatements;
+	/// returns array containing statements to execute on eles
+	public @property ref StatementNode[] elseStatements(){
+		return storedElseStatements;
+	}
+	/// to modify the stored statements to execute on eles
+	public @property ref StatementNode[] elseStatements(StatementNode[] newArray){
+		return storedElseStatements = newArray.dup;
 	}
 	/// constructor
-	this (CodeNode conditionNode, BlockNode blockToExecute){
+	this (CodeNode conditionNode, StatementNode[] statementsToExecute, StatementNode[] elseStatementsToExec){
 		condition = conditionNode;
-		block = blockToExecute;
-		elseBlock = BlockNode([]);
+		storedStatements = statementsToExecute.dup;
+		storedElseStatements = elseStatementsToExec.dup;
+	}
+	/// constructor
+	this (CodeNode conditionNode,  StatementNode[] statementsToExecute){
+		condition = conditionNode;
+		storedStatements = statementsToExecute.dup;
+		storedElseStatements = [];
 	}
 	/// returns true if the else block has a body
 	@property bool hasElse(){
-		if (elseBlock.statements.length > 0){
+		if (storedElseStatements.length > 0){
 			return true;
 		}
 		return false;
@@ -375,12 +391,20 @@ package struct IfNode{
 package struct WhileNode{
 	/// the condition for this while statement
 	public CodeNode condition;
-	/// the statement to execute in loop if the condition is true
-	public StatementNode statement;
+	/// the statements to execute in loop if the condition is true
+	private StatementNode[] storedStatements;
+	/// returns array containing statements to execute
+	public @property ref StatementNode[] statements(){
+		return storedStatements;
+	}
+	/// to modify the stored statements
+	public @property ref StatementNode[] statements(StatementNode[] newArray){
+		return storedStatements = newArray.dup;
+	}
 	/// constructor
-	this (CodeNode conditionNode, BlockNode blockToExecute){
+	this (CodeNode conditionNode, StatementNode[] statementsToExec){
 		condition = conditionNode;
-		block = blockToExecute;
+		storedStatements = statementsToExec.dup;
 	}
 }
 
