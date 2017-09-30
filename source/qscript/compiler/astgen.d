@@ -99,16 +99,19 @@ struct ASTGen{
 		StatementNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
 			enum StatementType{
 				FunctionCall,
-				IfWhile,
+				If,
+				While,
 				Assignment,
 				VarDeclare,
 				NoValidType
 			}
-			StatementType getStatementType(TokenList tokens, uinteger index, uinteger endIndex){
+			StatementType getStatementType(TokenList tokens, uinteger index){
 				// check if its a function call, or if/while
 				if (tokens.tokens[index].type == Token.Type.Keyword){
-					if (tokens.tokens[index].token == "if" || tokens.tokens[index].token == "while"){
-						return StatementType.IfWhile;
+					if (tokens.tokens[index].token == "if"){
+						return StatementType.If;
+					}else if (tokens.tokens[index].token == "while"){
+						return StatementType.While;
 					}
 				}else if (tokens.tokens[index].type == Token.Type.DataType){
 					return StatementType.VarDeclare;
@@ -119,19 +122,7 @@ struct ASTGen{
 				}else{
 					// check if first token is var
 					if (tokens.tokens[index].type == Token.Type.Identifier){
-						// index brackets are expected
-						uinteger i;
-						for (i = index+1; i < endIndex; i ++){
-							if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
-								i = tokens.tokens.bracketPos(i);
-							}else{
-								break;
-							}
-						}
-						// if it reached here, it means previous checks passed, now to see if there's an `=` token or not
-						if (tokens.tokens[i].type == Token.Type.Operator && tokens.tokens[i].token == "="){
-							return StatementType.Assignment;
-						}
+						return StatementType.Assignment;
 					}
 				}
 				return StatementType.NoValidType;
@@ -141,89 +132,59 @@ struct ASTGen{
 			LinkedList!StatementNode nodeList = new LinkedList!StatementNode;
 			// separate statements
 			for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
-				// check if is a block for if/while, then skip
-				if (tokens.tokens[i].type == Token.Type.Keyword){
-					if (tokens.tokens[i].token == "if" || tokens.tokens[i].token == "while"){
-						// make sure its followed by a paranthese, then by a brace, and then skip that brace
-						if (tokens.tokens[i+1].type == Token.Type.ParanthesesOpen){
-							i = tokens.tokens.bracketPos(i+1)+1;
-							// then skip the brace
-							if (tokens.tokens[i].type == Token.Type.BlockStart){
-								i = tokens.tokens.bracketPos(i);
-							}else{
-								compileErrors.append(CompileError(tokens.getTokenLine(i),
-										"if/while statement not followed by a block"));
-							}
-						}else{
-							compileErrors.append(CompileError(tokens.getTokenLine(i),
-									"if/while statement not complete"));
-						}
-					}
+				// get the type
+				StatementType currentType = getStatementType(tokens, i);
+				// match the type, call the appropriate function
+				if (currentType == StatementType.Assignment){
+					nodeList.append(
+						StatementNode(generateAssignmentAST(tokens, i))
+						);
+				}else if (currentType == StatementType.FunctionCall){
+					nodeList.append(
+						StatementNode(generateFunctionCallAST(tokens, i))
+						);
+				}else if (currentType == StatementType.If){
+					nodeList.append(
+						StatementNode(generateIfAST(tokens, i))
+						);
+				}else if (currentType == StatementType.VarDeclare){
+					nodeList.append(
+						StatementNode(generateVarDeclareAST(tokens, i))
+						);
+				}else if (currentType == StatementType.While){
+					nodeList.append(
+						StatementNode(generateWhileAST(tokens, i))
+						);
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(i), "invalid statement"));
+					break;
 				}
-				if (tokens.tokens[i].type == Token.Type.StatementEnd && readFrom < i){
-					StatementType type = getStatementType(tokens, readFrom, i);
-					if (type == StatementType.NoValidType){
-						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
-						break;
-					}else if (type == StatementType.Assignment){
-						nodeList.append(
-							StatementNode(generateAssignmentAST(tokens, readFrom, i-1))
-							);
-					}else if (type == StatementType.FunctionCall){
-						nodeList.append(
-							StatementNode(generateFunctionCallAST(tokens, readFrom, i-1))
-								);
-					}else if (type == StatementType.VarDeclare){
-						nodeList.append(
-							StatementNode(generateVarDeclareAST(tokens, readFrom, i-1))
-							);
-					}else if (type == StatementType.IfWhile){
-						nodeList.append(
-							StatementNode(generateIfWhileAST(tokens, readFrom, i))
-							);
-					}
-					readFrom = i+1;
-				}else if (tokens.tokens[i].type == Token.Type.BlockStart && readFrom < i){
-					// add it
-					nodeList.append(StatementNode(generateBlockAST(tokens, i)));
-					// skip the block's body
-					i = tokens.tokens.bracketPos(i);
-					readFrom = i+1;
-				}
+				i--;
 			}
 			StatementNode[] statementNodes = nodeList.toArray;
 			.destroy(nodeList);
 			return statementNodes;
 		}
-		
-		FunctionCallNode generateFunctionCallAST(TokenList tokens, uinteger index, uinteger endIndex){
+
+		/// generates AST for function call, changes `index` to token after statementEnd
+		FunctionCallNode generateFunctionCallAST(TokenList tokens, ref uinteger index){
 			FunctionCallNode functionCallNode;
 			// check if is function call
-			if (tokens.tokens[index].type == Token.Type.Identifier && tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
-				// check if there's a bracket
+			if (tokens.tokens[index].type == Token.Type.Identifier &&
+				tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
-				if (brackEnd <= endIndex){
-					// now for the arguments
-					LinkedList!CodeNode args = new LinkedList!CodeNode;
-					for (uinteger i = index+2, readFrom = index+2; i <= endIndex; i ++){
-						Token token = tokens.tokens[i];
-						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
-							hasElement(token.type)){
-							//skip to end of that bracket
-							i = tokens.tokens.bracketPos(i);
-						}
-						if (readFrom < i && (token.type == Token.Type.Comma || token.type == Token.Type.ParanthesesClose)){
-							args.append(generateCodeAST(tokens, readFrom, i-1));
-							readFrom = i+1;
-						}
+				// now for the arguments
+				LinkedList!CodeNode args = new LinkedList!CodeNode;
+				for (index = index+2; ; index ++){
+					args.append(generateCodeAST(tokens, index));
+					if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
+						break;
 					}
-					functionCallNode = FunctionCallNode(tokens.tokens[index].token, args.toArray);
-					.destroy(args);
-					
-					return functionCallNode;
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
 				}
+				functionCallNode = FunctionCallNode(tokens.tokens[index].token, args.toArray);
+				.destroy(args);
+				
+				return functionCallNode;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
 			}
@@ -383,21 +344,15 @@ struct ASTGen{
 			return varDeclare;
 		}
 		
-		/// generates AST for if/while statements
-		ASTNode generateIfWhileAST(TokenList tokens, uinteger index, uinteger endIndex){
-			ASTNode ifWhile;
-			if (tokens.tokens[index].token == "while"){
-				ifWhile = ASTNode(ASTNode.Type.WhileStatement, tokens.getTokenLine(index));
-			}else if (tokens.tokens[index].token == "if"){
-				ifWhile = ASTNode(ASTNode.Type.IfStatement, tokens.getTokenLine(index));
-			}
-			// check if is an if/while
-			if (index+3 < endIndex && tokens.tokens[index].type == Token.Type.Keyword &&
+		/// generates AST for if statements
+		IfNode generateIfAST(TokenList tokens, uinteger index, uinteger endIndex){
+			IfNode ifNode;
+			// check if is an if
+			if (index+3 < endIndex && tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
 				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
-				ASTNode condition = generateCodeAST(tokens, index+2, brackEnd-1);
-				ifWhile.addSubNode(condition);
+				ifNode.condition = generateCodeAST(tokens, index+2, brackEnd-1);
 				// make sure there's a block at the end of the condition
 				if (brackEnd+1 < endIndex && tokens.tokens[brackEnd+1].type == Token.Type.BlockStart){
 					ASTNode block = generateBlockAST(tokens, brackEnd+1);
