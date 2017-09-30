@@ -25,7 +25,7 @@ struct ASTGen{
 				i --;
 				// check if error free
 				if (compileErrors.count == errorCount){
-					scriptNode.addSubNode(functionNode);
+					functions.append(functionNode);
 				}
 			}
 		}
@@ -38,7 +38,7 @@ struct ASTGen{
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
 		DataType readType(TokenList tokens, ref uinteger index){
-			uinteger startIndex = *index;
+			uinteger startIndex = index;
 			for (; index < tokens.tokens.length; index ++){
 				if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
 					tokens.tokens[index].type != Token.Type.IndexBracketClose){
@@ -55,7 +55,7 @@ struct ASTGen{
 			FunctionNode functionNode;
 			BlockNode fBody;
 			DataType returnType;
-			LinkedList!FunctionNode.Argument args = new LinkedList!FunctionNode.Argument;
+			LinkedList!(FunctionNode.Argument) args = new LinkedList!(FunctionNode.Argument);
 			string fName;
 			// make sure it's a function
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
@@ -64,7 +64,7 @@ struct ASTGen{
 				returnType = readType(tokens, index);
 				// above functionCall moves index to fName
 				// now index is at function name
-				fName = tokens.tokens[index];
+				fName = tokens.tokens[index].token;
 				index ++;
 				// now for the argument types, and the functionBody
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
@@ -137,9 +137,8 @@ struct ASTGen{
 				return StatementType.NoValidType;
 			}
 			
-			
-			ASTNode[] statementNodes;
-			LinkedList!ASTNode nodeList = new LinkedList!ASTNode;
+
+			LinkedList!StatementNode nodeList = new LinkedList!StatementNode;
 			// separate statements
 			for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
 				// check if is a block for if/while, then skip
@@ -167,24 +166,32 @@ struct ASTGen{
 						compileErrors.append(CompileError(tokens.getTokenLine(readFrom), "invalid statement"));
 						break;
 					}else if (type == StatementType.Assignment){
-						nodeList.append(generateAssignmentAST(tokens, readFrom, i-1));
+						nodeList.append(
+							StatementNode(generateAssignmentAST(tokens, readFrom, i-1))
+							);
 					}else if (type == StatementType.FunctionCall){
-						nodeList.append(generateFunctionCallAST(tokens, readFrom, i-1));
+						nodeList.append(
+							StatementNode(generateFunctionCallAST(tokens, readFrom, i-1))
+								);
 					}else if (type == StatementType.VarDeclare){
-						nodeList.append(generateVarDeclareAST(tokens, readFrom, i-1));
+						nodeList.append(
+							StatementNode(generateVarDeclareAST(tokens, readFrom, i-1))
+							);
 					}else if (type == StatementType.IfWhile){
-						nodeList.append(generateIfWhileAST(tokens, readFrom, i));
+						nodeList.append(
+							StatementNode(generateIfWhileAST(tokens, readFrom, i))
+							);
 					}
 					readFrom = i+1;
 				}else if (tokens.tokens[i].type == Token.Type.BlockStart && readFrom < i){
 					// add it
-					nodeList.append(generateBlockAST(tokens, i));
+					nodeList.append(StatementNode(generateBlockAST(tokens, i)));
 					// skip the block's body
 					i = tokens.tokens.bracketPos(i);
 					readFrom = i+1;
 				}
 			}
-			statementNodes = nodeList.toArray;
+			StatementNode[] statementNodes = nodeList.toArray;
 			.destroy(nodeList);
 			return statementNodes;
 		}
@@ -210,7 +217,7 @@ struct ASTGen{
 							readFrom = i+1;
 						}
 					}
-					functionCallNode = FunctionCallNode(tokens.tokens[index], args.toArray);
+					functionCallNode = FunctionCallNode(tokens.tokens[index].token, args.toArray);
 					.destroy(args);
 					
 					return functionCallNode;
@@ -237,7 +244,7 @@ struct ASTGen{
 				}else{
 					// an operator or something that deals with data was expected
 					if (token.type == Token.Type.Operator){
-						lastNode = generateOperatorAST(tokens, lastNode, i);
+						lastNode = CodeNode(generateOperatorAST(tokens, lastNode, i));
 						i --;
 					}else{
 						compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
@@ -253,7 +260,7 @@ struct ASTGen{
 		/// `index` is the index of the token which is the operator
 		/// 
 		/// changes `index` to the index of the token after the last token related to the operator
-		OperatorNode generateOperatorAST(TokenList tokens, ASTNode firstOperand, ref uinteger index){
+		OperatorNode generateOperatorAST(TokenList tokens, CodeNode firstOperand, ref uinteger index){
 			OperatorNode operator;
 			// make sure it's an operator, and there is a second operand
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
@@ -298,15 +305,18 @@ struct ASTGen{
 				index ++;
 				// check if indexes are specified, case yes, add em
 				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+					LinkedList!CodeNode indexes = new LinkedList!CodeNode;
 					for (index = index; index < tokens.tokens.length; index ++){
 						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
 							// add it
 							uinteger brackEnd = tokens.tokens.bracketPos!true(index);
-							var.addSubNode(generateCodeAST(tokens, index+1, brackEnd - 1));
+							indexes.append(generateCodeAST(tokens, index+1, brackEnd - 1));
 						}else{
 							break;
 						}
 					}
+					var.indexes = indexes.toArray;
+					.destroy(indexes);
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
