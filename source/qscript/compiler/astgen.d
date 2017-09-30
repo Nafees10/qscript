@@ -341,39 +341,19 @@ struct ASTGen{
 		}
 		
 		/// generates AST for variable declarations
-		ASTNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
-			ASTNode varDeclare = ASTNode(ASTNode.Type.VarDeclare, tokens.getTokenLine(index));
+		VarDeclareNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
+			VarDeclareNode varDeclare;
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
-			if (tokens.tokens[index].type == Token.Type.Keyword && 
-				["int", "double", "string"].hasElement(tokens.tokens[index].token) &&
+			if (tokens.tokens[index].type == Token.Type.Keyword && DATA_TYPES.hasElement(tokens.tokens[index].token) &&
 				index+1 < endIndex){
 				// read the type
-				uinteger i;
-				{
-					char[] type = cast(char[])tokens.tokens[index].token;
-					uinteger nestCount = 0;
-					for (i = index+1; i <= endIndex; i ++){
-						if (tokens.tokens[i].type == Token.Type.ParanthesesOpen){
-							break;
-						}else if (tokens.tokens[i].type == Token.Type.IndexBracketOpen){
-							nestCount ++;
-							i ++;
-							if (i <= endIndex && tokens.tokens[i].type != Token.Type.IndexBracketClose){
-								compileErrors.append(CompileError(tokens.getTokenLine(i), "invalid type"));
-								break;
-							}
-						}else{
-							compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
-							break;
-						}
-					}
-					varDeclare = ASTNode(ASTNode.Type.VarDeclare,
-						cast(string)type~'['~to!string(nestCount)~']', tokens.getTokenLine(index));
-				}
+				uinteger i = index;
+				DataType type = readType(tokens, i);
 				// check if brackEnd == endIndex
 				if (tokens.tokens.bracketPos(i) == endIndex){
 					// now go through all vars, check if they are vars, and are aeparated by comma
 					bool commaExpected = false;
+					LinkedList!string vars = new LinkedList!string;
 					for (i = i+1; i < endIndex; i ++){
 						Token token = tokens.tokens[i];
 						if (commaExpected){
@@ -387,14 +367,16 @@ struct ASTGen{
 								compileErrors.append(CompileError(tokens.getTokenLine(i),
 										"variable name expected in varaible declaration, unexpected token found"));
 							}else{
-								ASTNode var = ASTNode(ASTNode.Type.Variable, token.token, tokens.getTokenLine(i));
-								varDeclare.addSubNode(var);
+								vars.append(token.token);
 							}
 							commaExpected = true;
 						}
 					}
+					varDeclare = VarDeclareNode(type, vars.toArray);
+					.destroy(vars);
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
 				}
-				
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
 			}
