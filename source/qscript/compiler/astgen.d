@@ -192,11 +192,18 @@ struct ASTGen{
 		}
 		
 		/// generates AST for "actual code" like `2 + 2 - 6`.
-		CodeNode generateCodeAST(TokenList tokens, uinteger index, uinteger endIndex){
+		/// 
+		/// terminates reading when on a Token that is comma, paranthesesEnd, semicolon, index/block bracket close
+		CodeNode generateCodeAST(TokenList tokens, ref uinteger index){
 			CodeNode lastNode;
 			bool separatorExpected = false;
-			for (uinteger i = index; i <= endIndex; i ++){
+			for (uinteger i = index; ; i ++){
 				Token token = tokens.tokens[i];
+				// check if has to terminate
+				if ([Token.Type.Comma, Token.Type.IndexBracketClose, Token.Type.BlockEnd, Token.Type.ParanthesesClose,
+					Token.Type.StatementEnd].hasElement(token.type)){
+					break;
+				}
 				if (!separatorExpected){
 					// an identifier, or literal (i.e some data) was expected
 					lastNode = CodeNode(generateNodeAST(tokens, i));
