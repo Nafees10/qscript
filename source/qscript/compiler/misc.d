@@ -3,7 +3,10 @@
 import utils.misc;
 import utils.lists;
 
+import qscript.qscript : QData;
+
 import std.range;
+import std.conv : to;
 
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
@@ -111,7 +114,7 @@ unittest{
 /// Returns the index of the quotation mark that ends a string
 /// 
 /// Returns -1 if not found
-integer strEnd(string s, uinteger i){
+package integer strEnd(string s, uinteger i){
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
 			i++;
@@ -122,6 +125,64 @@ integer strEnd(string s, uinteger i){
 	}
 	if (i==s.length){i=-1;}
 	return i;
+}
+
+/// converts from string to QData
+/// 
+/// `type` is the DataType.Type defining the type of the data
+/// `s` is the string containing the data, which can be an arary or array of array of ...
+/// 
+/// throws Exception on failure
+package QData stringToQData(DataType.Type type)(string s){
+	// splits an array in string format to it's elements
+	static string[] splitArray(string array){
+		assert(array[0] == '[' && array[array.length - 1] == ']', "not a valid array");
+		array = array[1 .. array.length -1];
+		LinkedList!string elements = LinkedList!string;
+		for (uinteger i = 0, readFrom = i, endIndex = array.length - 1; i < array.length; i ++){
+			// skip strings
+			if (array[i] == '"'){
+				i = array.strEnd(i);
+				continue;
+			}
+			// check if comma is here
+			if (array[i] == ','){
+				if (readFrom < i || readFrom == i){
+					throw new Exception("syntax error");
+				}
+				elements.append(array[readFrom .. i]);
+				readFrom = i + 1;
+			}
+			// check if string is over
+			if (i == endIndex && readFrom < i){
+				elements.append(array[readFrom .. i]);
+				break;
+			}
+		}
+		string[] r = elements.toArray;
+		.destroy(elements);
+		return r;
+	}
+
+	QData result;
+	// check if is an array
+	if (s[0] == '['){
+		// recursion...
+		string[] elements;
+		result.arrayVal.length = elements.length;
+		foreach (i, element; elements){
+			result.arrayVal[i] = stringToQData!(type)(element);
+		}
+	}else{
+		static if (type == DataType.Type.Double){
+			result.doubleVal = to!double(s);
+		}else static if (type == DataType.Type.Integer){
+			result.intVal = to!integer(s);
+		}else static if (type == DataType.Type.String){
+			result.strVal = s;
+		}
+	}
+	return result;
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
