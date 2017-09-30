@@ -127,7 +127,6 @@ struct ASTGen{
 				}
 				return StatementType.NoValidType;
 			}
-			
 
 			LinkedList!StatementNode nodeList = new LinkedList!StatementNode;
 			// separate statements
@@ -234,27 +233,9 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
 				CodeNode secondOperand;
-				if (BOOL_OPERATORS.hasElement(tokens.tokens[index].token)){
-					// look where the operand is ending
-					uinteger i;
-					for (i = index + 1; i < tokens.tokens.length; i ++){
-						Token token = tokens.tokens[i];
-						if ([Token.Type.ParanthesesOpen, Token.Type.IndexBracketOpen, Token.Type.BlockStart].
-							hasElement(token.type)){
-							//skip to end of that bracket
-							i = tokens.tokens.bracketPos(i);
-						}
-						if ([Token.Type.Comma, Token.Type.ParanthesesClose, Token.Type.StatementEnd].hasElement(token.type)){
-							break;
-						}
-					}
-					secondOperand = generateCodeAST(tokens, index + 1, i-1);
-					index = i;
-				}else{
-					uinteger i = index + 1;
-					secondOperand = CodeNode(generateNodeAST(tokens, i));
-					index = i;
-				}
+				uinteger i = index + 1;
+				secondOperand = CodeNode(generateNodeAST(tokens, i));
+				index = i;
 				// put both operands under one node
 				operator = OperatorNode(tokens.tokens[index].token, firstOperand, secondOperand);
 			}else{
@@ -276,9 +257,8 @@ struct ASTGen{
 					LinkedList!CodeNode indexes = new LinkedList!CodeNode;
 					for (index = index; index < tokens.tokens.length; index ++){
 						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
-							// add it
-							uinteger brackEnd = tokens.tokens.bracketPos!true(index);
-							indexes.append(generateCodeAST(tokens, index+1, brackEnd - 1));
+							index++;
+							indexes.append(generateCodeAST(tokens, index));
 						}else{
 							break;
 						}
@@ -293,15 +273,24 @@ struct ASTGen{
 		}
 		
 		/// generates AST for assignment operator
-		AssignmentNode generateAssignmentAST(TokenList tokens, uinteger index, uinteger endIndex){
+		AssignmentNode generateAssignmentAST(TokenList tokens, ref uinteger index){
 			AssignmentNode assignment;
 			// get the variable to assign to
 			VariableNode var = generateVariableAST(tokens, index);
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
 				// everything's ok till the `=` operator
-				CodeNode val = generateCodeAST(tokens, index+1, endIndex);
+				index++;
+				CodeNode val = generateCodeAST(tokens, index);
 				assignment = AssignmentNode(var, val);
+				// make sure it's followed by a semicolon
+				if (tokens.tokens[index].type != Token.Type.StatementEnd){
+					compileErrors.append(CompileError(tokens.getTokenLine(index),
+							"assingment statement not followed by semicolon"));
+				}else{
+					// skip the semicolon too
+					index++;
+				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
 			}
@@ -309,30 +298,29 @@ struct ASTGen{
 		}
 		
 		/// generates AST for variable declarations
-		VarDeclareNode generateVarDeclareAST(TokenList tokens, uinteger index, uinteger endIndex){
+		VarDeclareNode generateVarDeclareAST(TokenList tokens, ref uinteger index){
 			VarDeclareNode varDeclare;
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
-			if (tokens.tokens[index].type == Token.Type.Keyword && DATA_TYPES.hasElement(tokens.tokens[index].token) &&
-				index+1 < endIndex){
+			if (DATA_TYPES.hasElement(tokens.tokens[index].token)){
 				// read the type
-				uinteger i = index;
-				DataType type = readType(tokens, i);
-				// check if brackEnd == endIndex
-				if (tokens.tokens.bracketPos(i) == endIndex){
+				DataType type = readType(tokens, index);
+				// make sure next token = bracket
+				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
 					// now go through all vars, check if they are vars, and are aeparated by comma
+					uinteger brackEnd = tokens.tokens.bracketPos!true(index);
 					bool commaExpected = false;
 					LinkedList!string vars = new LinkedList!string;
-					for (i = i+1; i < endIndex; i ++){
-						Token token = tokens.tokens[i];
+					for (index = index+1; index < brackEnd; index ++){
+						Token token = tokens.tokens[index];
 						if (commaExpected){
 							if (token.type != Token.Type.Comma){
-								compileErrors.append(CompileError(tokens.getTokenLine(i),
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
 										"variable names in declaration must be separated by a comma"));
 							}
 							commaExpected = false;
 						}else{
 							if (token.type != Token.Type.Identifier){
-								compileErrors.append(CompileError(tokens.getTokenLine(i),
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
 										"variable name expected in varaible declaration, unexpected token found"));
 							}else{
 								vars.append(token.token);
@@ -367,6 +355,23 @@ struct ASTGen{
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1), "if/while statement not followed by a block"));
 				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
+			}
+			return ifWhile;
+		}
+
+		/// generates AST for while statements
+		WhileNode generateWhileAST(TokenList tokens, uinteger index){
+			WhileNode whileNode;
+			// check if is an if
+			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
+				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				// now do the real work
+				index += 2;
+				whileNode.condition = generateCodeAST(tokens, index);
+				// make sure condition's followed by a block
+
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
 			}
