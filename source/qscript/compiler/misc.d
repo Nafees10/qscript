@@ -108,6 +108,22 @@ unittest{
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
 }
 
+/// Returns the index of the quotation mark that ends a string
+/// 
+/// Returns -1 if not found
+integer strEnd(string s, uinteger i){
+	for (i++;i<s.length;i++){
+		if (s[i]=='\\'){
+			i++;
+			continue;
+		}else if (s[i]=='"'){
+			break;
+		}
+	}
+	if (i==s.length){i=-1;}
+	return i;
+}
+
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
 	/// Specifies type of token

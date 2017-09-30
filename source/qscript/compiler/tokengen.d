@@ -79,23 +79,6 @@ unittest{
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
-	/// Returns the index of the quotation mark that ends a string
-	/// 
-	/// Returns -1 if not found
-	integer strEnd(string s, uinteger i){
-		for (i++;i<s.length;i++){
-			if (s[i]=='\\'){
-				i++;
-				continue;
-			}else if (s[i]=='"'){
-				break;
-			}
-		}
-		if (i==s.length){i=-1;}
-		return i;
-	}
-
-
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
