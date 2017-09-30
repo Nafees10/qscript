@@ -87,82 +87,49 @@ struct ASTGen{
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
-				blockNode = BlockNode(generateStatementsAST(tokens, index+1, brackEnd-1));
+				LinkedList!StatementNode statements = new LinkedList!StatementNode;
+				// read statements
+				while (index < brackEnd){
+					statements.append(generateStatementAST(tokens, index));
+				}
+				// put them all in block
+				blockNode.statements = statements.toArray;
+				.destroy(statements);
 				index = brackEnd+1;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 			}
 			return blockNode;
 		}
-		
-		/// generates ASTs for statements in a block
-		StatementNode[] generateStatementsAST(TokenList tokens, uinteger index, uinteger endIndex){
-			enum StatementType{
-				FunctionCall,
-				If,
-				While,
-				Assignment,
-				VarDeclare,
-				NoValidType
-			}
-			StatementType getStatementType(TokenList tokens, uinteger index){
-				// check if its a function call, or if/while
-				if (tokens.tokens[index].type == Token.Type.Keyword){
-					if (tokens.tokens[index].token == "if"){
-						return StatementType.If;
-					}else if (tokens.tokens[index].token == "while"){
-						return StatementType.While;
-					}
-				}else if (tokens.tokens[index].type == Token.Type.DataType){
-					return StatementType.VarDeclare;
-				}else if (index+3 <= endIndex && tokens.tokens[index].type == Token.Type.Identifier && 
-					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-					// is a function call
-					return StatementType.FunctionCall;
-				}else{
-					// check if first token is var
-					if (tokens.tokens[index].type == Token.Type.Identifier){
-						return StatementType.Assignment;
-					}
-				}
-				return StatementType.NoValidType;
-			}
 
-			LinkedList!StatementNode nodeList = new LinkedList!StatementNode;
-			// separate statements
-			for (uinteger i = index, readFrom = index; i <= endIndex; i ++){
-				// get the type
-				StatementType currentType = getStatementType(tokens, i);
-				// match the type, call the appropriate function
-				if (currentType == StatementType.Assignment){
-					nodeList.append(
-						StatementNode(generateAssignmentAST(tokens, i))
-						);
-				}else if (currentType == StatementType.FunctionCall){
-					nodeList.append(
-						StatementNode(generateFunctionCallAST(tokens, i))
-						);
-				}else if (currentType == StatementType.If){
-					nodeList.append(
-						StatementNode(generateIfAST(tokens, i))
-						);
-				}else if (currentType == StatementType.VarDeclare){
-					nodeList.append(
-						StatementNode(generateVarDeclareAST(tokens, i))
-						);
-				}else if (currentType == StatementType.While){
-					nodeList.append(
-						StatementNode(generateWhileAST(tokens, i))
-						);
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(i), "invalid statement"));
-					break;
+		/// generates AST for one statement
+		StatementNode generateStatementAST(TokenList tokens, ref uinteger index){
+			// identify the type, call the appropriate function
+			if (tokens.tokens[index].type == Token.Type.BlockStart){
+				// block
+				return StatementNode(generateBlockAST(tokens, index));
+			}else if (tokens.tokens[index].type == Token.Type.Keyword){
+				if (tokens.tokens[index].token == "if"){
+					// if statement
+					return StatementNode(generateIfAST(tokens, index));
+				}else if (tokens.tokens[index].token == "while"){
+					// while statement
+					return StatementNode(generateWhileAST(tokens, index));
 				}
-				i--;
+			}else if (tokens.tokens[index].type == Token.Type.DataType){
+				// var declare
+				return StatementNode(generateVarDeclareAST(tokens, index));
+			}else if (tokens.tokens[index].type == Token.Type.Identifier &&
+				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				// is a function call
+				return StatementNode(generateFunctionCallAST(tokens, index));
+			}else{
+				// check if first token is var
+				if (tokens.tokens[index].type == Token.Type.Identifier){
+					// assignment
+					return StatementNode(generateAssignmentAST(tokens, index));
+				}
 			}
-			StatementNode[] statementNodes = nodeList.toArray;
-			.destroy(nodeList);
-			return statementNodes;
 		}
 
 		/// generates AST for function call, changes `index` to token after statementEnd
@@ -330,6 +297,13 @@ struct ASTGen{
 					}
 					varDeclare = VarDeclareNode(type, vars.toArray);
 					.destroy(vars);
+					// skip the semicolon
+					if (tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
+						index = brackEnd+2;
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1,
+									"variable declaration not followed by semicolon")));
+					}
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
 				}
@@ -358,7 +332,7 @@ struct ASTGen{
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
 			}
-			return ifWhile;
+			return ifNode;
 		}
 
 		/// generates AST for while statements
@@ -375,7 +349,7 @@ struct ASTGen{
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
 			}
-			return ifWhile;
+			return whileNode;
 		}
 		
 		/// generates AST for static arrays: like: `[x, y, z]`
