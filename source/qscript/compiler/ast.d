@@ -329,6 +329,19 @@ package struct StatementNode{
 	}
 }
 
+/// to store assignment statements
+package struct AssignmentNode{
+	/// the variable to assign to
+	public VariableNode var;
+	/// the value to assign
+	public CodeNode val;
+	/// constructor
+	this (VariableNode variable, CodeNode value){
+		var = variable;
+		val = value;
+	}
+}
+
 /// to store if statements
 package struct IfNode{
 	/// the condition for this if statement
