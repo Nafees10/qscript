@@ -130,6 +130,8 @@ struct ASTGen{
 					return StatementNode(generateAssignmentAST(tokens, index));
 				}
 			}
+			compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
+			return StatementNode();
 		}
 
 		/// generates AST for function call, changes `index` to token after statementEnd
@@ -317,7 +319,7 @@ struct ASTGen{
 		IfNode generateIfAST(TokenList tokens, ref uinteger index){
 			IfNode ifNode;
 			// check if is an if
-			if (index+3 < endIndex && tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
+			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
 				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
@@ -326,12 +328,12 @@ struct ASTGen{
 				// make sure index & brackEnd are now same
 				if (index == brackEnd){
 					index = brackEnd+1;
-					ifNode.statement = generateStatementAST(tokens, index);
+					ifNode.statements = [generateStatementAST(tokens, index)];
 					// check if there's any else statement
 					if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "else"){
 						// add that as well
 						index ++;
-						ifNode.elseStatement = generateStatementAST(tokens, index);
+						ifNode.elseStatements = [generateStatementAST(tokens, index)];
 					}
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
@@ -355,7 +357,7 @@ struct ASTGen{
 				// skip the brackEnd, if index matches it
 				if (index == brackEnd){
 					index++;
-					whileNode.condition = generateStatementAST(tokens, index);
+					whileNode.statements = [generateStatementAST(tokens, index)];
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
 				}
@@ -403,7 +405,7 @@ struct ASTGen{
 		/// 6. A static array (`[x, y, z]`)
 		/// 
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
-		ASTNode generateNodeAST(TokenList tokens, ref uinteger index){
+		CodeNode generateNodeAST(TokenList tokens, ref uinteger index){
 			Token token = tokens.tokens[index];
 			ASTNode node;
 			// an identifier, or literal (i.e some data) was expected
