@@ -1,5 +1,5 @@
 ﻿module qscript.compiler.optimizer;
-
+/* TODO fixme get optimizer to work
 import qscript.qscript : QData; // for VarStore
 import qscript.compiler.ast;
 import qscript.compiler.misc;
@@ -401,4 +401,4 @@ private struct VarStore{
 		}
 		return false;
 	}
-}
+}*/

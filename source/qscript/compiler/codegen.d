@@ -1,5 +1,5 @@
 ﻿module qscript.compiler.codegen;
-
+/* TODO fixme get the codegen to work
 import qscript.compiler.ast;
 import qscript.compiler.misc;
 
@@ -419,7 +419,7 @@ unittest{
 		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
 			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
 	}
-}
+}*/
 
 
 
