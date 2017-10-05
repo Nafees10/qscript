@@ -110,32 +110,32 @@ package struct DataType{
 	/// identifies the data type from the actual data
 	/// 
 	/// throws Exception on failure
-	void fromData(string data){
+	void fromData(Token[] data){
 		/// identifies type from data
-		static DataType.Type identifyType(string data){
-			if (data[0] == '"' && data[data.length - 1] == '"'){
+		static DataType.Type identifyType(Token data){
+			if (data.type == Token.Type.String){
 				return DataType.Type.String;
-			}else if (isNum(data)){
-				DataType.Type r = DataType.Type.Integer;
+			}else if (data.type == Token.Type.Number){
 				// check if is a double
-				foreach(c; data){
+				foreach(c; data.token){
 					if (c == '.'){
-						r = DataType.Type.Double;
-						break;
+						return DataType.Type.Double;
 					}
 				}
-				return r;
+				return DataType.Type.Integer;
 			}else{
-				throw new Exception("failed to read data type from: `"~data~'`');
+				throw new Exception("failed to read data type");
 			}
 		}
 		/// returns number of arrays contained inside an array
-		uinteger getArrayDepth(string[] elements){
+		uinteger getArrayDepth(Token[][] elements){
 			if (elements.length > 0){
 				uinteger r = 1;
 				bool needToDetermineYet = true;
 				foreach (element; elements){
-					if (element[0] == '[' && element[element.length - 1] == ']'){
+					if (element[0].type == Token.Type.IndexBracketOpen &&
+						element[element.length - 1].type == Token.Type.IndexBracketClose){
+
 						uinteger depth = getArrayDepth(splitArray(element));
 						if (needToDetermineYet){
 							r = depth + 1;
@@ -159,8 +159,8 @@ package struct DataType{
 		static uinteger callCount = 0;
 		callCount ++;
 		// first, identify the type, deal with the array depth later
-		if (data[0] == '[' && data[data.length -1] == ']'){
-			string[] elements = splitArray(data);
+		if (data[0].type == Token.Type.IndexBracketOpen && data[data.length -1].type == Token.Type.IndexBracketClose){
+			Token[][] elements = splitArray(data);
 			// stores a list of types of all elements in the array
 			LinkedList!(DataType.Type) typeList = new LinkedList!(DataType.Type);
 			// read type from the elements
@@ -193,57 +193,52 @@ package struct DataType{
 				this.arrayNestCount = getArrayDepth(elements);
 			}
 		}else{
-			this.type = identifyType(data);
+			// then it cant be more than one token if it's a non-array literal
+			assert(data.length == 1, "syntax error");
+			this.type = identifyType(data[0]);
 		}
 		callCount --;
 	}
 }
 /// unittests
 unittest{
-	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
+	/*assert(DataType("int") == DataType(DataType.Type.Integer, 0));
 	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
 	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
-	assert(DataType("void") == DataType(DataType.Type.Void, 0));
+	assert(DataType("void") == DataType(DataType.Type.Void, 0));*/
 	// unittests for `fromData`
+	import qscript.compiler.tokengen;
 	DataType dType;
-	dType.fromData("\"bla bla bla\"");
+	dType.fromData(toTokens(["\"bla bla bla\""]).tokens);
 	assert(dType == DataType("string"));
-	dType.fromData("20");
+	dType.fromData(toTokens(["20"]).tokens);
 	assert(dType == DataType("int"));
-	dType.fromData("2.5");
+	dType.fromData(toTokens(["2.5"]).tokens);
 	assert(dType == DataType("double"));
-	dType.fromData("[\"bla\",\"bla\"]");
+	dType.fromData(toTokens(["[\"bla\",\"bla\"]"]).tokens);
 	assert(dType == DataType("string[]"));
+	dType.fromData(toTokens(["[[25,2.5],[15,25]]"]).tokens);
+	assert(dType == DataType("double[][]"));
 }
 
-/// splits an array in string format to it's elements
+/// splits an array in tokens format to it's elements
 /// 
 /// For example, splitArray("[a, b, c]") will return ["a", "b", "c"]
-static package string[] splitArray(string array){
-	assert(array[0] == '[' && array[array.length - 1] == ']', "not a valid array");
-	array = array[1 .. array.length -1];
-	LinkedList!string elements = new LinkedList!string;
-	for (uinteger i = 0, readFrom = i, endIndex = array.length - 1; i < array.length; i ++){
-		// skip strings
-		if (array[i] == '"'){
-			i = array.strEnd(i);
-			continue;
-		}
+static package Token[][] splitArray(Token[] array){
+	assert(array[0].type == Token.Type.IndexBracketOpen &&
+		array[array.length - 1].type == Token.Type.IndexBracketClose, "not a valid array");
+	LinkedList!(Token[]) elements = new LinkedList!(Token[]);
+	for (uinteger i = 1, readFrom = i; i < array.length; i ++){
 		// check if comma is here
-		if (array[i] == ','){
+		if (array[i].type == Token.Type.Comma || array[i].type == Token.Type.IndexBracketClose){
 			if (readFrom > i || readFrom == i){
 				throw new Exception("syntax error");
 			}
 			elements.append(array[readFrom .. i]);
 			readFrom = i + 1;
 		}
-		// check if string is over
-		if (i == endIndex && readFrom < i){
-			elements.append(array[readFrom .. i]);
-			break;
-		}
 	}
-	string[] r = elements.toArray;
+	Token[][] r = elements.toArray;
 	.destroy(elements);
 	return r;
 }
