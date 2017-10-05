@@ -69,9 +69,9 @@ unittest{
 	assert("==".getTokenType == Token.Type.Operator);
 	assert(";".getTokenType == Token.Type.StatementEnd);
 	assert(",".getTokenType == Token.Type.Comma);
-	assert("int".getTokenType == Token.Type.Keyword);
-	assert("double".getTokenType == Token.Type.Keyword);
-	assert("string".getTokenType == Token.Type.Keyword);
+	assert("int".getTokenType == Token.Type.DataType);
+	assert("double".getTokenType == Token.Type.DataType);
+	assert("string".getTokenType == Token.Type.DataType);
 	assert("function".getTokenType == Token.Type.Keyword);
 	assert("if".getTokenType == Token.Type.Keyword);
 	assert("while".getTokenType == Token.Type.Keyword);
