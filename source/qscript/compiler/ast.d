@@ -6,32 +6,6 @@ import qscript.compiler.misc;
 
 import std.conv : to;
 
-/// a struct to store nodes for the Syntax-Tree
-package struct ASTNode{
-	/// Enum defining types of ASTNode
-	enum Type{
-		Script, /// The top-most node
-		Function, /// Function declaration
-		IfStatement, /// If statement
-		WhileStatement, /// just like IfStatement, but used for while loop
-		Block, /// Used to store body nodes for ifwhilestatement, Function etc
-		Assign, /// Assignment operator
-		Operator, /// Any operator aside from Assignment operator and comparison operators like `==` and `>=`...
-		FunctionCall, /// Function Call,
-		StringLiteral, /// String Literal
-		NumberLiteral, /// Number Literal
-		VarDeclare, /// For variable declaration
-		Variable, /// variable name
-		Arguments, /// stores arguments for a function
-		ArrayIndex, /// Stores index for an array, in an `ASTNode`
-		StaticArray, /// For storing elements of a static array, i.e: `[x, y, z]`
-	}
-	/// the line number on which this node was on
-	uinteger lineNumber;
-	/// the actual type of the stored node
-	ASTNode.Type type;
-}
-
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
