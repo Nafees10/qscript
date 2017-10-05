@@ -197,10 +197,12 @@ package struct VariableNode{
 /// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
 package struct LiteralNode{
 	private import qscript.qscript : QData;
+	/// stores the data type for the literal
+	public DataType type;
 	/// stores the literal in a QData
 	public QData literal;
 	/// constructor
-	this (T)(T data){
+	this (T)(T data, DataType dataType){
 		literal.intVal = data;
 	}
 }
