@@ -102,6 +102,97 @@ package struct DataType{
 		}
 		arrayNestCount = indexCount;
 	}
+
+	/// identifies the data type from the actual data
+	/// 
+	/// throws Exception on failure
+	void fromData(string data){
+		/// identifies type from data
+		static DataType.Type identifyType(string data){
+			if (data[0] == '"' && data[data.length - 1] == '"'){
+				return DataType.Type.String;
+			}else if (isNum(data)){
+				DataType.Type r = DataType.Type.Integer;
+				// check if is a double
+				foreach(c; data){
+					if (c == '.'){
+						r = DataType.Type.Double;
+						break;
+					}
+				}
+				return r;
+			}else{
+				throw new Exception("failed to read data type from: `"~data~'`');
+			}
+		}
+		/// returns number of arrays contained inside an array
+		uinteger getArrayDepth(string[] elements){
+			if (elements.length > 0){
+				uinteger r = 1;
+				bool needToDetermineYet = true;
+				foreach (element; elements){
+					if (element[0] == '[' && element[element.length - 1] == ']'){
+						uinteger depth = getArrayDepth(splitArray(element));
+						if (needToDetermineYet){
+							r = depth + 1;
+							needToDetermineYet = false;
+						}else if (depth+1 != r){
+							throw new Exception("inconsistent data types in array elements");
+						}
+					}else if (needToDetermineYet){
+						r = 0;
+						needToDetermineYet = false;
+					}else{
+						throw new Exception("inconsistent data types in array elements");
+					}
+				}
+				return r;
+			}else{
+				return 1;
+			}
+		}
+		// stores how many "instances" of this function are currently being executed, because this is a recursive one
+		static uinteger callCount = 0;
+		callCount ++;
+		// first, identify the type, deal with the array depth later
+		if (data[0] == '[' && data[data.length -1] == ']'){
+			string[] elements = splitArray(data);
+			// stores a list of types of all elements in the array
+			LinkedList!(DataType.Type) typeList = new LinkedList!(DataType.Type);
+			// read type from the elements
+			DataType elementType;
+			foreach (element; elements){
+				elementType.fromData(element);
+				typeList.append(elementType.type);
+			}
+			// now infer the type, in case int & double are present, type = double, in case string is present among them, error
+			typeList.resetRead;
+			DataType.Type* currentType = typeList.read;
+			// the type that'll be returned
+			DataType.Type decidedType = DataType.Type.Void;
+			while (currentType !is null){
+				if (decidedType == DataType.Type.Void){
+					decidedType = *currentType;
+				}else{
+					if (decidedType == DataType.Type.Integer && *currentType == DataType.Type.Double){
+						decidedType = *currentType;
+					}else if ((decidedType == DataType.Type.Integer || decidedType == DataType.Type.Double) &&
+						*currentType == DataType.Type.String){
+						throw new Exception("inconsistent data types in array elements");
+					}
+				}
+				currentType = typeList.read;
+			}
+			this.type = decidedType;
+			// now get the array depth, only if the callCount == 1, i.e this aint a recursive call
+			if (callCount == 1){
+				this.arrayNestCount = getArrayDepth(elements);
+			}
+		}else{
+			type = identifyType(data);
+		}
+		callCount --;
+	}
 }
 /// unittests
 unittest{
