@@ -144,7 +144,7 @@ package struct DataType{
 							throw new Exception("inconsistent data types in array elements");
 						}
 					}else if (needToDetermineYet){
-						r = 0;
+						r = 1;
 						needToDetermineYet = false;
 					}else{
 						throw new Exception("inconsistent data types in array elements");
@@ -193,7 +193,7 @@ package struct DataType{
 				this.arrayNestCount = getArrayDepth(elements);
 			}
 		}else{
-			type = identifyType(data);
+			this.type = identifyType(data);
 		}
 		callCount --;
 	}
@@ -207,7 +207,13 @@ unittest{
 	// unittests for `fromData`
 	DataType dType;
 	dType.fromData("\"bla bla bla\"");
-	//assert(dType == DataType("string"));
+	assert(dType == DataType("string"));
+	dType.fromData("20");
+	assert(dType == DataType("int"));
+	dType.fromData("2.5");
+	assert(dType == DataType("double"));
+	dType.fromData("[\"bla\",\"bla\"]");
+	assert(dType == DataType("string[]"));
 }
 
 /// splits an array in string format to it's elements
@@ -225,7 +231,7 @@ static package string[] splitArray(string array){
 		}
 		// check if comma is here
 		if (array[i] == ','){
-			if (readFrom < i || readFrom == i){
+			if (readFrom > i || readFrom == i){
 				throw new Exception("syntax error");
 			}
 			elements.append(array[readFrom .. i]);
