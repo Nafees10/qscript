@@ -73,8 +73,10 @@ package struct DataType{
 		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
 			if (s[i] == '['){
 				sType = s[0 .. i];
+				break;
 			}else if (i == lastInd){
 				sType = s;
+				break;
 			}
 		}
 		// now read the index
@@ -86,6 +88,8 @@ package struct DataType{
 					throw new Exception("bad type format");
 				}
 				indexCount ++;
+			}else{
+				throw new Exception("invalid data type");
 			}
 		}
 		// now check if the type was ok or not
@@ -93,7 +97,7 @@ package struct DataType{
 			type = DataType.Type.Void;
 		}else if (sType == "string"){
 			type = DataType.Type.String;
-		}else if (sType == "integer"){
+		}else if (sType == "int"){
 			type = DataType.Type.Integer;
 		}else if (sType == "double"){
 			type = DataType.Type.Double;
@@ -198,8 +202,12 @@ package struct DataType{
 unittest{
 	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
 	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
-	assert(DataType("double[][]" == DataType(DataType.Type.Double, 2)));
+	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
+	// unittests for `fromData`
+	DataType dType;
+	dType.fromData("\"bla bla bla\"");
+	//assert(dType == DataType("string"));
 }
 
 /// splits an array in string format to it's elements
