@@ -111,6 +111,38 @@ unittest{
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
 }
 
+/// splits an array in string format to it's elements
+/// 
+/// For example, splitArray("[a, b, c]") will return ["a", "b", "c"]
+static package string[] splitArray(string array){
+	assert(array[0] == '[' && array[array.length - 1] == ']', "not a valid array");
+	array = array[1 .. array.length -1];
+	LinkedList!string elements = new LinkedList!string;
+	for (uinteger i = 0, readFrom = i, endIndex = array.length - 1; i < array.length; i ++){
+		// skip strings
+		if (array[i] == '"'){
+			i = array.strEnd(i);
+			continue;
+		}
+		// check if comma is here
+		if (array[i] == ','){
+			if (readFrom < i || readFrom == i){
+				throw new Exception("syntax error");
+			}
+			elements.append(array[readFrom .. i]);
+			readFrom = i + 1;
+		}
+		// check if string is over
+		if (i == endIndex && readFrom < i){
+			elements.append(array[readFrom .. i]);
+			break;
+		}
+	}
+	string[] r = elements.toArray;
+	.destroy(elements);
+	return r;
+}
+
 /// Returns the index of the quotation mark that ends a string
 /// 
 /// Returns -1 if not found
@@ -134,41 +166,11 @@ package integer strEnd(string s, uinteger i){
 /// 
 /// throws Exception on failure
 package QData stringToQData(DataType.Type type)(string s){
-	// splits an array in string format to it's elements
-	static string[] splitArray(string array){
-		assert(array[0] == '[' && array[array.length - 1] == ']', "not a valid array");
-		array = array[1 .. array.length -1];
-		LinkedList!string elements = LinkedList!string;
-		for (uinteger i = 0, readFrom = i, endIndex = array.length - 1; i < array.length; i ++){
-			// skip strings
-			if (array[i] == '"'){
-				i = array.strEnd(i);
-				continue;
-			}
-			// check if comma is here
-			if (array[i] == ','){
-				if (readFrom < i || readFrom == i){
-					throw new Exception("syntax error");
-				}
-				elements.append(array[readFrom .. i]);
-				readFrom = i + 1;
-			}
-			// check if string is over
-			if (i == endIndex && readFrom < i){
-				elements.append(array[readFrom .. i]);
-				break;
-			}
-		}
-		string[] r = elements.toArray;
-		.destroy(elements);
-		return r;
-	}
-
 	QData result;
 	// check if is an array
 	if (s[0] == '['){
 		// recursion...
-		string[] elements;
+		string[] elements = splitArray(s);
 		result.arrayVal.length = elements.length;
 		foreach (i, element; elements){
 			result.arrayVal[i] = stringToQData!(type)(element);
