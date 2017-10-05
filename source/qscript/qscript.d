@@ -12,6 +12,20 @@ public union QData{
 	integer intVal; /// integer value
 	double doubleVal; /// double/float value
 	QData[] arrayVal; /// array value
+	// constructor
+	this (T)(T data){
+		static if (is (T == string)){
+			strVal = data;
+		}else static if (is (T == integer)){
+			intVal = data;
+		}else static if (is (T == double)){
+			doubleVal = data;
+		}else static if (is (T == QData[])){
+			arrayVal = data;
+		}else{
+			throw new Exception("attempting to store unsupported type in QData");
+		}
+	}
 }
 
 public abstract class QScript{
