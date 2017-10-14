@@ -93,7 +93,8 @@ private Token.Type getTokenType(string token){
 ///
 unittest{
 	assert("thisIsAVar_1234".getTokenType == Token.Type.Identifier);
-	assert("24.5".getTokenType == Token.Type.Number);
+	assert("24.5".getTokenType == Token.Type.Double);
+	assert("245".getTokenType == Token.Type.Integer);
 	assert("\"This is a string\"".getTokenType == Token.Type.String);
 	assert("==".getTokenType == Token.Type.Operator);
 	assert(";".getTokenType == Token.Type.StatementEnd);
@@ -243,7 +244,7 @@ unittest{
 		"\tint (i, i2);",
 		"\tif (i < 2){}",
 		"\tif(i<=2){}",
-		"\tif(i >= 2) {//comment }",
+		"\tif(i >= 2) {#comment }",
 		"}",
 		"if \t(i > 2)",
 		"{",
