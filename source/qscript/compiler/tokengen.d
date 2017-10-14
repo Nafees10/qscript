@@ -127,7 +127,7 @@ private TokenList separateTokens(string[] script){
 
 		for (uinteger i = 0, readFrom = 0; i < line.length; i ++){
 			// end at comments
-			if (i+2 < line.length && line[i .. i + 2] == "//"){
+			if (line[i] == '#'){
 				if (readFrom < i){
 					tokens.append(line[readFrom .. i].dup);
 				}
