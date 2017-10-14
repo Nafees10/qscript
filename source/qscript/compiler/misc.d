@@ -224,7 +224,7 @@ unittest{
 /// splits an array in tokens format to it's elements
 /// 
 /// For example, splitArray("[a, b, c]") will return ["a", "b", "c"]
-static package Token[][] splitArray(Token[] array){
+package Token[][] splitArray(Token[] array){
 	assert(array[0].type == Token.Type.IndexBracketOpen &&
 		array[array.length - 1].type == Token.Type.IndexBracketClose, "not a valid array");
 	LinkedList!(Token[]) elements = new LinkedList!(Token[]);
@@ -294,7 +294,8 @@ package struct Token{
 	/// used only in `compiler.tokengen`
 	enum Type{
 		String,/// That the token is: `"SOME STRING"`
-		Number,/// That the token a number, float also included
+		Integer,/// That the token an int
+		Double, /// That the token is a double (floating point) value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 		DataType, /// the  token is a data type
 		Operator,/// That the token is an operator, like `+`, `==` etc

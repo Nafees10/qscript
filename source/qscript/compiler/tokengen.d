@@ -28,9 +28,38 @@ private Token.Type getTokenType(string token){
 	bool isOperator(string s){
 		return OPERATORS.hasElement(s);
 	}
+	/// Returns true if string contains an integer
+	bool isInt(string s){
+		// make sure it's at least a number
+		if (isNum(s)){
+			foreach (digit; s){
+				if (digit == '.'){
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+	/// Returns true if a string contains a double
+	/// 
+	/// to be identified as a double, the number must have a decimal point in it
+	bool isDouble(string s){
+		if (isNum(s)){
+			foreach (digit; s){
+				if (digit == '.'){
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
 
-	if (token.isNum){
-		return Token.Type.Number;
+	if (isInt(token)){
+		return Token.Type.Integer;
+	}else if (isDouble(token)){
+		return Token.Type.Double;
 	}else if (DATA_TYPES.hasElement(token)){
 		return Token.Type.DataType;
 	}else if (isKeyword(token)){
@@ -79,6 +108,9 @@ unittest{
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
+	if (compileErrors is null){
+		compileErrors = new LinkedList!CompileError;
+	}
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
