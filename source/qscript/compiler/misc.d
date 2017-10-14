@@ -115,101 +115,90 @@ package struct DataType{
 		static DataType.Type identifyType(Token data){
 			if (data.type == Token.Type.String){
 				return DataType.Type.String;
-			}else if (data.type == Token.Type.Number){
-				// check if is a double
-				foreach(c; data.token){
-					if (c == '.'){
-						return DataType.Type.Double;
-					}
-				}
+			}else if (data.type == Token.Type.Integer){
 				return DataType.Type.Integer;
+			}else if (data.type == Token.Type.Double){
+				return DataType.Type.Double;
 			}else{
 				throw new Exception("failed to read data type");
 			}
 		}
-		/// returns number of arrays contained inside an array
-		uinteger getArrayDepth(Token[][] elements){
-			if (elements.length > 0){
-				uinteger r = 1;
-				bool needToDetermineYet = true;
-				foreach (element; elements){
-					if (element[0].type == Token.Type.IndexBracketOpen &&
-						element[element.length - 1].type == Token.Type.IndexBracketClose){
-
-						uinteger depth = getArrayDepth(splitArray(element));
-						if (needToDetermineYet){
-							r = depth + 1;
-							needToDetermineYet = false;
-						}else if (depth+1 != r){
-							throw new Exception("inconsistent data types in array elements");
-						}
-					}else if (needToDetermineYet){
-						r = 1;
-						needToDetermineYet = false;
-					}else{
-						throw new Exception("inconsistent data types in array elements");
-					}
-				}
-				return r;
-			}else{
-				return 1;
-			}
-		}
-		// stores how many "instances" of this function are currently being executed, because this is a recursive one
+		// keeps count of number of "instances" of this function currently being executed
 		static uinteger callCount = 0;
 		callCount ++;
-		// first, identify the type, deal with the array depth later
-		if (data[0].type == Token.Type.IndexBracketOpen && data[data.length -1].type == Token.Type.IndexBracketClose){
+
+		if (callCount == 1){
+			this.arrayNestCount = 0;
+			this.type = DataType.Type.Void;
+		}
+
+		// make sure it's at least one token
+		if (data.length == 0){
+			throw new Exception("attempting to infer type of data with zero length");
+		}
+		// check if is an array
+		if (data.length > 1 &&
+			data[0].type == Token.Type.IndexBracketOpen && data[data.length-1].type == Token.Type.IndexBracketClose){
+			// is an array
+			this.arrayNestCount ++;
+			// TODO make fromData work on arrays
+			// if elements are arrays, do recursion, else, just identify types
+			bool isArrayOfArray = false;
 			Token[][] elements = splitArray(data);
-			// stores a list of types of all elements in the array
-			LinkedList!(DataType.Type) typeList = new LinkedList!(DataType.Type);
-			// read type from the elements
-			DataType elementType;
-			foreach (element; elements){
-				elementType.fromData(element);
-				typeList.append(elementType.type);
-			}
-			// now infer the type, in case int & double are present, type = double, in case string is present among them, error
-			typeList.resetRead;
-			DataType.Type* currentType = typeList.read;
-			// the type that'll be returned
-			DataType.Type decidedType = DataType.Type.Void;
-			while (currentType !is null){
-				if (decidedType == DataType.Type.Void){
-					decidedType = *currentType;
-				}else{
-					if (decidedType == DataType.Type.Integer && *currentType == DataType.Type.Double){
-						decidedType = *currentType;
-					}else if ((decidedType == DataType.Type.Integer || decidedType == DataType.Type.Double) &&
-						*currentType == DataType.Type.String){
-						throw new Exception("inconsistent data types in array elements");
+			if (elements.length == 0){
+				this.type = DataType.Type.Void;
+			}else{
+				// determine the type using recursion
+				// stores the arrayNestCount till here
+				uinteger thisNestCount = this.arrayNestCount;
+				// stores the nestCount for the preious element, -1 if no previous element
+				integer prevNestCount = -1;
+				// stores the data type of the last element, void if no last element
+				DataType.Type prevType = DataType.Type.Void;
+				// now do recursion, and make sure all types come out same
+				foreach (element; elements){
+					fromData(element);
+					// now make sure the nestCount came out same
+					if (prevNestCount != -1){
+						if (prevNestCount != this.arrayNestCount){
+							throw new Exception("inconsistent data types in array elements");
+						}
+					}else{
+						// set new nestCount
+						prevNestCount = this.arrayNestCount;
 					}
+					// now to make sure type came out same
+					if (prevType != DataType.Type.Void){
+						if (this.type != prevType){
+							throw new Exception("inconsistent data types in array elements");
+						}
+					}else{
+						prevType = this.type;
+					}
+					// re-set the nestCount for the next element
+					this.arrayNestCount = thisNestCount;
 				}
-				currentType = typeList.read;
-			}
-			this.type = decidedType;
-			// now get the array depth, only if the callCount == 1, i.e this aint a recursive call
-			if (callCount == 1){
-				this.arrayNestCount = getArrayDepth(elements);
+				// now set the nestCount
+				this.arrayNestCount = thisNestCount + prevNestCount;
 			}
 		}else{
-			// then it cant be more than one token if it's a non-array literal
-			assert(data.length == 1, "syntax error");
+			// then it must be only one token
+			assert(data.length != 1, "non-array data must be only one token in length");
+			// now check the type, and set it
 			this.type = identifyType(data[0]);
 		}
-		callCount --;
 	}
 }
 /// unittests
 unittest{
-	/*assert(DataType("int") == DataType(DataType.Type.Integer, 0));
+	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
 	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
 	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
-	assert(DataType("void") == DataType(DataType.Type.Void, 0));*/
+	assert(DataType("void") == DataType(DataType.Type.Void, 0));
 	// unittests for `fromData`
 	import qscript.compiler.tokengen;
 	DataType dType;
-	dType.fromData(toTokens(["\"bla bla bla\""]).tokens);
+	dType.fromData([Token(Token.Type.String, "\"bla bla\"")]);
 	assert(dType == DataType("string"));
 	dType.fromData(toTokens(["20"]).tokens);
 	assert(dType == DataType("int"));
@@ -231,7 +220,7 @@ package Token[][] splitArray(Token[] array){
 	for (uinteger i = 1, readFrom = i; i < array.length; i ++){
 		// check if comma is here
 		if (array[i].type == Token.Type.Comma || array[i].type == Token.Type.IndexBracketClose){
-			if (readFrom > i || readFrom == i){
+			if ((readFrom > i || readFrom == i) && array[i].type == Token.Type.Comma){
 				throw new Exception("syntax error");
 			}
 			elements.append(array[readFrom .. i]);
