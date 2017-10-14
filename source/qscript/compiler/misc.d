@@ -207,7 +207,7 @@ unittest{
 	assert(dType == DataType("double"));
 	dType.fromData(["[", "\"bla\"", ",", "\"bla\"", "]"].stringToTokens);
 	assert(dType == DataType("string[]"));
-	dType.fromData(["[", "[", "25.0", "2.5", "]", ",", "[", "15.0", "25.0", "]", "]"].stringToTokens);
+	dType.fromData(["[", "[", "25.0", ",", "2.5", "]", ",", "[", "15.0", ",", "25.0", "]", "]"].stringToTokens);
 	assert(dType == DataType("double[][]"));
 }
 
@@ -219,6 +219,12 @@ package Token[][] splitArray(Token[] array){
 		array[array.length - 1].type == Token.Type.IndexBracketClose, "not a valid array");
 	LinkedList!(Token[]) elements = new LinkedList!(Token[]);
 	for (uinteger i = 1, readFrom = i; i < array.length; i ++){
+		// skip any other brackets
+		if (array[i].type == Token.Type.BlockStart || array[i].type == Token.Type.IndexBracketOpen ||
+			array[i].type == Token.Type.ParanthesesOpen){
+			i = bracketPos!(true)(array, i);
+			continue;
+		}
 		// check if comma is here
 		if (array[i].type == Token.Type.Comma || array[i].type == Token.Type.IndexBracketClose){
 			if ((readFrom > i || readFrom == i) && array[i].type == Token.Type.Comma){
