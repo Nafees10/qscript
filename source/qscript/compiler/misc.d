@@ -179,14 +179,15 @@ package struct DataType{
 					this.arrayNestCount = thisNestCount;
 				}
 				// now set the nestCount
-				this.arrayNestCount = thisNestCount + prevNestCount;
+				this.arrayNestCount = prevNestCount;
 			}
 		}else{
 			// then it must be only one token
-			assert(data.length != 1, "non-array data must be only one token in length");
+			assert(data.length == 1, "non-array data must be only one token in length="~to!string(data.length));
 			// now check the type, and set it
 			this.type = identifyType(data[0]);
 		}
+		callCount --;
 	}
 }
 /// unittests
@@ -196,17 +197,17 @@ unittest{
 	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
 	// unittests for `fromData`
-	import qscript.compiler.tokengen;
+	import qscript.compiler.tokengen : stringToTokens;
 	DataType dType;
-	dType.fromData([Token(Token.Type.String, "\"bla bla\"")]);
+	dType.fromData(["\"bla bla\""].stringToTokens);
 	assert(dType == DataType("string"));
-	dType.fromData(toTokens(["20"]).tokens);
+	dType.fromData(["20"].stringToTokens);
 	assert(dType == DataType("int"));
-	dType.fromData(toTokens(["2.5"]).tokens);
+	dType.fromData(["2.5"].stringToTokens);
 	assert(dType == DataType("double"));
-	dType.fromData(toTokens(["[\"bla\",\"bla\"]"]).tokens);
+	dType.fromData(["[", "\"bla\"", ",", "\"bla\"", "]"].stringToTokens);
 	assert(dType == DataType("string[]"));
-	dType.fromData(toTokens(["[[25,2.5],[15,25]]"]).tokens);
+	dType.fromData(["[", "[", "25.0", "2.5", "]", ",", "[", "15.0", "25.0", "]", "]"].stringToTokens);
 	assert(dType == DataType("double[][]"));
 }
 
