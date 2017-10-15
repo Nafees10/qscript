@@ -183,7 +183,7 @@ package struct DataType{
 			}
 		}else{
 			// then it must be only one token
-			assert(data.length == 1, "non-array data must be only one token in length="~to!string(data.length));
+			assert(data.length == 1, "non-array data must be only one token in length");
 			// now check the type, and set it
 			this.type = identifyType(data[0]);
 		}
@@ -255,32 +255,53 @@ package integer strEnd(string s, uinteger i){
 	return i;
 }
 
-/// converts from string to QData
+/// converts from Token[] to QData
 /// 
-/// `type` is the DataType.Type defining the type of the data
-/// `s` is the string containing the data, which can be an arary or array of array of ...
+/// `tokens` is the Token[] containing the data
 /// 
 /// throws Exception on failure
-package QData stringToQData(DataType.Type type)(string s){
+package QData TokensToQData(Token[] tokens){
 	QData result;
 	// check if is an array
-	if (s[0] == '['){
+	if (tokens.length > 1 &&
+		tokens[0].type == Token.Type.IndexBracketOpen && tokens[tokens.length-1].type == Token.Type.IndexBracketClose){
 		// recursion...
-		string[] elements = splitArray(s);
+		Token[][] elements = splitArray(tokens);
 		result.arrayVal.length = elements.length;
 		foreach (i, element; elements){
-			result.arrayVal[i] = stringToQData!(type)(element);
+			result.arrayVal[i] = TokensToQData(element);
 		}
 	}else{
-		static if (type == DataType.Type.Double){
-			result.doubleVal = to!double(s);
-		}else static if (type == DataType.Type.Integer){
-			result.intVal = to!integer(s);
-		}else static if (type == DataType.Type.String){
-			result.strVal = s;
+		DataType type;
+		type.fromData(tokens);
+		assert(tokens.length == 1, "non-array data must be only one token in length");
+		if (type.type == DataType.Type.Double){
+			result.doubleVal = to!double(tokens[0].token);
+		}else if (type.type == DataType.Type.Integer){
+			result.intVal = to!integer(tokens[0].token);
+		}else if (type.type == DataType.Type.String){
+			assert(tokens[0].token.length > 1, "invalid string");
+			result.strVal = tokens[0].token[1 .. tokens[0].token.length - 1];
 		}
 	}
 	return result;
+}
+///
+unittest{
+	import qscript.compiler.tokengen : stringToTokens;
+	Token[] tokens;
+	tokens = ["20"].stringToTokens;
+	assert (TokensToQData(tokens).intVal == 20);
+
+	tokens = ["20.0"].stringToTokens;
+	assert (TokensToQData(tokens).doubleVal == 20.0);
+
+	tokens = ["[", "20", ",", "15", "]"].stringToTokens;
+	QData expectedData;
+	expectedData.arrayVal.length = 2;
+	expectedData.arrayVal[0].intVal = 20;
+	expectedData.arrayVal[1].intVal = 15;
+	assert (TokensToQData(tokens).arrayVal == expectedData.arrayVal);
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
