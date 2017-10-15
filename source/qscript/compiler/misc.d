@@ -61,9 +61,15 @@ package struct DataType{
 	}
 	/// constructor
 	/// 
-	/// sType is the type in string form
+	/// `sType` is the type in string form
 	this (string sType){
 		fromString(sType);
+	}
+	/// constructor
+	/// 
+	/// `data` is the data to infer type from
+	this (Token[] data){
+		fromData(data);
 	}
 	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
 	void fromString(string s){
