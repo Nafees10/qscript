@@ -91,7 +91,7 @@ package struct DataType{
 				// make sure next char is a ']'
 				i ++;
 				if (s[i] != ']'){
-					throw new Exception("bad type format");
+					throw new Exception("invalid data type format");
 				}
 				indexCount ++;
 			}else{
@@ -147,9 +147,7 @@ package struct DataType{
 			data[0].type == Token.Type.IndexBracketOpen && data[data.length-1].type == Token.Type.IndexBracketClose){
 			// is an array
 			this.arrayNestCount ++;
-			// TODO make fromData work on arrays
 			// if elements are arrays, do recursion, else, just identify types
-			bool isArrayOfArray = false;
 			Token[][] elements = splitArray(data);
 			if (elements.length == 0){
 				this.type = DataType.Type.Void;

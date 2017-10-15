@@ -37,7 +37,7 @@ writeln will not be called.
 
 ## Variables
 ### Variable Definition
-Varialbes can be defined as shown below:
+Variables can be defined as shown below:
 ```
 TYPE (var0, var1, var2);
 ```
