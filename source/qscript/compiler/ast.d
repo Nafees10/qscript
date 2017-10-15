@@ -54,13 +54,16 @@ package struct FunctionNode{
 	this (this){
 		args = args.dup;
 	}
+	/// the name of the function
+	string name;
 	/// body block of this function
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// constructor
-	this (DataType returnDataType, FunctionNode.Argument[] funcArgs, BlockNode fBody){
+	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
+		name = fName;
 		args = funcArgs.dup;
 		returnType = returnType;
 	}

@@ -46,6 +46,7 @@ struct ASTGen{
 				}
 			}
 			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
+			// TODO catch exception and append to compileErrors
 			return DataType(sType);
 		}
 		/// generates AST for a function definition 
@@ -53,25 +54,50 @@ struct ASTGen{
 		/// changes `index` to the token after function definition
 		FunctionNode generateFunctionAST(TokenList tokens, ref uinteger index){
 			FunctionNode functionNode;
-			BlockNode fBody;
-			DataType returnType;
-			LinkedList!(FunctionNode.Argument) args = new LinkedList!(FunctionNode.Argument);
-			string fName;
 			// make sure it's a function
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				// read the type
 				index++;
-				returnType = readType(tokens, index);
+				functionNode.returnType = readType(tokens, index);
 				// above functionCall moves index to fName
 				// now index is at function name
-				fName = tokens.tokens[index].token;
+				functionNode.name = tokens.tokens[index].token;
 				index ++;
-				// now for the argument types, and the functionBody
+				// now for the argument types
+				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
+					// TODO add code to read arguments + types
+					LinkedList!(FunctionNode.Argument) argList = new LinkedList!(FunctionNode.Argument);
+					uinteger brackEnd = tokens.tokens.bracketPos(index);
+					bool commaExpected = false;
+					for (; index < brackEnd; index ++){
+						if (commaExpected){
+							if (tokens.tokens[index].type == Token.Type.Comma){
+								commaExpected = false;
+								continue;
+							}else{
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"arguments must be separated using a comma"));
+							}
+						}else{
+							// data type + arg_name expected
+							// read the type
+							FunctionNode.Argument arg;
+							arg.argType = readType(tokens, index);
+							// now the arg_name
+							arg.argName = tokens.tokens[index].token;
+							index++;
+							commaExpected = true;
+						}
+					}
+					// put args in list
+					functionNode.arguments = argList.toArray;
+					.destroy(argList);
+				}
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
 					// no args, just body
-					fBody = generateBlockAST(tokens, index);
+					functionNode.bodyBlock = generateBlockAST(tokens, index);
 				}else{
-					/// TODO add code to read arguments + types
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "function has no body"));
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
