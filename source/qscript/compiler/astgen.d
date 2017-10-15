@@ -367,34 +367,6 @@ struct ASTGen{
 			return whileNode;
 		}
 		
-		/// generates AST for static arrays: like: `[x, y, z]`
-		ASTNode generateStaticArrayAST(TokenList tokens, ref uinteger index){
-			ASTNode array;
-			// check if is a static array
-			if (tokens.tokens[index].type == Token.Type.IndexBracketOpen &&
-				tokens.tokens.bracketPos(index) == endIndex){
-				// init the node
-				array = ASTNode(ASTNode.Type.StaticArray, tokens.getTokenLine(index));
-				// add each element using `generateNodeAST`
-				bool commaExpected = false;
-				for (uinteger i = index+1; i < endIndex; i ++){
-					if (commaExpected){
-						if (tokens.tokens[i].type != Token.Type.Comma){
-							compileErrors.append(CompileError(tokens.getTokenLine(i),
-									"elements in static arrays must be separated by a comma"));
-						}
-						commaExpected = false;
-					}else{
-						ASTNode element = generateNodeAST(tokens, i);
-						i --;
-						commaExpected = true;
-						array.addSubNode(element);
-					}
-				}
-			}
-			return array;
-		}
-		
 		/// returns a node representing either of the following:
 		/// 
 		/// 1. String literal
@@ -402,43 +374,49 @@ struct ASTGen{
 		/// 3. Function Call (uses `generateFunctionCallAST`)
 		/// 4. Variable (uses `generateVariableAST`)
 		/// 5. Some code inside parantheses (uses `generateCodeAST`)
-		/// 6. A static array (`[x, y, z]`)
+		/// 6. A literal array (`[x, y, z]`)
 		/// 
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
 		CodeNode generateNodeAST(TokenList tokens, ref uinteger index){
 			Token token = tokens.tokens[index];
-			ASTNode node;
 			// an identifier, or literal (i.e some data) was expected
 			if (token.type == Token.Type.Identifier){
 				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-					uinteger brackEnd = tokens.tokens.bracketPos(index+1);
-					node = generateFunctionCallAST(tokens, index, brackEnd);
-					index = brackEnd+1;
+					// is a function call
+					return CodeNode(generateFunctionCallAST(tokens, index));
 				}else{
 					// just a var
-					node = generateVariableAST(tokens, index);
+					return CodeNode(generateVariableAST(tokens, index));
 				}
-				
 			}else if (token.type == Token.Type.ParanthesesOpen){
-				uinteger brackEnd = tokens.tokens.bracketPos(index);
-				node = generateCodeAST(tokens, index+1, brackEnd-1);
-				index = brackEnd+1;
-				
+				// some code
+				return CodeNode(generateCodeAST(tokens, index));
 			}else if (token.type == Token.Type.IndexBracketOpen){
+				// literal array
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
-				node = generateStaticArrayAST(tokens, index, brackEnd);
+				Token[] data = tokens.tokens[index .. brackEnd+1].dup;
+				LiteralNode r;
+				try{
+					r = LiteralNode(TokensToQData(data), DataType(data));
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+				}
 				index = brackEnd+1;
-				
-			}else if (token.type == Token.Type.Number){
-				node = ASTNode(ASTNode.Type.NumberLiteral, token.token, tokens.getTokenLine(index));
+				return CodeNode(r);
+			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
+				// double literal
+				LiteralNode r;
+				try{
+					r = LiteralNode(TokensToQData([token]), DataType([token]));
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+				}
 				index ++;
-			}else if (token.type == Token.Type.String){
-				node = ASTNode(ASTNode.Type.StringLiteral, token.token, tokens.getTokenLine(index));
-				index ++;
+				return CodeNode(r);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 			}
-			return node;
+			return CodeNode();
 		}
 		
 		
