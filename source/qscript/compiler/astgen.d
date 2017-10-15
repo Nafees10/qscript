@@ -46,8 +46,13 @@ struct ASTGen{
 				}
 			}
 			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
-			// TODO catch exception and append to compileErrors
-			return DataType(sType);
+			DataType r;
+			try{
+				r = DataType(sType);
+			}catch(Exception e){
+				compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+			}
+			return r;
 		}
 		/// generates AST for a function definition 
 		/// 
@@ -65,7 +70,6 @@ struct ASTGen{
 				index ++;
 				// now for the argument types
 				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
-					// TODO add code to read arguments + types
 					LinkedList!(FunctionNode.Argument) argList = new LinkedList!(FunctionNode.Argument);
 					uinteger brackEnd = tokens.tokens.bracketPos(index);
 					bool commaExpected = false;
