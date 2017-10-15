@@ -202,8 +202,8 @@ package struct LiteralNode{
 	/// stores the literal in a QData
 	public QData literal;
 	/// constructor
-	this (T)(T data, DataType dataType){
-		literal.intVal = data;
+	this (QData data, DataType dataType){
+		literal = data;
 	}
 }
 
