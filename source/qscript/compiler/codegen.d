@@ -1,5 +1,5 @@
 ﻿module qscript.compiler.codegen;
-/* TODO fixme get the codegen to work
+
 import qscript.compiler.ast;
 import qscript.compiler.misc;
 
@@ -10,55 +10,12 @@ import std.conv : to;
 
 /// contains functions to generate byte code from AST
 package struct CodeGen{
-	/// generates byte code for an ASTNdode
-	/// 
-	/// `node` is the node to generate AST for
-	/// `pushToStack` is to specify whether the result should be pushed to stack or not, this only works for node with type==FunctionCall
-	static public string[] generateByteCode(ASTNode node, bool pushToStack = true){
-		// check the type, call the function
-		if (node.type == ASTNode.Type.Assign){
-			return generateAssignmentByteCode(node);
-		}else if (node.type == ASTNode.Type.Block){
-			return generateBlockByteCode(node);
-		}else if (node.type == ASTNode.Type.Function){
-			return generateFunctionByteCode(node);
-		}else if (node.type == ASTNode.Type.FunctionCall){
-			return generateFunctionCallByteCode(node, pushToStack);
-		}else if (node.type == ASTNode.Type.IfStatement){
-			return generateIfByteCode(node);
-		}else if (node.type == ASTNode.Type.WhileStatement){
-			return generateWhileByteCode(node);
-		}else if (node.type == ASTNode.Type.Operator){
-			return generateOperatorByteCode(node);
-		}else if (node.type == ASTNode.Type.Script){
-			return generateScriptByteCode(node);
-		}else if (node.type == ASTNode.Type.VarDeclare){
-			return generateVarDeclareByteCode(node);
-		}else if (node.type == ASTNode.Type.NumberLiteral){
-			return generateLiteralByteCode(node);
-		}else if (node.type == ASTNode.Type.StringLiteral){
-			return generateLiteralByteCode(node);
-		}else if (node.type == ASTNode.Type.StaticArray){
-			return generateStaticArrayByteCode(node);
-		}else if (node.type == ASTNode.Type.Variable){
-			return generateVariableByteCode(node);
-		}else{
-			throw new Exception("generateByteCode called with unsupported ASTNode.Type");
-		}
-	}
-
 	/// generates byte code for a script
-	static private string[] generateScriptByteCode(ASTNode scriptNode){
+	static private string[] generateScriptByteCode(ScriptNode scriptNode){
 		LinkedList!string byteCode = new LinkedList!string;
 		// go through all nodes/ functions, and generate byte-code for them
-		foreach (functionNode; scriptNode.subNodes){
-			// make sure its a function definition
-			if (functionNode.type == ASTNode.Type.Function){
-				// ok
-				byteCode.append(generateFunctionByteCode(functionNode));
-			}else{
-				compileErrors.append(CompileError(functionNode.lineno, "not a function definition"));
-			}
+		foreach (functionNode; scriptNode.functions){
+			byteCode.append(generateFunctionByteCode(functionNode));
 		}
 
 		string[] r = byteCode.toArray;
@@ -67,25 +24,30 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a function definition
-	static private string[] generateFunctionByteCode(ASTNode functionNode){
-		ASTNode block;
-		block = functionNode.subNodes[functionNode.readSubNode(ASTNode.Type.Block)];
-		return [functionNode.data]~generateBlockByteCode(block);
+	static private string[] generateFunctionByteCode(FunctionNode functionNode){
+		/// generates a AssignmentNode[] that sets the "argument vars" their values, using the arg names in correct order
+		AssignmentNode[] getArgVarAssignment(FunctionNode.Argument[] args){
+			import qscript.qscript : QData;
+			AssignmentNode[] r;
+			r.length = args.length;
+			foreach (i, arg; args){
+				VariableNode actualArg;
+				actualArg = VariableNode("__args", CodeNode(LiteralNode(QData(i), DataType(DataType.Type.Integer))));
+				r[i] = AssignmentNode(VariableNode(arg.argName), CodeNode(actualArg));
+			}
+			return r;
+		}
+		functionNode.bodyBlock.statements = getArgVarAssignment(functionNode.arguments) ~ functionNode.bodyBlock.statements;
+		// function definition starts with "functionName\n"
+		return [functionNode.name]~generateBlockByteCode(block);
 	}
 
 	/// generates byte code for a block
-	static private string[] generateBlockByteCode(ASTNode block){
+	static private string[] generateBlockByteCode(BlockNode block){
 		// make sure it's a block
 		LinkedList!string byteCode = new LinkedList!string;
-		foreach (statement; block.subNodes){
-			// check if is a valid statement
-			if ([ASTNode.Type.Assign, ASTNode.Type.Block, ASTNode.Type.FunctionCall,ASTNode.Type.IfStatement,
-					ASTNode.Type.VarDeclare, ASTNode.Type.WhileStatement].hasElement(statement.type)){
-				// type is ok
-				byteCode.append(generateByteCode(statement, false));
-			}else{
-				compileErrors.append(CompileError(statement.lineno, "not a valid statement"));
-			}
+		foreach (statement; block.statements){
+			byteCode.append(generateByteCode(statement, false));
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -419,7 +381,7 @@ unittest{
 		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
 			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
 	}
-}*/
+}
 
 
 
