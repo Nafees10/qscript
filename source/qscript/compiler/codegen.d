@@ -28,12 +28,18 @@ package struct CodeGen{
 		/// generates a AssignmentNode[] that sets the "argument vars" their values, using the arg names in correct order
 		AssignmentNode[] getArgVarAssignment(FunctionNode.Argument[] args){
 			import qscript.qscript : QData;
-			AssignmentNode[] r;
-			r.length = args.length;
+			StatementNode[] r;
+			r.length = args.length * 2; // x2 because the vars need to be declared too
+			// first add the declarations
+			foreach (i, arg; args){
+				VarDeclareNode declaration = VarDeclareNode(arg.argType, [arg.argName]);
+				r[i] = StatementNode(declaration);
+			}
+			// then the assignments
 			foreach (i, arg; args){
 				VariableNode actualArg;
 				actualArg = VariableNode("__args", CodeNode(LiteralNode(QData(i), DataType(DataType.Type.Integer))));
-				r[i] = AssignmentNode(VariableNode(arg.argName), CodeNode(actualArg));
+				r[i + args.length] = StatementNode(AssignmentNode(VariableNode(arg.argName), CodeNode(actualArg)));
 			}
 			return r;
 		}
