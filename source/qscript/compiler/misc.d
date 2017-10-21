@@ -259,6 +259,60 @@ package integer strEnd(string s, uinteger i){
 	return i;
 }
 
+/// decodes a string. i.e, converts \t to tab, \" to ", etc
+/// The string must not be surrounded by quoation marks
+/// 
+/// throws Exception on error
+string decodeString(string s){
+	string r;
+	for (uinteger i = 0; i < s.length; i ++){
+		if (s[i] == '\\'){
+			// read the next char
+			if (i == s.length-1){
+				throw new Exception("unexpected end of string");
+			}
+			char nextChar = s[i+1];
+			if (nextChar == '"'){
+				r ~= '"';
+			}else if (nextChar == 'n'){
+				r ~= '\n';
+			}else if (nextChar == 't'){
+				r ~= '\t';
+			}else if (nextChar == '\\'){
+				r ~= '\\';
+			}else{
+				throw new Exception("\\"~nextChar~" is not an available character");
+			}
+			continue;
+		}
+		r ~= s[i];
+	}
+	return r;
+}
+
+/// encodes a string. i.e converts characters like tab, newline, to \t, \n ...
+/// The string must not be enclosed in quotation marks
+/// 
+/// throws Exception on error
+string encodeString(string s){
+	string r;
+	foreach (c; s){
+		if (c == '\\'){
+			r ~= "\\\\";
+		}else if (c == '"'){
+			r ~= "\\\"";
+		}else if (c == "\n"){
+			r ~= "\\n";
+		}else if (c == '\t'){
+			r ~= "\\t";
+		}else{
+			r ~= c;
+		}
+	}
+	return r;
+}
+
+
 /// converts from Token[] to QData
 /// 
 /// `tokens` is the Token[] containing the data
