@@ -339,7 +339,7 @@ package QData TokensToQData(Token[] tokens){
 			result.intVal = to!integer(tokens[0].token);
 		}else if (type.type == DataType.Type.String){
 			assert(tokens[0].token.length > 1, "invalid string");
-			result.strVal = tokens[0].token[1 .. tokens[0].token.length - 1];
+			result.strVal = decodeString(tokens[0].token[1 .. tokens[0].token.length - 1]);
 		}
 	}
 	return result;
