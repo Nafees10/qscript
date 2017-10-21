@@ -208,6 +208,58 @@ package struct LiteralNode{
 	this (QData data, DataType dataType){
 		literal = data;
 	}
+	/// reads the literal from a string
+	/// 
+	/// throws Exception on error
+	void fromTokens(Token[] tokensLiteral){
+		type = DataType(tokensLiteral);
+		literal = TokensToQData(tokensLiteral);
+	}
+	/// returns this literal as in a string-representation, for the bytecode
+	string toByteCode(){
+		/// returns array in byte code representation
+		static string fromArray(QData data, DataType type){
+			assert (type.arrayNestCount > 0, "not an array");
+			char[] array = '[';
+			// the type of the elements
+			DataType subType = type;
+			subType.arrayNestCount --;
+			if (type.arrayNestCount > 1){
+				// use recursion
+				foreach (element; data.arrayVal){
+					array ~= cast(char[])fromArray(element, subType) ~ ',';
+				}
+			}else{
+				// just use fromData on all these
+				foreach (element; data.arrayVal){
+					array ~= cast(char[])fromData(element, subType) ~ ',';
+				}
+			}
+			if (array.length == 1){
+				array ~= ']';
+			}else{
+				array[array.length - 1] = ']';
+			}
+			return cast(string)array;
+		}
+
+		/// returns a non-array data in byte code representation
+		static string fromData(QData data, DataType.Type type){
+			if (type == DataType.Type.Double){
+				return "d"~to!string(data.doubleVal);
+			}else if (type == DataType.Type.Integer){
+				return "i"~to!string(data.intVal);
+			}else if (type == DataType.Type.String){
+				return "s\""~encodeString(data.strVal)~'"';
+			}
+		}
+
+		if (type.arrayNestCount > 0){
+			return fromArray(literal, type);
+		}else{
+			return fromData(literal, type);
+		}
+	}
 }
 
 /// stores an operator with operands
