@@ -427,7 +427,7 @@ struct ASTGen{
 				Token[] data = tokens.tokens[index .. brackEnd+1].dup;
 				LiteralNode r;
 				try{
-					r = LiteralNode(TokensToQData(data), DataType(data));
+					r.fromTokens(data);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 				}
@@ -437,7 +437,7 @@ struct ASTGen{
 				// double literal
 				LiteralNode r;
 				try{
-					r = LiteralNode(TokensToQData([token]), DataType([token]));
+					r.fromTokens([token]);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 				}
