@@ -61,15 +61,13 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a function call
-	static private string[] generateFunctionCallByteCode(ASTNode fCall, bool pushResult = true){
-		// first push the arguments to the stack, last arg first pushed
-		ASTNode args;
+	static private string[] generateFunctionCallByteCode(FunctionCallNode fCall, bool pushResult = true){
+		// first push the arguments to the stack
 		LinkedList!string byteCode = new LinkedList!string;
-		args = fCall.subNodes[fCall.readSubNode(ASTNode.Type.Arguments)];
 		uinteger argCount = 0;
-		argCount = args.subNodes.length;
+		argCount = fCall.arguments.length;
 		// now start pushing them
-		foreach(arg; args.subNodes){
+		foreach(arg; fCall.arguments.subNodes){
 			byteCode.append(generateByteCode(arg));
 		}
 		/// now exec this function
@@ -80,7 +78,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a string/number literal
-	static private string[] generateLiteralByteCode(ASTNode literal){
+	static private string[] generateLiteralByteCode(LiteralNode literal){
 		/// returns true if a number in a string is a double or int
 		bool isDouble(string s){
 			foreach (c; s){
@@ -105,13 +103,13 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a var
-	static private string[] generateVariableByteCode(ASTNode var){
+	static private string[] generateVariableByteCode(VariableNode var){
 		// ok, push the var, deal with the indexes later (if any)
-		string[] r = ["\tgetVar s\""~var.data~'"'];
+		string[] r = ["\tgetVar s\""~var.varName~'"'];
 		// now if there's indexes, add them
 		if (var.subNodes.length > 0){
 			LinkedList!string indexes = new LinkedList!string;
-			foreach (index; var.subNodes){
+			foreach (index; var.indexes){
 				indexes.append(generateByteCode(index));
 				indexes.append("\treadElement");
 			}
@@ -131,32 +129,42 @@ package struct CodeGen{
 			}
 			return [r];
 		}else{
-			compileErrors.append(CompileError(varDeclare.lineno, "no variables declared in var()"));
+			compileErrors.append(CompileError(varDeclare.lineno, "no variables declared"));
 			return [];
 		}
 	}
 
 	/// generates byte code for an if statement
-	static private string[] generateIfByteCode(ASTNode ifStatement){
+	static private string[] generateIfByteCode(IfNode ifStatement){
 		static uinteger ifCount = 0;
-		ASTNode block = ifStatement.subNodes[1], condition = ifStatement.subNodes[0];
-		if (ifStatement.subNodes[0].type == ASTNode.Type.Block){
-			block = ifStatement.subNodes[0];
-			condition = ifStatement.subNodes[1];
-		}
 		LinkedList!string byteCode = new LinkedList!string;
 		// first, push the condition
-		byteCode.append(generateByteCode(condition));
+		byteCode.append(generateByteCode(ifStatement.condition));
 		// then add the skipTrue
 		byteCode.append([
 				"\tskipTrue i1",
 				"\tjump s\"if"~to!string(ifCount)~"end\""
 			]);
-		// then comes the block
-		byteCode.append(generateByteCode(block));
-		// then end the end
-		byteCode.append("\tif"~to!string(ifCount)~"end:");
+		string endMark = "\tif"~to!string(ifCount)~"end:";
+		string elseEndMark = null;
 		ifCount ++;
+		// then comes the block
+		byteCode.append(generateByteCode(BlockNode(ifStatement.statements)));
+		// then skip the else body
+		if (ifStatement.hasElse){
+			// jump if%count%end
+			byteCode.append("\tjump s\"if"~to!string(ifCount)~"end\"");
+			elseEndMark = "\tif"~to!string(ifCount)~"end:";
+			ifCount ++;
+		}
+		// then end the end
+		byteCode.append(endMark);
+		// and start the endBlock
+		if (ifStatement.hasElse){
+			byteCode.append(BlockNode(ifStatement.elseStatements));
+			// mark else end
+			byteCode.append(elseEndMark);
+		}
 		// then return it!
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
