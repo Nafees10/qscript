@@ -172,25 +172,20 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for while statement
-	static private string[] generateWhileByteCode(ASTNode whileStatement){
+	static private string[] generateWhileByteCode(WhileNode whileStatement){
 		static uinteger whileCount = 0;
-		ASTNode block = whileStatement.subNodes[1], condition = whileStatement.subNodes[0];
-		if (whileStatement.subNodes[0].type == ASTNode.Type.Block){
-			block = whileStatement.subNodes[0];
-			condition = whileStatement.subNodes[1];
-		}
 		LinkedList!string byteCode = new LinkedList!string;
 		// first push the loop start position
 		byteCode.append("\twhile"~to!string(whileCount)~"start:");
 		// then push the condition
-		byteCode.append(generateByteCode(condition));
+		byteCode.append(generateByteCode(whileStatement.condition));
 		// then add the skipTrue
 		byteCode.append([
 				"\tskipTrue i1",
 				"\tjump s\"while"~to!string(whileCount)~"end\""
 			]);
 		// then the block
-		byteCode.append(generateByteCode(block));
+		byteCode.append(generateByteCode(BlockNode(whileStatement.statements)));
 		// then jump to beginning, if it has to terminate, it will jump to the below position appended
 		byteCode.append("\tjump s\"while"~to!string(whileCount)~"start\"");
 		//  then end it!
@@ -203,29 +198,28 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for assignment statement
-	static private string[] generateAssignmentByteCode(ASTNode assign){
-		ASTNode var = assign.subNodes[0], val = assign.subNodes[1];
+	static private string[] generateAssignmentByteCode(AssignmentNode assign){
 		LinkedList!string byteCode = new LinkedList!string;
 		// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
-		if (var.subNodes.length > 0){
+		if (assign.var.indexes.length > 0){
 			// is array, needs to use `modifyElement` + `setVar`
-			byteCode.append("\tgetVar s\""~var.data~'"');
+			byteCode.append("\tgetVar s\""~assign.var.varName~'"');
 			uinteger indexCount = 0;
-			foreach (index; var.subNodes){
+			foreach (index; assign.var.indexes){
 				indexCount ++;
 				byteCode.append(generateByteCode(index));
 			}
 			// then call `modifyArray` with new value,and set the new val
-			byteCode.append(generateByteCode(val));
+			byteCode.append(generateByteCode(assign.val));
 			byteCode.append([
 					"\tmodifyArray i"~to!string(indexCount),
-					"\tsetVar s\""~var.data~'"'
+					"\tsetVar s\""~assign.var.varName~'"'
 				]);
 			// done
 		}else{
 			// just set the new Val
-			byteCode.append(generateByteCode(val));
-			byteCode.append("\tsetVar s\""~var.data~'"');
+			byteCode.append(generateByteCode(assign.val));
+			byteCode.append("\tsetVar s\""~assign.var.varName~'"');
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -233,7 +227,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for operators
-	static private string[] generateOperatorByteCode(ASTNode operator){
+	static private string[] generateOperatorByteCode(OperatorNode operator){
 		const string[string] operatorInstructions = [
 			"/": "divide",
 			"*": "multiply",
@@ -251,10 +245,14 @@ package struct CodeGen{
 		];
 		LinkedList!string byteCode = new LinkedList!string;
 		// push the operands first
-		byteCode.append(generateByteCode(operator.subNodes[0]));
-		byteCode.append(generateByteCode(operator.subNodes[1]));
+		byteCode.append(generateByteCode(operator.operands[0]));
+		byteCode.append(generateByteCode(operator.operands[1]));
 		// then do the operation
-		byteCode.append("\t"~operatorInstructions[operator.data]);
+		if (operator.operator in operatorInstructions){
+			byteCode.append("\t"~operatorInstructions[operator.operator]);
+		}else{
+			compileErrors.append(CompileError(0, "invalid operator"));
+		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
