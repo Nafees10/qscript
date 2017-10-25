@@ -119,6 +119,10 @@ package struct CodeNode{
 	@property CodeNode.Type type(){
 		return storedType;
 	}
+	/// returns the data type that the node will return
+	@property DataType dataType(){
+		// TODO make this
+	}
 	/// sets the stored node
 	@property auto node(T)(T newNode){
 		static if (is (T == FunctionCallNode)){
@@ -163,6 +167,8 @@ package struct CodeNode{
 
 /// stores a variable
 package struct VariableNode{
+	/// the data type of the variable
+	public DataType varType;
 	/// the name of this var
 	public string varName;
 	/// stores index-es in case it is an array. For example, if code=`var[0][1]`, then the array below contains [0 (literal), 1 (literal)] 
@@ -183,12 +189,14 @@ package struct VariableNode{
 		return false;
 	}
 	/// constructor
-	this (string name, CodeNode[] index){
+	this (DataType type, string name, CodeNode[] index){
+		varType = type;
 		varName = name;
 		storedindexes = index.dup;
 	}
 	/// constructor
-	this (string name){
+	this (DataType type, string name){
+		varType = type;
 		varName = name;
 	}
 	/// postblit
@@ -443,6 +451,8 @@ package struct WhileNode{
 package struct FunctionCallNode{
 	/// the name of the function
 	public string fName;
+	/// the data type of the returned data
+	public DataType returnType;
 	/// the arguments for this function.
 	private CodeNode[] storedArguments;
 	/// returns the assoc_array storing values for arguments
@@ -458,7 +468,8 @@ package struct FunctionCallNode{
 		storedArguments = storedArguments.dup;
 	}
 	/// constructor
-	this (string functionName, CodeNode[] functionArguments){
+	this (DataType returnDataType, string functionName, CodeNode[] functionArguments){
+		returnType = returnDataType;
 		fName = functionName;
 		arguments = functionArguments;
 	}
