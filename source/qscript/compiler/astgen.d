@@ -9,11 +9,17 @@ import utils.lists;
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
 struct ASTGen{
+	/// constructor
+	/// 
+	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined functions
+	this (DataType[string] functionReturnDataTypes){
+		functionReturnTypes = functionReturnDataTypes.dup;
+	}
 	/// generates an AST representing a script.
 	/// 
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
-	static public ScriptNode generateScriptAST(TokenList tokens){
+	public ScriptNode generateScriptAST(TokenList tokens){
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
 		// go through the script, compile function nodes, link them to this node
@@ -33,11 +39,44 @@ struct ASTGen{
 		.destroy(functions);
 		return scriptNode;
 	}
-	static private{
+	private{
+		/// stores functions' return types
+		DataType[string] functionReturnTypes;
+		/// stores data types for variable in currently-being-converted function
+		DataType[string] varDataTypes;
+		/// returns return type of a function, if function doesnt exist, throws Exception
+		DataType getFunctionReturnType(string functionName, TokenList tokens){
+			static bool scannedAllTokens = false;
+			// check if already known
+			if (functionName in functionReturnTypes){
+				// return this one
+				return functionReturnTypes[functionName];
+			}else if (!scannedAllTokens){
+				// scan all the tokens for this function tokens
+				for (uinteger i = 0; i < tokens.tokens.length; i ++){
+					if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
+						// ok, check if it's this one
+						// first, read it's type, then see if this is the one we want
+						DataType type = readType(tokens, i);
+						functionReturnTypes[tokens.tokens[i].token] == type;
+					}
+					// skip brackets
+					if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
+						i = tokens.tokens.bracketPos(i);
+					}
+				}
+				// now all the tokens have been scanned for functions, no more functions
+				scannedAllTokens = true;
+				return getFunctionReturnType(functionName);
+			}else{
+				throw new Exception("function "~functionName~" not defined");
+			}
+
+		}
 		/// reads a type from TokensList
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
-		DataType readType(TokenList tokens, ref uinteger index){
+		static DataType readType(TokenList tokens, ref uinteger index){
 			uinteger startIndex = index;
 			for (; index < tokens.tokens.length; index ++){
 				if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
