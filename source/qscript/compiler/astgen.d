@@ -14,6 +14,7 @@ struct ASTGen{
 	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined functions
 	this (DataType[string] functionReturnDataTypes){
 		functionReturnTypes = functionReturnDataTypes.dup;
+		scopeDepth = 0;
 	}
 	/// generates an AST representing a script.
 	/// 
@@ -42,10 +43,45 @@ struct ASTGen{
 	private{
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
-		/// stores data types for variable in currently-being-converted function
-		DataType[string] varDataTypes;
+		{
+			/// stores data types for variable in currently-being-converted function
+			private DataType[string] varDataTypes;
+			/// stores the scope depth count for each var
+			private uinteger[string] varScopeDepth;
+			/// stores current scope
+			private uinteger scopeCount = 0;
+			/// adds a var
+			void addVarType(string name, DataType type){
+				varDataTypes[name] = type;
+				varScopeDepth[name] = scopeCount;
+			}
+			/// returns data type of a var, throws Exception if var doesnt exist
+			void getVarType(string name){
+				if (name in varDataTypes){
+					return varDataTypes[name];
+				}else{
+					throw new Exception("variable '"~name~"' not declared");
+				}
+			}
+			/// removes vars of last scope, and decreases scopeCount
+			void removeLastScope(){
+				foreach (key; varScopeDepth.keys){
+					if (varScopeDepth[key] == scopeCount){
+						varScopeDepth.remove(key);
+					}
+				}
+				if (scopeCount > 0){
+					scopeCount --;
+				}
+			}
+			/// increases scope count
+			void increaseScopeCount(){
+				scopeCount ++;
+			}
+		}
 		/// returns return type of a function, if function doesnt exist, throws Exception
 		DataType getFunctionReturnType(string functionName, TokenList tokens){
+			/// stores whether the all the tokens have been scanned for function return types
 			static bool scannedAllTokens = false;
 			// check if already known
 			if (functionName in functionReturnTypes){
@@ -55,8 +91,6 @@ struct ASTGen{
 				// scan all the tokens for this function tokens
 				for (uinteger i = 0; i < tokens.tokens.length; i ++){
 					if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
-						// ok, check if it's this one
-						// first, read it's type, then see if this is the one we want
 						DataType type = readType(tokens, i);
 						functionReturnTypes[tokens.tokens[i].token] == type;
 					}
