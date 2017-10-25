@@ -121,7 +121,15 @@ package struct CodeNode{
 	}
 	/// returns the data type that the node will return
 	@property DataType dataType(){
-		// TODO make this
+		if (storedType == CodeNode.Type.FunctionCall){
+			return fCall.returnType;
+		}else if (storedType == CodeNode.Type.Literal){
+			return literal.type;
+		}else if (storedType == CodeNode.Type.Operator){
+			return operator.returnType;
+		}else if (storedType == CodeNode.Type.Variable){
+			return var.varType;
+		}
 	}
 	/// sets the stored node
 	@property auto node(T)(T newNode){
@@ -274,6 +282,8 @@ package struct LiteralNode{
 package struct OperatorNode{
 	/// stores the operator (like '+' ...)
 	public string operator;
+	/// stores the result data type
+	DataType returnType;
 	/// operands. [0] = left, [1] = right
 	private CodeNode[] storedOperands;
 	/// returns an array of operands
