@@ -120,7 +120,7 @@ package struct CodeNode{
 		return storedType;
 	}
 	/// returns the data type that the node will return
-	@property DataType dataType(){
+	@property DataType returnType(){
 		if (storedType == CodeNode.Type.FunctionCall){
 			return fCall.returnType;
 		}else if (storedType == CodeNode.Type.Literal){
@@ -282,8 +282,17 @@ package struct LiteralNode{
 package struct OperatorNode{
 	/// stores the operator (like '+' ...)
 	public string operator;
-	/// stores the result data type
-	DataType returnType;
+	/// returns the result data type
+	/// 
+	/// throws Exception if types of 2 operands do not match
+	@property DataType returnType(){
+		DataType r = operands[0].returnType;
+		if (r == operands[1].returnType){
+			return r;
+		}else{
+			throw new Exception("data types of two operands do not match");
+		}
+	}
 	/// operands. [0] = left, [1] = right
 	private CodeNode[] storedOperands;
 	/// returns an array of operands

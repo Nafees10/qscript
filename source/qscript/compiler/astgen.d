@@ -308,7 +308,6 @@ struct ASTGen{
 		/// 
 		/// changes `index` to the index of the token after the last token related to the operator
 		OperatorNode generateOperatorAST(TokenList tokens, CodeNode firstOperand, ref uinteger index){
-			// TODO make returnType detecting work in operators
 			OperatorNode operator;
 			// make sure it's an operator, and there is a second operand
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
