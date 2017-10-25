@@ -189,6 +189,7 @@ struct ASTGen{
 			BlockNode blockNode;
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
+				increaseScopeCount();
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
@@ -199,6 +200,8 @@ struct ASTGen{
 				blockNode.statements = statements.toArray;
 				.destroy(statements);
 				index = brackEnd+1;
+
+				removeLastScope();
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 			}
@@ -252,8 +255,13 @@ struct ASTGen{
 						break;
 					}
 				}
-				functionCallNode = FunctionCallNode(tokens.tokens[index].token, args.toArray);
-				.destroy(args);
+				try{
+					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token),
+						tokens.tokens[index].token, args.toArray);
+				}catch (Exception e){
+					compileErrors.append(CompileError(index, e.msg));
+					.destroy(e);
+				}
 				
 				return functionCallNode;
 			}else{
@@ -300,6 +308,7 @@ struct ASTGen{
 		/// 
 		/// changes `index` to the index of the token after the last token related to the operator
 		OperatorNode generateOperatorAST(TokenList tokens, CodeNode firstOperand, ref uinteger index){
+			// TODO make returnType detecting work in operators
 			OperatorNode operator;
 			// make sure it's an operator, and there is a second operand
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
@@ -323,6 +332,12 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Identifier){
 				// set var name
 				var.varName = tokens.tokens[index].token;
+				try{
+					var.varType = getVarType(var.varName);
+				}catch (Exception e){
+					compileErrors.append(compileErrors.append(CompileError(index, e.msg)));
+					.destroy(e);
+				}
 				index ++;
 				// check if indexes are specified, case yes, add em
 				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
@@ -396,6 +411,7 @@ struct ASTGen{
 										"variable name expected in varaible declaration, unexpected token found"));
 							}else{
 								vars.append(token.token);
+								addVarType(token.token, type);
 							}
 							commaExpected = true;
 						}
