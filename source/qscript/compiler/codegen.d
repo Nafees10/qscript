@@ -11,7 +11,7 @@ import std.conv : to;
 /// contains functions to generate byte code from AST
 package struct CodeGen{
 	/// generates byte code for a script
-	static private string[] generateScriptByteCode(ScriptNode scriptNode){
+	static private string[] generateByteCode(ScriptNode scriptNode){
 		LinkedList!string byteCode = new LinkedList!string;
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.functions){
@@ -24,7 +24,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a function definition
-	static private string[] generateFunctionByteCode(FunctionNode functionNode){
+	static private string[] generateByteCode(FunctionNode functionNode){
 		/// generates a AssignmentNode[] that sets the "argument vars" their values, using the arg names in correct order
 		AssignmentNode[] getArgVarAssignment(FunctionNode.Argument[] args){
 			import qscript.qscript : QData;
@@ -45,11 +45,11 @@ package struct CodeGen{
 		}
 		functionNode.bodyBlock.statements = getArgVarAssignment(functionNode.arguments) ~ functionNode.bodyBlock.statements;
 		// function definition starts with "functionName\n"
-		return [functionNode.name]~generateBlockByteCode(block);
+		return [functionNode.name]~generateByteCode(block);
 	}
 
 	/// generates byte code for a block
-	static private string[] generateBlockByteCode(BlockNode block){
+	static private string[] generateByteCode(BlockNode block){
 		// make sure it's a block
 		LinkedList!string byteCode = new LinkedList!string;
 		foreach (statement; block.statements){
@@ -61,24 +61,24 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a function call
-	static private string[] generateFunctionCallByteCode(FunctionCallNode fCall, bool pushResult = true){
+	static private string[] generateByteCode(FunctionCallNode fCall){
 		// first push the arguments to the stack
 		LinkedList!string byteCode = new LinkedList!string;
 		uinteger argCount = 0;
 		argCount = fCall.arguments.length;
 		// now start pushing them
-		foreach(arg; fCall.arguments.subNodes){
+		foreach(arg; fCall.arguments){
 			byteCode.append(generateByteCode(arg));
 		}
 		/// now exec this function
-		byteCode.append("\t"~(pushResult ? "execFuncP" : "execFuncI")~" s\""~fCall.data~"\" i"~to!string(argCount));
+		byteCode.append("\texecFunc s\""~fCall.fName~"\" i"~to!string(argCount));
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
 	}
 
 	/// generates byte code for a string/number literal
-	static private string[] generateLiteralByteCode(LiteralNode literal){
+	static private string[] generateByteCode(LiteralNode literal){
 		/// returns true if a number in a string is a double or int
 		bool isDouble(string s){
 			foreach (c; s){
@@ -103,7 +103,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a var
-	static private string[] generateVariableByteCode(VariableNode var){
+	static private string[] generateByteCode(VariableNode var){
 		// ok, push the var, deal with the indexes later (if any)
 		string[] r = ["\tgetVar s\""~var.varName~'"'];
 		// now if there's indexes, add them
@@ -119,13 +119,13 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a varDeclare
-	static private string[] generateVarDeclareByteCode(ASTNode varDeclare){
+	static private string[] generateVarDeclareByteCode(VarDeclareNode varDeclare){
 		// make sure there are vars
-		if (varDeclare.subNodes.length > 0){
+		if (varDeclare.vars.length > 0){
 			// make sure all subNodes are vars, and generate the instruction
 			string r = "\tinitVar";
-			foreach (var; varDeclare.subNodes){
-				r ~= " s\""~var.data~'"';
+			foreach (var; varDeclare.vars){
+				r ~= " s\""~var~'"';
 			}
 			return [r];
 		}else{
