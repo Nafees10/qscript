@@ -8,6 +8,7 @@ import utils.misc;
 import utils.lists;
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
+/// TODO put `TokenList tokens` directly in struct ASTGen instead of taking it as argument in each function
 struct ASTGen{
 	/// constructor
 	/// 
@@ -537,31 +538,5 @@ struct ASTGen{
 		}
 		
 		
-	}
-}
-
-/// converts AST Nodes to a html representation
-string[] astToHtml(T)(T node){
-	/// converts ScriptNode to html
-	static string[] scriptNodeToHtml(ScriptNode node){
-		LinkedList!string html = new LinkedList!string;
-		html.append("<scriptNode>Script:");
-		foreach (functionDef; node.functions){
-			html.append(functionNodeToHtml(functionDef));
-		}
-		html.append("</scriptNode>");
-	}
-	/// converts FunctionNode to html
-	static string[] functionNodeToHtml(FunctionNode node){
-		LinkedList!string html = new LinkedList!string;
-		html.append("<functionNode>Function Definition:<br>Name: "~node.name);
-		// add the arguments
-		if (node.arguments.length > 0){
-			html.append("<functionNodeArguments>");
-			foreach (arg; node.arguments){
-				//html.append("<functionNodeArgument>Type: "~arg.argType.);
-			}
-			html.append("</functionNodeArguments>");
-		}
 	}
 }
