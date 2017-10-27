@@ -37,7 +37,8 @@ writeln will not be called.
 
 ## Variables
 ### Variable Definition
-Variables can be defined as shown below:
+QScript does not support global variables. But if needed, using external functions, something similar to global variables can be achieved.  
+Variables can be defined only inside functions, like:
 ```
 TYPE (var0, var1, var2);
 ```
@@ -92,11 +93,13 @@ As long as `CONDITION` is 1 (int), `// some code in a loop` is executed.
 ## Operators
 One important thing to keep in mind when using operators is that they are evaluated left-to right. So instead of writing:
 ```
-if (a == 0 || a == 1){}
+if (a == 0 || a == 1){
+}
 ```
 you should write:
 ```
-if ((a == 0) || (a == 1)){}
+if ((a == 0) || (a == 1)){
+}
 ```
 The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.
 ### Arithmetic Operators
@@ -111,11 +114,19 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `<` returns 1 (int) if `value0` int/float is lesser than `value1` int/float.
 * `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
+  
+In QScript, you cannot write `-1`, so instead, use `0-1`.
 
 ---
 
 ## Function Call
-A function can be called like shown below:
+There are 2 types of functions, script-defined, and external. External are made available by "registering" them into QScript (the script cannot do this).  
+ If a script-defined function has a name `setLength`, and an external function is also named `setLength`, then upon calling `setLength(...)`, the script-defined 
+ one will be executed. Both types of functions can be executed like:
 ```
 FUNCTION_NAME (arg0, arg1);
+```
+And a function can take more/less than 2 arguments. In case it doesnt take any arguments, it will be called like:
+```
+FUNCTION_NAME ();
 ```
