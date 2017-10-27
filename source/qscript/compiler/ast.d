@@ -326,6 +326,7 @@ package struct StatementNode{
 		BlockNode blockNode;
 		FunctionCallNode functionCallNode;
 		VarDeclareNode varDeclareNode;
+		AssignmentNode assignNode;
 	}
 	/// modifies the stored node
 	@property node(T)(T newNode){
@@ -344,6 +345,9 @@ package struct StatementNode{
 		}else static if (is (T == VarDeclareNode)){
 			storedType = StatementNode.Type.VarDeclare;
 			varDeclareNode = newNode;
+		}else if (is (T == AssignmentNode)){
+			storedType = StatementNode.Type.Assignment;
+			assignNode = newNode;
 		}else{
 			throw new Exception("attempting to assign invalid node type to StatementNode.node");
 		}
@@ -364,6 +368,8 @@ package struct StatementNode{
 			return functionCallNode;
 		}else static if (T == StatementNode.Type.VarDeclare){
 			return varDeclareNode;
+		}else if (T == StatementNode.Type.Assignment){
+			return assignNode;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from StatementNode.node");
 		}
