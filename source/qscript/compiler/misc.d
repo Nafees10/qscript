@@ -198,13 +198,13 @@ package struct DataType{
 	string toString(){
 		char[] r;
 		if (type == DataType.Type.Void){
-			r = "void";
+			r = cast(char[]) "void";
 		}else if (type == DataType.Type.Double){
-			r = "double";
+			r = cast(char[]) "double";
 		}else if (type == DataType.Type.Integer){
-			r = "int";
+			r = cast(char[]) "int";
 		}else if (type == DataType.Type.String){
-			r = "string";
+			r = cast(char[]) "string";
 		}else{
 			throw new Exception("invalid type stored");
 		}
@@ -323,7 +323,7 @@ string encodeString(string s){
 			r ~= "\\\\";
 		}else if (c == '"'){
 			r ~= "\\\"";
-		}else if (c == "\n"){
+		}else if (c == '\n'){
 			r ~= "\\n";
 		}else if (c == '\t'){
 			r ~= "\\t";
