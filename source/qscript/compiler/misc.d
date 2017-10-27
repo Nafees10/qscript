@@ -193,6 +193,28 @@ package struct DataType{
 		}
 		callCount --;
 	}
+
+	/// converts this DataType to string
+	string toString(){
+		char[] r;
+		if (type == DataType.Type.Void){
+			r = "void";
+		}else if (type == DataType.Type.Double){
+			r = "double";
+		}else if (type == DataType.Type.Integer){
+			r = "int";
+		}else if (type == DataType.Type.String){
+			r = "string";
+		}else{
+			throw new Exception("invalid type stored");
+		}
+		uinteger i = r.length;
+		r.length += arrayNestCount * 2;
+		for (; i < r.length; i += 2){
+			r[i .. i+2] = "[]";
+		}
+		return cast(string) r;
+	}
 }
 /// unittests
 unittest{
