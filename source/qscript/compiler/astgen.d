@@ -14,7 +14,6 @@ struct ASTGen{
 	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined functions
 	this (DataType[string] functionReturnDataTypes){
 		functionReturnTypes = functionReturnDataTypes.dup;
-		scopeDepth = 0;
 	}
 	/// generates an AST representing a script.
 	/// 
@@ -43,7 +42,7 @@ struct ASTGen{
 	private{
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
-		{
+		struct{
 			/// stores data types for variable in currently-being-converted function
 			private DataType[string] varDataTypes;
 			/// stores the scope depth count for each var
@@ -56,7 +55,7 @@ struct ASTGen{
 				varScopeDepth[name] = scopeCount;
 			}
 			/// returns data type of a var, throws Exception if var doesnt exist
-			void getVarType(string name){
+			DataType getVarType(string name){
 				if (name in varDataTypes){
 					return varDataTypes[name];
 				}else{
@@ -92,7 +91,7 @@ struct ASTGen{
 				for (uinteger i = 0; i < tokens.tokens.length; i ++){
 					if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
 						DataType type = readType(tokens, i);
-						functionReturnTypes[tokens.tokens[i].token] == type;
+						functionReturnTypes[tokens.tokens[i].token] = type;
 					}
 					// skip brackets
 					if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
@@ -101,7 +100,7 @@ struct ASTGen{
 				}
 				// now all the tokens have been scanned for functions, no more functions
 				scannedAllTokens = true;
-				return getFunctionReturnType(functionName);
+				return getFunctionReturnType(functionName, tokens);
 			}else{
 				throw new Exception("function "~functionName~" not defined");
 			}
@@ -256,7 +255,7 @@ struct ASTGen{
 					}
 				}
 				try{
-					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token),
+					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token, tokens),
 						tokens.tokens[index].token, args.toArray);
 				}catch (Exception e){
 					compileErrors.append(CompileError(index, e.msg));
@@ -334,7 +333,7 @@ struct ASTGen{
 				try{
 					var.varType = getVarType(var.varName);
 				}catch (Exception e){
-					compileErrors.append(compileErrors.append(CompileError(index, e.msg)));
+					compileErrors.append(CompileError(index, e.msg));
 					.destroy(e);
 				}
 				index ++;
@@ -538,5 +537,31 @@ struct ASTGen{
 		}
 		
 		
+	}
+}
+
+/// converts AST Nodes to a html representation
+string[] astToHtml(T)(T node){
+	/// converts ScriptNode to html
+	static string[] scriptNodeToHtml(ScriptNode node){
+		LinkedList!string html = new LinkedList!string;
+		html.append("<scriptNode>Script:");
+		foreach (functionDef; node.functions){
+			html.append(functionNodeToHtml(functionDef));
+		}
+		html.append("</scriptNode>");
+	}
+	/// converts FunctionNode to html
+	static string[] functionNodeToHtml(FunctionNode node){
+		LinkedList!string html = new LinkedList!string;
+		html.append("<functionNode>Function Definition:<br>Name: "~node.name);
+		// add the arguments
+		if (node.arguments.length > 0){
+			html.append("<functionNodeArguments>");
+			foreach (arg; node.arguments){
+				//html.append("<functionNodeArgument>Type: "~arg.argType.);
+			}
+			html.append("</functionNodeArguments>");
+		}
 	}
 }
