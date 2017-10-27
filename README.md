@@ -9,6 +9,12 @@
 
 ---
 
+### TODO (Features to add):
+1. `if else` statements - planned for next version, 0.6.0
+2. static typing - planned for next version, 0.6.0
+3. `for`, and `do while` loops - planned for 0.6.1
+4. compile-time optimizations - Compiler executes code like `2+2` at compile time - planned for 0.6.2
+
 ### Where to report bugs?
 Use the issues tab at the top.
 
