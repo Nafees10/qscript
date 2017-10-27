@@ -129,6 +129,8 @@ package struct CodeNode{
 			return operator.returnType;
 		}else if (storedType == CodeNode.Type.Variable){
 			return var.varType;
+		}else{
+			throw new Exception("invalid type stored");
 		}
 	}
 	/// sets the stored node
@@ -234,47 +236,36 @@ package struct LiteralNode{
 	/// returns this literal as in a string-representation, for the bytecode
 	string toByteCode(){
 		/// returns array in byte code representation
-		static string fromArray(QData data, DataType type){
+		static string fromDataOrArray(QData data, DataType type){
 			assert (type.arrayNestCount > 0, "not an array");
-			char[] array = '[';
-			// the type of the elements
-			DataType subType = type;
-			subType.arrayNestCount --;
-			if (type.arrayNestCount > 1){
+			if (type.arrayNestCount > 0){
+				char[] array = ['['];
+				// the type of the elements
+				DataType subType = type;
+				subType.arrayNestCount --;
 				// use recursion
 				foreach (element; data.arrayVal){
-					array ~= cast(char[])fromArray(element, subType) ~ ',';
+					array ~= cast(char[])fromDataOrArray(element, subType) ~ ',';
 				}
+				if (array.length == 1){
+					array ~= ']';
+				}else{
+					array[array.length - 1] = ']';
+				}
+				return cast(string)array;
 			}else{
-				// just use fromData on all these
-				foreach (element; data.arrayVal){
-					array ~= cast(char[])fromData(element, subType) ~ ',';
+				if (type.type == DataType.Type.Double){
+					return "d"~to!string(data.doubleVal);
+				}else if (type.type == DataType.Type.Integer){
+					return "i"~to!string(data.intVal);
+				}else if (type.type == DataType.Type.String){
+					return "s\""~encodeString(data.strVal)~'"';
+				}else{
+					throw new Exception("invalid type stored");
 				}
 			}
-			if (array.length == 1){
-				array ~= ']';
-			}else{
-				array[array.length - 1] = ']';
-			}
-			return cast(string)array;
 		}
-
-		/// returns a non-array data in byte code representation
-		static string fromData(QData data, DataType.Type type){
-			if (type == DataType.Type.Double){
-				return "d"~to!string(data.doubleVal);
-			}else if (type == DataType.Type.Integer){
-				return "i"~to!string(data.intVal);
-			}else if (type == DataType.Type.String){
-				return "s\""~encodeString(data.strVal)~'"';
-			}
-		}
-
-		if (type.arrayNestCount > 0){
-			return fromArray(literal, type);
-		}else{
-			return fromData(literal, type);
-		}
+		return fromDataOrArray(literal, type);
 	}
 }
 
