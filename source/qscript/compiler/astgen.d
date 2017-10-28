@@ -16,20 +16,30 @@ struct ASTGen{
 	this (DataType[string] functionReturnDataTypes){
 		functionReturnTypes = functionReturnDataTypes.dup;
 	}
+	/// destructor
+	~this (){
+		.destroy(compileErrors);
+	}
 	/// generates an AST representing a script.
+	/// 
+	/// `tokens` is the TokenList to generate AST from
+	/// `errors` is the array in which errors will be put
 	/// 
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
-	public ScriptNode generateScriptAST(TokenList tokens){
+	public ScriptNode generateScriptAST(TokenList scriptTokens, ref CompileError[] errors){
+		compileErrors = new LinkedList!CompileError;
+		tokens = scriptTokens;
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
 		// go through the script, compile function nodes, link them to this node
-		for (uinteger i = 0, lastIndex = tokens.tokens.length - 1; i < tokens.tokens.length; i ++){
+		index = 0;
+		for (uinteger lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
 			// look for TokenType.Keyword where token.token == "function"
-			if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
+			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				uinteger errorCount = compileErrors.count;
-				FunctionNode functionNode = generateFunctionAST(tokens, i);
-				i --;
+				FunctionNode functionNode = generateFunctionAST();
+				index --;
 				// check if error free
 				if (compileErrors.count == errorCount){
 					functions.append(functionNode);
@@ -38,9 +48,17 @@ struct ASTGen{
 		}
 		scriptNode = ScriptNode(functions.toArray);
 		.destroy(functions);
+		errors = compileErrors.toArray;
+		.destroy(compileErrors);
 		return scriptNode;
 	}
 	private{
+		/// stores the list of tokens
+		TokenList tokens;
+		/// stores the current index (of tokens)
+		uinteger index;
+		/// stores all compilation errors
+		LinkedList!CompileError compileErrors;
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
 		struct{
@@ -80,7 +98,7 @@ struct ASTGen{
 			}
 		}
 		/// returns return type of a function, if function doesnt exist, throws Exception
-		DataType getFunctionReturnType(string functionName, TokenList tokens){
+		DataType getFunctionReturnType(string functionName){
 			/// stores whether the all the tokens have been scanned for function return types
 			static bool scannedAllTokens = false;
 			// check if already known
@@ -91,8 +109,11 @@ struct ASTGen{
 				// scan all the tokens for this function tokens
 				for (uinteger i = 0; i < tokens.tokens.length; i ++){
 					if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
-						DataType type = readType(tokens, i);
-						functionReturnTypes[tokens.tokens[i].token] = type;
+						try{
+							functionReturnTypes[tokens.tokens[i].token] = readType();
+						}catch(Exception e){
+							compileErrors.append(CompileError(tokens.getTokenLine(i), e.msg));
+						}
 					}
 					// skip brackets
 					if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
@@ -101,7 +122,7 @@ struct ASTGen{
 				}
 				// now all the tokens have been scanned for functions, no more functions
 				scannedAllTokens = true;
-				return getFunctionReturnType(functionName, tokens);
+				return getFunctionReturnType(functionName);
 			}else{
 				throw new Exception("function "~functionName~" not defined");
 			}
@@ -110,33 +131,32 @@ struct ASTGen{
 		/// reads a type from TokensList
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
-		static DataType readType(TokenList tokens, ref uinteger index){
+		DataType readType(){
 			uinteger startIndex = index;
 			for (; index < tokens.tokens.length; index ++){
 				if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
 					tokens.tokens[index].type != Token.Type.IndexBracketClose){
+					index++;
 					break;
 				}
 			}
 			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
-			DataType r;
-			try{
-				r = DataType(sType);
-			}catch(Exception e){
-				compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
-			}
-			return r;
+			return DataType(sType);
 		}
 		/// generates AST for a function definition 
 		/// 
 		/// changes `index` to the token after function definition
-		FunctionNode generateFunctionAST(TokenList tokens, ref uinteger index){
+		FunctionNode generateFunctionAST(){
 			FunctionNode functionNode;
 			// make sure it's a function
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				// read the type
 				index++;
-				functionNode.returnType = readType(tokens, index);
+				try{
+					functionNode.returnType = readType();
+				}catch(Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+				}
 				// above functionCall moves index to fName
 				// now index is at function name
 				functionNode.name = tokens.tokens[index].token;
@@ -159,7 +179,11 @@ struct ASTGen{
 							// data type + arg_name expected
 							// read the type
 							FunctionNode.Argument arg;
-							arg.argType = readType(tokens, index);
+							try{
+								arg.argType = readType();
+							}catch(Exception e){
+								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+							}
 							// now the arg_name
 							arg.argName = tokens.tokens[index].token;
 							index++;
@@ -172,7 +196,7 @@ struct ASTGen{
 				}
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
 					// no args, just body
-					functionNode.bodyBlock = generateBlockAST(tokens, index);
+					functionNode.bodyBlock = generateBlockAST();
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function has no body"));
 				}
@@ -185,7 +209,7 @@ struct ASTGen{
 		/// generates AST for a {block-of-code}
 		/// 
 		/// changes `index` to token after block end
-		BlockNode generateBlockAST(TokenList tokens, ref uinteger index){
+		BlockNode generateBlockAST(){
 			BlockNode blockNode;
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
@@ -193,8 +217,9 @@ struct ASTGen{
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
+				index++;
 				while (index < brackEnd){
-					statements.append(generateStatementAST(tokens, index));
+					statements.append(generateStatementAST());
 				}
 				// put them all in block
 				blockNode.statements = statements.toArray;
@@ -209,31 +234,31 @@ struct ASTGen{
 		}
 
 		/// generates AST for one statement
-		StatementNode generateStatementAST(TokenList tokens, ref uinteger index){
+		StatementNode generateStatementAST(){
 			// identify the type, call the appropriate function
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
 				// block
-				return StatementNode(generateBlockAST(tokens, index));
+				return StatementNode(generateBlockAST());
 			}else if (tokens.tokens[index].type == Token.Type.Keyword){
 				if (tokens.tokens[index].token == "if"){
 					// if statement
-					return StatementNode(generateIfAST(tokens, index));
+					return StatementNode(generateIfAST());
 				}else if (tokens.tokens[index].token == "while"){
 					// while statement
-					return StatementNode(generateWhileAST(tokens, index));
+					return StatementNode(generateWhileAST());
 				}
 			}else if (tokens.tokens[index].type == Token.Type.DataType){
 				// var declare
-				return StatementNode(generateVarDeclareAST(tokens, index));
+				return StatementNode(generateVarDeclareAST());
 			}else if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// is a function call
-				return StatementNode(generateFunctionCallAST(tokens, index));
+				return StatementNode(generateFunctionCallAST());
 			}else{
 				// check if first token is var
 				if (tokens.tokens[index].type == Token.Type.Identifier){
 					// assignment
-					return StatementNode(generateAssignmentAST(tokens, index));
+					return StatementNode(generateAssignmentAST());
 				}
 			}
 			compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
@@ -241,7 +266,7 @@ struct ASTGen{
 		}
 
 		/// generates AST for function call, changes `index` to token after statementEnd
-		FunctionCallNode generateFunctionCallAST(TokenList tokens, ref uinteger index){
+		FunctionCallNode generateFunctionCallAST(){
 			FunctionCallNode functionCallNode;
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier &&
@@ -250,13 +275,13 @@ struct ASTGen{
 				// now for the arguments
 				LinkedList!CodeNode args = new LinkedList!CodeNode;
 				for (index = index+2; ; index ++){
-					args.append(generateCodeAST(tokens, index));
+					args.append(generateCodeAST());
 					if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
 						break;
 					}
 				}
 				try{
-					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token, tokens),
+					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token),
 						tokens.tokens[index].token, args.toArray);
 				}catch (Exception e){
 					compileErrors.append(CompileError(index, e.msg));
@@ -273,11 +298,11 @@ struct ASTGen{
 		/// generates AST for "actual code" like `2 + 2 - 6`.
 		/// 
 		/// terminates reading when on a Token that is comma, paranthesesEnd, semicolon, index/block bracket close
-		CodeNode generateCodeAST(TokenList tokens, ref uinteger index){
-			CodeNode lastNode;
+		CodeNode generateCodeAST(){
+			CodeNode lastNode = CodeNode();
 			bool separatorExpected = false;
-			for (uinteger i = index; ; i ++){
-				Token token = tokens.tokens[i];
+			for ( ; ; index ++){
+				Token token = tokens.tokens[index];
 				// check if has to terminate
 				if ([Token.Type.Comma, Token.Type.IndexBracketClose, Token.Type.BlockEnd, Token.Type.ParanthesesClose,
 					Token.Type.StatementEnd].hasElement(token.type)){
@@ -285,16 +310,16 @@ struct ASTGen{
 				}
 				if (!separatorExpected){
 					// an identifier, or literal (i.e some data) was expected
-					lastNode = CodeNode(generateNodeAST(tokens, i));
-					i --;
+					lastNode = generateNodeAST();
+					index --;
 					separatorExpected = true;
 				}else{
 					// an operator or something that deals with data was expected
 					if (token.type == Token.Type.Operator){
-						lastNode = CodeNode(generateOperatorAST(tokens, lastNode, i));
-						i --;
+						lastNode = CodeNode(generateOperatorAST(lastNode));
+						index --;
 					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(i), "unexpected token"));
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 					}
 				}
 			}
@@ -307,14 +332,14 @@ struct ASTGen{
 		/// `index` is the index of the token which is the operator
 		/// 
 		/// changes `index` to the index of the token after the last token related to the operator
-		OperatorNode generateOperatorAST(TokenList tokens, CodeNode firstOperand, ref uinteger index){
+		OperatorNode generateOperatorAST(CodeNode firstOperand){
 			OperatorNode operator;
 			// make sure it's an operator, and there is a second operand
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
 				CodeNode secondOperand;
 				uinteger i = index + 1;
-				secondOperand = CodeNode(generateNodeAST(tokens, i));
+				secondOperand = generateNodeAST();
 				index = i;
 				// put both operands under one node
 				operator = OperatorNode(tokens.tokens[index].token, firstOperand, secondOperand);
@@ -325,7 +350,7 @@ struct ASTGen{
 		}
 		
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
-		VariableNode generateVariableAST(TokenList tokens, ref uinteger index){
+		VariableNode generateVariableAST(){
 			VariableNode var;
 			// make sure first token is identifier
 			if (tokens.tokens[index].type == Token.Type.Identifier){
@@ -344,7 +369,7 @@ struct ASTGen{
 					for (index = index; index < tokens.tokens.length; index ++){
 						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
 							index++;
-							indexes.append(generateCodeAST(tokens, index));
+							indexes.append(generateCodeAST());
 						}else{
 							break;
 						}
@@ -359,15 +384,15 @@ struct ASTGen{
 		}
 		
 		/// generates AST for assignment operator
-		AssignmentNode generateAssignmentAST(TokenList tokens, ref uinteger index){
+		AssignmentNode generateAssignmentAST(){
 			AssignmentNode assignment;
 			// get the variable to assign to
-			VariableNode var = generateVariableAST(tokens, index);
+			VariableNode var = generateVariableAST();
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
 				// everything's ok till the `=` operator
 				index++;
-				CodeNode val = generateCodeAST(tokens, index);
+				CodeNode val = generateCodeAST();
 				assignment = AssignmentNode(var, val);
 				// make sure it's followed by a semicolon
 				if (tokens.tokens[index].type != Token.Type.StatementEnd){
@@ -384,12 +409,17 @@ struct ASTGen{
 		}
 		
 		/// generates AST for variable declarations
-		VarDeclareNode generateVarDeclareAST(TokenList tokens, ref uinteger index){
+		VarDeclareNode generateVarDeclareAST(){
 			VarDeclareNode varDeclare;
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
 			if (DATA_TYPES.hasElement(tokens.tokens[index].token)){
 				// read the type
-				DataType type = readType(tokens, index);
+				DataType type;
+				try{
+					type = readType();
+				}catch(Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+				}
 				// make sure next token = bracket
 				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
 					// now go through all vars, check if they are vars, and are aeparated by comma
@@ -434,7 +464,7 @@ struct ASTGen{
 		}
 		
 		/// generates AST for if statements
-		IfNode generateIfAST(TokenList tokens, ref uinteger index){
+		IfNode generateIfAST(){
 			IfNode ifNode;
 			// check if is an if
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
@@ -442,16 +472,16 @@ struct ASTGen{
 				// now do the real work
 				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
 				index += 2;
-				ifNode.condition = generateCodeAST(tokens, index);
+				ifNode.condition = generateCodeAST();
 				// make sure index & brackEnd are now same
 				if (index == brackEnd){
 					index = brackEnd+1;
-					ifNode.statements = [generateStatementAST(tokens, index)];
+					ifNode.statements = [generateStatementAST()];
 					// check if there's any else statement
 					if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "else"){
 						// add that as well
 						index ++;
-						ifNode.elseStatements = [generateStatementAST(tokens, index)];
+						ifNode.elseStatements = [generateStatementAST()];
 					}
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
@@ -463,7 +493,7 @@ struct ASTGen{
 		}
 
 		/// generates AST for while statements
-		WhileNode generateWhileAST(TokenList tokens, ref uinteger index){
+		WhileNode generateWhileAST(){
 			WhileNode whileNode;
 			// check if is an if
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
@@ -471,11 +501,11 @@ struct ASTGen{
 				// now do the real work
 				uinteger brackEnd = tokens.tokens.bracketPos!true(index+1);
 				index += 2;
-				whileNode.condition = generateCodeAST(tokens, index);
+				whileNode.condition = generateCodeAST();
 				// skip the brackEnd, if index matches it
 				if (index == brackEnd){
 					index++;
-					whileNode.statements = [generateStatementAST(tokens, index)];
+					whileNode.statements = [generateStatementAST()];
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
 				}
@@ -495,20 +525,20 @@ struct ASTGen{
 		/// 6. A literal array (`[x, y, z]`)
 		/// 
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
-		CodeNode generateNodeAST(TokenList tokens, ref uinteger index){
+		CodeNode generateNodeAST(){
 			Token token = tokens.tokens[index];
 			// an identifier, or literal (i.e some data) was expected
 			if (token.type == Token.Type.Identifier){
 				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 					// is a function call
-					return CodeNode(generateFunctionCallAST(tokens, index));
+					return CodeNode(generateFunctionCallAST());
 				}else{
 					// just a var
-					return CodeNode(generateVariableAST(tokens, index));
+					return CodeNode(generateVariableAST());
 				}
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
-				return CodeNode(generateCodeAST(tokens, index));
+				return generateCodeAST();
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
@@ -523,14 +553,15 @@ struct ASTGen{
 				return CodeNode(r);
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
 				// double literal
-				LiteralNode r;
+				index ++;
+				if (token.type == Token.Type.String){
+					token.token = token.token[1 .. token.token.length - 1]; // remove the quotes
+				}
 				try{
-					r.fromTokens([token]);
+					return CodeNode(LiteralNode([token]));
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 				}
-				index ++;
-				return CodeNode(r);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 			}

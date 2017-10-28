@@ -7,7 +7,8 @@ import qscript.compiler.misc;
 import std.conv : to;
 
 /// a node representing the script
-package struct ScriptNode{
+/// TODO make its visibility package only
+public struct ScriptNode{
 	/// list of functions defined in this script
 	private FunctionNode[] storedFunctions;
 	/// returns the array containing the functions
@@ -134,22 +135,24 @@ package struct CodeNode{
 		}
 	}
 	/// sets the stored node
-	@property auto node(T)(T newNode){
-		static if (is (T == FunctionCallNode)){
-			fCall = newNode;
-			storedType = CodeNode.Type.FunctionCall;
-		}else static if (is (T == LiteralNode)){
-			literal = newNode;
-			storedType = CodeNode.Type.Literal;
-		}else static if (is (T == OperatorNode)){
-			operator = newNode;
-			storedType = CodeNode.Type.Operator;
-		}else static if (is (T == VariableNode)){
-			var = newNode;
-			storedType = CodeNode.Type.Variable;
-		}else{
-			throw new Exception("attempting to store unsupported type in CodeNode.node");
-		}
+	@property auto node (FunctionCallNode newNode){
+		fCall = newNode;
+		storedType = CodeNode.Type.FunctionCall;
+	}
+	/// sets the stored node
+	@property auto node (LiteralNode newNode){
+		literal = newNode;
+		storedType = CodeNode.Type.Literal;
+	}
+	/// sets the stored node
+	@property auto node (OperatorNode newNode){
+		operator = newNode;
+		storedType = CodeNode.Type.Operator;
+	}
+	/// sets the stored node
+	@property auto node (VariableNode newNode){
+		var = newNode;
+		storedType = CodeNode.Type.Variable;
 	}
 	/// returns the stored type
 	@property auto node(CodeNode.Type T)(){
@@ -168,10 +171,25 @@ package struct CodeNode{
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
+	}/// constructor
+	this (FunctionCallNode newNode){
+		fCall = newNode;
+		storedType = CodeNode.Type.FunctionCall;
 	}
 	/// constructor
-	this (T)(T newNode){
-		node = newNode;
+	this (LiteralNode newNode){
+		literal = newNode;
+		storedType = CodeNode.Type.Literal;
+	}
+	/// constructor
+	this (OperatorNode newNode){
+		operator = newNode;
+		storedType = CodeNode.Type.Operator;
+	}
+	/// constructor
+	this (VariableNode newNode){
+		var = newNode;
+		storedType = CodeNode.Type.Variable;
 	}
 }
 
@@ -225,6 +243,10 @@ package struct LiteralNode{
 	/// constructor
 	this (QData data, DataType dataType){
 		literal = data;
+	}
+	/// constructor using `fromTokens`
+	this (Token[] tokensLiteral){
+		fromTokens(tokensLiteral);
 	}
 	/// reads the literal from a string
 	/// 

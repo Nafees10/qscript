@@ -8,6 +8,9 @@ debug{
 	import std.stdio;
 }
 
+/// stores errors for tokengen
+private LinkedList!CompileError compileErrors;
+
 /// Attempts to identify a token type by the token (string).
 /// returns token type, if fails, throws exception
 private Token.Type getTokenType(string token){
@@ -120,9 +123,6 @@ package Token[] stringToTokens(string[] s){
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
-	if (compileErrors is null){
-		compileErrors = new LinkedList!CompileError;
-	}
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
@@ -232,9 +232,10 @@ private TokenList separateTokens(string[] script){
 }
 ///
 unittest{
+	compileErrors = new LinkedList!CompileError;
 	string[] expectedResults;
 	expectedResults = [
-		"function", "main", "{",
+		"function", "void", "main", "{",
 		"int", "(", "i", ",", "i2", ")", ";",
 		"if", "(", "i", "<", "2", ")", "{", "}",
 		"if", "(", "i", "<=", "2", ")", "{", "}",
@@ -251,7 +252,7 @@ unittest{
 		"}"
 	];
 	string[] script = [
-		"function main{",
+		"function void main{",
 		"\tint (i, i2);",
 		"\tif (i < 2){}",
 		"\tif(i<=2){}",
@@ -277,17 +278,25 @@ unittest{
 	foreach(i, rToken; r){
 		assert(rToken.token == expectedResults[i], "toTokens result does not match expected result");
 	}
+	.destroy(compileErrors);
 }
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
 /// 
+/// `script` is the script to convert to tokens, each line is a separate string, without ending \n
+/// `errors` is the array to which erors will be put
+/// 
 /// As a plus, it also checks if the brackets are in correct order (and properly closed)
-package TokenList toTokens(string[] script){
+/// TODO make it's visibility package
+public TokenList toTokens(string[] script, ref CompileError[] errors){
+	compileErrors = new LinkedList!CompileError;
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
 	if (tokens.tokens == null || tokens.tokens.length == 0){
 		// there's error
+		errors = compileErrors.toArray;
+		.destroy(compileErrors);
 		return tokens;
 	}else{
 		// continue with identiying tokens
@@ -301,6 +310,10 @@ package TokenList toTokens(string[] script){
 		}
 		// now check brackets
 		tokens.checkBrackets(compileErrors);
+		if (compileErrors.count > 0){
+			errors = compileErrors.toArray;
+		}
+		.destroy(compileErrors);
 		return tokens;
 	}
 }

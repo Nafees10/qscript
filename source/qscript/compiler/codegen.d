@@ -9,13 +9,13 @@ import utils.lists;
 import std.conv : to;
 
 /// contains functions to generate byte code from AST
-package struct CodeGen{
+/*package struct CodeGen{
 	/// generates byte code for a script
 	static private string[] generateByteCode(ScriptNode scriptNode){
 		LinkedList!string byteCode = new LinkedList!string;
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.functions){
-			byteCode.append(generateFunctionByteCode(functionNode));
+			byteCode.append(generateByteCode(functionNode));
 		}
 
 		string[] r = byteCode.toArray;
@@ -393,7 +393,7 @@ unittest{
 		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
 			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
 	}
-}
+}*/
 
 
 

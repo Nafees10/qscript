@@ -28,8 +28,6 @@ package struct CompileError{
 		msg = errorMessage;
 	}
 }
-/// All compilation errors are stored here
-package LinkedList!CompileError compileErrors;
 
 /// used to store data types for data at compile time
 package struct DataType{
