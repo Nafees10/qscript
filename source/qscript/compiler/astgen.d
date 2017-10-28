@@ -284,13 +284,18 @@ struct ASTGen{
 				}
 				functionCallNode.arguments = args.toArray;
 				.destroy(args);
+				// then the return type
 				try{
 					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName);
 				}catch (Exception e){
 					compileErrors.append(CompileError(index, e.msg));
 					.destroy(e);
 				}
-				
+				// move index to bracketend or semicolon
+				index = brackEnd+1;
+				if (tokens.tokens[index].type == Token.Type.StatementEnd){
+					index ++;
+				}
 				return functionCallNode;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
