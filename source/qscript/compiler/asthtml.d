@@ -6,9 +6,22 @@ import qscript.compiler.misc;
 import utils.misc;
 import utils.lists;
 
+private const string HTML_STYLE = "<style>
+div{
+\tpadding: 5px;
+\tfont-size: 24;
+\twidth: auto
+\tdisplay: inline-block;
+\tborder-style: solid;
+\tborder-color: #000000;
+\tborder-width: 3px;
+}
+</style>";
+
 /// generates html representation for ScriptNode
 string[] toHtml(ScriptNode node){
 	LinkedList!string html = new LinkedList!string;
+	html.append(HTML_STYLE);
 	html.append("<div class=scriptNode>Script");
 	foreach (functionDef; node.functions){
 		html.append(functionDef.toHtml);
@@ -80,12 +93,12 @@ string[] toHtml(AssignmentNode node){
 	html.append("<div class=assignmentNode>Variable Assignment");
 	// add the variable
 	html.append("<div class=assingnmentVariable>lvalue");
-	// TODO append html for the var (lvalue)
+	html.append(node.var.toHtml);
 	html.append("</div>");
 
 	// then add the value
 	html.append("<div class=assignmentValue>rvalue");
-	// TODO append html for the CodeNode (rvalue)
+	html.append(node.val.toHtml("Value"));
 	html.append("</div></div>");
 	string[] r = html.toArray;
 	.destroy(html);
@@ -99,7 +112,7 @@ string[] toHtml(FunctionCallNode node){
 	if (node.arguments.length > 0){
 		html.append("<div class=functionCallArguments>Arguments");
 		foreach (arg; node.arguments){
-			// TOdO add html for the CodeNode (arguments)
+			html.append(arg.toHtml);
 		}
 		html.append("</div>");
 	}
@@ -112,7 +125,7 @@ string[] toHtml(IfNode node){
 	LinkedList!string html = new LinkedList!string;
 	html.append("<div class=ifNode>If Statement");
 	// add condition
-	// TODO add html for CodeNode(if condition)
+	html.append(node.condition.toHtml("Condition"));
 	// then add body
 	html.append(BlockNode(node.statements).toHtml("On True"));
 	// then add elseBody if any
@@ -129,7 +142,7 @@ string[] toHtml(WhileNode node){
 	LinkedList!string html = new LinkedList!string;
 	html.append("<div class=whileNode>While Statement");
 	// add condition
-	// TODO add html for CodeNode(while condition)
+	html.append(node.condition.toHtml("Condition"));
 	// then add body
 	html.append(BlockNode(node.statements).toHtml("While True"));
 	html.append("</div>");
@@ -152,18 +165,23 @@ string[] toHtml(VarDeclareNode node){
 	return r;
 }
 /// generates html representation for CodeNode
-string[] toHtml(CodeNode node){
+string[] toHtml(CodeNode node, string caption = null){
+	string[] r;
 	if (node.type == CodeNode.Type.FunctionCall){
-		return node.node!(CodeNode.Type.FunctionCall).toHtml();
+		r = node.node!(CodeNode.Type.FunctionCall).toHtml();
 	}else if (node.type == CodeNode.Type.Literal){
-		return node.node!(CodeNode.Type.Literal).toHtml();
+		r = node.node!(CodeNode.Type.Literal).toHtml();
 	}else if (node.type == CodeNode.Type.Operator){
-		return node.node!(CodeNode.Type.Operator).toHtml();
+		r = node.node!(CodeNode.Type.Operator).toHtml();
 	}else if (node.type == CodeNode.Type.Variable){
-		return node.node!(CodeNode.Type.Variable).toHtml();
+		r = node.node!(CodeNode.Type.Variable).toHtml();
 	}else{
 		throw new Exception("invalid stored type");
 	}
+	if (caption != null){
+		r = ["<div class=codeNode>"~caption]~r~"</div>";
+	}
+	return r;
 }
 /// generates html representation for LiteralNode
 string[] toHtml(LiteralNode node){
