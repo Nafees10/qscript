@@ -23,12 +23,6 @@ public struct ScriptNode{
 	this (FunctionNode[] scriptFunctions){
 		storedFunctions = scriptFunctions.dup;
 	}
-	/// postblit
-	this (this){
-		if (storedFunctions.ptr !is null){
-			this.storedFunctions = storedFunctions.dup;
-		}
-	}
 }
 
 /// a node representing a function definition
@@ -52,12 +46,6 @@ package struct FunctionNode{
 	/// sets value of array containing arguments + types
 	@property ref FunctionNode.Argument[] arguments(FunctionNode.Argument[] newArgs){
 		return args = newArgs.dup;
-	}
-	/// postblit
-	this (this){
-		if (args.ptr !is null){
-			args = args.dup;
-		}
 	}
 	/// the name of the function
 	string name;
@@ -89,12 +77,6 @@ package struct BlockNode{
 	/// constructor
 	this (StatementNode[] blockStatements){
 		storedStatements = blockStatements.dup;
-	}
-	/// postblit
-	this (this){
-		if (storedStatements.ptr !is null){
-			this.storedStatements = this.storedStatements.dup;
-		}
 	}
 }
 
@@ -234,12 +216,6 @@ package struct VariableNode{
 		varType = type;
 		varName = name;
 	}
-	/// postblit
-	this (this){
-		if (storedindexes.ptr !is null){
-			storedindexes = storedindexes.dup;
-		}
-	}
 }
 
 /// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
@@ -330,12 +306,6 @@ package struct OperatorNode{
 		operator = operatorString;
 		storedOperands[0] = a;
 		storedOperands[1] = b;
-	}
-	/// postblit
-	this (this){
-		if (storedOperands.ptr !is null){
-			storedOperands = storedOperands.dup;
-		}
 	}
 }
 
@@ -512,12 +482,6 @@ package struct FunctionCallNode{
 	@property ref CodeNode[] arguments(CodeNode[] newArgs){
 		return storedArguments = newArgs.dup;
 	}
-	/// postblit
-	this (this){
-		if (storedArguments.ptr !is null){
-			storedArguments = storedArguments.dup;
-		}
-	}
 	/// constructor
 	this (DataType returnDataType, string functionName, CodeNode[] functionArguments){
 		returnType = returnDataType;
@@ -539,12 +503,6 @@ package struct VarDeclareNode{
 	/// sets value for declared vars
 	public @property ref string[] vars(string[] newVars){
 		return storedVars = newVars.dup;
-	}
-	/// postblit
-	this (this){
-		if (storedVars.ptr !is null){
-			storedVars = storedVars.dup;
-		}
 	}
 	/// constructor
 	this (DataType varDataType, string[] varNames){
