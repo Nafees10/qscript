@@ -25,7 +25,9 @@ public struct ScriptNode{
 	}
 	/// postblit
 	this (this){
-		this.storedFunctions = storedFunctions.dup;
+		if (storedFunctions.ptr !is null){
+			this.storedFunctions = storedFunctions.dup;
+		}
 	}
 }
 
@@ -53,7 +55,9 @@ package struct FunctionNode{
 	}
 	/// postblit
 	this (this){
-		args = args.dup;
+		if (args.ptr !is null){
+			args = args.dup;
+		}
 	}
 	/// the name of the function
 	string name;
@@ -88,7 +92,9 @@ package struct BlockNode{
 	}
 	/// postblit
 	this (this){
-		this.storedStatements = this.storedStatements.dup;
+		if (storedStatements.ptr !is null){
+			this.storedStatements = this.storedStatements.dup;
+		}
 	}
 }
 
@@ -171,7 +177,8 @@ package struct CodeNode{
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
-	}/// constructor
+	}
+	/// constructor
 	this (FunctionCallNode newNode){
 		fCall = newNode;
 		storedType = CodeNode.Type.FunctionCall;
@@ -229,7 +236,9 @@ package struct VariableNode{
 	}
 	/// postblit
 	this (this){
-		storedindexes = storedindexes.dup;
+		if (storedindexes.ptr !is null){
+			storedindexes = storedindexes.dup;
+		}
 	}
 }
 
@@ -324,7 +333,9 @@ package struct OperatorNode{
 	}
 	/// postblit
 	this (this){
-		storedOperands = operands.dup;
+		if (storedOperands.ptr !is null){
+			storedOperands = storedOperands.dup;
+		}
 	}
 }
 
@@ -503,7 +514,9 @@ package struct FunctionCallNode{
 	}
 	/// postblit
 	this (this){
-		storedArguments = storedArguments.dup;
+		if (storedArguments.ptr !is null){
+			storedArguments = storedArguments.dup;
+		}
 	}
 	/// constructor
 	this (DataType returnDataType, string functionName, CodeNode[] functionArguments){
@@ -517,11 +530,21 @@ package struct FunctionCallNode{
 package struct VarDeclareNode{
 	/// the data typre of defined vars
 	public DataType type;
-	/// names of vars declared
-	string[] vars;
+	/// stores names of variables declared
+	private string[] storedVars;
+	/// returns array contataining declared vars
+	public @property ref string[] vars(){
+		return storedVars;
+	}
+	/// sets value for declared vars
+	public @property ref string[] vars(string[] newVars){
+		return storedVars = newVars.dup;
+	}
 	/// postblit
 	this (this){
-		vars = vars.dup;
+		if (storedVars.ptr !is null){
+			storedVars = storedVars.dup;
+		}
 	}
 	/// constructor
 	this (DataType varDataType, string[] varNames){
