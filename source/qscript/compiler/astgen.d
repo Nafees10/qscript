@@ -332,6 +332,7 @@ struct ASTGen{
 						index ++;
 						break;
 					}
+					separatorExpected = false;
 				}
 			}
 			return lastNode;
@@ -349,11 +350,11 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
 				CodeNode secondOperand;
-				uinteger i = index + 1;
+				string operatorString = tokens.tokens[index].token;
+				index ++;
 				secondOperand = generateNodeAST();
-				index = i;
 				// put both operands under one node
-				operator = OperatorNode(tokens.tokens[index].token, firstOperand, secondOperand);
+				operator = OperatorNode(operatorString, firstOperand, secondOperand);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "no second operand found"));
 				index ++;
