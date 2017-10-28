@@ -22,7 +22,7 @@ div{
 string[] toHtml(ScriptNode node){
 	LinkedList!string html = new LinkedList!string;
 	html.append(HTML_STYLE);
-	html.append("<div class=scriptNode>Script");
+	html.append("<div>Script");
 	foreach (functionDef; node.functions){
 		html.append(functionDef.toHtml);
 	}
@@ -34,12 +34,12 @@ string[] toHtml(ScriptNode node){
 /// generates html representation for FunctionNode
 string[] toHtml(FunctionNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=functionNode>Function Definition<br>Name: "~node.name~"<br>Return Type: "~node.returnType.toString);
+	html.append("<div>Function Definition<br>Name: "~node.name~"<br>Return Type: "~node.returnType.toString);
 	// add the arguments
 	if (node.arguments.length > 0){
-		html.append("<div class=functionNodeArguments>Function Arguments");
+		html.append("<div>Function Arguments");
 		foreach (arg; node.arguments){
-			html.append("<div class=functionNodeArgument>Type: "~arg.argType.toString~
+			html.append("<div>Type: "~arg.argType.toString~
 				"<br> Name: "~arg.argName~"</div>");
 		}
 		html.append("</div>");
@@ -55,9 +55,9 @@ string[] toHtml(FunctionNode node){
 string[] toHtml(BlockNode node, string blockCaption = null){
 	LinkedList!string html = new LinkedList!string;
 	if (blockCaption != null){
-		html.append("<div class=blockNode>"~blockCaption);
+		html.append("<div>"~blockCaption);
 	}else{
-		html.append("<div class=blockNode>Block");
+		html.append("<div>Block");
 	}
 	// add statements
 	foreach (statement; node.statements){
@@ -90,14 +90,14 @@ string[] toHtml(StatementNode node){
 /// generates html representation for AssignmentNode
 string[] toHtml(AssignmentNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=assignmentNode>Variable Assignment");
+	html.append("<div>Variable Assignment");
 	// add the variable
-	html.append("<div class=assingnmentVariable>lvalue");
+	html.append("<div>lvalue");
 	html.append(node.var.toHtml);
 	html.append("</div>");
 
 	// then add the value
-	html.append("<div class=assignmentValue>rvalue");
+	html.append("<div>rvalue");
 	html.append(node.val.toHtml("Value"));
 	html.append("</div></div>");
 	string[] r = html.toArray;
@@ -107,10 +107,10 @@ string[] toHtml(AssignmentNode node){
 /// generates html representation for FunctionCall
 string[] toHtml(FunctionCallNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=functionCallNode>Function Call<br>Name: "~node.fName~"<br> Return Type: "~node.returnType.toString);
+	html.append("<div>Function Call<br>Name: "~node.fName~"<br> Return Type: "~node.returnType.toString);
 	// add the arguments
 	if (node.arguments.length > 0){
-		html.append("<div class=functionCallArguments>Arguments");
+		html.append("<div>Arguments");
 		foreach (arg; node.arguments){
 			html.append(arg.toHtml);
 		}
@@ -123,7 +123,7 @@ string[] toHtml(FunctionCallNode node){
 /// generates html repressntation for IfNode
 string[] toHtml(IfNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=ifNode>If Statement");
+	html.append("<div>If Statement");
 	// add condition
 	html.append(node.condition.toHtml("Condition"));
 	// then add body
@@ -140,7 +140,7 @@ string[] toHtml(IfNode node){
 /// generates html representation for WhileNode
 string[] toHtml(WhileNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=whileNode>While Statement");
+	html.append("<div>While Statement");
 	// add condition
 	html.append(node.condition.toHtml("Condition"));
 	// then add body
@@ -153,11 +153,11 @@ string[] toHtml(WhileNode node){
 /// generates html representation for VarDeclareNode
 string[] toHtml(VarDeclareNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=varDeclareNode> Variable Declaration<br>Type: "~node.type.toString);
+	html.append("<div> Variable Declaration<br>Type: "~node.type.toString);
 	// then add the variables declared
-	html.append("<div class=varDeclareVariables>");
+	html.append("<div>Variables");
 	foreach (var; node.vars){
-		html.append("<div class=varDeclareVariable>"~var~"</div>");
+		html.append("<div>"~var~"</div>");
 	}
 	html.append("</div></div>");
 	string[] r = html.toArray;
@@ -179,15 +179,15 @@ string[] toHtml(CodeNode node, string caption = null){
 		throw new Exception("invalid stored type");
 	}
 	if (caption != null){
-		r = ["<div class=codeNode>"~caption]~r~"</div>";
+		r = ["<div>"~caption]~r~"</div>";
 	}
 	return r;
 }
 /// generates html representation for LiteralNode
 string[] toHtml(LiteralNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=literalNode>Literal<br>Type: "~node.type.toString);
-	html.append("<div class=literalValue>"~node.toByteCode~"</div>");
+	html.append("<div>Literal<br>Type: "~node.type.toString);
+	html.append("<div class>"~node.toByteCode~"</div>");
 	html.append("</div>");
 	string[] r = html.toArray;
 	.destroy(html);
@@ -196,11 +196,11 @@ string[] toHtml(LiteralNode node){
 /// generates html representation for OperatorNode
 string[] toHtml(OperatorNode node){
 	LinkedList!string html = new LinkedList!string;
-	html.append("<div class=operatorNode>Operator<br>Operator Type: "~node.operator~
+	html.append("<div>Operator<br>Operator Type: "~node.operator~
 		"<br>Return Type: "~node.returnType.toString);
-	html.append("<div class=operatorOperands>");
+	html.append("<div>");
 	foreach (operand; node.operands){
-		html.append("<div class=operatorOperand>"~operand.toHtml~"</div>");
+		html.append("<div>"~operand.toHtml~"</div>");
 	}
 	html.append("</div></div>");
 	string[] r = html.toArray;
@@ -210,7 +210,7 @@ string[] toHtml(OperatorNode node){
 /// generates html representation for VariableNode
 string[] toHtml(VariableNode node){
 	string[] r = [
-		"<div class=variableNode>Variable<br>Name: "~node.varName~"<br>Type: "~node.varType.toString,
+		"<div>Variable<br>Name: "~node.varName~"<br>Type: "~node.varType.toString,
 		"</div>"
 		];
 	return r;
