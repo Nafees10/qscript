@@ -202,6 +202,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
+				index ++;
 			}
 			return functionNode;
 		}
@@ -229,6 +230,7 @@ struct ASTGen{
 				removeLastScope();
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
+				index ++;
 			}
 			return blockNode;
 		}
@@ -254,24 +256,24 @@ struct ASTGen{
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// is a function call
 				return StatementNode(generateFunctionCallAST());
+			}else if (tokens.tokens[index].type == Token.Type.Identifier){
+				// assignment
+				return StatementNode(generateAssignmentAST());
 			}else{
-				// check if first token is var
-				if (tokens.tokens[index].type == Token.Type.Identifier){
-					// assignment
-					return StatementNode(generateAssignmentAST());
-				}
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
+				index ++;
 			}
-			compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
 			return StatementNode();
 		}
 
 		/// generates AST for function call, changes `index` to token after statementEnd
 		FunctionCallNode generateFunctionCallAST(){
-			FunctionCallNode functionCallNode;
+			FunctionCallNode functionCallNode = FunctionCallNode();
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
+				functionCallNode.fName = tokens.tokens[index].token.dup;
 				// now for the arguments
 				LinkedList!CodeNode args = new LinkedList!CodeNode;
 				for (index = index+2; ; index ++){
@@ -280,9 +282,10 @@ struct ASTGen{
 						break;
 					}
 				}
+				functionCallNode.arguments = args.toArray;
+				.destroy(args);
 				try{
-					functionCallNode = FunctionCallNode(getFunctionReturnType(tokens.tokens[index].token),
-						tokens.tokens[index].token, args.toArray);
+					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName);
 				}catch (Exception e){
 					compileErrors.append(CompileError(index, e.msg));
 					.destroy(e);
@@ -291,6 +294,7 @@ struct ASTGen{
 				return functionCallNode;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid function call"));
+				index ++;
 			}
 			return functionCallNode;
 		}
@@ -320,6 +324,8 @@ struct ASTGen{
 						index --;
 					}else{
 						compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
+						index ++;
+						break;
 					}
 				}
 			}
@@ -345,6 +351,7 @@ struct ASTGen{
 				operator = OperatorNode(tokens.tokens[index].token, firstOperand, secondOperand);
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "no second operand found"));
+				index ++;
 			}
 			return operator;
 		}
@@ -379,6 +386,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
+				index ++;
 			}
 			return var;
 		}
@@ -404,6 +412,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
+				index ++;
 			}
 			return assignment;
 		}
@@ -459,6 +468,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
+				index ++;
 			}
 			return varDeclare;
 		}
@@ -488,6 +498,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
+				index ++;
 			}
 			return ifNode;
 		}
@@ -511,6 +522,7 @@ struct ASTGen{
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a valid if/while statement"));
+				index ++;
 			}
 			return whileNode;
 		}
@@ -563,6 +575,7 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 				}
 			}else{
+				index ++;
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 			}
 			return CodeNode();
