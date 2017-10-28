@@ -244,7 +244,6 @@ package struct LiteralNode{
 	string toByteCode(){
 		/// returns array in byte code representation
 		static string fromDataOrArray(QData data, DataType type){
-			assert (type.arrayNestCount > 0, "not an array");
 			if (type.arrayNestCount > 0){
 				char[] array = ['['];
 				// the type of the elements
