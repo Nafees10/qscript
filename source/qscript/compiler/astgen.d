@@ -133,11 +133,15 @@ struct ASTGen{
 		/// returns type in DataType struct, changes `index` to token after last token of type
 		DataType readType(){
 			uinteger startIndex = index;
-			for (; index < tokens.tokens.length; index ++){
-				if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
-					tokens.tokens[index].type != Token.Type.IndexBracketClose){
-					index++;
-					break;
+			// the first token has to be the type (int, string, double)
+			index ++;
+			// then comes the brackets making it an array
+			if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+				for (; index < tokens.tokens.length; index ++){
+					if (tokens.tokens[index].type != Token.Type.IndexBracketOpen &&
+						tokens.tokens[index].type != Token.Type.IndexBracketClose){
+						break;
+					}
 				}
 			}
 			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
