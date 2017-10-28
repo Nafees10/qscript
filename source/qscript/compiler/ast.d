@@ -303,6 +303,7 @@ package struct OperatorNode{
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
+		storedOperands.length = 2;
 		storedOperands[0] = a;
 		storedOperands[1] = b;
 	}
