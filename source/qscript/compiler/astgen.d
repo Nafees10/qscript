@@ -114,6 +114,7 @@ struct ASTGen{
 						returnType = readType();
 					}catch(Exception e){
 						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+						.destroy (e);
 					}
 					string fName = tokens.tokens[index];
 					functionReturnTypes[fName] = returnType;
@@ -128,6 +129,7 @@ struct ASTGen{
 								argType = readType();
 							}catch (Exception e){
 								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+								.destroy (e);
 							}
 							argTypes.append(argType);
 							// now should be the arg_name, ignore that
@@ -188,6 +190,32 @@ struct ASTGen{
 				throw new Exception("function "~functionName~" not defined");
 			}
 		}
+		/// matches arguments' types to see if they can be used for a function
+		/// 
+		/// in case they dont match, appends error to compileErrors
+		bool matchFunctionArgTypes(DataType[] argTypes, string functionName){
+			DataType[] acceptableTypes;
+			try{
+				acceptableTypes = getFunctionArgTypes(functionName);
+			}catch (Exception e){
+				compileErrors.append(CompileError(index, e.msg));
+			}
+			if (argTypes.length != acceptableTypes.length){
+				compileErrors.append(CompileError(index, "arguments count doesnt match with definition"));
+			}else{
+				for (uinteger i = 0; i < argTypes; i ++){
+					if (acceptableTypes[i].type != DataType.Type.Void){
+						if (argTypes[i].type != acceptableTypes[i].type){
+							compileErrors.append(CompileError(index, "arguments type do not match with definition"));
+						}
+					}
+					// check the array dimension
+					if (acceptableTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
+						compileErrors.append(CompileError(index, "arguments' array's dimensions do not match with definition"));
+					}
+				}
+			}
+		}
 		/// reads a type from TokensList
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
@@ -220,6 +248,7 @@ struct ASTGen{
 					functionNode.returnType = readType();
 				}catch(Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
 				}
 				// above functionCall moves index to fName
 				// now index is at function name
@@ -247,6 +276,7 @@ struct ASTGen{
 								arg.argType = readType();
 							}catch(Exception e){
 								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+								.destroy (e);
 							}
 							// now the arg_name
 							arg.argName = tokens.tokens[index].token;
@@ -498,6 +528,7 @@ struct ASTGen{
 					type = readType();
 				}catch(Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
 				}
 				// make sure next token = bracket
 				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
@@ -630,6 +661,7 @@ struct ASTGen{
 					r.fromTokens(data);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
 				}
 				index = brackEnd+1;
 				return CodeNode(r);
@@ -643,6 +675,7 @@ struct ASTGen{
 					return CodeNode(LiteralNode([token]));
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
 				}
 			}else{
 				index ++;
