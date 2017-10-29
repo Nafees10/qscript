@@ -8,13 +8,16 @@ import utils.misc;
 import utils.lists;
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
-/// TODO put `TokenList tokens` directly in struct ASTGen instead of taking it as argument in each function
 struct ASTGen{
 	/// constructor
 	/// 
-	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined functions
-	this (DataType[string] functionReturnDataTypes){
+	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined (external) functions
+	/// `functionArgDataTypes` stores the data type of each argument for pre-defined (external) functions.
+	/// 	In case an arg can be any type, `DataType("void")` should be used
+	this (DataType[string] functionReturnDataTypes, DataType[][string] functionArgDataTypes){
 		functionReturnTypes = functionReturnDataTypes.dup;
+		functionArgTypes = functionArgDataTypes.dup;
+
 	}
 	/// destructor
 	~this (){
@@ -61,6 +64,8 @@ struct ASTGen{
 		LinkedList!CompileError compileErrors;
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
+		/// stores functions' argument types
+		DataType[][string] functionArgTypes;
 		struct{
 			/// stores data types for variable in currently-being-converted function
 			private DataType[string] varDataTypes;
@@ -97,6 +102,58 @@ struct ASTGen{
 				scopeCount ++;
 			}
 		}
+		/// scans tokens for script-defined functions' return types and argument types
+		/// 
+		/// keep in mind that it messes up the value of `index`! so only call it before anything else, and reset `index` then.
+		void scanTokensForFunctionReturnArgTypes(){
+			LinkedList!DataType argTypes = new LinkedList!DataType;
+			for (index = 0; index < tokens.tokens.length; index ++){
+				if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+					DataType returnType;
+					try{
+						returnType = readType();
+					}catch(Exception e){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					}
+					string fName = tokens.tokens[index];
+					functionReturnTypes[fName] = returnType;
+					// now for the args
+					index ++; // skip the name
+					if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
+						// it's got args
+						uinteger brackEnd = tokens.tokens.bracketPos(index);
+						for (index += 1; index < brackEnd; index ++){
+							DataType argType;
+							try{
+								argType = readType();
+							}catch (Exception e){
+								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+							}
+							argTypes.append(argType);
+							// now should be the arg_name, ignore that
+							assert (tokens.tokens[index].type == Token.Type.Identifier,
+								"argument type should be followed by argument name");
+							index ++;
+							// now skip the comma, or could be a parenthesesEnd
+							assert (tokens.tokens[index].type == Token.Type.ParanthesesClose ||
+								tokens.tokens[index].type == Token.Type.Comma,
+								"arguments must be separated using a comma");
+							// index ++ in for statement does the job this time
+						}
+						functionArgTypes = argTypes.toArray;
+						argTypes.clear;
+					}else{
+						// no args
+						functionArgTypes[fName] = [];
+					}
+				}
+				// skip brackets
+				if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
+					i = tokens.tokens.bracketPos(i);
+				}
+			}
+			.destroy (argTypes);
+		}
 		/// returns return type of a function, if function doesnt exist, throws Exception
 		DataType getFunctionReturnType(string functionName){
 			/// stores whether the all the tokens have been scanned for function return types
@@ -107,26 +164,29 @@ struct ASTGen{
 				return functionReturnTypes[functionName];
 			}else if (!scannedAllTokens){
 				// scan all the tokens for this function tokens
-				for (uinteger i = 0; i < tokens.tokens.length; i ++){
-					if (tokens.tokens[i].type == Token.Type.Keyword && tokens.tokens[i].token == "function"){
-						try{
-							functionReturnTypes[tokens.tokens[i].token] = readType();
-						}catch(Exception e){
-							compileErrors.append(CompileError(tokens.getTokenLine(i), e.msg));
-						}
-					}
-					// skip brackets
-					if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
-						i = tokens.tokens.bracketPos(i);
-					}
-				}
-				// now all the tokens have been scanned for functions, no more functions
+				scanTokensForFunctionReturnArgTypes();
 				scannedAllTokens = true;
 				return getFunctionReturnType(functionName);
 			}else{
 				throw new Exception("function "~functionName~" not defined");
 			}
 
+		}
+		/// returns data types of arguments for a function, if function doesnt exist, throws Exception
+		DataType[] getFunctionArgTypes(string functionName){
+			// stores whether all the tokens have been scanned for function's arg types
+			static bool scannedAllTokens = false;
+			// check if already known
+			if (functionName in functionArgTypes){
+				return functionArgTypes[functionName];
+			}else if (!scannedAllTokens){
+				// scan all tokens
+				scanTokensForFunctionReturnArgTypes();
+				scannedAllTokens = true;
+				return getFunctionArgTypes(functionName);
+			}else{
+				throw new Exception("function "~functionName~" not defined");
+			}
 		}
 		/// reads a type from TokensList
 		/// 
