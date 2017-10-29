@@ -116,7 +116,7 @@ struct ASTGen{
 						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 						.destroy (e);
 					}
-					string fName = tokens.tokens[index];
+					string fName = tokens.tokens[index].token;
 					functionReturnTypes[fName] = returnType;
 					// now for the args
 					index ++; // skip the name
@@ -142,7 +142,7 @@ struct ASTGen{
 								"arguments must be separated using a comma");
 							// index ++ in for statement does the job this time
 						}
-						functionArgTypes = argTypes.toArray;
+						functionArgTypes[fName] = argTypes.toArray;
 						argTypes.clear;
 					}else{
 						// no args
@@ -150,8 +150,9 @@ struct ASTGen{
 					}
 				}
 				// skip brackets
-				if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen]){
-					i = tokens.tokens.bracketPos(i);
+				if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen].
+					hasElement(tokens.tokens[index].type)){
+					index = tokens.tokens.bracketPos(index);
 				}
 			}
 			.destroy (argTypes);
@@ -195,26 +196,32 @@ struct ASTGen{
 		/// in case they dont match, appends error to compileErrors
 		bool matchFunctionArgTypes(DataType[] argTypes, string functionName){
 			DataType[] acceptableTypes;
+			bool r = true;
 			try{
 				acceptableTypes = getFunctionArgTypes(functionName);
 			}catch (Exception e){
 				compileErrors.append(CompileError(index, e.msg));
+				r = false;
 			}
 			if (argTypes.length != acceptableTypes.length){
 				compileErrors.append(CompileError(index, "arguments count doesnt match with definition"));
+				r = false;
 			}else{
-				for (uinteger i = 0; i < argTypes; i ++){
+				for (uinteger i = 0; i < argTypes.length; i ++){
 					if (acceptableTypes[i].type != DataType.Type.Void){
 						if (argTypes[i].type != acceptableTypes[i].type){
 							compileErrors.append(CompileError(index, "arguments type do not match with definition"));
+							r = false;
 						}
 					}
 					// check the array dimension
 					if (acceptableTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
 						compileErrors.append(CompileError(index, "arguments' array's dimensions do not match with definition"));
+						r = false;
 					}
 				}
 			}
+			return r;
 		}
 		/// reads a type from TokensList
 		/// 
@@ -378,6 +385,15 @@ struct ASTGen{
 				}
 				functionCallNode.arguments = args.toArray;
 				.destroy(args);
+				// match argument types
+				{
+					DataType[] argTypes;
+					argTypes.length = functionCallNode.arguments.length;
+					foreach(i, arg; functionCallNode.arguments){
+						argTypes[i] = arg.returnType;
+					}
+					matchFunctionArgTypes(argTypes, functionCallNode.fName);
+				}
 				// then the return type
 				try{
 					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName);
