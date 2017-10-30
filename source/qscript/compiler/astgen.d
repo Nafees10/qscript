@@ -208,7 +208,10 @@ struct ASTGen{
 				r = false;
 			}else{
 				for (uinteger i = 0; i < argTypes.length; i ++){
-					if (acceptableTypes[i].type != DataType.Type.Void){
+					if (acceptableTypes[i].type == DataType.Type.Void){
+						// skip checks
+						continue;
+					}else{
 						if (argTypes[i].type != acceptableTypes[i].type){
 							compileErrors.append(CompileError(index, "arguments type do not match with definition"));
 							r = false;
