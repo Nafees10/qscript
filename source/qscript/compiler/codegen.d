@@ -9,10 +9,11 @@ import utils.lists;
 import std.conv : to;
 
 /// contains functions to generate byte code from AST
-/*package struct CodeGen{
+package struct CodeGen{
 	/// generates byte code for a script
-	static private string[] generateByteCode(ScriptNode scriptNode){
+	private string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
 		LinkedList!string byteCode = new LinkedList!string;
+		compileErrors = new LinkedList!CompileError;
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.functions){
 			byteCode.append(generateByteCode(functionNode));
@@ -20,8 +21,14 @@ import std.conv : to;
 
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
+		// put in errors
+		errors = compileErrors.toArray;
+		.destroy(compileErrors);
 		return r;
 	}
+
+	/// stores the list of errors
+	private LinkedList!CompileError compileErrors;
 
 	/// generates byte code for a function definition
 	static private string[] generateByteCode(FunctionNode functionNode){
@@ -259,7 +266,7 @@ import std.conv : to;
 	}
 	
 	/// generates byte code for static array, i.e `[x, y, z]`
-	static private string[] generateStaticArrayByteCode(ASTNode array){
+	static private string[] generateLiteralByteCode(LiteralNode array){
 		/// returns true if the value of a static array is literal
 		bool isStatic(ASTNode array){
 			foreach(node; array.subNodes){
@@ -393,7 +400,7 @@ unittest{
 		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
 			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
 	}
-}*/
+}
 
 
 
