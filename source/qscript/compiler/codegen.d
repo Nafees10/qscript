@@ -67,6 +67,23 @@ package struct CodeGen{
 		return r;
 	}
 
+	/// generates bytecode for a StatementNode
+	private string[] generateByteCode(StatementNode node){
+		if (node.type == StatementNode.Type.Assignment){
+			return generateByteCode(node.node!(StatementNode.Type.Assignment));
+		}else if (node.type == StatementNode.Type.Block){
+			return generateByteCode(node.node!(StatementNode.Type.Block));
+		}else if (node.type == StatementNode.Type.FunctionCall){
+			return generateByteCode(node.node!(StatementNode.Type.FunctionCall));
+		}else if (node.type == StatementNode.Type.If){
+			return generateByteCode(node.node!(StatementNode.Type.If));
+		}else if (node.type == StatementNode.Type.While){
+			return generateByteCode(node.node!(StatementNode.Type.While));
+		}else if (node.type == StatementNode.Type.VarDeclare){
+			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
+		}
+	}
+
 	/// generates byte code for a function call
 	static private string[] generateByteCode(FunctionCallNode fCall){
 		// first push the arguments to the stack
@@ -82,6 +99,22 @@ package struct CodeGen{
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
+	}
+
+	/// generates byte code for CodeNode
+	private string[] generateByteCode(CodeNode node){
+		if (node.type == CodeNode.Type.FunctionCall){
+			return generateByteCode(node.node!(CodeNode.Type.FunctionCall));
+		}else if (node.type == CodeNode.Type.Literal){
+			return generateByteCode(node.node!(CodeNode.Type.Literal));
+		}else if (node.type == CodeNode.Type.Operator){
+			return generateByteCode(node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.Variable){
+			return generateByteCode(node.node!(CodeNode.Type.Variable));
+		}else{
+			compileErrors.append(CompileError(0, "invalid AST"));
+			return [];
+		}
 	}
 
 	/// generates byte code for a string/number literal
@@ -126,7 +159,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for a varDeclare
-	static private string[] generateVarDeclareByteCode(VarDeclareNode varDeclare){
+	static private string[] generateByteCode(VarDeclareNode varDeclare){
 		// make sure there are vars
 		if (varDeclare.vars.length > 0){
 			// make sure all subNodes are vars, and generate the instruction
@@ -142,7 +175,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for an if statement
-	static private string[] generateIfByteCode(IfNode ifStatement){
+	static private string[] generateByteCode(IfNode ifStatement){
 		static uinteger ifCount = 0;
 		LinkedList!string byteCode = new LinkedList!string;
 		// first, push the condition
@@ -179,7 +212,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for while statement
-	static private string[] generateWhileByteCode(WhileNode whileStatement){
+	static private string[] generateByteCode(WhileNode whileStatement){
 		static uinteger whileCount = 0;
 		LinkedList!string byteCode = new LinkedList!string;
 		// first push the loop start position
@@ -205,7 +238,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for assignment statement
-	static private string[] generateAssignmentByteCode(AssignmentNode assign){
+	static private string[] generateByteCode(AssignmentNode assign){
 		LinkedList!string byteCode = new LinkedList!string;
 		// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
 		if (assign.var.indexes.length > 0){
@@ -234,7 +267,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for operators
-	static private string[] generateOperatorByteCode(OperatorNode operator){
+	static private string[] generateByteCode(OperatorNode operator){
 		const string[string] operatorInstructions = [
 			"/": "divide",
 			"*": "multiply",
@@ -266,7 +299,7 @@ package struct CodeGen{
 	}
 	
 	/// generates byte code for static array, i.e `[x, y, z]`
-	static private string[] generateLiteralByteCode(LiteralNode array){
+	static private string[] generateByteCode(LiteralNode literal){
 		/// returns true if the value of a static array is literal
 		bool isStatic(ASTNode array){
 			foreach(node; array.subNodes){
