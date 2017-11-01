@@ -10,21 +10,14 @@ import std.conv : to;
 
 /// contains functions to generate byte code from AST
 package struct CodeGen{
-	/// constructor
-	this (){
-		compileErrors = new LinkedList!CompileError;
-	}
-	/// destructor
-	~this (){
-		.destroy(compileErrors);
-	}
 	/// generates byte code for a script
 	public string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
+		compileErrors = new LinkedList!CompileError;
 		LinkedList!string byteCode = new LinkedList!string;
 		// remove all previous errors
 		compileErrors.clear;
 		// prepare a list of script-defind functions
-		scriptDefinedFunctions.length - scriptNode.functions.length;
+		scriptDefinedFunctions.length = scriptNode.functions.length;
 		foreach (i, functionNode; scriptNode.functions){
 			scriptDefinedFunctions[i] = functionNode.name;
 		}
@@ -37,6 +30,7 @@ package struct CodeGen{
 		.destroy(byteCode);
 		// put in errors
 		errors = compileErrors.toArray;
+		.destroy(compileErrors);
 		return r;
 	}
 
@@ -51,7 +45,7 @@ package struct CodeGen{
 		/// creates a new var, returns the ID, throws Exception if var already exists
 		public uinteger getNewVarID(string varName){
 			// check if already exists
-			foreach (name; varIDs.keys){
+			foreach (name; varIDs){
 				if (varName == name){
 					throw new Exception("variable '"~varName~"' declared twice");
 				}
@@ -68,11 +62,12 @@ package struct CodeGen{
 		}
 		/// returns ID of a var. throws exception if var is not declared
 		public uinteger getVarID(string varName){
-			if (varName in varIDs){
-				return varIDs[varName];
-			}else{
-				throw new Exception("variable '"~varName~"' not declared but used");
+			foreach (key; varIDs.keys){
+				if (varIDs[key] == varName){
+					return key;
+				}
 			}
+			throw new Exception("variable '"~varName~"' not declared but used");
 		}
 		/// should/must be called when the next few calls of var-related functions will be from inside another block
 		public void increaseScope(){
@@ -138,7 +133,7 @@ package struct CodeGen{
 		uinteger maxVars = getMaxVarCount(node.bodyBlock);
 		// add the arguments count to this
 		maxVars += node.arguments.length;
-		byteCode.append("\tvarCount i"~to!string());
+		byteCode.append("\tvarCount i"~to!string(maxVars));
 		// then append the instructions
 		byteCode.append (generateByteCode (node.bodyBlock));
 
@@ -204,6 +199,28 @@ package struct CodeGen{
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
+	}
+
+	/// generates byte code for CodeNode
+	private string[] generateByteCode(CodeNode node){
+		if (node.type == CodeNode.Type.FunctionCall){
+			return generateByteCode(node.node!(CodeNode.Type.FunctionCall));
+		}else if (node.type == CodeNode.Type.Literal){
+			return generateByteCode(node.node!(CodeNode.Type.Literal));
+		}else if (node.type == CodeNode.Type.Operator){
+			return generateByteCode(node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.Variable){
+			return generateByteCode(node.node!(CodeNode.Type.Variable));
+		}else{
+			throw new Exception("invalid AST generated");
+		}
+	}
+
+	/// generates byte code for OperatorNode
+	private string[] generateByteCode(OperatorNode node){
+		const static string[string] operatorInstructions = [
+			"*" : "multiply"
+		];
 	}
 }
 
