@@ -23,6 +23,11 @@ package struct CodeGen{
 		LinkedList!string byteCode = new LinkedList!string;
 		// remove all previous errors
 		compileErrors.clear;
+		// prepare a list of script-defind functions
+		scriptDefinedFunctions.length - scriptNode.functions.length;
+		foreach (i, functionNode; scriptNode.functions){
+			scriptDefinedFunctions[i] = functionNode.name;
+		}
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.functions){
 			byteCode.append(generateByteCode(functionNode));
@@ -88,6 +93,19 @@ package struct CodeGen{
 		}
 	}
 
+	/// contains a list of script0-defined functions
+	private string[] scriptDefinedFunctions;
+
+	/// Returns true if a function is script-defined
+	private bool isScriptDefined(string fName){
+		foreach (scriptDefined; scriptDefinedFunctions){
+			if (fName == scriptDefined){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/// stores the list of errors
 	private LinkedList!CompileError compileErrors;
 
@@ -97,6 +115,7 @@ package struct CodeGen{
 		uinteger getMaxVarCount(BlockNode node){
 			uinteger r = 0;
 			uinteger maxSub = 0;
+			increaseScope();
 			foreach (statement; node.statements){
 				if (statement.type == StatementNode.Type.VarDeclare){
 					// get the number of vars
@@ -152,16 +171,39 @@ package struct CodeGen{
 		}else if (node.type == StatementNode.Type.While){
 			return generateByteCode(node.node!(StatementNode.Type.While));
 		}else if (node.type == StatementNode.Type.VarDeclare){
-			return []; // VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
+			// VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
+			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else{
 			compileErrors.append(CompileError(0, "invalid AST generated"));
 		}
 	}
 
 	/// generates byte code for FunctionCallNode
-	private string[] generateFunctionCallByteCode(FunctionNode node){
+	private string[] generateFunctionCallByteCode(FunctionCallNode node){
+		// stores if this function's return value is needed on stack or not. ==1: return not required, >1: return required
+		static callCount = 0;
+		callCount ++;
+		auto byteCode = new LinkedList!string;
 		// push the args
-
+		uinteger argCount = 0;
+		foreach (arg; node.arguments){
+			byteCode.append(generateByteCode(arg));
+			argCount ++;
+		}
+		// then append the instruction to execute this function
+		if (isScriptDefined(node.fName)){
+			byteCode.append("\texecFuncS s\""~node.fName~"\" i"~to!string(argCount));
+		}else{
+			byteCode.append("\texecFuncE s\""~node.fName~"\" i"~to!string(argCount));
+		}
+		// pop the return, if result not required
+		if (callCount == 1){
+			byteCode.append("pop i1");
+		}
+		callCount --;
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 }
 
