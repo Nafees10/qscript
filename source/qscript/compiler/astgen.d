@@ -17,7 +17,7 @@ struct ASTGen{
 	this (DataType[string] functionReturnDataTypes, DataType[][string] functionArgDataTypes){
 		functionReturnTypes = functionReturnDataTypes.dup;
 		functionArgTypes = functionArgDataTypes.dup;
-
+		compileErrors = new LinkedList!CompileError;
 	}
 	/// destructor
 	~this (){
@@ -31,7 +31,7 @@ struct ASTGen{
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
 	public ScriptNode generateScriptAST(TokenList scriptTokens, ref CompileError[] errors){
-		compileErrors = new LinkedList!CompileError;
+		compileErrors.clear;
 		tokens = scriptTokens;
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
@@ -73,8 +73,11 @@ struct ASTGen{
 			private uinteger[string] varScopeDepth;
 			/// stores current scope
 			private uinteger scopeCount = 0;
-			/// adds a var
+			/// adds a var, throws Exception if var with same name already exists
 			void addVarType(string name, DataType type){
+				if (name in varDataTypes){
+					throw new Exception("variable '"~name~"' declared twice");
+				}
 				varDataTypes[name] = type;
 				varScopeDepth[name] = scopeCount;
 			}
@@ -91,6 +94,8 @@ struct ASTGen{
 				foreach (key; varScopeDepth.keys){
 					if (varScopeDepth[key] == scopeCount){
 						varScopeDepth.remove(key);
+						// remove from varDataTypes too!
+						varDataTypes.remove(key);
 					}
 				}
 				if (scopeCount > 0){
@@ -569,7 +574,12 @@ struct ASTGen{
 										"variable name expected in varaible declaration, unexpected token found"));
 							}else{
 								vars.append(token.token);
-								addVarType(token.token, type);
+								try{
+									addVarType(token.token, type);
+								}catch (Exception e){
+									compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+									.destroy (e);
+								}
 							}
 							commaExpected = true;
 						}
