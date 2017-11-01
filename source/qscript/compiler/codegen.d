@@ -10,10 +10,19 @@ import std.conv : to;
 
 /// contains functions to generate byte code from AST
 package struct CodeGen{
-	/// generates byte code for a script
-	private string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
-		LinkedList!string byteCode = new LinkedList!string;
+	/// constructor
+	this (){
 		compileErrors = new LinkedList!CompileError;
+	}
+	/// destructor
+	~this (){
+		.destroy(compileErrors);
+	}
+	/// generates byte code for a script
+	public string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
+		LinkedList!string byteCode = new LinkedList!string;
+		// remove all previous errors
+		compileErrors.clear;
 		// go through all nodes/ functions, and generate byte-code for them
 		foreach (functionNode; scriptNode.functions){
 			byteCode.append(generateByteCode(functionNode));
@@ -23,51 +32,114 @@ package struct CodeGen{
 		.destroy(byteCode);
 		// put in errors
 		errors = compileErrors.toArray;
-		.destroy(compileErrors);
 		return r;
+	}
+
+	/// provides functions to deal with converting vars to IDs
+	private struct{
+		/// stores IDs for vars
+		private string[uinteger] varIDs;
+		/// stores the scope "depth" for each varID
+		private uinteger[uinteger] varScopeDepth;
+		/// stores the current scope depth
+		private uinteger scopeDepth;
+		/// creates a new var, returns the ID, throws Exception if var already exists
+		public uinteger getNewVarID(string varName){
+			// check if already exists
+			foreach (name; varIDs.keys){
+				if (varName == name){
+					throw new Exception("variable '"~varName~"' declared twice");
+				}
+			}
+			// find an empty ID
+			uinteger newID = 0;
+			while (newID in varIDs){
+				newID ++;
+			}
+			varIDs[newID] = varName;
+			// put it in varScopeDepth
+			varScopeDepth[scopeDepth] = newID;
+			return newID;
+		}
+		/// returns ID of a var. throws exception if var is not declared
+		public uinteger getVarID(string varName){
+			if (varName in varIDs){
+				return varIDs[varName];
+			}else{
+				throw new Exception("variable '"~varName~"' not declared but used");
+			}
+		}
+		/// should/must be called when the next few calls of var-related functions will be from inside another block
+		public void increaseScope(){
+			scopeDepth ++;
+		}
+		/// should/must be called when all var related functions from inside a block are done
+		public void decreaseScope(){
+			// clear vars
+			foreach (key; varScopeDepth.keys){
+				if (key == scopeDepth){
+					varScopeDepth.remove(key);
+					varIDs.remove(key);
+				}
+			}
+			if (scopeDepth > 0){
+				scopeDepth --;
+			}
+		}
 	}
 
 	/// stores the list of errors
 	private LinkedList!CompileError compileErrors;
 
-	/// generates byte code for a function definition
-	static private string[] generateByteCode(FunctionNode functionNode){
-		/// generates a AssignmentNode[] that sets the "argument vars" their values, using the arg names in correct order
-		AssignmentNode[] getArgVarAssignment(FunctionNode.Argument[] args){
-			import qscript.qscript : QData;
-			StatementNode[] r;
-			r.length = args.length * 2; // x2 because the vars need to be declared too
-			// first add the declarations
-			foreach (i, arg; args){
-				VarDeclareNode declaration = VarDeclareNode(arg.argType, [arg.argName]);
-				r[i] = StatementNode(declaration);
+	/// generates byte code for FunctionNode
+	private string[] generateByteCode(FunctionNode node){
+		/// returns the number of max vars that exist at one time in a a Block
+		uinteger getMaxVarCount(BlockNode node){
+			uinteger r = 0;
+			uinteger maxSub = 0;
+			foreach (statement; node.statements){
+				if (statement.type == StatementNode.Type.VarDeclare){
+					// get the number of vars
+					r += statement.node!(StatementNode.Type.VarDeclare).vars.length;
+				}else if (statement.type == StatementNode.Type.Block){
+					// recursion
+					uinteger newMaxSub = getMaxVarCount (statement.node!(StatementNode.Type.Block));
+					if (newMaxSub > maxSub){
+						maxSub = newMaxSub;
+					}
+				}
 			}
-			// then the assignments
-			foreach (i, arg; args){
-				VariableNode actualArg;
-				actualArg = VariableNode("__args", CodeNode(LiteralNode(QData(i), DataType(DataType.Type.Integer))));
-				r[i + args.length] = StatementNode(AssignmentNode(VariableNode(arg.argName), CodeNode(actualArg)));
-			}
-			return r;
+			return r + maxSub;
 		}
-		functionNode.bodyBlock.statements = getArgVarAssignment(functionNode.arguments) ~ functionNode.bodyBlock.statements;
-		// function definition starts with "functionName\n"
-		return [functionNode.name]~generateByteCode(block);
+
+		LinkedList!string byteCode = new LinkedList!string;
+		// push the function name
+		byteCode.append (node.name);
+		// then set the max var count
+		uinteger maxVars = getMaxVarCount(node.bodyBlock);
+		// add the arguments count to this
+		maxVars += node.arguments.length;
+		byteCode.append("\tvarCount i"~to!string());
+		// then append the instructions
+		byteCode.append (generateByteCode (node.bodyBlock));
+
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
 	}
 
-	/// generates byte code for a block
-	static private string[] generateByteCode(BlockNode block){
-		// make sure it's a block
+	/// generates byte code for BlockNode
+	private string[] generateByteCode(BlockNode node){
 		LinkedList!string byteCode = new LinkedList!string;
-		foreach (statement; block.statements){
-			byteCode.append(generateByteCode(statement, false));
+		foreach (statement; node.statements){
+			byteCode.append(generateByteCode(statement));
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
 	}
 
-	/// generates bytecode for a StatementNode
+	/// generates byte code for StatementNode
 	private string[] generateByteCode(StatementNode node){
 		if (node.type == StatementNode.Type.Assignment){
 			return generateByteCode(node.node!(StatementNode.Type.Assignment));
@@ -80,364 +152,18 @@ package struct CodeGen{
 		}else if (node.type == StatementNode.Type.While){
 			return generateByteCode(node.node!(StatementNode.Type.While));
 		}else if (node.type == StatementNode.Type.VarDeclare){
-			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
-		}
-	}
-
-	/// generates byte code for a function call
-	static private string[] generateByteCode(FunctionCallNode fCall){
-		// first push the arguments to the stack
-		LinkedList!string byteCode = new LinkedList!string;
-		uinteger argCount = 0;
-		argCount = fCall.arguments.length;
-		// now start pushing them
-		foreach(arg; fCall.arguments){
-			byteCode.append(generateByteCode(arg));
-		}
-		/// now exec this function
-		byteCode.append("\texecFunc s\""~fCall.fName~"\" i"~to!string(argCount));
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for CodeNode
-	private string[] generateByteCode(CodeNode node){
-		if (node.type == CodeNode.Type.FunctionCall){
-			return generateByteCode(node.node!(CodeNode.Type.FunctionCall));
-		}else if (node.type == CodeNode.Type.Literal){
-			return generateByteCode(node.node!(CodeNode.Type.Literal));
-		}else if (node.type == CodeNode.Type.Operator){
-			return generateByteCode(node.node!(CodeNode.Type.Operator));
-		}else if (node.type == CodeNode.Type.Variable){
-			return generateByteCode(node.node!(CodeNode.Type.Variable));
+			return []; // VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
 		}else{
-			compileErrors.append(CompileError(0, "invalid AST"));
-			return [];
+			compileErrors.append(CompileError(0, "invalid AST generated"));
 		}
 	}
 
-	/// generates byte code for a string/number literal
-	static private string[] generateByteCode(LiteralNode literal){
-		/// returns true if a number in a string is a double or int
-		bool isDouble(string s){
-			foreach (c; s){
-				if (c == '.'){
-					return true;
-				}
-			}
-			return false;
-		}
-		if (literal.type == ASTNode.Type.NumberLiteral){
-			if (isDouble(literal.data)){
-				return ["\tpush d"~literal.data];
-			}else{
-				return ["\tpush i"~literal.data];
-			}
-		}else if (literal.type == ASTNode.Type.StringLiteral){
-			return ["\tpush s\""~literal.data~'"'];
-		}else{
-			compileErrors.append(CompileError(literal.lineno, "literal expected"));
-			return [];
-		}
-	}
+	/// generates byte code for FunctionCallNode
+	private string[] generateFunctionCallByteCode(FunctionNode node){
+		// push the args
 
-	/// generates byte code for a var
-	static private string[] generateByteCode(VariableNode var){
-		// ok, push the var, deal with the indexes later (if any)
-		string[] r = ["\tgetVar s\""~var.varName~'"'];
-		// now if there's indexes, add them
-		if (var.subNodes.length > 0){
-			LinkedList!string indexes = new LinkedList!string;
-			foreach (index; var.indexes){
-				indexes.append(generateByteCode(index));
-				indexes.append("\treadElement");
-			}
-			r ~= indexes.toArray;
-		}
-		return r;
-	}
-
-	/// generates byte code for a varDeclare
-	static private string[] generateByteCode(VarDeclareNode varDeclare){
-		// make sure there are vars
-		if (varDeclare.vars.length > 0){
-			// make sure all subNodes are vars, and generate the instruction
-			string r = "\tinitVar";
-			foreach (var; varDeclare.vars){
-				r ~= " s\""~var~'"';
-			}
-			return [r];
-		}else{
-			compileErrors.append(CompileError(varDeclare.lineno, "no variables declared"));
-			return [];
-		}
-	}
-
-	/// generates byte code for an if statement
-	static private string[] generateByteCode(IfNode ifStatement){
-		static uinteger ifCount = 0;
-		LinkedList!string byteCode = new LinkedList!string;
-		// first, push the condition
-		byteCode.append(generateByteCode(ifStatement.condition));
-		// then add the skipTrue
-		byteCode.append([
-				"\tskipTrue i1",
-				"\tjump s\"if"~to!string(ifCount)~"end\""
-			]);
-		string endMark = "\tif"~to!string(ifCount)~"end:";
-		string elseEndMark = null;
-		ifCount ++;
-		// then comes the block
-		byteCode.append(generateByteCode(BlockNode(ifStatement.statements)));
-		// then skip the else body
-		if (ifStatement.hasElse){
-			// jump if%count%end
-			byteCode.append("\tjump s\"if"~to!string(ifCount)~"end\"");
-			elseEndMark = "\tif"~to!string(ifCount)~"end:";
-			ifCount ++;
-		}
-		// then end the end
-		byteCode.append(endMark);
-		// and start the endBlock
-		if (ifStatement.hasElse){
-			byteCode.append(BlockNode(ifStatement.elseStatements));
-			// mark else end
-			byteCode.append(elseEndMark);
-		}
-		// then return it!
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for while statement
-	static private string[] generateByteCode(WhileNode whileStatement){
-		static uinteger whileCount = 0;
-		LinkedList!string byteCode = new LinkedList!string;
-		// first push the loop start position
-		byteCode.append("\twhile"~to!string(whileCount)~"start:");
-		// then push the condition
-		byteCode.append(generateByteCode(whileStatement.condition));
-		// then add the skipTrue
-		byteCode.append([
-				"\tskipTrue i1",
-				"\tjump s\"while"~to!string(whileCount)~"end\""
-			]);
-		// then the block
-		byteCode.append(generateByteCode(BlockNode(whileStatement.statements)));
-		// then jump to beginning, if it has to terminate, it will jump to the below position appended
-		byteCode.append("\tjump s\"while"~to!string(whileCount)~"start\"");
-		//  then end it!
-		byteCode.append("\twhile"~to!string(whileCount)~"end:");
-		whileCount ++;
-		// now return it
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for assignment statement
-	static private string[] generateByteCode(AssignmentNode assign){
-		LinkedList!string byteCode = new LinkedList!string;
-		// check if is any array, then use `modifyElement`, otherwise, just a simple `setVar`
-		if (assign.var.indexes.length > 0){
-			// is array, needs to use `modifyElement` + `setVar`
-			byteCode.append("\tgetVar s\""~assign.var.varName~'"');
-			uinteger indexCount = 0;
-			foreach (index; assign.var.indexes){
-				indexCount ++;
-				byteCode.append(generateByteCode(index));
-			}
-			// then call `modifyArray` with new value,and set the new val
-			byteCode.append(generateByteCode(assign.val));
-			byteCode.append([
-					"\tmodifyArray i"~to!string(indexCount),
-					"\tsetVar s\""~assign.var.varName~'"'
-				]);
-			// done
-		}else{
-			// just set the new Val
-			byteCode.append(generateByteCode(assign.val));
-			byteCode.append("\tsetVar s\""~assign.var.varName~'"');
-		}
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for operators
-	static private string[] generateByteCode(OperatorNode operator){
-		const string[string] operatorInstructions = [
-			"/": "divide",
-			"*": "multiply",
-			"+": "add",
-			"-": "subtract",
-			"%": "mod",
-			"~": "concat",
-			// bool operators
-			"==": "isSame",
-			"!=": "isNotSame",
-			"<": "isLesser",
-			">": "isGreater",
-			">=": "isGreaterSame",
-			"<=": "isLesserSame"
-		];
-		LinkedList!string byteCode = new LinkedList!string;
-		// push the operands first
-		byteCode.append(generateByteCode(operator.operands[0]));
-		byteCode.append(generateByteCode(operator.operands[1]));
-		// then do the operation
-		if (operator.operator in operatorInstructions){
-			byteCode.append("\t"~operatorInstructions[operator.operator]);
-		}else{
-			compileErrors.append(CompileError(0, "invalid operator"));
-		}
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-	
-	/// generates byte code for static array, i.e `[x, y, z]`
-	static private string[] generateByteCode(LiteralNode literal){
-		/// returns true if the value of a static array is literal
-		bool isStatic(ASTNode array){
-			foreach(node; array.subNodes){
-				if (![ASTNode.Type.NumberLiteral, ASTNode.Type.StringLiteral].hasElement(node.type)){
-					if (node.type == ASTNode.Type.StaticArray && !isStatic(node)){
-						return false;
-					}
-					return false;
-				}
-			}
-			return true;
-		}
-		/// returns an ASTNode array encoded in a string, only works if isStatic returned true on it
-		string arrayToString(ASTNode array){
-			char[] r = ['['];
-			foreach (node; array.subNodes){
-				if (node.type == ASTNode.Type.StaticArray){
-					r ~= cast(char[])arrayToString(node)~',';
-				}
-				r ~= cast(char[])node.data~',';
-			}
-			if (r.length <= 1){
-				r = cast(char[])"[]";
-			}else{
-				r[r.length - 1] = ']';
-			}
-			return cast(string)r;
-		}
-
-		// check if needs to use `makeArray` or it's static
-		if (isStatic(array)){
-			return ["\tpush "~arrayToString(array)];
-		}else{
-			LinkedList!string byteCode = new LinkedList!string;
-			uinteger elementCount = 0;
-			// push all the subNodes, then call makeArray
-			foreach (node; array.subNodes){
-				byteCode.append(generateByteCode(node));
-				elementCount ++;
-			}
-			// call `makeArray`
-			byteCode.append("\tmakeArray i"~to!string(elementCount));
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
-		}
 	}
 }
-
-/// unittests for CodeGen
-unittest{
-	import qscript.compiler.tokengen, qscript.compiler.misc, qscript.compiler.ast;
-
-	if (compileErrors is null){
-		compileErrors = new LinkedList!CompileError;
-	}
-	// start checking, first, convert an error-free script to tokens
-	TokenList tokens = toTokens([
-			"function main{",
-			"var(i);",
-			"i = 2;",
-			"i = i - 1;",
-			"if (i == 1){",
-			"writeln(1);",
-			"};",
-			"while (i < 2){",
-			"i = i + 1;",
-			"};",
-			"}",
-			"function test{result = 1;}"
-		]);
-	// we aint testing toTokens here, we just need to use it to get an AST, which we need for CodeGen
-	ASTNode scriptNode = ASTGen.generateAST(tokens);
-	// now comes the time, since the script was syntax-error free, compileErrors should be empty
-	assert (compileErrors.count == 0);
-	// do the thing
-	string[] byteCode = CodeGen.generateByteCode(scriptNode);
-	// make sure no errors occurred
-	if (compileErrors.count > 0){
-		import std.stdio;
-		writeln("CodeGen.generateByteCode reported errors:");
-		foreach (error; compileErrors.toArray){
-			writeln("line#", error.lineno, " : ", error.msg);
-		}
-		assert (false, "CodeGen.generateByteCode failed");
-	}
-	// continue checking
-	string[] expectedByteCode = [
-		"main",
-		"\tinitVar s\"i\"",
-
-		"\tpush i2",
-		"\tsetVar s\"i\"",
-
-		"\tgetVar s\"i\"",
-		"\tpush i1",
-		"\tsubtract",
-		"\tsetVar s\"i\"",
-
-		"\tgetVar s\"i\"",
-		"\tpush i1",
-		"\tisSame",
-		"\tskipTrue i1",
-		"\tjump s\"if0end\"",
-
-		"\tpush i1",
-		"\texecFuncI s\"writeln\" i1",
-		"\tif0end:",
-
-		"\twhile0start:",
-		"\tgetVar s\"i\"",
-		"\tpush i2",
-		"\tisLesser",
-		"\tskipTrue i1",
-		"\tjump s\"while0end\"",
-
-		"\tgetVar s\"i\"",
-		"\tpush i1",
-		"\tadd",
-		"\tsetVar s\"i\"",
-		"\tjump s\"while0start\"",
-		"\twhile0end:",
-
-		"test",
-		"\tpush i1",
-		"\tsetVar s\"result\""
-	];
-	assert (byteCode.length == expectedByteCode.length, "byteCode.length does not match expected length");
-	// start matching
-	for (uinteger i = 0; i < byteCode.length; i ++){
-		assert (byteCode[i] == expectedByteCode[i], "byteCode does not match expected result:\n`"~
-			byteCode[i]~"` != `"~expectedByteCode[i]~'`');
-	}
-}
-
-
-
-
 
 /*
 ## Byte code format:  
@@ -452,80 +178,16 @@ AnotherFunctionName
 	[instruction] [argument1] [argument2] [...]
 	...
 ```  
-
-### Function Calls:  
-byte code for:  
-```
-function FunctionName{
-	writeln("Hello", " World");
-}
-```  
-will look like:  
-```
-FunctionName
-	push s" World" s"Hello"
-	execFuncI s"writeln" i2
-```  
-
-### If statement
-byte code for:  
-```
-function FunctionName{
-	var (i);
-	if (i == 2){
-		writeln(i);
-	}
-}
-```  
-will look like:  
-```
-FunctionName
-	initVar s"i"
-	push i2
-	getVar s"i"
-	isSame
-	skipTrue i1
-	jump s"if0end"
-	getVar s"i"
-	execFuncI s"writeln" i1
-	if0end:
-```  
-
-### While statement
-byte code for:  
-```
-function FunctionName{
-	var (i);
-	while (i < 2){
-		writeln(i);
-	}
-}
-```  
-will look like:  
-```
-FunnctionName
-	initVar s"i"
-	while0start:
-	push i2
-	getVar s"i"
-	isLesser
-	skipTrue i1
-	jump s"while0end"
-	getVar s"i"
-	execFuncI s"writeln" i1
-	jump s"while0start"
-	while0end:
-```  
   
 ### List of instructions:
 #### Instructions for executing functions:
-* execFuncI 	- executes a function, arg0 is function name (string), arg1 is number (uint) of arguments to pop from stack for the function. ignores the return value of the function.
-* execFuncP		- same as execFuncI, except, the return value is pushed to stack
+* execFuncS 	- executes a script-defined function, arg0 is function name (string), arg1 is number (int) of arguments to pop from stack for the function. Result is pushed to stack
+* execFuncE		- executes an external function, arg0 is function name (string), arg1 is number (int) of arguments to pop from stack for the function. Result is pushed to stack
 
 #### Instructions for handling variables:
-* initVar		- to declare vars, each argument is a var name as string
-* getVar		- pushes value of a variable to stack, arg0 is name (string) of the var
-* setVar		- sets value of a var of the last value pushed to stack, arg0 is name (string) of the var
+* varCount		- changes the max number of vars available
+* getVar		- pushes value of a variable to stack, arg0 is ID (int, >0) of the var
+* setVar		- sets value of a var of the last value pushed to stack, arg0 is ID (int, >0) of the var
 
 #### Instructions for mathematical operators:
 * addInt		- adds last two integers pushed to stack, pushes the result to stack
@@ -542,9 +204,12 @@ FunnctionName
 * concatString	- concatenates last two strings pushed to stack, pushes the result to stack
 
 #### Instructions for comparing 2 vals:
-* isSame 		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
-* isLesser 		- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
-* isGreater		- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
+* isSameInt		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
+* isSameDouble	- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
+* isLesserInt	- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
+* isLesserDouble- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
+* isGreaterInt	- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
+* isGreaterDouble- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
 
 #### Misc. instructions:
 * push 			- pushes all arguments to stack
