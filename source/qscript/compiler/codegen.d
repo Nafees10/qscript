@@ -280,7 +280,64 @@ package struct CodeGen{
 		}else{
 			return [];
 		}
+	}
 
+	/// generates byte code for VariableNode
+	private string[] generateByteCode(VariableNode node){
+		auto byteCode = new LinkedList!string;
+		// first get the var's value on stack
+		uinteger varID;
+		try{
+			varID = getVarID(node.varName);
+		}catch (Exception e){
+			compileErrors.append(CompileError(0, e.msg));
+			.destroy(e);
+		}
+		byteCode.append("\tgetVar i"~to!string(varID));
+		// then get the index required
+		foreach (index; node.indexes){
+			byteCode.append(
+					generateByteCode(index)~
+					["\treadElement"]);
+		}
+		// done
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
+
+	/// generates byte code for AssignmentNode
+	private string[] generateByteCode(AssignmentNode node){
+		uinteger varID;
+		try{
+			varID = getVarID(node.var.varName);
+		}catch (Exception e){
+			compileErrors.append(CompileError(0, e.msg));
+			.destroy(e);
+		}
+		// first check if the var is an array
+		if (node.var.isArray){
+			// push the original value of var, then push all the indexes, then call modifyAray, and setVar
+			auto byteCode = new LinkedList!string;
+			byteCode.append("\tgetVar i"~to!string(varID));
+			// now the indexes
+			foreach (index; node.var.indexes){
+				byteCode.append(generateByteCode(index));
+			}
+			// now call push the val
+			byteCode.append(generateByteCode(node.val));
+			// then modifyArray
+			byteCode.append("\tmodifyArray i"~to!string(node.var.indexes.length));
+			// finally, set the new array back
+			byteCode.append("\tsetVar i"~to!string(varID));
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
+		}else{
+			// just push the val, and call setVar on the varID
+			return generateByteCode(node.val)~
+			["\tsetVar i"~to!string(varID)];
+		}
 	}
 }
 
