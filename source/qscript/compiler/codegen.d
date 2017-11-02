@@ -170,6 +170,7 @@ package struct CodeGen{
 			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else{
 			compileErrors.append(CompileError(0, "invalid AST generated"));
+			return [];
 		}
 	}
 
@@ -212,7 +213,8 @@ package struct CodeGen{
 		}else if (node.type == CodeNode.Type.Variable){
 			return generateByteCode(node.node!(CodeNode.Type.Variable));
 		}else{
-			throw new Exception("invalid AST generated");
+			compileErrors.append(CompileError(0, "invalid AST generated"));
+			return [];
 		}
 	}
 
@@ -374,11 +376,38 @@ package struct CodeGen{
 		byteCode.append("\tifEnd"~to!string(ifCount)~":");
 		// now the elseBody
 		if (node.hasElse){
-			byteCode.append(generateByteCode(BlockNode(node.elseStatements)~
-					["\telseEnd"~to!string(ifCount)~":"]));
+			byteCode.append(generateByteCode(BlockNode(node.elseStatements))~
+					["\telseEnd"~to!string(ifCount)~":"]);
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
+		ifCount ++;
+		return r;
+	}
+
+	/// generates byte code for WhileNode
+	private string[] generateByteCode(WhileNode node){
+		auto byteCode = new LinkedList!string;
+		// stores the `ID` of the while statement
+		static uinteger whileCount = 0;
+		// first comes the jump-back-here position
+		byteCode.append("\twhileStart"~to!string(whileCount)~":");
+		// then comes the condition
+		byteCode.append(generateByteCode(node.condition));
+		// then skip the jump-to-end if true
+		byteCode.append([
+				"\tskipTrue i1",
+				"\tjump s\"whileEnd"~to!string(whileCount)~"\""
+			]);
+		// then the loop body
+		byteCode.append(generateByteCode(BlockNode(node.statements)));
+		// then jump back to condition, to see if it'll start again
+		byteCode.append("\tjump s\"whileStart"~to!string(whileCount)~"\"");
+		// then mark the loop end
+		byteCode.append("\twhileEnd"~to!string(whileCount)~":");
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		whileCount ++;
 		return r;
 	}
 }
