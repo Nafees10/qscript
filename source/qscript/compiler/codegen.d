@@ -339,6 +339,48 @@ package struct CodeGen{
 			["\tsetVar i"~to!string(varID)];
 		}
 	}
+
+	/// generates byte code for VarDeclareNode
+	private string[] generateByteCode(VarDeclareNode node){
+		// no byte code is generated for varDeclare, just call the addVarID function
+		foreach (var; node.vars){
+			try{
+				getNewVarID(var);
+			}catch (Exception e){
+				compileErrors.append(CompileError(0, e.msg));
+			}
+		}
+		return [];
+	}
+
+	/// generates byte code for IfNode
+	private string[] generateByteCode(IfNode node){
+		// stores the `ID` of this if statement
+		static uinteger ifCount = 0;
+		auto byteCode = new LinkedList!string;
+		// first push the condition
+		byteCode.append(generateByteCode(node.condition));
+		// then the skipTrue, to skip the jump to else
+		byteCode.append([
+				"\tskipTrue i1",
+				"\tjump s\"ifEnd"~to!string(ifCount)~"\""
+			]);
+		// then comes the if-on-true body
+		byteCode.append(generateByteCode(BlockNode(node.statements)));
+		// then then jump to elseEnd to skip the else statements
+		if (node.hasElse){
+			byteCode.append("\tjump s\"elseEnd"~to!string(ifCount)~"\"");
+		}
+		byteCode.append("\tifEnd"~to!string(ifCount)~":");
+		// now the elseBody
+		if (node.hasElse){
+			byteCode.append(generateByteCode(BlockNode(node.elseStatements)~
+					["\telseEnd"~to!string(ifCount)~":"]));
+		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
 }
 
 /*
