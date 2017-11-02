@@ -156,6 +156,8 @@ package struct CodeNode{
 			return operator;
 		}else static if (T == CodeNode.Type.Variable){
 			return var;
+		}else static if (T == CodeNode.Type.Array){
+			return array;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
@@ -272,24 +274,6 @@ package struct LiteralNode{
 			}
 		}
 		return fromDataOrArray(literal, type);
-	}
-}
-
-/// stores a non-literal array, i.e, in which some of the elements are vars
-package struct ArrayNode{
-	/// stores the elements
-	private CodeNode[] storedElements;
-	/// returns array of elements
-	public @property ref CodeNode[] elements(){
-		return storedElements;
-	}
-	/// sets the value of storedElements
-	public @property ref CodeNode[] elements(CodeNode[] newList){
-		return storedElements = newList.dup;
-	}
-	/// constructor
-	this (CodeNode[] arrayElements){
-		storedElements = arrayElements.dup;
 	}
 }
 
