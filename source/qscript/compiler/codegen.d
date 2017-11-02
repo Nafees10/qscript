@@ -137,9 +137,9 @@ package struct CodeGen{
 		// then assign the arguments their var IDs
 		foreach (arg; node.arguments){
 			try{
-				getNewVarID(arg);
+				getNewVarID(arg.argName);
 			}catch (Exception e){
-				compileErrors.append(CompileError(0, "bug in compiler - argument name '"~arg~"' not available"));
+				compileErrors.append(CompileError(0, "bug in compiler - argument name '"~arg.argName~"' not available"));
 				.destroy (e);
 			}
 		}
@@ -184,7 +184,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for FunctionCallNode
-	private string[] generateFunctionCallByteCode(FunctionCallNode node){
+	private string[] generateByteCode(FunctionCallNode node){
 		// stores if this function's return value is needed on stack or not. ==1: return not required, >1: return required
 		static callCount = 0;
 		callCount ++;
@@ -229,7 +229,7 @@ package struct CodeGen{
 
 	/// generates byte code for OperatorNode
 	private string[] generateByteCode(OperatorNode node){
-		const static string[string] operatorInstructions = [
+		const string[string] operatorInstructions = [
 			"*" : "multiply",
 			"/" : "divide",
 			"+" : "add",
@@ -430,13 +430,17 @@ package struct CodeGen{
 		return r;
 	}
 
-	/// generates byte code for a FunctionCallNode
-	private string[] generateByteCode(FunctionCallNode node){
-		// first push each arg
-
-	}
-
 	/// generates byte code for a LiteralNode
+	private string[] generateByteCode(LiteralNode node){
+		// just use LiteralNode.toByteCode
+		string literal;
+		try{
+			literal = node.toByteCode;
+		}catch (Exception e){
+			compileErrors.append(CompileError(0, e.msg));
+		}
+		return ["\tpush "~literal];
+	}
 
 }
 
