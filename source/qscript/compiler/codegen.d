@@ -134,6 +134,15 @@ package struct CodeGen{
 		// add the arguments count to this
 		maxVars += node.arguments.length;
 		byteCode.append("\tvarCount i"~to!string(maxVars));
+		// then assign the arguments their var IDs
+		foreach (arg; node.arguments){
+			try{
+				getNewVarID(arg);
+			}catch (Exception e){
+				compileErrors.append(CompileError(0, "bug in compiler - argument name '"~arg~"' not available"));
+				.destroy (e);
+			}
+		}
 		// then append the instructions
 		byteCode.append (generateByteCode (node.bodyBlock));
 
@@ -410,6 +419,15 @@ package struct CodeGen{
 		whileCount ++;
 		return r;
 	}
+
+	/// generates byte code for a FunctionCallNode
+	private string[] generateByteCode(FunctionCallNode node){
+		// first push each arg
+
+	}
+
+	/// generates byte code for a LiteralNode
+
 }
 
 /*
