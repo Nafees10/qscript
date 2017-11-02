@@ -235,11 +235,15 @@ package struct CodeGen{
 			"+" : "add",
 			"-" : "subtract",
 			"%" : "mod",
-			"~" : "concat"
+			"~" : "concat",
+			"<" : "isLesser",
+			"==": "isSame",
+			">" : "isGreater"
 		];
 		// check if types are ok
-		const static string[] ArtithmaticOperators = ["*", "/", "+", "-", "%"];
+		const static string[] ArtithmaticOperators = ["*", "/", "+", "-", "%", "<", ">"];
 		const static string[] ArrayStringOperators = ["~"];
+		const static string[] NonArrayOperators = ["=="];
 		bool errorFree = true;
 		// first make sure both operands are of same type
 		if (node.operands[0].returnType != node.operands[1].returnType){
@@ -259,6 +263,12 @@ package struct CodeGen{
 		}else if (ArrayStringOperators.hasElement(node.operator)){
 			if (!node.operands[0].returnType.isArray && node.operands[0].returnType.type != DataType.Type.String){
 				compileErrors.append(CompileError(0, "cannot use this operator on non-string and non-array data"));
+				errorFree = false;
+			}
+		}else if (NonArrayOperators.hasElement(node.operator)){
+			// make sure type's not array
+			if (node.operands[0].returnType.isArray){
+				compileErrors.append(CompileError(0, node.operator~" cannot be used with arrays"));
 				errorFree = false;
 			}
 		}else{
@@ -471,6 +481,7 @@ AnotherFunctionName
 #### Instructions for comparing 2 vals:
 * isSameInt		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
 * isSameDouble	- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
+* isSameString	- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
 * isLesserInt	- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
 * isLesserDouble- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
 * isGreaterInt	- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
