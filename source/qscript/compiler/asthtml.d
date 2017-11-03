@@ -116,6 +116,7 @@ string[] toHtml(FunctionCallNode node){
 		}
 		html.append("</div>");
 	}
+	html.append("</div>");
 	string[] r = html.toArray;
 	.destroy(html);
 	return r;
@@ -187,7 +188,7 @@ string[] toHtml(CodeNode node, string caption = null){
 string[] toHtml(LiteralNode node){
 	LinkedList!string html = new LinkedList!string;
 	html.append("<div>Literal<br>Type: "~node.type.toString);
-	html.append("<div class>"~node.toByteCode~"</div>");
+	html.append("<div>"~node.toByteCode~"</div>");
 	html.append("</div>");
 	string[] r = html.toArray;
 	.destroy(html);
