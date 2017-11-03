@@ -540,6 +540,26 @@ struct ASTGen{
 					// skip the semicolon too
 					index++;
 				}
+				// make sure the variable data type matches the val's data type
+				DataType varType;
+				try{
+					varType = getVarType(var.varName);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index-1), e.msg));
+				}
+				// also need to check if the var was declared a array or not, and if it's being set a correct type or not
+				if (varType.arrayNestCount < var.indexes.length){
+					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
+							"variable dimensions in assignment differs from declaration"));
+				}else{
+					// continue with checking
+					DataType expectedType = DataType(varType.type, varType.arrayNestCount - var.indexes.length);
+					// make sure it matches
+					if (expectedType != val.returnType){
+						compileErrors.append(CompileError(tokens.getTokenLine(index-1),
+								"cannot assign value with different data type to variable"));
+					}
+				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
 				index ++;
