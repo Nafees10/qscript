@@ -275,7 +275,7 @@ struct ASTGen{
 					LinkedList!(FunctionNode.Argument) argList = new LinkedList!(FunctionNode.Argument);
 					uinteger brackEnd = tokens.tokens.bracketPos(index);
 					bool commaExpected = false;
-					for (; index < brackEnd; index ++){
+					for (index ++; index < brackEnd; index ++){
 						if (commaExpected){
 							if (tokens.tokens[index].type == Token.Type.Comma){
 								commaExpected = false;
