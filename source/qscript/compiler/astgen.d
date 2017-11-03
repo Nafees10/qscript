@@ -382,17 +382,22 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
-				functionCallNode.fName = tokens.tokens[index].token.dup;
+				functionCallNode.fName = tokens.tokens[index].token;
 				// now for the arguments
-				LinkedList!CodeNode args = new LinkedList!CodeNode;
-				for (index = index+2; ; index ++){
-					args.append(generateCodeAST());
-					if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
-						break;
+				if (tokens.tokens[index+2].type == Token.Type.ParanthesesClose){
+					// has no args
+					functionCallNode.arguments = [];
+				}else{
+					LinkedList!CodeNode args = new LinkedList!CodeNode;
+					for (index = index+2; ; index ++){
+						args.append(generateCodeAST());
+						if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
+							break;
+						}
 					}
+					functionCallNode.arguments = args.toArray;
+					.destroy(args);
 				}
-				functionCallNode.arguments = args.toArray;
-				.destroy(args);
 				// match argument types
 				{
 					DataType[] argTypes;
