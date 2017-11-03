@@ -114,6 +114,7 @@ struct ASTGen{
 			LinkedList!DataType argTypes = new LinkedList!DataType;
 			for (index = 0; index < tokens.tokens.length; index ++){
 				if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+					index ++;
 					DataType returnType;
 					try{
 						returnType = readType();
