@@ -700,11 +700,8 @@ struct ASTGen{
 				index = brackEnd+1;
 				return CodeNode(r);
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
-				// double literal
+				// literal
 				index ++;
-				if (token.type == Token.Type.String){
-					token.token = token.token[1 .. token.token.length - 1]; // remove the quotes
-				}
 				try{
 					return CodeNode(LiteralNode([token]));
 				}catch (Exception e){
