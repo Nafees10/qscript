@@ -7,8 +7,7 @@ import qscript.compiler.misc;
 import std.conv : to;
 
 /// a node representing the script
-/// TODO make its visibility package only
-public struct ScriptNode{
+package struct ScriptNode{
 	/// list of functions defined in this script
 	private FunctionNode[] storedFunctions;
 	/// returns the array containing the functions

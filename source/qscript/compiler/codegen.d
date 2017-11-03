@@ -203,7 +203,7 @@ package struct CodeGen{
 		}
 		// pop the return, if result not required
 		if (callCount == 1){
-			byteCode.append("pop i1");
+			byteCode.append("\tpop i1");
 		}
 		callCount --;
 		string[] r = byteCode.toArray;

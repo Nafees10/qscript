@@ -288,8 +288,7 @@ unittest{
 /// `errors` is the array to which erors will be put
 /// 
 /// As a plus, it also checks if the brackets are in correct order (and properly closed)
-/// TODO make it's visibility package
-public TokenList toTokens(string[] script, ref CompileError[] errors){
+package TokenList toTokens(string[] script, ref CompileError[] errors){
 	compileErrors = new LinkedList!CompileError;
 	/// Returns true if a string has chars that only identifiers can have
 	TokenList tokens = separateTokens(script);
