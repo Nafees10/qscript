@@ -195,11 +195,22 @@ package struct CodeGen{
 			byteCode.append(generateByteCode(arg));
 			argCount ++;
 		}
-		// then append the instruction to execute this function
-		if (isScriptDefined(node.fName)){
-			byteCode.append("\texecFuncS s\""~node.fName~"\" i"~to!string(argCount));
+		// check if is a predefined-QScript-function
+		const string[string] predefinedFunctions = [
+			"setLength" : "setLen",
+			"getLength" : "getLen",
+			"array" 	: "makeArray"
+		];
+		if (node.fName in predefinedFunctions){
+			// then use the predefined function's instruction
+			byteCode.append(predefinedFunctions[node.fName]);
 		}else{
-			byteCode.append("\texecFuncE s\""~node.fName~"\" i"~to!string(argCount));
+			// then append the instruction to execute this function
+			if (isScriptDefined(node.fName)){
+				byteCode.append("\texecFuncS s\""~node.fName~"\" i"~to!string(argCount));
+			}else{
+				byteCode.append("\texecFuncE s\""~node.fName~"\" i"~to!string(argCount));
+			}
 		}
 		// pop the return, if result not required
 		if (callCount == 1){
@@ -500,13 +511,14 @@ AnotherFunctionName
 * not			- if last element pushed == 1(int), then pushes 0(int), else, pushes 1(int)
 * and			- if last 2 elements on stack (int) == 1, pushes 1, else pushes 0
 * or			- if either of last 2 elements on stack == 1 (int), pushes 1, else pushes 0
+* return 		- sets the last value pushed to stack as the return value, and breaks execution of the function
 
 #### Instructions for arrays
 * setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
 * getLen		- pops array from stack, pushes the length (integer) of the array
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
-* array			- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
+* makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 
 ---
 
