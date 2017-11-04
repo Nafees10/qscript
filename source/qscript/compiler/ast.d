@@ -276,6 +276,24 @@ package struct LiteralNode{
 	}
 }
 
+/// stores a call to the "array(...)" function
+package struct ArrayMakeNode{
+	/// stores the array's elements
+	private CodeNode[] storedElements;
+	/// returns the array containing list of elements
+	public @property ref CodeNode[] elements(){
+		return storedElements;
+	}
+	/// sets the array storing the array's elements
+	public @property ref CodeNode[] elements(CodeNode[] newArray){
+		return storedElements = newArray.dup;
+	}
+	/// constructor
+	this (CodeNode[] arrayElements){
+		storedElements = arrayElements.dup;
+	}
+}
+
 /// stores an operator with operands
 package struct OperatorNode{
 	/// stores the operator (like '+' ...)
