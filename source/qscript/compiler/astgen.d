@@ -11,12 +11,15 @@ import utils.lists;
 struct ASTGen{
 	/// constructor
 	/// 
-	/// `functionReturnDataTypes` in assoc_array containing data types of pre-defined (external) functions
-	/// `functionArgDataTypes` stores the data type of each argument for pre-defined (external) functions.
-	/// 	In case an arg can be any type, `DataType("void")` should be used
-	this (DataType[string] functionReturnDataTypes, DataType[][string] functionArgDataTypes){
-		functionReturnTypes = functionReturnDataTypes.dup;
-		functionArgTypes = functionArgDataTypes.dup;
+	/// `onGetReturnType` is a pointer to a function that will return the data type a function returns,
+	/// or throws Exception if that function doesnt exist. The function will receive name of function &
+	/// DataTypes of arguments it's being called with.
+	/// 
+	/// `onGetArgType` is a pointer to a function that will return the data type of arguments of a function,
+	/// or throws Exception if that function doesnt exist. The function will receive name of function
+	this (DataType function (string, DataType[]) onGetReturnTypeFunction, DataType[] function(string) onGetArgTypeFunction){
+		onGetFunctionArgType = onGetArgTypeFunction;
+		onGetFunctionReturnType = onGetReturnTypeFunction;
 		compileErrors = new LinkedList!CompileError;
 	}
 	/// destructor
@@ -64,8 +67,12 @@ struct ASTGen{
 		LinkedList!CompileError compileErrors;
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
+		/// called to get predefined function's return type
+		DataType function(string, DataType[]) onGetFunctionReturnType;
 		/// stores functions' argument types
 		DataType[][string] functionArgTypes;
+		/// called to get predefined function's arguments type
+		DataType[] function(string) onGetFunctionArgType;
 		struct{
 			/// stores data types for variable in currently-being-converted function
 			private DataType[string] varDataTypes;
@@ -164,20 +171,20 @@ struct ASTGen{
 			.destroy (argTypes);
 		}
 		/// returns return type of a function, if function doesnt exist, throws Exception
-		DataType getFunctionReturnType(string functionName){
+		DataType getFunctionReturnType(string functionName, DataType[] argTypes){
 			/// stores whether the all the tokens have been scanned for function return types
 			static bool scannedAllTokens = false;
-			// check if already known
-			if (functionName in functionReturnTypes){
-				// return this one
-				return functionReturnTypes[functionName];
-			}else if (!scannedAllTokens){
+			if (!scannedAllTokens){
 				// scan all the tokens for this function tokens
 				scanTokensForFunctionReturnArgTypes();
 				scannedAllTokens = true;
-				return getFunctionReturnType(functionName);
+				return getFunctionReturnType(functionName, argTypes);
 			}else{
-				throw new Exception("function "~functionName~" not defined");
+				if (onGetFunctionReturnType !is null){
+					return onGetFunctionReturnType(functionName, argTypes.dup);
+				}else{
+					throw new Exception("function '"~functionName~"' not defined");
+				}
 			}
 
 		}
@@ -185,7 +192,6 @@ struct ASTGen{
 		DataType[] getFunctionArgTypes(string functionName){
 			// stores whether all the tokens have been scanned for function's arg types
 			static bool scannedAllTokens = false;
-			// check if already known
 			if (functionName in functionArgTypes){
 				return functionArgTypes[functionName];
 			}else if (!scannedAllTokens){
@@ -194,7 +200,11 @@ struct ASTGen{
 				scannedAllTokens = true;
 				return getFunctionArgTypes(functionName);
 			}else{
-				throw new Exception("function "~functionName~" not defined");
+				if (onGetFunctionArgType !is null){
+					return onGetFunctionArgType(functionName);
+				}else{
+					throw new Exception("function "~functionName~" not defined");
+				}
 			}
 		}
 		/// matches arguments' types to see if they can be used for a function
@@ -400,17 +410,15 @@ struct ASTGen{
 					.destroy(args);
 				}
 				// match argument types
-				{
-					DataType[] argTypes;
-					argTypes.length = functionCallNode.arguments.length;
-					foreach(i, arg; functionCallNode.arguments){
-						argTypes[i] = arg.returnType;
-					}
-					matchFunctionArgTypes(argTypes, functionCallNode.fName);
+				DataType[] argTypes;
+				argTypes.length = functionCallNode.arguments.length;
+				foreach(i, arg; functionCallNode.arguments){
+					argTypes[i] = arg.returnType;
 				}
+				matchFunctionArgTypes(argTypes, functionCallNode.fName);
 				// then the return type
 				try{
-					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName);
+					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName, argTypes);
 				}catch (Exception e){
 					compileErrors.append(CompileError(index, e.msg));
 					.destroy(e);
