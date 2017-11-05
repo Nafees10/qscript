@@ -207,7 +207,7 @@ struct ASTGen{
 				acceptableTypes = getFunctionArgTypes(functionName);
 			}catch (Exception e){
 				compileErrors.append(CompileError(index, e.msg));
-				r = false;
+				return false;
 			}
 			if (argTypes.length != acceptableTypes.length){
 				compileErrors.append(CompileError(index, "arguments count doesnt match with definition"));
@@ -735,7 +735,6 @@ struct ASTGen{
 			}
 			return CodeNode();
 		}
-		
-		
+
 	}
 }
