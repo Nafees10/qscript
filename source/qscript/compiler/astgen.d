@@ -11,14 +11,15 @@ import utils.lists;
 struct ASTGen{
 	/// constructor
 	/// 
-	/// `onGetReturnType` is a pointer to a function that will return the data type a function returns,
+	/// `onGetReturnTypeFunction` is a pointer to a function that will return the data type a function returns,
 	/// or throws Exception if that function doesnt exist. The function will receive name of function &
 	/// DataTypes of arguments it's being called with.
 	/// 
-	/// `onGetArgType` is a pointer to a function that will return the data type of arguments of a function,
-	/// or throws Exception if that function doesnt exist. The function will receive name of function
-	this (DataType function (string, DataType[]) onGetReturnTypeFunction, DataType[] function(string) onGetArgTypeFunction){
-		onGetFunctionArgType = onGetArgTypeFunction;
+	/// `onArgsTypeOkFunction` is a pointer to a function that will return true if the argument types for a pre-defined function
+	/// are ok, else, false. It receives the functionName, and the argument types
+	this (DataType function (string, DataType[]) onGetReturnTypeFunction,
+		bool function(string, DataType[]) onArgsTypeOkFunction){
+		onArgsTypeOk = onArgsTypeOkFunction;
 		onGetFunctionReturnType = onGetReturnTypeFunction;
 		compileErrors = new LinkedList!CompileError;
 	}
@@ -38,6 +39,8 @@ struct ASTGen{
 		tokens = scriptTokens;
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
+		// scan for return types & arg types of script-defined functions
+		scanTokensForFunctionReturnArgTypes();
 		// go through the script, compile function nodes, link them to this node
 		index = 0;
 		for (uinteger lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
@@ -71,8 +74,8 @@ struct ASTGen{
 		DataType function(string, DataType[]) onGetFunctionReturnType;
 		/// stores functions' argument types
 		DataType[][string] functionArgTypes;
-		/// called to get predefined function's arguments type
-		DataType[] function(string) onGetFunctionArgType;
+		/// called to check pre-defined functions' argument types
+		bool function(string, DataType[]) onArgsTypeOk;
 		struct{
 			/// stores data types for variable in currently-being-converted function
 			private DataType[string] varDataTypes;
@@ -174,11 +177,8 @@ struct ASTGen{
 		DataType getFunctionReturnType(string functionName, DataType[] argTypes){
 			/// stores whether the all the tokens have been scanned for function return types
 			static bool scannedAllTokens = false;
-			if (!scannedAllTokens){
-				// scan all the tokens for this function tokens
-				scanTokensForFunctionReturnArgTypes();
-				scannedAllTokens = true;
-				return getFunctionReturnType(functionName, argTypes);
+			if (functionName in functionReturnTypes){
+				return functionReturnTypes[functionName];
 			}else{
 				if (onGetFunctionReturnType !is null){
 					return onGetFunctionReturnType(functionName, argTypes.dup);
@@ -186,58 +186,47 @@ struct ASTGen{
 					throw new Exception("function '"~functionName~"' not defined");
 				}
 			}
-
-		}
-		/// returns data types of arguments for a function, if function doesnt exist, throws Exception
-		DataType[] getFunctionArgTypes(string functionName){
-			// stores whether all the tokens have been scanned for function's arg types
-			static bool scannedAllTokens = false;
-			if (functionName in functionArgTypes){
-				return functionArgTypes[functionName];
-			}else if (!scannedAllTokens){
-				// scan all tokens
-				scanTokensForFunctionReturnArgTypes();
-				scannedAllTokens = true;
-				return getFunctionArgTypes(functionName);
-			}else{
-				if (onGetFunctionArgType !is null){
-					return onGetFunctionArgType(functionName);
-				}else{
-					throw new Exception("function "~functionName~" not defined");
-				}
-			}
 		}
 		/// matches arguments' types to see if they can be used for a function
 		/// 
 		/// in case they dont match, appends error to compileErrors
-		bool matchFunctionArgTypes(DataType[] argTypes, string functionName){
-			DataType[] acceptableTypes;
+		bool matchFunctionArgTypes(string functionName, DataType[] argTypes){
 			bool r = true;
-			try{
-				acceptableTypes = getFunctionArgTypes(functionName);
-			}catch (Exception e){
-				compileErrors.append(CompileError(index, e.msg));
-				return false;
-			}
-			if (argTypes.length != acceptableTypes.length){
-				compileErrors.append(CompileError(index, "arguments count doesnt match with definition"));
-				r = false;
-			}else{
-				for (uinteger i = 0; i < argTypes.length; i ++){
-					if (acceptableTypes[i].type == DataType.Type.Void){
-						// skip checks
-						continue;
-					}else{
-						if (argTypes[i].type != acceptableTypes[i].type){
-							compileErrors.append(CompileError(index, "arguments type do not match with definition"));
+			// check if is predefined
+			if (functionName in functionArgTypes){
+				DataType[] acceptableTypes = functionArgTypes[functionName];
+				if (argTypes.length != acceptableTypes.length){
+					compileErrors.append(
+						CompileError(index, "function '"~functionName~"' called with invalid number of arguments"));
+					r = false;
+				}else{
+					for (uinteger i = 0; i < argTypes.length; i ++){
+						if (acceptableTypes[i].type == DataType.Type.Void){
+							// skip checks
+							continue;
+						}else{
+							if (argTypes[i].type != acceptableTypes[i].type){
+								compileErrors.append(
+									CompileError(index, "function '"~functionName~"' called with invalid arguments"));
+								r = false;
+							}
+						}
+						// check the array dimension
+						if (acceptableTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
+							compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
 							r = false;
 						}
 					}
-					// check the array dimension
-					if (acceptableTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
-						compileErrors.append(CompileError(index, "arguments' array's dimensions do not match with definition"));
-						r = false;
+				}
+			}else{
+				// use onArgsTypeOk
+				if (onArgsTypeOk !is null){
+					if (!onArgsTypeOk(functionName, argTypes)){
+						compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
+						return false;
 					}
+				}else{
+					compileErrors.append(CompileError(index, "function '"~functionName~"' not defined"));
 				}
 			}
 			return r;
@@ -415,7 +404,7 @@ struct ASTGen{
 				foreach(i, arg; functionCallNode.arguments){
 					argTypes[i] = arg.returnType;
 				}
-				matchFunctionArgTypes(argTypes, functionCallNode.fName);
+				matchFunctionArgTypes(functionCallNode.fName, argTypes);
 				// then the return type
 				try{
 					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName, argTypes);
