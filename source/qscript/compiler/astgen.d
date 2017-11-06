@@ -17,8 +17,8 @@ struct ASTGen{
 	/// 
 	/// `onArgsTypeOkFunction` is a pointer to a function that will return true if the argument types for a pre-defined function
 	/// are ok, else, false. It receives the functionName, and the argument types
-	this (DataType function (string, DataType[]) onGetReturnTypeFunction,
-		bool function(string, DataType[]) onArgsTypeOkFunction){
+	this (DataType delegate (string, DataType[]) onGetReturnTypeFunction,
+		bool delegate(string, DataType[]) onArgsTypeOkFunction){
 		onArgsTypeOk = onArgsTypeOkFunction;
 		onGetFunctionReturnType = onGetReturnTypeFunction;
 		compileErrors = new LinkedList!CompileError;
@@ -71,11 +71,11 @@ struct ASTGen{
 		/// stores functions' return types
 		DataType[string] functionReturnTypes;
 		/// called to get predefined function's return type
-		DataType function(string, DataType[]) onGetFunctionReturnType;
+		DataType delegate(string, DataType[]) onGetFunctionReturnType;
 		/// stores functions' argument types
 		DataType[][string] functionArgTypes;
 		/// called to check pre-defined functions' argument types
-		bool function(string, DataType[]) onArgsTypeOk;
+		bool delegate(string, DataType[]) onArgsTypeOk;
 		struct{
 			/// stores data types for variable in currently-being-converted function
 			private DataType[string] varDataTypes;
@@ -200,22 +200,11 @@ struct ASTGen{
 						CompileError(index, "function '"~functionName~"' called with invalid number of arguments"));
 					r = false;
 				}else{
-					for (uinteger i = 0; i < argTypes.length; i ++){
-						if (acceptableTypes[i].type == DataType.Type.Void){
-							// skip checks
-							continue;
-						}else{
-							if (argTypes[i].type != acceptableTypes[i].type){
-								compileErrors.append(
-									CompileError(index, "function '"~functionName~"' called with invalid arguments"));
-								r = false;
-							}
-						}
-						// check the array dimension
-						if (acceptableTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
-							compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
-							r = false;
-						}
+					if (!matchArguments(acceptableTypes.dup, argTypes.dup)){
+						compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
+						return false;
+					}else{
+						return true;
 					}
 				}
 			}else{

@@ -333,6 +333,32 @@ string encodeString(string s){
 }
 
 
+/// matches argument types with defined argument types. Used by ASTGen and compiler.d.
+/// returns true if match successful, else, false
+bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
+	if (argTypes.length != definedTypes.length){
+		return false;
+	}else{
+		for (uinteger i = 0; i < argTypes.length; i ++){
+			if (definedTypes[i].type == DataType.Type.Void){
+				// skip checks
+				continue;
+			}else{
+				if (argTypes[i].type != definedTypes[i].type){
+					return false;
+				}
+			}
+			// check the array dimension
+			if (definedTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
+
+
 /// converts from Token[] to QData
 /// 
 /// `tokens` is the Token[] containing the data
