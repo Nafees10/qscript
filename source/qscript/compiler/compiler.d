@@ -51,6 +51,14 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 		}else if (name == "getLength"){
 			// int
 			return DataType(DataType.Type.Integer);
+		}else if (name == "array"){
+			// return array of the type received
+			if (argTypes.length < 1){
+				throw new Exception ("cannot make an empty array using 'array()', use [] instead");
+			}
+			DataType r = argTypes[0];
+			r.arrayNestCount ++;
+			return r;
 		}else{
 			// search in `predefinedFunctions`
 			foreach (currentFunction; predefinedFunctions){
@@ -79,6 +87,18 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			}else{
 				return false;
 			}
+		}else if (name == "array"){
+			// must be at least one arg
+			if (argTypes.length < 1){
+				return false;
+			}
+			// and all args must be of same type
+			foreach (type; argTypes){
+				if (type != argTypes[0]){
+					return false;
+				}
+			}
+			return true;
 		}else{
 			// now check the other functions
 			foreach (currentFunction; predefinedFunctions){
