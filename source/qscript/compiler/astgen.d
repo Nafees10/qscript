@@ -197,11 +197,11 @@ struct ASTGen{
 				DataType[] acceptableTypes = functionArgTypes[functionName];
 				if (argTypes.length != acceptableTypes.length){
 					compileErrors.append(
-						CompileError(index, "function '"~functionName~"' called with invalid number of arguments"));
+						CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid number of arguments"));
 					r = false;
 				}else{
 					if (!matchArguments(acceptableTypes.dup, argTypes.dup)){
-						compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid arguments"));
 						return false;
 					}else{
 						return true;
@@ -211,11 +211,11 @@ struct ASTGen{
 				// use onArgsTypeOk
 				if (onArgsTypeOk !is null){
 					if (!onArgsTypeOk(functionName, argTypes)){
-						compileErrors.append(CompileError(index, "function '"~functionName~"' called with invalid arguments"));
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid arguments"));
 						return false;
 					}
 				}else{
-					compileErrors.append(CompileError(index, "function '"~functionName~"' not defined"));
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' not defined"));
 				}
 			}
 			return r;
@@ -406,7 +406,7 @@ struct ASTGen{
 				try{
 					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName, argTypes);
 				}catch (Exception e){
-					compileErrors.append(CompileError(index, e.msg));
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy(e);
 				}
 				// move index to bracketend or semicolon
@@ -490,7 +490,7 @@ struct ASTGen{
 				try{
 					var.varType = getVarType(var.varName);
 				}catch (Exception e){
-					compileErrors.append(CompileError(index, e.msg));
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy(e);
 				}
 				index ++;
