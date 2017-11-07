@@ -282,6 +282,11 @@ struct ASTGen{
 								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 								.destroy (e);
 							}
+							// the type must not be void, script-defined functions must all be static typed
+							if (arg.argType.type == DataType.Type.Void){
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"script-defined functions can not receive arguments of type void"));
+							}
 							// now the arg_name
 							arg.argName = tokens.tokens[index].token;
 							index++;
