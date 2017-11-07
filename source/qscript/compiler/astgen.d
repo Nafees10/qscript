@@ -508,6 +508,14 @@ struct ASTGen{
 					var.indexes = indexes.toArray;
 					.destroy(indexes);
 				}
+				// make sure the indexes are possible
+				if (var.indexes.length > var.varType.arrayNestCount){
+					compileErrors.append(CompileError(tokens.getTokenLine(index),
+							"cannot read variable as a "~to!string(var.indexes.length)~" dimensional array"));
+				}else{
+					// fix the var.type.arrayNestCount, according to the indexes read
+					var.varType.arrayNestCount -= var.indexes.length;
+				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
 				index ++;
