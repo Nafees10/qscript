@@ -282,14 +282,9 @@ package struct OperatorNode{
 	public string operator;
 	/// returns the result data type
 	/// 
-	/// throws Exception if types of 2 operands do not match
+	/// the data type is determined by the data type of the first operand
 	@property DataType returnType(){
-		DataType r = operands[0].returnType;
-		if (r == operands[1].returnType){
-			return r;
-		}else{
-			throw new Exception("data types of two operands do not match");
-		}
+		return operands[0].returnType;
 	}
 	/// operands. [0] = left, [1] = right
 	private CodeNode[] storedOperands;
