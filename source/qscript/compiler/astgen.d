@@ -286,6 +286,9 @@ struct ASTGen{
 							arg.argName = tokens.tokens[index].token;
 							index++;
 							commaExpected = true;
+							// add it to list
+							argList.append (arg);
+							addVarType(arg.argName, arg.argType);
 						}
 					}
 					// put args in list
