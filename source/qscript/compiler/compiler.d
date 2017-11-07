@@ -35,10 +35,13 @@ public struct Function{
 /// Stores compilation error
 public alias CompileError = qscript.compiler.misc.CompileError;
 
+/// stores data type
+public alias DataType = qscript.compiler.misc.DataType;
+
 /// compiles a script from string[] to bytecode (in string[]).
 /// 
 /// 
-public string[] compileQScriptToByteCode(string[] script, Function[] predefinedFunctions, CompileError[] errors){
+public string[] compileQScriptToByteCode(string[] script, Function[] predefinedFunctions, ref CompileError[] errors){
 	/// called by ASTGen to get return type of pre-defined functions
 	DataType onGetReturnType(string name, DataType[] argTypes){
 		// some hardcoded stuff
