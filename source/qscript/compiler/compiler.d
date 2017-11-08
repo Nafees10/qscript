@@ -134,3 +134,90 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 	}
 	return code;
 }
+
+import utils.lists;
+
+import qscript.qscript : QData;
+
+/// converts bytecode into an array of functions-pointer. Can be used to convert to other types as well
+T[][string] convertByteCodeInstructions(T)(string[] bCode, T[string] instructions, ref string[] errors){
+	/// converts byte code into separate byte code for separate functions
+	static string[][string] separateFunctions(string[] byteCode){
+		string name = null; // name of function being read
+		string[][string] r;
+		for (uinteger i = 0, readFrom, lastInd = byteCode.length-1; i < byteCode.length; i ++){
+			if (name == null){
+				// function name expected
+				if (byteCode[i].length > 0 &&  byteCode[i][0] != '\t'){
+					name = byteCode[i];
+					readFrom = i+1;
+					continue;
+				}else{
+					throw new Exception("syntax error in byte code");
+				}
+			}else{
+				if (byteCode[i].length > 0){
+					// check if this function is over
+					if (byteCode[i][0] != '\t'){
+						// save last function
+						r[name] = bCode[readFrom .. i].dup;
+						name = byteCode[i];
+						readFrom = i+1;
+						continue;
+					}
+				}else{
+					throw new Exception ("syntax error in byte code");
+				}
+				// or if it's the last line, then too save the byte code
+				if (i == lastInd){
+					r[name] = byteCode[readFrom .. i+1].dup;
+				}
+			}
+		}
+		return r;
+	}
+
+	/// returns arguments of instruction, in string (as it-is), or in QData
+	auto getInstructionArgs(bool inQData=true)(string instruction){
+		if (instruction.length == 0){
+			throw new Exception ("instruction cannot be empty string");
+		}
+		if (instruction[0] != '\t'){
+			throw new Exception ("invalid instruction, not begining with a tab");
+		}
+		// first, skip the instruction
+		uinteger i;
+		for (i = 1; i < instruction.length; i ++){
+			if (instruction[i] == ' '){
+				break;
+			}
+		}
+		if (i >= instruction.length){
+			return []; // no args
+		}
+		// else, there are args
+		string argsString = instruction[i+1 .. instruction.length];
+		LinkedList!string argsList = new LinkedList!string;
+		i = 0;
+		for (uinteger lastInd = argsString.length-1, readFrom = 0; i < argsString.length; i++){
+			if (argsString[i] == ' '){
+				argsList.append (argsString[readFrom .. i]);
+				readFrom = i + 1;
+				continue;
+			}else if (i == lastInd){
+				argsList.append (argsString[readFrom .. i+1]);
+				break;
+			}
+		}
+		string[] args = argsList.toArray;
+		.destroy (argsList);
+		// convert to QData, if have to
+		static if (inQData){
+			QData[] r;
+			r.length = args.length;
+			foreach (i, arg; args){
+				r[i] = 
+			}
+		}
+	}
+}
