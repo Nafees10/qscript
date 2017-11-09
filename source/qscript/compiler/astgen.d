@@ -7,6 +7,8 @@ import qscript.compiler.ast;
 import utils.misc;
 import utils.lists;
 
+import std.conv : to;
+
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
 struct ASTGen{
 	/// constructor
