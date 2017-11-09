@@ -219,4 +219,45 @@ T[][string] convertByteCodeInstructions(T)(string[] bCode, T[string] instruction
 		}
 		return r;
 	}
+	/// adds a jump index
+	struct{
+		/// stores jump indexes, for current function
+		private uinteger[string] jumpIndex;
+		/// adds a new jump index, if the name is already taken, it's over-written
+		public void addJumpIndex(string jumpName, uinteger index){
+			jumpIndex[jumpName] = index;
+		}
+		/// returns a index for a jump name, throws Exception if doesnt exist
+		public uinteger getJumpIndex(string jumpName){
+			if (jumpName in jumpIndex){
+				return jumpIndex[jumpName];
+			}else{
+				throw new Exception("jump '"~jumpName~"' not found");
+			}
+		}
+		/// removes all jump indexes/names
+		public void resetJumps(){
+			foreach (key; jumpIndex.keys){
+				jumpIndex.remove (key);
+			}
+		}
+		/// adds jumps from byte code, throws Exception on any error,
+		/// the byte code must be of a single function, without the fnuctionName at start
+		void addJumpIndex(string[] byteCode){
+			foreach (i, line; byteCode){
+				if (line.length > 0 && line[line.length-1] == ':'){
+					// is a jump
+					// read the name
+					uinteger readFrom;
+					for (readFrom = 0; readFrom < line.length; readFrom ++){
+						if (line[readFrom] != ' ' && line[readFrom] != '\t'){
+							break;
+						}
+					}
+					string jumpName = line[readFrom .. line.length - 1];
+					jumpIndex[jumpName] = i;
+				}
+			}
+		}
+	}
 }
