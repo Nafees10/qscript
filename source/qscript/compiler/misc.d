@@ -303,6 +303,7 @@ string decodeString(string s){
 			}else{
 				throw new Exception("\\"~nextChar~" is not an available character");
 			}
+			i ++;
 			continue;
 		}
 		r ~= s[i];
@@ -430,19 +431,26 @@ package QData stringToQData(string literal){
 			if (literal[i] == '['){
 				// skip to end
 				i = literal.bracketPos(i);
-				continue;
 			}else if (literal[i] == '"'){
 				// skip the string
 				i = literal.strEnd(i);
-				continue;
 			}else if (literal[i] == ',' || i == brackEnd){
 				// read the element
 				if (readFrom < i){
 					elements.append (stringToQData(literal[readFrom .. i]));
+					readFrom = i+1;
+				}
+			}else if (literal[i] == ' ' || literal[i] == '\t'){
+				// skip this char, if at the start/end of an element, otherwise, this aint allowed
+				if (readFrom == i){
+					readFrom ++;
+				}else{
+					throw new Exception("found whitespace at unexpected position");
 				}
 			}
 		}
 		// put em all in one QData
+
 		QData r = QData(elements.toArray);
 		.destroy (elements);
 		return r;
@@ -471,6 +479,10 @@ package QData stringToQData(string literal){
 			throw new Exception("invalid data type in byte code literal");
 		}
 	}
+}
+///
+unittest{
+	assert ("i1".stringToQData == QData(integer(1)));
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
