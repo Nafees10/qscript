@@ -409,10 +409,69 @@ unittest{
 }
 
 /// converts a literal data in bytecode format into QData
-/*package QData stringToQData(string literal){
+/// 
+/// throws Exception on error
+package QData stringToQData(string literal){
+	// make sure it's at least 2 in length
+	if (literal.length < 2){
+		throw new Exception("invalid byte code literal");
+	}
 	// check if it's an array
-	// TODO finish this
-}*/
+	if (literal[0] == '['){
+		// get bracket end pos
+		uinteger brackEnd = literal.bracketPos(0);
+		// make sure endIndex is lastIndex
+		if (brackEnd != literal.length-1){
+			throw new Exception("invalid bracket-closing position in array");
+		}
+		LinkedList!QData elements = new LinkedList!QData;
+		// use recursion to make that array
+		for (uinteger i = 1, readFrom = 1; i <= brackEnd; i ++){
+			if (literal[i] == '['){
+				// skip to end
+				i = literal.bracketPos(i);
+				continue;
+			}else if (literal[i] == '"'){
+				// skip the string
+				i = literal.strEnd(i);
+				continue;
+			}else if (literal[i] == ',' || i == brackEnd){
+				// read the element
+				if (readFrom < i){
+					elements.append (stringToQData(literal[readFrom .. i]));
+				}
+			}
+		}
+		// put em all in one QData
+		QData r = QData(elements.toArray);
+		.destroy (elements);
+		return r;
+	}else{
+		// must be a string, double, or int
+		if (literal[0] == 's'){
+			// string
+			if (literal.length < 3){
+				throw new Exception("invalid string in byte code literal");
+			}
+			if (literal[1] != '"'){
+				throw new Exception("not a valid string");
+			}
+			// make sure strEnd == lastInd
+			if (literal.strEnd(1) != literal.length -1){
+				throw new Exception("quotation mark ended at wrong position in string");
+			}
+			// now just convert it
+			return QData(decodeString(literal[2 .. literal.length - 1]));
+		}else if (literal[0] == 'd'){
+			// double
+			return QData(to!double(literal[1 .. literal.length]));
+		}else if (literal[0] == 'i'){
+			return QData(to!integer(literal[1 .. literal.length]));
+		}else{
+			throw new Exception("invalid data type in byte code literal");
+		}
+	}
+}
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
@@ -599,6 +658,7 @@ package uinteger bracketPos(bool forward=true)(string s, uinteger index){
 			break;
 		}
 	}
+	.destroy (brackets);
 	return i;
 }
 ///
