@@ -408,6 +408,12 @@ unittest{
 	assert (TokensToQData(tokens).arrayVal == expectedData.arrayVal);
 }
 
+/// converts a literal data in bytecode format into QData
+/*package QData stringToQData(string literal){
+	// check if it's an array
+	// TODO finish this
+}*/
+
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
 	/// Specifies type of token
@@ -575,15 +581,21 @@ unittest{
 package uinteger bracketPos(bool forward=true)(string s, uinteger index){
 	char[] closingBrackets = [']','}',')'];
 	char[] openingBrackets = ['[','{','('];
-	uinteger count; // stores how many closing/opening brackets before we reach the desired one
+	Stack!char brackets = new Stack!char;
 	uinteger i = index;
 	for (uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
 		if ((forward ? openingBrackets : closingBrackets).hasElement(s[i])){
-			count ++;
+			// push it to brackets
+			brackets.push(s[i]);
 		}else if ((forward ? closingBrackets : openingBrackets).hasElement(s[i])){
-			count --;
+			// make sure the correct bracket was closed
+			char opposite = brackets.pop;
+			if ((forward ? openingBrackets : closingBrackets).indexOf(s[i]) !=
+				(forward ? closingBrackets : openingBrackets).indexOf(opposite)){
+				throw new Exception("incorect brackets order - first opened must be last closed");
+			}
 		}
-		if (count == 0){
+		if (brackets.count == 0){
 			break;
 		}
 	}
