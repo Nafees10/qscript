@@ -564,3 +564,33 @@ unittest{
 	assert(tokens.bracketPos!true(3) == 4);
 	assert(tokens.bracketPos!false(4) == 3);
 }
+
+/// Returns index of closing/openinig bracket of the provided bracket  
+/// 
+/// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
+/// `s` is the string to search in
+/// `index` is the index of the opposite bracket
+/// 
+/// throws Exception if the bracket is not found
+package uinteger bracketPos(bool forward=true)(string s, uinteger index){
+	char[] closingBrackets = [']','}',')'];
+	char[] openingBrackets = ['[','{','('];
+	uinteger count; // stores how many closing/opening brackets before we reach the desired one
+	uinteger i = index;
+	for (uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
+		if ((forward ? openingBrackets : closingBrackets).hasElement(s[i])){
+			count ++;
+		}else if ((forward ? closingBrackets : openingBrackets).hasElement(s[i])){
+			count --;
+		}
+		if (count == 0){
+			break;
+		}
+	}
+	return i;
+}
+///
+unittest{
+	assert ("hello(asdf[asdf])".bracketPos(5) == 16);
+	assert ("hello(asdf[asdf])".bracketPos(10) == 15);
+}
