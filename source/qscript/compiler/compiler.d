@@ -178,7 +178,7 @@ T[][string] convertByteCodeInstructions(T)(string[] bCode, T[string] instruction
 	}
 
 	/// returns arguments of instruction, in string (as it-is), or in QData
-	auto getInstructionArgs(bool inQData=true)(string instruction){
+	static auto getInstructionArgs(bool inQData=true)(string instruction){
 		if (instruction.length == 0){
 			throw new Exception ("instruction cannot be empty string");
 		}
@@ -211,13 +211,12 @@ T[][string] convertByteCodeInstructions(T)(string[] bCode, T[string] instruction
 		}
 		string[] args = argsList.toArray;
 		.destroy (argsList);
-		// convert to QData, if have to
-		static if (inQData){
-			QData[] r;
-			r.length = args.length;
-			foreach (i, arg; args){
-				r[i] = 
-			}
+		// convert to QData
+		QData[] r;
+		r.length = args.length;
+		foreach (i, arg; args){
+			r[i] = stringToQData(arg);
 		}
+		return r;
 	}
 }
