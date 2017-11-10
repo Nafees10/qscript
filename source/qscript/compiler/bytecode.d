@@ -11,17 +11,23 @@ import std.conv : to;
 /// provides functions for dealing with byte code generate using qscript.compiler.codegen
 public struct ByteCodeMan{
 	/// used to store byte code's instruction in a more readable format
-	private struct Instruction{
+	public struct Instruction{
 		string name;
 		string[] args;
 	}
 	/// used to store byte code's function in a more readable format
-	private struct Function{
+	public struct Function{
 		string name;
 		Instruction[] instructions;
 	}
+	/// used to store a function-pointers for instructions in byte code, along with arguments for each of them
+	public struct ByteCodeFunction(T){
+		string name; /// the name of the function
+		T[] instructions; /// the function-pointers
+		QData[][] args; /// the arguments for each instruction
+	}
 	/// reads byte code from string[] into Function[] structs
-	private static Function[] readByteCode (string[] byteCode){
+	public static Function[] readByteCode (string[] byteCode){
 		LinkedList!Instruction instructions = new LinkedList!Instruction;
 		LinkedList!Function functions = new LinkedList!Function;
 		string fName = null;
@@ -58,6 +64,74 @@ public struct ByteCodeMan{
 		}
 		.destroy(instructions);
 		Function[] r = functions.toArray;
+		.destroy(functions);
+		return r;
+	}
+	/// converts byte code into array of ByteCodeFunction
+	public static ByteCodeFunction!T[] toFunctionPtr(T)(string byteCode, T[string] instructionsPtr){
+		/// searches for jump positions, returns assoc_array containing their indexes
+		static uinteger[string] searchJumpPos(Instruction[] instructions){
+			uinteger[string] r;
+			foreach (inst; instructions){
+				if (inst.args.length == 0 && inst.name[inst.name.length-1] == ':'){
+					// make sure there's actually a name there, not just the colon
+					if (inst.name.length <= 1){
+						throw new Exception
+							("line#"~to!string(i)~": jump position has no name");
+					}
+					r[inst.name[0 .. inst.name.length-1].dup] = instructions.count;
+					continue;
+				}
+			}
+			return r;
+		}
+		/// stores jump indexes
+		uinteger[string] jumpIndexes;
+		// first, convert it all to Function[]
+		Function[] functionsByteCode = readByteCode(byteCode);
+		/// makes the array to return
+		auto functions = new LinkedList!(ByteCodeFunction!T);
+		/// new instructions are appended to this
+		auto instructions = new LinkedList!T;
+		/// new instructions' args are appended to this
+		auto instructionArgs = new LinkedList!(QData[]);
+		// do the magic
+		foreach (currentFunction; functionsByteCode){
+			// get the jump positions
+			jumpIndexes = searchJumpPos(currentFunction.instructions);
+			// convert all the instructions
+			foreach (i, inst; currentFunction.instructions){
+				// check if it's a jump index
+				if (inst.name == "jump"){
+					// it's a jump 
+					// the only arg is typeLess, and in string format, is name of the jumpIndex
+					if (inst.args.length != 1){
+						throw new Exception
+							("line#"~to!string(i)~" function: "~currentFunction.name~": invalid arguments for jump instruction");
+					}
+					if (inst.args[0] !in jumpIndexes){
+						throw new Exception
+							("line#"~to!string(i)~" function: "~currentFunction.name~": invalid jump position");
+					}
+					inst.args[0] = "i"~to!string(jumpIndexes[inst.args[0]]);
+				}
+				// finally convert the instruction
+				if (inst.name in instructionsPtr){
+					instructions.append (instructionsPtr[inst.name]);
+					instructionArgs.append (stringToQData(inst.args));
+				}
+			}
+			// put it all in a ByteCodeFunction
+			functions.append(ByteCodeFunction(
+					currentFunction.name, // name
+					instructions.toArray, // instructions
+					instructionArgs.toArray // args
+					));
+			// clear stuff
+			instructions.clear;
+			instructionArgs.clear;
+		}
+		ByteCodeFunction!T r = functions.toArray;
 		.destroy(functions);
 		return r;
 	}
