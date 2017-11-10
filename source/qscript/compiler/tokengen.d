@@ -4,9 +4,6 @@ import utils.misc;
 import utils.lists;
 import std.conv:to;
 import qscript.compiler.misc;
-debug{
-	import std.stdio;
-}
 
 /// stores errors for tokengen
 private LinkedList!CompileError compileErrors;
