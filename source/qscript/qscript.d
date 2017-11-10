@@ -2,7 +2,7 @@ module qscript.qscript;
 
 import utils.misc;
 import utils.lists;
-//import qscript.compiler;
+import qscript.compiler.compiler;
 import std.stdio;
 import std.conv:to;
 
@@ -16,7 +16,7 @@ public union QData{
 	this (T)(T data){
 		static if (is (T == string)){
 			strVal = data;
-		}else static if (is (T == integer)){
+		}else static if (is (T == integer) || is (T == int)){
 			intVal = data;
 		}else static if (is (T == double)){
 			doubleVal = data;
@@ -27,6 +27,15 @@ public union QData{
 		}
 	}
 }
+
+/// To store information about a pre-defined function, for use at compile-time
+alias Function = qscript.compiler.compiler.Function;
+
+/// used to store data types for data at compile time
+alias DataType = qscript.compiler.misc.DataType;
+
+/// Used by compiler's functions to return error
+alias CompileError = qscript.compiler.misc.CompileError;
 
 public abstract class QScript{
 private:
@@ -85,7 +94,7 @@ private:
 				));
 	}
 	/// divides 2 doubles
-	void divdeDouble(){
+	void divideDouble(){
 		QData[] args = currentCall.stack.pop(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal / args[1].doubleVal
@@ -338,8 +347,9 @@ private:
 	/// executes a script-defined function, return is pushed to stack
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
-	void execFuncS(QData[] args){
-		QData[] fArgs = currentCall.stack.pop(true)(args[1].intVal);
+	void execFuncS(){
+		QData[] args = currentCall.readInstructionArgs();
+		QData[] fArgs = currentCall.stack.pop!(true)(args[1].intVal);
 		string fName = args[0].strVal;
 		currentCall.stack.push(executeScriptFunction(fName, fArgs));
 	}
@@ -347,12 +357,13 @@ private:
 	/// executes an external function, return is pushed to stack
 	/// 
 	/// first arg is function name, second arg is number of args to pop for the function
-	void ExecFuncE(QData[] args){
-		QData[] fArgs = currentCall.stack.pop(true)(args[1].intVal);
+	void execFuncE(){
+		QData[] args = currentCall.readInstructionArgs();
+		QData[] fArgs = currentCall.stack.pop!(true)(args[1].intVal);
 		string fName = args[0].strVal;
 		/// check if the function is defined in script
-		if (fName in functionPointers){
-			currentCall.stack.push(functionPointers[fName](args));
+		if (fName in extFunctionPointers){
+			currentCall.stack.push(extFunctionPointers[fName](fArgs));
 		}else{
 			if (!onUndefinedFunctionCall(fName)){
 				// skip to end
@@ -367,10 +378,12 @@ private:
 	FunctionCallData currentCall; /// fCall data for currently being executed function
 
 
-	/// contains a list of all functions available in script, with their pointer
-	QData delegate(QData[])[string] functionPointers;
+	/// contains a list of all external-functions available in script, with their pointer
+	QData delegate(QData[])[string] extFunctionPointers;
+	/// contains a list of all external-functions with their return types and argument types
+	Function[] extFunctionTypes;
 	/// stores compiled byte-code for each script-defined function, where index is the function name
-	void delegate(QData[])[][string] scriptInstructions;
+	void delegate()[][string] scriptInstructions;
 	/// stores arguments for the compiled byte-code for each fuction
 	QData[][][string] scriptInstructionsArgs;
 
@@ -385,9 +398,10 @@ protected:
 	/// makes a function with name `fName` available for calling through script
 	/// 
 	/// returns true if it was added, else, false (could be because fName is already used?)
-	bool addFunction(string fName, QData delegate(QData[]) fPtr){
-		if (fName !in functionPointers){
-			functionPointers[fName] = fPtr;
+	bool addFunction(Function f, QData delegate(QData[]) fPtr){
+		if (f.name !in extFunctionPointers){
+			extFunctionPointers[f.name] = fPtr;
+			extFunctionTypes ~= f;
 			return true;
 		}
 		return false;
@@ -402,7 +416,7 @@ package:
 		
 		string fName; /// name of this function
 		uinteger instructionIndex; /// index of the current instruction being executed
-		void delegate(QData[])[] instructions; /// the instructions that make this function
+		void delegate()[] instructions; /// the instructions that make this function
 		QData[][] instructionArgs;
 
 		/// postblit
@@ -429,6 +443,14 @@ package:
 	}
 
 public:
+	/// constructor
+	this (){
+		callStack = new Stack!FunctionCallData;
+	}
+	/// destructor
+	~this (){
+		.destroy (callStack);
+	}
 	/// struct to store a runtime error
 	struct RuntimeError{
 		string functionName; /// the script-defined function in which the error occurred
@@ -444,15 +466,95 @@ public:
 	/// alias to compiler.misc.CompileError
 	alias CompileError = qscript.compiler.misc.CompileError;
 
-	/// constructor
-	this(){
-
+	/// compiles and loads a script for execution. Returns errors if any, else, returns empty array
+	CompileError[] loadScript(string[] script){
+		// compile to byte code
+		CompileError[] errors;
+		string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
+		if (errors.length > 0){
+			return errors;
+		}
+		string sError;
+		if (!loadByteCode(byteCode, sError)){
+			return [CompileError(0, sError)];
+		}
+		return [];
 	}
 
-	/// loads, compiles, and optimizes a script. Returns errors in any, else, returns empty array
-	CompileError[] loadScript(string[] script){
-		// TODO, after writing toByteCode, write this
-		return [];
+	/// loads a byte code for execution. Returns true if no errors occured,
+	/// else, writes error to `ref string error`, and returns false.
+	bool loadByteCode(string[] byteCode, ref string error){
+		import qscript.compiler.bytecode;
+		ByteCode.ByteCodeFunction!(void delegate())[] functions;
+		try{
+			functions = ByteCode.toFunctionPtr!(void delegate())(byteCode,[
+					// operators
+					"addInt" 			: &addInt,
+					"addDouble" 		: &addDouble,
+					"subtractInt"		: &subtractInt,
+					"subtractDouble"	: &subtractDouble,
+					"multiplyInt"		: &multiplyInt,
+					"multiplyDouble"	: &multiplyDouble,
+					"divideInt"			: &divideInt,
+					"divideDouble"		: &divideDouble,
+					"modInt"			: &modInt,
+					"modDouble"			: &modDouble,
+					"concatArray"		: &concatArray,
+					"concatString"		: &concatString,
+					// bool operators
+					"isSameInt"			: &isSameInt,
+					"isSameDouble"		: &isSameDouble,
+					"isSameString"		: &isSameString,
+					"isLesserInt"		: &isLesserInt,
+					"isLesserDouble"	: &isLesserDouble,
+					"isGreaterInt"		: &isGreaterInt,
+					"isGreaterDouble"	: &isGreaterDouble,
+					"not"				: &not,
+					"and"				: &and,
+					"or"				: &or,
+					// misc. instructions
+					"push"				: &push,
+					"clear"				: &clear,
+					"pop"				: &pop,
+					"jump"				: &jump,
+					"skipTrue"			: &skipTrue,
+					"return"			: &returnInstruction,
+					// arrays stuff
+					"setLen"			: &setLen,
+					"getLen"			: &getLen,
+					"readElement"		: &readElement,
+					"modifyArray"		: &modifyArray,
+					"makeArray"			: &makeArray,
+					// strings
+					/*"setLenString"	: &setLenString,
+					"getLenString"		: &getLenString,
+					"readChar"			: &readChar,
+					"modifyString"		: &modifyString,*/
+					// executing functions
+					"execFuncS"			: &execFuncS,
+					"execFuncE"			: &execFuncE,
+					// vars
+					"varCount"			: &varCount,
+					"getVar"			: &getVar,
+					"setVar"			: &setVar
+					
+				]);
+		}catch (Exception e){
+			error = e.msg;
+			.destroy(e);
+			return false;
+		}
+		// now put functions in the arrays
+		foreach (currentFunction; functions){
+			scriptInstructions[currentFunction.name] = currentFunction.instructions.dup;
+			scriptInstructionsArgs[currentFunction.name] = currentFunction.args.dup;
+		}
+		// done!
+		debug{
+			// TODO remove this debug
+			arrayToFile("/home/nafees/Desktop/q.qcode",byteCode);
+		}
+		return true;
 	}
 
 	/// executes a script-defined function, with the provided arguments, and returns the result
@@ -470,8 +572,7 @@ public:
 			// start executing instruction, one by one
 			for (; currentCall.instructionIndex < currentCall.instructions.length; currentCall.instructionIndex ++){
 				try{
-					currentCall.instructions[currentCall.instructionIndex]
-						(currentCall.instructionArgs[currentCall.instructionIndex]);
+					currentCall.instructions[currentCall.instructionIndex]();
 				}catch (Exception e){
 					if (!onRuntimeError(RuntimeError(fName, currentCall.instructionIndex, e.msg))){
 						// break :(

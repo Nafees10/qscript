@@ -501,6 +501,9 @@ AnotherFunctionName
 * isLesserDouble- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
 * isGreaterInt	- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
 * isGreaterDouble- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
+* not			- if last element pushed == 1(int), then pushes 0(int), else, pushes 1(int)
+* and			- if last 2 elements on stack (int) == 1, pushes 1, else pushes 0
+* or			- if either of last 2 elements on stack == 1 (int), pushes 1, else pushes 0
 
 #### Misc. instructions:
 * push 			- pushes all arguments to stack
@@ -508,9 +511,6 @@ AnotherFunctionName
 * pop			- clears a number of elements from the stack, the number is arg0 (integer)
 * jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" and arg0 of jump should be that %someString% (string).
 * skipTrue		- skips the next instrcution if the last element on stack == 1 (int)
-* not			- if last element pushed == 1(int), then pushes 0(int), else, pushes 1(int)
-* and			- if last 2 elements on stack (int) == 1, pushes 1, else pushes 0
-* or			- if either of last 2 elements on stack == 1 (int), pushes 1, else pushes 0
 * return 		- sets the last value pushed to stack as the return value, and breaks execution of the function
 
 #### Instructions for arrays
@@ -519,6 +519,13 @@ AnotherFunctionName
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
+
+TODO: the following instructions haven't been added yet in the compiler
+#### Instructions for strings
+* setLenString	- modifies length of a string, the string and new length are popd from stack, new string is pushed
+* getLenString	- pops a string from stack, pushes it's length
+* readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
+* modifyString	- pops string and a newVal from stack. Then pops `n` ints from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 
 ---
 

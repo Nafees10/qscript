@@ -9,7 +9,7 @@ import utils.lists;
 import std.conv : to;
 
 /// provides functions for dealing with byte code generate using qscript.compiler.codegen
-public struct ByteCodeMan{
+public struct ByteCode{
 	/// used to store byte code's instruction in a more readable format
 	public struct Instruction{
 		string name;
@@ -32,13 +32,13 @@ public struct ByteCodeMan{
 		LinkedList!Function functions = new LinkedList!Function;
 		string fName = null;
 
-		for (uinteger i = 0, readFrom = 0, lastind = byteCode.length; i < byteCode.length; i ++){
+		for (uinteger i = 0, readFrom = 0, lastind = byteCode.length-1; i < byteCode.length; i ++){
 			string[] lineWords = byteCode[i].readWords;
 			if (lineWords.length == 0){
 				continue;
 			}
 			// if only one word && byteCode[i][0]==space/tab, then it's a functionDef start
-			if (lineWords.length == 1 && byteCode[i][0] != ' ' || byteCode[i][0] != '\t'){
+			if (lineWords.length == 1 && byteCode[i][0] != ' ' && byteCode[i][0] != '\t'){
 				// new function start
 				if (fName != null){
 					// add previous function
@@ -68,18 +68,21 @@ public struct ByteCodeMan{
 		return r;
 	}
 	/// converts byte code into array of ByteCodeFunction
-	public static ByteCodeFunction!T[] toFunctionPtr(T)(string byteCode, T[string] instructionsPtr){
+	public static ByteCodeFunction!(T)[] toFunctionPtr(T)(string[] byteCode, T[string] instructionsPtr){
 		/// searches for jump positions, returns assoc_array containing their indexes
 		static uinteger[string] searchJumpPos(Instruction[] instructions){
 			uinteger[string] r;
-			foreach (inst; instructions){
+			uinteger instructionCount = 0;
+			foreach (i, inst; instructions){
 				if (inst.args.length == 0 && inst.name[inst.name.length-1] == ':'){
 					// make sure there's actually a name there, not just the colon
 					if (inst.name.length <= 1){
 						throw new Exception
 							("line#"~to!string(i)~": jump position has no name");
+					}else{
+						instructionCount ++;
 					}
-					r[inst.name[0 .. inst.name.length-1].dup] = instructions.count;
+					r[cast(string)inst.name[0 .. inst.name.length-1].dup] = instructionCount;
 					continue;
 				}
 			}
@@ -98,7 +101,13 @@ public struct ByteCodeMan{
 		// do the magic
 		foreach (currentFunction; functionsByteCode){
 			// get the jump positions
-			jumpIndexes = searchJumpPos(currentFunction.instructions);
+			try{
+				jumpIndexes = searchJumpPos(currentFunction.instructions);
+			}catch (Exception e){
+				e.msg = "function: "~currentFunction.name~' '~e.msg;
+				throw e;
+			}
+
 			// convert all the instructions
 			foreach (i, inst; currentFunction.instructions){
 				// check if it's a jump index
@@ -107,11 +116,11 @@ public struct ByteCodeMan{
 					// the only arg is typeLess, and in string format, is name of the jumpIndex
 					if (inst.args.length != 1){
 						throw new Exception
-							("line#"~to!string(i)~" function: "~currentFunction.name~": invalid arguments for jump instruction");
+							("function: "~currentFunction.name~" line#"~to!string(i)~": invalid arguments for jump instruction");
 					}
 					if (inst.args[0] !in jumpIndexes){
 						throw new Exception
-							("line#"~to!string(i)~" function: "~currentFunction.name~": invalid jump position");
+							("function: "~currentFunction.name~" line#"~to!string(i)~": invalid jump position");
 					}
 					inst.args[0] = "i"~to!string(jumpIndexes[inst.args[0]]);
 				}
@@ -119,10 +128,13 @@ public struct ByteCodeMan{
 				if (inst.name in instructionsPtr){
 					instructions.append (instructionsPtr[inst.name]);
 					instructionArgs.append (stringToQData(inst.args));
+				}else{
+					throw new Exception
+						("function: "~currentFunction.name~" line#"~to!string(i)~": instruction '"~inst.name~"' not available");
 				}
 			}
 			// put it all in a ByteCodeFunction
-			functions.append(ByteCodeFunction(
+			functions.append(ByteCodeFunction!(void delegate())(
 					currentFunction.name, // name
 					instructions.toArray, // instructions
 					instructionArgs.toArray // args
@@ -131,7 +143,7 @@ public struct ByteCodeMan{
 			instructions.clear;
 			instructionArgs.clear;
 		}
-		ByteCodeFunction!T r = functions.toArray;
+		ByteCodeFunction!(T)[] r = functions.toArray;
 		.destroy(functions);
 		return r;
 	}
@@ -148,14 +160,15 @@ private static string[] readWords(string line){
 		// if a string, skip it
 		if (line[i] == '"'){
 			i = line.strEnd(i);
-			continue;
 		}else if (line[i] == '['){
 			i = line.bracketPos(i);
-			continue;
-		}else if (line[i] == ' ' || line[i] == '\t' || i == lastInd){
+		}else if (line[i] == ' ' || line[i] == '\t'){
 			words.append(line[readFrom .. i]);
 			readFrom = i + 1;
 			continue;
+		}
+		if (i >= lastInd){
+			words.append (line[readFrom .. lastInd + 1]);
 		}
 	}
 	string[] r = words.toArray;
