@@ -678,3 +678,24 @@ unittest{
 	assert ("hello(asdf[asdf])".bracketPos(5) == 16);
 	assert ("hello(asdf[asdf])".bracketPos(10) == 15);
 }
+
+/// removes "extra" whitespace from a string. i.e, if there are more than 1 consecutive spaces/tabs, one is removed
+/// 
+/// `line` is the string to remove whitespace from
+/// `commentStart` is the character that marks the start of a comment, if ==0, then comments are not not considered
+package string removeWhitespace(string line, char commentStart=0){
+	bool prevWasWhitespace = true;
+	string r;
+	foreach (c; line){
+		if (prevWasWhitespace && (c == ' ' || c == '\t')){
+			// do not add this one then
+			continue;
+		}else if (c != 0 && c == commentStart){
+			break;
+		}else{
+			prevWasWhitespace = false;
+			r ~= c;
+		}
+	}
+	return r;
+}
