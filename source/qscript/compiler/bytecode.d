@@ -79,11 +79,11 @@ public struct ByteCode{
 					if (inst.name.length <= 1){
 						throw new Exception
 							("line#"~to!string(i)~": jump position has no name");
-					}else{
-						instructionCount ++;
 					}
 					r[cast(string)inst.name[0 .. inst.name.length-1].dup] = instructionCount;
 					continue;
+				}else{
+					instructionCount ++;
 				}
 			}
 			return r;
@@ -108,7 +108,7 @@ public struct ByteCode{
 				throw e;
 			}
 
-			// convert all the instructions
+			// convert deal with all the jumps
 			foreach (i, inst; currentFunction.instructions){
 				// check if it's a jump index
 				if (inst.name == "jump"){
@@ -122,7 +122,11 @@ public struct ByteCode{
 						throw new Exception
 							("function: "~currentFunction.name~" line#"~to!string(i)~": invalid jump position");
 					}
-					inst.args[0] = "i"~to!string(jumpIndexes[inst.args[0]]);
+					inst.args[0] = "i"~to!string(jumpIndexes[inst.args[0]]-1);
+				}
+				// or if it's a jump position marker
+				if (inst.name[inst.name.length-1] == ':'){
+					continue;
 				}
 				// finally convert the instruction
 				if (inst.name in instructionsPtr){
