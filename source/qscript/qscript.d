@@ -43,14 +43,14 @@ private:
 
 	/// adds 2 ints
 	void addInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].intVal + args[1].intVal
 				));
 	}
 	/// adds 2 doubles
 	void addDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal + args[1].doubleVal
 				));
@@ -58,14 +58,14 @@ private:
 
 	/// subtracts 2 ints
 	void subtractInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].intVal - args[1].intVal
 				));
 	}
 	/// subtracts 2 doubles
 	void subtractDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal - args[1].doubleVal
 				));
@@ -73,14 +73,14 @@ private:
 
 	/// multiplies 2 ints
 	void multiplyInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].intVal * args[1].intVal
 				));
 	}
 	/// multiplies 2 doubles
 	void multiplyDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal * args[1].doubleVal
 				));
@@ -88,14 +88,14 @@ private:
 
 	/// divides 2 ints
 	void divideInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].intVal / args[1].intVal
 				));
 	}
 	/// divides 2 doubles
 	void divideDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal / args[1].doubleVal
 				));
@@ -103,14 +103,14 @@ private:
 
 	/// <int> mod <int>
 	void modInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].intVal % args[1].intVal
 				));
 	}
 	/// <double> mod <double>
 	void modDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].doubleVal % args[1].doubleVal
 				));
@@ -118,14 +118,14 @@ private:
 
 	/// concatenates 2 strings
 	void concatString(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].strVal ~ args[1].strVal
 				));
 	}
 	/// concatenates 2 arrays
 	void concatArray(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(QData(
 				args[0].arrayVal ~ args[1].arrayVal
 				));
@@ -135,7 +135,7 @@ private:
 
 	/// `==` operator for int
 	void isSameInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].intVal == args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -144,7 +144,7 @@ private:
 	}
 	/// `==` operator for double
 	void isSameDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].doubleVal == args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -153,7 +153,7 @@ private:
 	}
 	/// `==` operator for string
 	void isSameString(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].strVal == args[1].strVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -163,7 +163,7 @@ private:
 
 	/// < operator for int
 	void isLesserInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].intVal < args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -172,7 +172,7 @@ private:
 	}
 	/// < operator for double
 	void isLesserDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].doubleVal < args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -182,7 +182,7 @@ private:
 
 	/// > operator for int
 	void isGreaterInt(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].intVal > args[1].intVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -191,7 +191,7 @@ private:
 	}
 	/// > operator for double
 	void isGreaterDouble(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		if (args[0].doubleVal > args[1].doubleVal){
 			currentCall.stack.push(QData(cast(integer)1));
 		}else{
@@ -234,7 +234,7 @@ private:
 	/// first arg is an array containing all the elemnets of the array to modify
 	/// second arg is the new length
 	void setLen(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		args[0].arrayVal.length = args[1].intVal;
 		currentCall.stack.push(args[0]);
 	}
@@ -254,7 +254,7 @@ private:
 	/// 
 	/// first arg is the array, second is the index of the element
 	void readElement(){
-		QData[] args = currentCall.stack.pop(2);
+		QData[2] args = currentCall.stack.pop!(true)(2);
 		currentCall.stack.push(
 			args[0].arrayVal[args[1].intVal]
 			);
@@ -266,7 +266,7 @@ private:
 	/// arg1 is the new value of the element
 	/// arg2 is the index of the element to modify
 	void modifyArray(){
-		QData[] args = currentCall.stack.pop(3);
+		QData[3] args = currentCall.stack.pop!(true)(3);
 		args[0].arrayVal[args[2].intVal] = args[1];
 		currentCall.stack.push(args[0]);
 	}
@@ -285,7 +285,7 @@ private:
 
 	/// pops a number of elements from stack
 	void pop(){
-		currentCall.stack.pop(currentCall.readInstructionArgs()[0].intVal);
+		currentCall.stack.pop!(true)(currentCall.readInstructionArgs()[0].intVal);
 	}
 
 	// misc instructions
@@ -314,7 +314,7 @@ private:
 	/// if last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
 	void and(){
 		QData toPush = QData(cast(integer)1);
-		foreach (toCheck; currentCall.stack.pop(2)){
+		foreach (toCheck; currentCall.stack.pop!(true)(2)){
 			if (toCheck.intVal == 0){
 				toPush = QData(cast(integer)0);
 				break;
@@ -326,7 +326,7 @@ private:
 	/// if either of last 2 elements on stack == 1 (int), pushes 1 (int), else, pushes 0 (int)
 	void or(){
 		QData toPush = QData(cast(integer)0);
-		foreach (toCheck; currentCall.stack.pop(2)){
+		foreach (toCheck; currentCall.stack.pop!(true)(2)){
 			if (toCheck.intVal == 1){
 				toPush = QData(cast(integer)1);
 				break;
