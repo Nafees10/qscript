@@ -484,6 +484,17 @@ package QData stringToQData(string literal){
 unittest{
 	assert ("i1".stringToQData == QData(integer(1)));
 }
+/// converts literal data-s in byte code format into QData-s
+/// 
+/// throws Exception on error
+package QData[] stringToQData(string[] literals){
+	QData[] r;
+	r.length = literals.length;
+	foreach (i, literal; literals){
+		r[i] = literal.stringToQData();
+	}
+	return r;
+}
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
