@@ -383,12 +383,13 @@ struct ASTGen{
 				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
 				functionCallNode.fName = tokens.tokens[index].token;
 				// now for the arguments
-				if (tokens.tokens[index+2].type == Token.Type.ParanthesesClose){
+				index+=2;
+				if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
 					// has no args
 					functionCallNode.arguments = [];
 				}else{
 					LinkedList!CodeNode args = new LinkedList!CodeNode;
-					for (index = index+2; ; index ++){
+					for (; ; index ++){
 						args.append(generateCodeAST());
 						if (tokens.tokens[index].type == Token.Type.ParanthesesClose){
 							break;
@@ -703,7 +704,12 @@ struct ASTGen{
 			if (token.type == Token.Type.Identifier){
 				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 					// is a function call
-					return CodeNode(generateFunctionCallAST());
+					CodeNode r = CodeNode(generateFunctionCallAST());
+					// check if it skipped the semicolon, because if it did, it shouldnt have, so undo it
+					if (tokens.tokens[index-1].type == Token.Type.StatementEnd){
+						index --;
+					}
+					return r;
 				}else{
 					// just a var
 					return CodeNode(generateVariableAST());
