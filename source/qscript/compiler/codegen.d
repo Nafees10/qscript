@@ -184,10 +184,7 @@ package struct CodeGen{
 	}
 
 	/// generates byte code for FunctionCallNode
-	private string[] generateByteCode(FunctionCallNode node){
-		// stores if this function's return value is needed on stack or not. ==1: return not required, >1: return required
-		static callCount = 0;
-		callCount ++;
+	private string[] generateByteCode(FunctionCallNode node, bool pushReturn = false){
 		auto byteCode = new LinkedList!string;
 		// push the args
 		uinteger argCount = 0;
@@ -213,10 +210,9 @@ package struct CodeGen{
 			}
 		}
 		// pop the return, if result not required
-		if (callCount == 1){
+		if (!pushReturn){
 			byteCode.append("\tpop i1");
 		}
-		callCount --;
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
@@ -225,7 +221,7 @@ package struct CodeGen{
 	/// generates byte code for CodeNode
 	private string[] generateByteCode(CodeNode node){
 		if (node.type == CodeNode.Type.FunctionCall){
-			return generateByteCode(node.node!(CodeNode.Type.FunctionCall));
+			return generateByteCode(node.node!(CodeNode.Type.FunctionCall), true);
 		}else if (node.type == CodeNode.Type.Literal){
 			return generateByteCode(node.node!(CodeNode.Type.Literal));
 		}else if (node.type == CodeNode.Type.Operator){
