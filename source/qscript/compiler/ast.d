@@ -92,7 +92,8 @@ package struct CodeNode{
 		FunctionCall,
 		Literal,
 		Operator,
-		Variable
+		Variable,
+		ReadElement
 	}
 	/// the stored type
 	private Type storedType;
@@ -102,6 +103,7 @@ package struct CodeNode{
 		LiteralNode literal;
 		OperatorNode operator;
 		VariableNode var;
+		ReadElement arrayRead;
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
@@ -122,24 +124,23 @@ package struct CodeNode{
 		}
 	}
 	/// sets the stored node
-	@property auto node (FunctionCallNode newNode){
-		fCall = newNode;
-		storedType = CodeNode.Type.FunctionCall;
-	}
-	/// sets the stored node
-	@property auto node (LiteralNode newNode){
-		literal = newNode;
-		storedType = CodeNode.Type.Literal;
-	}
-	/// sets the stored node
-	@property auto node (OperatorNode newNode){
-		operator = newNode;
-		storedType = CodeNode.Type.Operator;
-	}
-	/// sets the stored node
-	@property auto node (VariableNode newNode){
-		var = newNode;
-		storedType = CodeNode.Type.Variable;
+	@property auto node (T)(T newNode){
+		static if (is (T == FunctionCallNode)){
+			storedType = CodeNode.Type.FunctionCall;
+			return fCall = newNode;
+		}else static if (is (T == LiteralNode)){
+			storedType = CodeNode.Type.Literal;
+			return literal = newNode;
+		}else static if (is (T == OperatorNode)){
+			storedType = CodeNode.Type.Operator;
+			return operator = newNode;
+		}else static if (is (T == VariableNode)){
+			storedType = CodeNode.Type.Variable;
+			return var = newNode;
+		}else static if (is (T == ReadElement)){
+			storedType = CodeNode.Type.ReadElement;
+			return arrayRead = newNode;
+		}
 	}
 	/// returns the stored type
 	@property auto node(CodeNode.Type T)(){
@@ -155,31 +156,13 @@ package struct CodeNode{
 			return operator;
 		}else static if (T == CodeNode.Type.Variable){
 			return var;
-		}else static if (T == CodeNode.Type.Array){
-			return array;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
 	}
 	/// constructor
-	this (FunctionCallNode newNode){
-		fCall = newNode;
-		storedType = CodeNode.Type.FunctionCall;
-	}
-	/// constructor
-	this (LiteralNode newNode){
-		literal = newNode;
-		storedType = CodeNode.Type.Literal;
-	}
-	/// constructor
-	this (OperatorNode newNode){
-		operator = newNode;
-		storedType = CodeNode.Type.Operator;
-	}
-	/// constructor
-	this (VariableNode newNode){
-		var = newNode;
-		storedType = CodeNode.Type.Variable;
+	this (T)(T newNode){
+		node = newNode;
 	}
 }
 
@@ -302,6 +285,34 @@ package struct OperatorNode{
 		storedOperands.length = 2;
 		storedOperands[0] = a;
 		storedOperands[1] = b;
+	}
+}
+
+/// stores an "array-read" (instruction `readElement` or for string, `readChar`)
+package struct ReadElement{
+	/// stores the nodes. [0] is the node to read from. [1] is the index
+	private CodeNode[] nodes = [null, null];
+	/// the node to read from
+	public @property CodeNode readFromNode(){
+		return nodes[0];
+	}
+	/// the node to read from
+	public @property CodeNode readFromNode(CodeNode newNode){
+		return nodes[0] = newNode;
+	}
+	/// the index to read at
+	public @property CodeNode index(){
+		return nodes[1];
+	}
+	/// the index to read at
+	public @property CodeNode index(CodeNode newNode){
+		return nodes[1] = newNode;
+	}
+	/// constructor
+	this (CodeNode toReadNode, CodeNode index){
+		nodes.length = 2;
+		nodes[0] = toReadNode;
+		nodes[1] = index;
 	}
 }
 

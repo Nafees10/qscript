@@ -429,7 +429,7 @@ struct ASTGen{
 		/// 
 		/// terminates reading when on a Token that is comma, paranthesesEnd, semicolon, index/block bracket close
 		CodeNode generateCodeAST(){
-			CodeNode lastNode = CodeNode();
+			CodeNode lastNode = null;
 			bool separatorExpected = false;
 			for ( ; ; index ++){
 				Token token = tokens.tokens[index];
@@ -444,7 +444,22 @@ struct ASTGen{
 					index --;
 					separatorExpected = true;
 				}else{
-					// an operator or something that deals with data was expected
+					// an operator or something that deals with data was expected.
+					// check if there's an [...] to read the array
+					if (token.type == Token.Type.IndexBracketOpen){
+						// read the index
+						uinteger brackEnd = tokens.tokens.bracketPos(index);
+						index ++;
+						CodeNode indexNode = generateCodeAST();
+						// make sure it's a read-element, not a make-array
+						if (index != brackEnd){
+							compileErrors.append (CompileError(tokens.getTokenLine(index), "unexpected tokens"));
+							index++;
+							break;
+						}
+						lastNode = CodeNode(ReadElement(lastNode, indexNode));
+						continue;
+					}
 					if (token.type == Token.Type.Operator){
 						lastNode = CodeNode(generateOperatorAST(lastNode));
 						index --;
