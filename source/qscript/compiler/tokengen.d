@@ -105,6 +105,7 @@ unittest{
 	assert("function".getTokenType == Token.Type.Keyword);
 	assert("if".getTokenType == Token.Type.Keyword);
 	assert("while".getTokenType == Token.Type.Keyword);
+	assert("else".getTokenType == Token.Type.Keyword);
 }
 
 /// returns Token[] with type identified based on string[] input
@@ -145,6 +146,11 @@ private TokenList separateTokens(string[] script){
 			// stop at tabs, spaces, and line-endings, and comments
 			if (line[i] == ' '|| line[i] == '\t' || i == line.length-1){
 				// check if there is any token to be inserted
+				if (i == line.length-1 && IDENT_CHARS.hasElement(line[i]) == prevIsIdent){
+					// this is a token on it's own, till the line end
+					tokens.append(line[readFrom .. line.length]);
+					break;
+				}
 				if (readFrom < i){
 					// insert this token
 					tokens.append(line[readFrom .. i].dup);
