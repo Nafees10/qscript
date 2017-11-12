@@ -50,7 +50,7 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			if (argTypes.length != 2){
 				throw new Exception ("setLength called with invalid arguments");
 			}
-			return argTypes[1];
+			return argTypes[0];
 		}else if (name == "getLength"){
 			// int
 			return DataType(DataType.Type.Integer);
