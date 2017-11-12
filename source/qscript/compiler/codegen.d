@@ -200,7 +200,7 @@ package struct CodeGen{
 		];
 		if (node.fName in predefinedFunctions){
 			// then use the predefined function's instruction
-			byteCode.append(predefinedFunctions[node.fName]);
+			byteCode.append('\t'~predefinedFunctions[node.fName]);
 		}else{
 			// then append the instruction to execute this function
 			if (isScriptDefined(node.fName)){
@@ -518,8 +518,7 @@ AnotherFunctionName
 
 TODO: the following instructions haven't been added yet in the compiler
 #### Instructions for strings
-* setLenString	- modifies length of a string, the string and new length are popd from stack, new string is pushed
-* getLenString	- pops a string from stack, pushes it's length
+* strLen		- pops a string from stack, pushes it's length
 * readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
 * modifyString	- pops string and a newVal from stack. Then pops `n` ints from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 
