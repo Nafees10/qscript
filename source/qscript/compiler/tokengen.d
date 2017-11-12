@@ -121,169 +121,102 @@ package Token[] stringToTokens(string[] s){
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
+	enum CharType{
+		Bracket, /// any bracket
+		Operator, /// any char that can be a part of a operator
+		Semicolon, /// semicolon
+		Comma, /// a comma
+		Ident /// including the ones for keywords
+	}
+	static CharType getCharType(char c){
+		if (c == ';'){
+			return CharType.Semicolon;
+		}
+		if (c == ','){
+			return CharType.Comma;
+		}
+		if (['(','[','{','}',']',')'].hasElement(c)){
+			return CharType.Bracket;
+		}
+		if (isAlphabet(cast(string)[c]) || isNum(cast(string)[c])){
+			return CharType.Ident;
+		}
+		foreach (operator; OPERATORS){
+			foreach (opChar; operator){
+				if (c == opChar){
+					return CharType.Operator;
+				}
+			}
+		}
+		throw new Exception ("unexpected char, '"~c~'\'');
+	}
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
-	// make space in lineTokenCount to store number of tokens in each line, which will be used in error-reporting
-	for (uinteger lineno=0, lineCount = script.length; lineno < lineCount; lineno++){
-		string line = script[lineno];
-		bool prevIsIdent; /// Stores if the previous char read was present in IDENT_CHARS
-		bool isIdent; /// Stores if the current char is present in IDENT_CHARS
-		if (line.length > 0){
-			prevIsIdent = IDENT_CHARS.hasElement(line[0]);
-			isIdent = prevIsIdent;
-		}
-		uinteger tokenCount = tokens.count;
-
-		for (uinteger i = 0, readFrom = 0; i < line.length; i ++){
-			// end at comments
-			if (line[i] == '#'){
-				if (readFrom < i){
-					tokens.append(line[readFrom .. i].dup);
+	uinteger tokenCount = 0;
+	foreach (lineno, line; script){
+		CharType prevType = CharType.Ident, currentType = CharType.Ident;
+		for (uinteger i = 0, readFrom = 0, lastInd = line.length-1; i < line.length; i ++){
+			// skip strings
+			if (line[i] == '"'){
+				if (readFrom != i){
+					compileErrors.append (CompileError(lineno, "unexpected string"));
 				}
+				integer end = line.strEnd(i);
+				if (end == -1){
+					compileErrors.append(CompileError(lineno, "string not closed"));
+					break;
+				}
+				i = end;
+				continue;
+			}
+			// break at comments
+			if (line[i] == '#' || line[i] == ' ' || line[i] == '\t'){
+				// add a token if remaining
+				if (readFrom < i){
+					tokens.append (line[readFrom .. i]);
+				}
+				readFrom = i+1;
+				if (line[i] == '#'){
+					break;
+				}
+				continue;
+			}
+			// add other types of tokens
+			try{
+				currentType = getCharType(line[i]);
+			}catch (Exception e){
+				compileErrors.append (CompileError(lineno, e.msg));
+				.destroy (e);
 				break;
 			}
-			// stop at tabs, spaces, and line-endings, and comments
-			if (line[i] == ' '|| line[i] == '\t' || i == line.length-1){
-				// check if there is any token to be inserted
-				if (i == line.length-1 && IDENT_CHARS.hasElement(line[i]) == prevIsIdent){
-					// this is a token on it's own, till the line end
-					tokens.append(line[readFrom .. line.length]);
-					break;
-				}
+			if (currentType != prevType || currentType == CharType.Bracket || currentType == CharType.Semicolon ||
+				currentType == CharType.Comma){
 				if (readFrom < i){
-					// insert this token
-					tokens.append(line[readFrom .. i].dup);
+					tokens.append (line[readFrom .. i]);
 					readFrom = i;
 				}
-				if (readFrom == i && i == line.length - 1 && ![' ', '\t'].hasElement(line[i])){
-					//add this token which is at end (this condition is for one-char token at end of line)
-					tokens.append(cast(string)[line[i]]);
+				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma){
+					tokens.append (cast(string)[line[i]]);
+					readFrom = i+1;
 				}
-				// skip the current char for the next token
-				readFrom = i + 1;
-			}else
-			// stop at brackets, and commas
-			if (['{', '[', '(', ')', ']', '}', ','].hasElement(line[i])){
-				// add the previous token first
-				if (readFrom < i){
-					tokens.append(line[readFrom .. i].dup);
-				}
-				tokens.append(cast(string)[line[i]]);
-				//move readFrom to next token's position
-				readFrom = i + 1;
-			}else
-			// stop and add if a string is seen
-			if (line[i] == '"'){
-				//check if there was a previous "unterminated" token before string
-				if (readFrom < i){
-					// :(
-					tokens.append(line[readFrom .. i].dup);
-				}
-				// check if string has an ending
-				integer strEndPos = strEnd(line, i);
-				if (strEndPos == -1){
-					// error
-					compileErrors.append(CompileError(i + 1, "unterminated string"));
-					break;
-				}else{
-					// everything's good-
-					tokens.append(line[i .. strEndPos + 1].dup);
-					// skip string
-					i = strEndPos;
-					// move readFrom too
-					readFrom = i + 1;
-				}
-
 			}
-			// finally, check if the previous char's isIdent is different from this one's, then it means they're different tokens
-			isIdent = IDENT_CHARS.hasElement(line[i]);
-			if (readFrom < i && prevIsIdent != isIdent){
-				tokens.append(line[readFrom .. i].dup);
-				// move readFrom
-				readFrom = i;
+			prevType = currentType;
+			// add if is at end of line
+			if (i == lastInd && readFrom <= i){
+				tokens.append (line[readFrom .. i+1]);
 			}
-			prevIsIdent = isIdent;
 		}
-		tokenCount = tokens.count - tokenCount;
-		tokenPerLine[lineno] = tokenCount;
+		tokenPerLine[lineno] = tokens.count - tokenCount;
+		tokenCount += tokenPerLine[lineno];
 	}
-
-	// check if error-free
-	if (compileErrors.count == 0){
-		// put all tokens in a Token[] from string[]
-		TokenList list;
-		list.tokens.length = tokens.count;
-		uinteger i = 0;
-		tokens.resetRead;
-		string* ptr = tokens.read;
-		while (ptr !is null && i < list.tokens.length){
-			list.tokens[i].token = *ptr;
-			i ++;
-			ptr = tokens.read;
-		}
-		tokens.destroy;
-		// put in tokenPerLine
-		list.tokenPerLine = tokenPerLine;
-		return list;
-	}else{
-		TokenList list;
-		list.tokens = null;
-		return list;
-	}
-
+	// put them all in TokenList
+	TokenList r;
+	r.tokenPerLine = tokenPerLine; // no need to dup it
+	r.tokens = stringToTokens(tokens.toArray);
+	.destroy (tokens);
+	return r;
 }
-///
-unittest{
-	compileErrors = new LinkedList!CompileError;
-	string[] expectedResults;
-	expectedResults = [
-		"function", "void", "main", "{",
-		"int", "(", "i", ",", "i2", ")", ";",
-		"if", "(", "i", "<", "2", ")", "{", "}",
-		"if", "(", "i", "<=", "2", ")", "{", "}",
-		"if", "(", "i", ">=", "2", ")", "{", "}",
-		"if", "(", "i", ">", "2", ")", "{", "}",
-		"if", "(", "i", "==", "2", ")", "{", "}",
-		"i", "=", "6", ";",
-		"i2", "[", "i", "]", "=", "2", ";",
-		"if", "(", "i", "[", "2", "]", "<", "2", ")", "{", "}",
-		"if", "(", "i", "[", "2", "]", "<=", "2", ")", "{", "}",
-		"if", "(", "i", "[", "2", "]", ">=", "2", ")", "{", "}",
-		"if", "(", "i", "[", "2", "]", ">", "2", ")", "{", "}",
-		"if", "(", "i", "[", "2", "]", "==", "2", ")", "{", "}",
-		"}"
-	];
-	string[] script = [
-		"function void main{",
-		"\tint (i, i2);",
-		"\tif (i < 2){}",
-		"\tif(i<=2){}",
-		"\tif(i >= 2) {#comment }",
-		"}",
-		"if \t(i > 2)",
-		"{",
-		"}",
-		"if ( i == 2 ) { } ",
-		"i=6;",
-		"i2[i]=2;",
-		"if (i [ 2 ] < 2)",
-		"\t{}",
-		"if ( i[2]<=2){}",
-		"if ( i[2]>=2){}",
-		"if ( i[2]>2){}",
-		"if ( i[2]==2){}",
-		"}"
-	];
-	//make sure the expected result and actual result is same
-	Token[] r = separateTokens(script).tokens;
-	assert(r.length == expectedResults.length);
-	foreach(i, rToken; r){
-		assert(rToken.token == expectedResults[i], "toTokens result does not match expected result");
-	}
-	.destroy(compileErrors);
-}
-
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
 /// 
