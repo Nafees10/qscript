@@ -373,9 +373,7 @@ private:
 	}
 
 	// vars
-
-	Stack!FunctionCallData callStack; /// call stack for the script-defined function-calls
-	FunctionCallData currentCall; /// fCall data for currently being executed function
+	FunctionCallData* currentCall; /// fCall data for currently being executed function
 
 
 	/// contains a list of all external-functions available in script, with their pointer
@@ -420,11 +418,11 @@ package:
 		QData[][] instructionArgs;
 
 		/// postblit
-		/*this(this){
+		this(this){
 			vars = vars.dup;
 			instructions = instructions.dup;
 			instructionArgs = instructionArgs.dup;
-		}*/
+		}
 		/// constructor
 		this(string functionName, QData[] args){
 			vars = args.dup;
@@ -443,14 +441,6 @@ package:
 	}
 
 public:
-	/// constructor
-	this (){
-		callStack = new Stack!FunctionCallData;
-	}
-	/// destructor
-	~this (){
-		.destroy (callStack);
-	}
 	/// struct to store a runtime error
 	struct RuntimeError{
 		string functionName; /// the script-defined function in which the error occurred
@@ -473,6 +463,10 @@ public:
 		string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
 		if (errors.length > 0){
 			return errors;
+		}
+		debug{
+			// TODO remove this debug
+			arrayToFile ("/home/nafees/Desktop/q.code", byteCode);
 		}
 		string sError;
 		if (!loadByteCode(byteCode, sError)){
@@ -549,11 +543,6 @@ public:
 			scriptInstructions[currentFunction.name] = currentFunction.instructions.dup;
 			scriptInstructionsArgs[currentFunction.name] = currentFunction.args.dup;
 		}
-		// done!
-		debug{
-			// TODO remove this debug
-			arrayToFile("/home/nafees/Desktop/q.qcode",byteCode);
-		}
 		return true;
 	}
 
@@ -564,9 +553,9 @@ public:
 		// check if it exists
 		if (fName in scriptInstructions){
 			// put previous call in call stack
-			callStack.push(currentCall);
+			FunctionCallData* lastCall = currentCall;
 			// prepare a new call
-			currentCall = FunctionCallData(fName, args);
+			currentCall = new FunctionCallData(fName, args);
 			currentCall.instructions = scriptInstructions[fName];
 			currentCall.instructionArgs = scriptInstructionsArgs[fName];
 			// start executing instruction, one by one
@@ -583,11 +572,9 @@ public:
 			// get the result of the function
 			QData result = currentCall.result;
 			// destroy stack
-			.destroy(currentCall);
+			.destroy(*currentCall);
 			// restore previous call
-			if (callStack.count > 0){
-				currentCall = callStack.pop;
-			}
+			currentCall = lastCall;
 			// return the result
 			return result;
 		}else{
