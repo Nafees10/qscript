@@ -62,7 +62,7 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			DataType r = argTypes[0];
 			r.arrayNestCount ++;
 			return r;
-		}else if (name == "array"){
+		}else if (name == "return"){
 			return DataType(DataType.Type.Void);
 		}else{
 			// search in `predefinedFunctions`

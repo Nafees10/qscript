@@ -196,7 +196,8 @@ package struct CodeGen{
 		const string[string] predefinedFunctions = [
 			"setLength" : "setLen",
 			"getLength" : "getLen",
-			"array" 	: "makeArray"
+			"array" 	: "makeArray",
+			"return"	: "return",
 		];
 		if (node.fName in predefinedFunctions){
 			// then use the predefined function's instruction
