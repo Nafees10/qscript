@@ -62,6 +62,8 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			DataType r = argTypes[0];
 			r.arrayNestCount ++;
 			return r;
+		}else if (name == "array"){
+			return DataType(DataType.Type.Void);
 		}else{
 			// search in `predefinedFunctions`
 			foreach (currentFunction; predefinedFunctions){
@@ -102,6 +104,12 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 				}
 			}
 			return true;
+		}else if (name == "return"){
+			// real type checking for this was done at compile-time (AST generator)
+			if (argTypes.length == 1){
+				return true;
+			}
+			return false;
 		}else{
 			// now check the other functions
 			foreach (currentFunction; predefinedFunctions){
