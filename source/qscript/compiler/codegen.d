@@ -383,6 +383,17 @@ package struct CodeGen{
 				compileErrors.append(CompileError(0, e.msg));
 			}
 		}
+		// if is an array, then call emptyArray on all the vars
+		if (node.type.isArray){
+			const string makeInst = "\temptyArray i"~to!string(node.type.arrayNestCount);
+			string[] r;
+			r.length = 2*node.vars.length;
+			foreach (i, var; node.vars){
+				r[i*2] = makeInst;
+				r[(i*2)+1] = "\tsetVar i"~to!string(getVarID(var));
+			}
+			return r;
+		}
 		return [];
 	}
 
@@ -520,6 +531,7 @@ AnotherFunctionName
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
+* emptyArray	- makes an empty n-dimensional array, where n is arg0 (int)
 
 TODO: the following instructions haven't been added yet in the compiler
 #### Instructions for strings
