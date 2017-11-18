@@ -16,14 +16,14 @@ public union QData{
 	this (T)(T data){
 		static if (is (T == string)){
 			strVal = data;
-		}else static if (is (T == integer) || is (T == int)){
+		}else static if (is (T == int) || is (T == uint) || is (T == long) || is (T == ulong)){
 			intVal = data;
 		}else static if (is (T == double)){
 			doubleVal = data;
 		}else static if (is (T == QData[])){
 			arrayVal = data;
 		}else{
-			throw new Exception("attempting to store unsupported type in QData");
+			throw new Exception("cannot store "~T.stringof~" in QData");
 		}
 	}
 }
