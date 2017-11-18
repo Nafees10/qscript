@@ -201,7 +201,11 @@ package struct CodeGen{
 		];
 		if (node.fName in predefinedFunctions){
 			// then use the predefined function's instruction
-			byteCode.append('\t'~predefinedFunctions[node.fName]);
+			if (node.fName == "array"){
+				byteCode.append ('\t'~predefinedFunctions[node.fName]~" i"~to!string(node.arguments.length));
+			}else{
+				byteCode.append('\t'~predefinedFunctions[node.fName]);
+			}
 		}else{
 			// then append the instruction to execute this function
 			if (isScriptDefined(node.fName)){
