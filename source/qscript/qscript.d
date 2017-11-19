@@ -20,8 +20,8 @@ public union QData{
 			intVal = data;
 		}else static if (is (T == double)){
 			doubleVal = data;
-		}else static if (is (T == QData[])){
-			arrayVal = data;
+		}else static if (is (T == QData[]) || is (T == void[])){
+			arrayVal = cast(QData[])data;
 		}else{
 			throw new Exception("cannot store "~T.stringof~" in QData");
 		}
@@ -227,6 +227,19 @@ private:
 					)
 				)
 			);
+	}
+
+	/// makes an empty array
+	/// 
+	/// called after array is declared, to init it.
+	void emptyArray(){
+		uinteger dimensions = currentCall.readInstructionArgs()[0].intVal;
+		QData r;
+		if (dimensions == 1){
+			currentCall.stack.push (QData([]));
+		}else{
+			//r = QData([])
+		}
 	}
 
 	/// changes length of an array, returns the new array
@@ -519,6 +532,7 @@ public:
 					"readElement"		: &readElement,
 					"modifyArray"		: &modifyArray,
 					"makeArray"			: &makeArray,
+					"emptyArray"		: &emptyArray,
 					// strings
 					/*"setLenString"	: &setLenString,
 					"getLenString"		: &getLenString,
