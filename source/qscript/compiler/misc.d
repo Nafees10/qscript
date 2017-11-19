@@ -17,7 +17,7 @@ package const string[] DATA_TYPES = ["void", "int", "double", "string"];
 /// An array containing another array conatining all operators
 package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "="];
 /// An array containing all bool-operators (operators that return true/false)
-package const string[] BOOL_OPERATORS = ["<", ">", "==", "!=", "<=", ">="];
+package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 
 /// Used by compiler's functions to return error
 package struct CompileError{
@@ -363,21 +363,34 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 /// converts from Token[] to QData
 /// 
 /// `tokens` is the Token[] containing the data
+/// `type` is the var in which the data type of the data will be put in
 /// 
 /// throws Exception on failure
-package QData TokensToQData(Token[] tokens){
+package QData tokensToQData(Token[] tokens, ref DataType type){
 	QData result;
+	static uinteger callCount = 0;
+	callCount ++;
 	// check if is an array
 	if (tokens.length > 1 &&
 		tokens[0].type == Token.Type.IndexBracketOpen && tokens[tokens.length-1].type == Token.Type.IndexBracketClose){
+
 		// recursion...
+		// or if is empty
+		if (tokens.length == 2){
+			// empty array
+			type = DataType(DataType.Type.Void, 1);
+			callCount --;
+			return QData([]);
+		}
 		Token[][] elements = splitArray(tokens);
 		result.arrayVal.length = elements.length;
 		foreach (i, element; elements){
-			result.arrayVal[i] = TokensToQData(element);
+			result.arrayVal[i] = tokensToQData(element, type);
+		}
+		if (callCount == 1){
+			type = DataType(tokens);
 		}
 	}else{
-		DataType type;
 		type.fromData(tokens);
 		assert(tokens.length == 1, "non-array data must be only one token in length");
 		if (type.type == DataType.Type.Double){
@@ -389,6 +402,7 @@ package QData TokensToQData(Token[] tokens){
 			result.strVal = decodeString(tokens[0].token[1 .. tokens[0].token.length - 1]);
 		}
 	}
+	callCount --;
 	return result;
 }
 ///
@@ -396,17 +410,17 @@ unittest{
 	import qscript.compiler.tokengen : stringToTokens;
 	Token[] tokens;
 	tokens = ["20"].stringToTokens;
-	assert (TokensToQData(tokens).intVal == 20);
+	assert (tokensToQData(tokens).intVal == 20);
 
 	tokens = ["20.0"].stringToTokens;
-	assert (TokensToQData(tokens).doubleVal == 20.0);
+	assert (tokensToQData(tokens).doubleVal == 20.0);
 
 	tokens = ["[", "20", ",", "15", "]"].stringToTokens;
 	QData expectedData;
 	expectedData.arrayVal.length = 2;
 	expectedData.arrayVal[0].intVal = 20;
 	expectedData.arrayVal[1].intVal = 15;
-	assert (TokensToQData(tokens).arrayVal == expectedData.arrayVal);
+	assert (tokensToQData(tokens).arrayVal == expectedData.arrayVal);
 }
 
 /// converts a literal data in bytecode format into QData
