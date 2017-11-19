@@ -221,8 +221,8 @@ package struct LiteralNode{
 	/// 
 	/// throws Exception on error
 	void fromTokens(Token[] tokensLiteral){
-		type = DataType(tokensLiteral);
-		literal = TokensToQData(tokensLiteral);
+		// check if is empty array
+		literal = tokensToQData(tokensLiteral, type);
 	}
 	/// returns this literal as in a string-representation, for the bytecode
 	string toByteCode(){
@@ -307,6 +307,12 @@ package struct ReadElement{
 	/// the index to read at
 	public @property CodeNode index(CodeNode newNode){
 		return nodes[1] = newNode;
+	}
+	/// returns the data type this node will return
+	public @property DataType returnType(){
+		DataType r = nodes[0].returnType;
+		r.arrayNestCount --;
+		return r;
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
