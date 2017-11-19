@@ -328,15 +328,34 @@ package struct CodeGen{
 		}
 		byteCode.append("\tgetVar i"~to!string(varID));
 		// then get the index required
-		foreach (index; node.indexes){
-			byteCode.append(
+		foreach (i, index; node.indexes){
+			// if is a string, use readChar
+			if (node.indexes.length-i == 0 && node.varType.type == DataType.Type.String){
+				byteCode.append(
 					generateByteCode(index)~
-					["\treadElement"]);
+					["\treadChar"]
+					);
+			}else{
+				byteCode.append(
+					generateByteCode(index)~
+					["\treadElement"]
+					);
+			}
 		}
 		// done
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
+	}
+
+	/// generates byteCode for the ReadElement
+	private string[] generateByteCode(ReadElement node){
+		// is a string?
+		if (node.readFromNode.returnType == DataType(DataType.Type.String)){
+			return generateByteCode(node.readFromNode)~generateByteCode(node.index)~["\treadChar"];
+		}else{
+			return generateByteCode(node.readFromNode)~generateByteCode(node.index)~["\treadElement"];
+		}
 	}
 
 	/// generates byte code for AssignmentNode
