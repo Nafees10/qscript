@@ -284,6 +284,21 @@ private:
 		currentCall.stack.push(args[0]);
 	}
 
+	/// returns a char (inside a string with length=1) from a string at an index
+	void readChar(){
+		QData[2] args = currentCall.stack.pop!(true)(2);
+		currentCall.stack.push(
+			QData(cast(string)[args[0].strVal[args[1].intVal]])
+			);
+	}
+
+	/// returns length of string
+	void strLen(){
+		currentCall.stack.push(
+			QData(currentCall.stack.pop.strVal.length)
+			);
+	}
+
 	// stack instructions
 
 	/// pushes a value or more to the stack
@@ -534,10 +549,8 @@ public:
 					"makeArray"			: &makeArray,
 					"emptyArray"		: &emptyArray,
 					// strings
-					/*"setLenString"	: &setLenString,
-					"getLenString"		: &getLenString,
+					"strLen"			: &strLen,
 					"readChar"			: &readChar,
-					"modifyString"		: &modifyString,*/
 					// executing functions
 					"execFuncS"			: &execFuncS,
 					"execFuncE"			: &execFuncE,
