@@ -62,6 +62,9 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			DataType r = argTypes[0];
 			r.arrayNestCount ++;
 			return r;
+		}else if (name == "strLen"){
+			// returns length, int
+			return DataType(DataType.Type.Integer);
 		}else if (name == "return"){
 			return DataType(DataType.Type.Void);
 		}else{
@@ -104,6 +107,14 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 				}
 			}
 			return true;
+		}else if (name == "strLen"){
+			// one arg, must be string
+			if (argTypes.length != 1){
+				return false;
+			}else if (argTypes[0] == DataType(DataType.Type.String)){
+				return true;
+			}
+			return false;
 		}else if (name == "return"){
 			// real type checking for this was done at compile-time (AST generator)
 			if (argTypes.length == 1){
