@@ -119,6 +119,8 @@ package struct CodeNode{
 			return operator.returnType;
 		}else if (storedType == CodeNode.Type.Variable){
 			return var.varType;
+		}else if (storedType == CodeNode.Type.ReadElement){
+			return arrayRead.returnType;
 		}else{
 			throw new Exception("invalid type stored");
 		}
@@ -156,6 +158,8 @@ package struct CodeNode{
 			return operator;
 		}else static if (T == CodeNode.Type.Variable){
 			return var;
+		}else static if (T == CodeNode.Type.ReadElement){
+			return arrayRead;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
@@ -311,6 +315,9 @@ package struct ReadElement{
 	/// returns the data type this node will return
 	public @property DataType returnType(){
 		DataType r = nodes[0].returnType;
+		if (r.arrayNestCount == 0 && r.type == DataType.Type.String){
+			return DataType(DataType.Type.String);
+		}
 		r.arrayNestCount --;
 		return r;
 	}
