@@ -196,6 +196,7 @@ package struct CodeGen{
 		const string[string] predefinedFunctions = [
 			"setLength" : "setLen",
 			"getLength" : "getLen",
+			"strLen"	: "strLen",
 			"array" 	: "makeArray",
 			"return"	: "return",
 		];
@@ -552,11 +553,9 @@ AnotherFunctionName
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 * emptyArray	- makes an empty n-dimensional array, where n is arg0 (int)
 
-TODO: the following instructions haven't been added yet in the compiler
 #### Instructions for strings
 * strLen		- pops a string from stack, pushes it's length
 * readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
-* modifyString	- pops string and a newVal from stack. Then pops `n` ints from stack, where n is specfied by arg0(int). The does something like: `array[poped0][poped1].. = newVal` and pushes the array
 
 ---
 
