@@ -176,23 +176,6 @@ package struct VariableNode{
 	public DataType varType;
 	/// the name of this var
 	public string varName;
-	/// stores index-es in case it is an array. For example, if code=`var[0][1]`, then the array below contains [0 (literal), 1 (literal)] 
-	private CodeNode[] storedindexes;
-	/// returns the indexes
-	@property ref CodeNode[] indexes(){
-		return storedindexes;
-	}
-	/// sets the indexes for this var
-	@property ref CodeNode[] indexes(CodeNode[] newIndexes){
-		return storedindexes = newIndexes.dup;
-	}
-	/// returns true if the var is an array-being read like: `varName[0]`
-	@property bool isArray(){
-		if (storedindexes.length > 0){
-			return true;
-		}
-		return false;
-	}
 	/// constructor
 	this (DataType type, string name, CodeNode[] index){
 		varType = type;
