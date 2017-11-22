@@ -194,11 +194,17 @@ package struct CodeGen{
 		}
 		// check if is a predefined-QScript-function
 		const string[string] predefinedFunctions = [
-			"setLength" : "setLen",
-			"getLength" : "getLen",
-			"strLen"	: "strLen",
-			"array" 	: "makeArray",
-			"return"	: "return",
+			"setLength"		: "setLen",
+			"getLength"		: "getLen",
+			"strLen"		: "strLen",
+			"array"			: "makeArray",
+			"return"		: "return",
+			"strToInt"		: "strToInt",
+			"strToDouble"	: "strToDouble",
+			"intToStr"		: "intToStr",
+			"intToDouble"	: "intToDouble",
+			"doubleToStr"	: "doubleToStr",
+			"doubleToInt"	: "doubleToInt"
 		];
 		if (node.fName in predefinedFunctions){
 			// then use the predefined function's instruction
@@ -542,6 +548,14 @@ AnotherFunctionName
 #### Instructions for strings
 * strLen		- pops a string from stack, pushes it's length
 * readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
+
+#### Instructions for converting between data types
+* strToInt		- pops a string from stack, uses `to!int` or `to!long` to convert to int, pushes the int
+* strToDouble	- pops a string from stack, uses `to!double` to convert to double, pushes the double
+* intToStr		- pops an int from stack, pushes a string containing the int
+* intToDouble	- pops an int from string, pushes a double with the same value as the int
+* doubleToStr	- pops a double from stack, pushes a string containing the double
+* doubleToInt	- pops a double from stack, pushes an int, with the same value, ignoring the decimals, to stack.
 
 ---
 

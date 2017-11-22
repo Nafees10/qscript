@@ -299,6 +299,50 @@ private:
 			);
 	}
 
+	// data type conversion instructions
+
+	/// str -> int
+	void strToInt(){
+		currentCall.stack.push(
+			QData(to!integer(currentCall.stack.pop.strVal))
+			);
+	}
+
+	/// str -> double
+	void strToDouble(){
+		currentCall.stack.push(
+			QData(to!double(currentCall.stack.pop.strVal))
+			);
+	}
+
+	/// int -> str
+	void intToStr(){
+		currentCall.stack.push(
+			QData(to!string(currentCall.stack.pop.intVal))
+			);
+	}
+
+	/// int -> double
+	void intToDouble(){
+		currentCall.stack.push(
+			QData(cast(double)currentCall.stack.pop.intVal)
+			);
+	}
+
+	/// double -> str
+	void doubleToStr(){
+		currentCall.stack.push(
+			QData(to!string(currentCall.stack.pop.doubleVal))
+			);
+	}
+
+	/// double -> int
+	void doubleToInt(){
+		currentCall.stack.push(
+			QData(cast(integer)currentCall.stack.pop.doubleVal)
+			);
+	}
+
 	// stack instructions
 
 	/// pushes a value or more to the stack
@@ -551,6 +595,13 @@ public:
 					// strings
 					"strLen"			: &strLen,
 					"readChar"			: &readChar,
+					// data type conversion
+					"strToInt"			: &strToInt,
+					"strToDouble"		: &strToDouble,
+					"intToStr"			: &intToStr,
+					"intToDouble"		: &intToDouble,
+					"doubleToStr"		: &doubleToStr,
+					"doubleToInt"		: &doubleToStr,
 					// executing functions
 					"execFuncS"			: &execFuncS,
 					"execFuncE"			: &execFuncE,

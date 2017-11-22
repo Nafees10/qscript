@@ -40,7 +40,9 @@ public alias DataType = qscript.compiler.misc.DataType;
 
 /// compiles a script from string[] to bytecode (in string[]).
 /// 
-/// 
+/// `script` is the script to compile
+/// `predefinedFunctions` is an array containing data about a function in Function[]
+/// `errors` is the array to which errors will be appended
 public string[] compileQScriptToByteCode(string[] script, Function[] predefinedFunctions, ref CompileError[] errors){
 	/// called by ASTGen to get return type of pre-defined functions
 	DataType onGetReturnType(string name, DataType[] argTypes){
@@ -145,6 +147,18 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 	if (errors.length > 0){
 		return [];
 	}
+	// add some other predefined QScript functions
+	predefinedFunctions = predefinedFunctions.dup;
+	predefinedFunctions ~= [
+		Function("strToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+		Function("strToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.String)]),
+
+		Function("intToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Integer)]),
+		Function("intToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
+
+		Function("doubleToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Double)]),
+		Function("doubleToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)])
+	];
 	// now finally the byte code
 	CodeGen byteCodeGenerator;
 	string[] code = byteCodeGenerator.generateByteCode(scriptAST, errors);
