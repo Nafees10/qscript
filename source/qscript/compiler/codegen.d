@@ -234,6 +234,8 @@ package struct CodeGen{
 			return generateByteCode(node.node!(CodeNode.Type.Operator));
 		}else if (node.type == CodeNode.Type.Variable){
 			return generateByteCode(node.node!(CodeNode.Type.Variable));
+		}else if (node.type == CodeNode.Type.ReadElement){
+			return generateByteCode(node.node!(CodeNode.Type.ReadElement));
 		}else{
 			compileErrors.append(CompileError(0, "invalid AST generated"));
 			return [];
@@ -335,21 +337,11 @@ package struct CodeGen{
 		// use CodeNode's byte code generator to get byte code for readFromNode
 		string[] r = generateByteCode(node.readFromNode)~generateByteCode(node.index);
 		// use readChar or readElement
-		if (node.returnType == DataType(DataType.Type.String, 0)){
+		if (node.returnType == DataType(DataType.Type.String)){
 			// use ReadChar
 			return r~["\treadChar"];
 		}else{
 			return r~["\treadElement"];
-		}
-	}
-
-	/// generates byteCode for the ReadElement
-	private string[] generateByteCode(ReadElement node){
-		// is a string?
-		if (node.readFromNode.returnType == DataType(DataType.Type.String)){
-			return generateByteCode(node.readFromNode)~generateByteCode(node.index)~["\treadChar"];
-		}else{
-			return generateByteCode(node.readFromNode)~generateByteCode(node.index)~["\treadElement"];
 		}
 	}
 
