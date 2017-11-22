@@ -327,26 +327,20 @@ package struct CodeGen{
 			compileErrors.append(CompileError(0, e.msg));
 			.destroy(e);
 		}
-		byteCode.append("\tgetVar i"~to!string(varID));
-		// then get the index required
-		foreach (i, index; node.indexes){
-			// if is a string, use readChar
-			if (node.indexes.length-i == 0 && node.varType.type == DataType.Type.String){
-				byteCode.append(
-					generateByteCode(index)~
-					["\treadChar"]
-					);
-			}else{
-				byteCode.append(
-					generateByteCode(index)~
-					["\treadElement"]
-					);
-			}
+		return ["\tgetVar i"~to!string(varID)];
+	}
+
+	/// generates byte code for ReadElement
+	private string[] generateByteCode(ReadElement node){
+		// use CodeNode's byte code generator to get byte code for readFromNode
+		string[] r = generateByteCode(node.readFromNode)~generateByteCode(node.index);
+		// use readChar or readElement
+		if (node.returnType == DataType(DataType.Type.String, 0)){
+			// use ReadChar
+			return r~["\treadChar"];
+		}else{
+			return r~["\treadElement"];
 		}
-		// done
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
 	}
 
 	/// generates byteCode for the ReadElement
@@ -369,18 +363,18 @@ package struct CodeGen{
 			.destroy(e);
 		}
 		// first check if the var is an array
-		if (node.var.isArray){
+		if (node.indexes.length > 0){
 			// push the original value of var, then push all the indexes, then call modifyAray, and setVar
 			auto byteCode = new LinkedList!string;
 			byteCode.append("\tgetVar i"~to!string(varID));
 			// now the indexes
-			foreach (index; node.var.indexes){
+			foreach (index; node.indexes){
 				byteCode.append(generateByteCode(index));
 			}
 			// now call push the val
 			byteCode.append(generateByteCode(node.val));
 			// then modifyArray
-			byteCode.append("\tmodifyArray i"~to!string(node.var.indexes.length));
+			byteCode.append("\tmodifyArray i"~to!string(node.indexes.length));
 			// finally, set the new array back
 			byteCode.append("\tsetVar i"~to!string(varID));
 			string[] r = byteCode.toArray;
