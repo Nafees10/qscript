@@ -133,6 +133,18 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			throw new Exception ("function '"~name~"' not defined");
 		}
 	}
+	// add some other predefined QScript functions
+	predefinedFunctions = predefinedFunctions.dup;
+	predefinedFunctions ~= [
+		Function("strToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+		Function("strToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.String)]),
+		
+		Function("intToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Integer)]),
+		Function("intToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
+		
+		Function("doubleToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Double)]),
+		Function("doubleToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)])
+	];
 	// first convert to tokens
 	errors = [];
 	TokenList tokens = toTokens(script.dup, errors);
@@ -147,18 +159,6 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 	if (errors.length > 0){
 		return [];
 	}
-	// add some other predefined QScript functions
-	predefinedFunctions = predefinedFunctions.dup;
-	predefinedFunctions ~= [
-		Function("strToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
-		Function("strToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.String)]),
-
-		Function("intToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Integer)]),
-		Function("intToDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
-
-		Function("doubleToStr", DataType(DataType.Type.String), [DataType(DataType.Type.Double)]),
-		Function("doubleToInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)])
-	];
 	// now finally the byte code
 	CodeGen byteCodeGenerator;
 	string[] code = byteCodeGenerator.generateByteCode(scriptAST, errors);

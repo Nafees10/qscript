@@ -46,9 +46,16 @@ private:
 		std.stdio.write(args[0].intVal);
 		return QData(0);
 	}
+	/// write int
+	QData writeDbl(QData[] args){
+		std.stdio.write(args[0].doubleVal);
+		return QData(0);
+	}
 	/// readln function
 	QData readln(QData[] args){
-		return QData(std.stdio.readln());
+		string s = std.stdio.readln;
+		s.length--;
+		return QData(s);
 	}
 public:
 	/// constructor
@@ -56,6 +63,7 @@ public:
 		this.addFunction(Function("writeln", DataType("void"), [DataType("string")]), &writeln);
 		this.addFunction(Function("write", DataType("void"), [DataType("string")]), &write);
 		this.addFunction(Function("writeInt", DataType("void"), [DataType("int")]), &writeInt);
+		this.addFunction(Function("writeDbl", DataType("void"), [DataType("double")]), &writeDbl);
 		this.addFunction(Function("readln", DataType("string"), []), &readln);
 	}
 }

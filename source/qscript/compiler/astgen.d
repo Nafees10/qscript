@@ -183,7 +183,13 @@ struct ASTGen{
 				return functionReturnTypes[functionName];
 			}else{
 				if (onGetFunctionReturnType !is null){
-					return onGetFunctionReturnType(functionName, argTypes.dup);
+					try{
+						return onGetFunctionReturnType(functionName, argTypes.dup);
+					}catch (Exception e){
+						compileErrors.append (CompileError(tokens.getTokenLine(index), e.msg));
+						return DataType(DataType.Type.Void);
+					}
+
 				}else{
 					throw new Exception("function '"~functionName~"' not defined");
 				}
@@ -212,10 +218,17 @@ struct ASTGen{
 			}else{
 				// use onArgsTypeOk
 				if (onArgsTypeOk !is null){
-					if (!onArgsTypeOk(functionName, argTypes)){
-						compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid arguments"));
+					try{
+						if (!onArgsTypeOk(functionName, argTypes)){
+							compileErrors.append(CompileError(tokens.getTokenLine(index),
+									"function '"~functionName~"' called with invalid arguments"));
+							return false;
+						}
+					}catch (Exception e){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 						return false;
 					}
+
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' not defined"));
 				}
