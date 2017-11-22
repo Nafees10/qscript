@@ -180,7 +180,6 @@ package struct VariableNode{
 	this (DataType type, string name, CodeNode[] index){
 		varType = type;
 		varName = name;
-		storedindexes = index.dup;
 	}
 	/// constructor
 	this (DataType type, string name){
@@ -394,11 +393,22 @@ package struct StatementNode{
 package struct AssignmentNode{
 	/// the variable to assign to
 	public VariableNode var;
+	/// stores the how "deeper" dimension of the array the value has to be assigned to
+	private CodeNode[] storedIndexes;
+	/// returns to which index(es) the val has to be assigned
+	public @property ref CodeNode[] indexes(){
+		return storedIndexes;
+	}
+	/// sets to which index(es) the val has to be assigned
+	public @property ref CodeNode[] indexes(CodeNode[] newArray){
+		return storedIndexes = newArray.dup;
+	}
 	/// the value to assign
 	public CodeNode val;
 	/// constructor
-	this (VariableNode variable, CodeNode value){
+	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value){
 		var = variable;
+		storedIndexes = varIndexes.dup;
 		val = value;
 	}
 }
