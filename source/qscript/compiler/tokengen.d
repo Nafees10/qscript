@@ -56,7 +56,9 @@ private Token.Type getTokenType(string token){
 		return false;
 	}
 
-	if (isInt(token)){
+	if (token == "="){
+		return Token.Type.AssignmentOperator;
+	}else if (isInt(token)){
 		return Token.Type.Integer;
 	}else if (isDouble(token)){
 		return Token.Type.Double;

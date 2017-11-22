@@ -521,6 +521,7 @@ package struct Token{
 		Double, /// That the token is a double (floating point) value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 		DataType, /// the  token is a data type
+		AssignmentOperator, /// and assignmentOperator
 		Operator,/// That the token is an operator, like `+`, `==` etc
 		Keyword,/// A `function` or `var` ...
 		Comma,/// That its a comma: `,`
