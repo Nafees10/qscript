@@ -469,8 +469,6 @@ struct ASTGen{
 						lastNode = CodeNode(generateOperatorAST(lastNode));
 						index --;
 					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
-						index ++;
 						break;
 					}
 					separatorExpected = false;
@@ -547,7 +545,7 @@ struct ASTGen{
 				var = varCodeNode.node!(CodeNode.Type.Variable);
 			}
 			// now at index, the token should be a `=` operator
-			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
+			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
 				// everything's ok till the `=` operator
 				index++;
 				CodeNode val = generateCodeAST();
