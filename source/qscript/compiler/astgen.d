@@ -457,6 +457,11 @@ struct ASTGen{
 							index++;
 							break;
 						}
+						// make sure lastNode is an array with enough dimensions
+						if (lastNode.returnType.arrayNestCount == 0 && lastNode.returnType.type != DataType.Type.String){
+							compileErrors.append (CompileError(tokens.getTokenLine(index),
+									"can not read that many dimensions from that array"));
+						}
 						lastNode = CodeNode(ReadElement(lastNode, indexNode));
 						continue;
 					}
@@ -512,28 +517,6 @@ struct ASTGen{
 					.destroy(e);
 				}
 				index ++;
-				// check if indexes are specified, case yes, add em
-				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
-					LinkedList!CodeNode indexes = new LinkedList!CodeNode;
-					for (index = index; index < tokens.tokens.length; index ++){
-						if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
-							index++;
-							indexes.append(generateCodeAST());
-						}else{
-							break;
-						}
-					}
-					var.indexes = indexes.toArray;
-					.destroy(indexes);
-				}
-				// make sure the indexes are possible
-				if (var.indexes.length > var.varType.arrayNestCount){
-					compileErrors.append(CompileError(tokens.getTokenLine(index),
-							"cannot read variable as a "~to!string(var.indexes.length)~" dimensional array"));
-				}else{
-					// fix the var.type.arrayNestCount, according to the indexes read
-					var.varType.arrayNestCount -= var.indexes.length;
-				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
 				index ++;
@@ -545,13 +528,30 @@ struct ASTGen{
 		AssignmentNode generateAssignmentAST(){
 			AssignmentNode assignment;
 			// get the variable to assign to
-			VariableNode var = generateVariableAST();
+			CodeNode varCodeNode = generateCodeAST();
+			VariableNode var;
+			// make sure it's a var
+			CodeNode[] indexes;
+			{
+				LinkedList!CodeNode indexesList = new LinkedList!CodeNode;
+				CodeNode currentNode = varCodeNode;
+				while (varCodeNode.type == CodeNode.Type.ReadElement){
+					indexesList.append (varCodeNode);
+					varCodeNode = varCodeNode.node!(CodeNode.Type.ReadElement).readFromNode;
+					if (varCodeNode.type != CodeNode.Type.ReadElement && varCodeNode.type != CodeNode.Type.Variable){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
+						return AssignmentNode();
+					}
+				}
+				indexes = indexesList.toArray.reverseArray;
+				var = varCodeNode.node!(CodeNode.Type.Variable);
+			}
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.Operator && tokens.tokens[index].token == "="){
 				// everything's ok till the `=` operator
 				index++;
 				CodeNode val = generateCodeAST();
-				assignment = AssignmentNode(var, val);
+				assignment = AssignmentNode(var, indexes, val);
 				// make sure it's followed by a semicolon
 				if (tokens.tokens[index].type != Token.Type.StatementEnd){
 					compileErrors.append(CompileError(tokens.getTokenLine(index),
@@ -568,12 +568,12 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index-1), e.msg));
 				}
 				// also need to check if the var was declared a array or not, and if it's being set a correct type or not
-				if (varType.arrayNestCount < var.indexes.length){
+				if (varType.arrayNestCount < indexes.length){
 					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
 							"variable dimensions in assignment differs from declaration"));
 				}else{
 					// continue with checking
-					DataType expectedType = DataType(varType.type, varType.arrayNestCount - var.indexes.length);
+					DataType expectedType = DataType(varType.type, varType.arrayNestCount - indexes.length);
 					// make sure it matches
 					if (expectedType != val.returnType){
 						compileErrors.append(CompileError(tokens.getTokenLine(index-1),
