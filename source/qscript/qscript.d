@@ -325,7 +325,7 @@ private:
 	/// int -> double
 	void intToDouble(){
 		currentCall.stack.push(
-			QData(cast(double)currentCall.stack.pop.intVal)
+			QData(to!double(currentCall.stack.pop.intVal))
 			);
 	}
 
@@ -339,7 +339,7 @@ private:
 	/// double -> int
 	void doubleToInt(){
 		currentCall.stack.push(
-			QData(cast(integer)currentCall.stack.pop.doubleVal)
+			QData(to!integer(currentCall.stack.pop.doubleVal))
 			);
 	}
 
@@ -535,10 +535,6 @@ public:
 		string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
 		if (errors.length > 0){
 			return errors;
-		}
-		debug{
-			// TODO remove this debug
-			arrayToFile ("/home/nafees/Desktop/q.code", byteCode);
 		}
 		string sError;
 		if (!loadByteCode(byteCode, sError)){
