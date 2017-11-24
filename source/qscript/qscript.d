@@ -274,14 +274,21 @@ private:
 	}
 
 	/// modifies an array, returns the modified array
-	/// 
-	/// arg0 is the array to modify
-	/// arg1 is the new value of the element
-	/// arg2 is the index of the element to modify
 	void modifyArray(){
-		QData[3] args = currentCall.stack.pop!(true)(3);
-		args[0].arrayVal[args[2].intVal] = args[1];
-		currentCall.stack.push(args[0]);
+		QData[] indexes = currentCall.stack.pop!(true)(currentCall.readInstructionArgs[0].intVal);
+		QData newVal, array;
+		newVal = currentCall.stack.pop;
+		array = currentCall.stack.pop;
+		QData subArray;
+		uinteger indexToModify = indexes[indexes.length-1].intVal;
+		indexes.length--;
+		array.arrayVal = array.arrayVal.dup;
+		subArray = array;
+		for (uinteger i=0; i < indexes.length; i ++){
+			subArray = subArray.arrayVal[indexes[i].intVal];
+		}
+		subArray.arrayVal[indexToModify] = newVal;
+		currentCall.stack.push(array);
 	}
 
 	/// returns a char (inside a string with length=1) from a string at an index
