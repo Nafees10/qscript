@@ -304,7 +304,6 @@ struct ASTGen{
 							}
 							// now the arg_name
 							arg.argName = tokens.tokens[index].token;
-							index++;
 							commaExpected = true;
 							// add it to list
 							argList.append (arg);
@@ -314,6 +313,7 @@ struct ASTGen{
 					// put args in list
 					functionNode.arguments = argList.toArray;
 					.destroy(argList);
+					index = brackEnd+1;
 				}
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
 					// no args, just body
