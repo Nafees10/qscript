@@ -368,12 +368,12 @@ package struct CodeGen{
 			// push the original value of var, then push all the indexes, then call modifyAray, and setVar
 			auto byteCode = new LinkedList!string;
 			byteCode.append("\tgetVar i"~to!string(varID));
+			// now push the val
+			byteCode.append(generateByteCode(node.val));
 			// now the indexes
 			foreach (index; node.indexes){
 				byteCode.append(generateByteCode(index));
 			}
-			// now call push the val
-			byteCode.append(generateByteCode(node.val));
 			// then modifyArray
 			byteCode.append("\tmodifyArray i"~to!string(node.indexes.length));
 			// finally, set the new array back
