@@ -47,8 +47,8 @@ Result is pushed to stack
 
 #### Instructions for handling variables:
 * varCount		- changes the max number of vars available
-* getVar		- pushes value of a variable to stack, arg0 is ID (int, >0) of the var
-* setVar		- sets value of a var of the last value pushed to stack, arg0 is ID (int, >0) of the var
+* getVar		- pushes value of a variable to stack, arg0 is ID (int, >=0) of the var
+* setVar		- sets value of a var of the last value pushed to stack, arg0 is ID (int, >=0) of the var
 
 #### Instructions for mathematical operators:
 * addInt		- adds last two integers pushed to stack, pushes the result to stack
