@@ -346,7 +346,7 @@ package struct CodeGen{
 		// use CodeNode's byte code generator to get byte code for readFromNode
 		string[] r = generateByteCode(node.readFromNode)~generateByteCode(node.index);
 		// use readChar or readElement
-		if (node.returnType == DataType(DataType.Type.String)){
+		if (node.readFromNode.returnType == DataType(DataType.Type.String)){
 			// use ReadChar
 			return r~["\treadChar"];
 		}else{
