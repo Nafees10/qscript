@@ -92,7 +92,7 @@ and arg0 of jump should be that %someString% (string), without any spaces or quo
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
 Then does something like: `array[poped0][poped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
-* emptyArray	- makes an empty n-dimensional array, where n is arg0 (int)
+* emptyArray	- makes an empty one-dimensional array
 
 #### Instructions for strings
 * strLen		- pops a string from stack, pushes it's length

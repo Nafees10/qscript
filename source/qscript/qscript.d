@@ -233,13 +233,7 @@ private:
 	/// 
 	/// called after array is declared, to init it.
 	void emptyArray(){
-		uinteger dimensions = currentCall.readInstructionArgs()[0].intVal;
-		QData r;
-		if (dimensions == 1){
-			currentCall.stack.push (QData([]));
-		}else{
-			//r = QData([])
-		}
+		currentCall.stack.push (QData([]));
 	}
 
 	/// changes length of an array, returns the new array

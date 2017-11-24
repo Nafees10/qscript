@@ -400,7 +400,7 @@ package struct CodeGen{
 		}
 		// if is an array, then call emptyArray on all the vars
 		if (node.type.isArray){
-			const string makeInst = "\temptyArray i"~to!string(node.type.arrayNestCount);
+			const string makeInst = "\temptyArray";
 			string[] r;
 			r.length = 2*node.vars.length;
 			foreach (i, var; node.vars){
