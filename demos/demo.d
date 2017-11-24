@@ -1,7 +1,8 @@
-﻿module app;
+﻿module demo;
 
+import utils.misc : fileToArray;
 import qscript.qscript;
-import utils.misc;
+import std.datetime;
 import std.stdio;
 
 class ScriptMan : QScript{
@@ -46,7 +47,7 @@ private:
 		std.stdio.write(args[0].intVal);
 		return QData(0);
 	}
-	/// write int
+	/// write double
 	QData writeDbl(QData[] args){
 		std.stdio.write(args[0].doubleVal);
 		return QData(0);
@@ -68,15 +69,24 @@ public:
 	}
 }
 
-void main (){
-	ScriptMan scr = new ScriptMan();
-	CompileError[] errors = scr.loadScript(fileToArray("/home/nafees/Desktop/q.qs"));
-	if (errors.length > 0){
-		writeln("Compilation errors:");
-		foreach (err; errors){
-			writeln ("line#",err.lineno, ": ",err.msg);
+void main (string[] args){
+	if (args.length < 2){
+		writeln("not enough args. Usage:");
+		writeln("./demo [FILENAME]");
+	}else{
+		StopWatch sw;
+		ScriptMan scr = new ScriptMan();
+		CompileError[] errors = scr.loadScript(fileToArray(args[1]));
+		if (errors.length > 0){
+			writeln("Compilation errors:");
+			foreach (err; errors){
+				writeln ("line#",err.lineno, ": ",err.msg);
+			}
 		}
+		// now execute main
+		sw.start;
+		scr.executeScriptFunction("main",[]);
+		sw.stop;
+		writeln("execution took: ", sw.peek.msecs, "msecs");
 	}
-	// now execute main
-	scr.executeScriptFunction("main",[]);
 }
