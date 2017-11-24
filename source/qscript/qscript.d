@@ -532,7 +532,7 @@ public:
 	CompileError[] loadScript(string[] script){
 		// compile to byte code
 		CompileError[] errors;
-		string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
+		string[] byteCode = compileScript(script, errors);
 		if (errors.length > 0){
 			return errors;
 		}
@@ -541,6 +541,14 @@ public:
 			return [CompileError(0, sError)];
 		}
 		return [];
+	}
+
+	/// compiles a script into byte code, returns the byte code
+	/// 
+	/// `script` is the script to compile, each line in a separate element, without the trailing '\n'
+	/// `errors` is the array to put compilation errors, if any, in
+	string[] compileScript(string[] script, ref CompileError[] errors){
+		return compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
 	}
 
 	/// loads a byte code for execution. Returns true if no errors occured,
@@ -591,6 +599,7 @@ public:
 					// strings
 					"strLen"			: &strLen,
 					"readChar"			: &readChar,
+					// concatString also comes under this, but it's an operator related thing, so its up there ^
 					// data type conversion
 					"strToInt"			: &strToInt,
 					"strToDouble"		: &strToDouble,
