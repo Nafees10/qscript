@@ -545,20 +545,17 @@ struct ASTGen{
 			VariableNode var;
 			// make sure it's a var
 			CodeNode[] indexes;
-			{
+			if (varCodeNode.type == CodeNode.Type.ReadElement){
 				LinkedList!CodeNode indexesList = new LinkedList!CodeNode;
-				CodeNode currentNode = varCodeNode;
+				ReadElement indexRead;
 				while (varCodeNode.type == CodeNode.Type.ReadElement){
-					indexesList.append (varCodeNode);
-					varCodeNode = varCodeNode.node!(CodeNode.Type.ReadElement).readFromNode;
-					if (varCodeNode.type != CodeNode.Type.ReadElement && varCodeNode.type != CodeNode.Type.Variable){
-						compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
-						return AssignmentNode();
-					}
+					indexRead = varCodeNode.node!(CodeNode.Type.ReadElement);
+					indexesList.append(indexRead.index);
+					varCodeNode = indexRead.readFromNode;
 				}
 				indexes = indexesList.toArray.reverseArray;
-				var = varCodeNode.node!(CodeNode.Type.Variable);
 			}
+			var = varCodeNode.node!(CodeNode.Type.Variable);
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
 				// everything's ok till the `=` operator
