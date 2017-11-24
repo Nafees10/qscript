@@ -45,7 +45,7 @@ package struct CodeGen{
 		/// creates a new var, returns the ID, throws Exception if var already exists
 		public uinteger getNewVarID(string varName){
 			// check if already exists
-			foreach (name; varIDs){
+			foreach (id, name; varIDs){
 				if (varName == name){
 					throw new Exception("variable '"~varName~"' declared twice");
 				}
@@ -57,7 +57,7 @@ package struct CodeGen{
 			}
 			varIDs[newID] = varName;
 			// put it in varScopeDepth
-			varScopeDepth[scopeDepth] = newID;
+			varScopeDepth[newID] = scopeDepth;
 			return newID;
 		}
 		/// returns ID of a var. throws exception if var is not declared
@@ -76,8 +76,8 @@ package struct CodeGen{
 		/// should/must be called when all var related functions from inside a block are done
 		public void decreaseScope(){
 			// clear vars
-			foreach (key; varScopeDepth.keys){
-				if (key == scopeDepth){
+			foreach (key; varIDs.keys){
+				if (varScopeDepth[key] == scopeDepth){
 					varScopeDepth.remove(key);
 					varIDs.remove(key);
 				}
@@ -110,7 +110,6 @@ package struct CodeGen{
 		uinteger getMaxVarCount(BlockNode node){
 			uinteger r = 0;
 			uinteger maxSub = 0;
-			increaseScope();
 			foreach (statement; node.statements){
 				if (statement.type == StatementNode.Type.VarDeclare){
 					// get the number of vars
@@ -135,6 +134,7 @@ package struct CodeGen{
 		maxVars += node.arguments.length;
 		byteCode.append("\tvarCount i"~to!string(maxVars));
 		// then assign the arguments their var IDs
+		increaseScope();
 		foreach (arg; node.arguments){
 			try{
 				getNewVarID(arg.argName);
@@ -145,6 +145,7 @@ package struct CodeGen{
 		}
 		// then append the instructions
 		byteCode.append (generateByteCode (node.bodyBlock));
+		decreaseScope();
 
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -154,9 +155,11 @@ package struct CodeGen{
 	/// generates byte code for BlockNode
 	private string[] generateByteCode(BlockNode node){
 		LinkedList!string byteCode = new LinkedList!string;
+		increaseScope();
 		foreach (statement; node.statements){
 			byteCode.append(generateByteCode(statement));
 		}
+		decreaseScope();
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;

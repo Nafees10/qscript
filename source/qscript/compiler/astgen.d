@@ -260,6 +260,7 @@ struct ASTGen{
 		FunctionNode generateFunctionAST(){
 			FunctionNode functionNode;
 			// make sure it's a function
+			increaseScopeCount();
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				// read the type
 				index++;
@@ -325,6 +326,7 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
 				index ++;
 			}
+			removeLastScope();
 			return functionNode;
 		}
 		
