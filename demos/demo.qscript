@@ -1,9 +1,0 @@
-main{
-  qwrite("This is a demo script, I'll run a loop to 100000");
-  new (i);
-  i = 0;
-  while (i<100000){
-    i = i + 1;
-  }
-  qwrite("That was fast, right? It should've taken around 1300 msecs, while the D equaivalent of this code takes just 50 msecs less!");
-}
