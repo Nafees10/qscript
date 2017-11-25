@@ -416,29 +416,30 @@ package struct CodeGen{
 	private string[] generateByteCode(IfNode node){
 		// stores the `ID` of this if statement
 		static uinteger ifCount = 0;
+		uinteger currentCount = ifCount;
+		ifCount ++;
 		auto byteCode = new LinkedList!string;
 		// first push the condition
 		byteCode.append(generateByteCode(node.condition));
 		// then the skipTrue, to skip the jump to else
 		byteCode.append([
 				"\tskipTrue i1",
-				"\tjump ifEnd"~to!string(ifCount)
+				"\tjump ifEnd"~to!string(currentCount)
 			]);
 		// then comes the if-on-true body
 		byteCode.append(generateByteCode(BlockNode(node.statements)));
 		// then then jump to elseEnd to skip the else statements
 		if (node.hasElse){
-			byteCode.append("\tjump elseEnd"~to!string(ifCount));
+			byteCode.append("\tjump elseEnd"~to!string(currentCount));
 		}
-		byteCode.append("\tifEnd"~to!string(ifCount)~":");
+		byteCode.append("\tifEnd"~to!string(currentCount)~":");
 		// now the elseBody
 		if (node.hasElse){
 			byteCode.append(generateByteCode(BlockNode(node.elseStatements))~
-					["\telseEnd"~to!string(ifCount)~":"]);
+					["\telseEnd"~to!string(currentCount)~":"]);
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
-		ifCount ++;
 		return r;
 	}
 
@@ -447,24 +448,25 @@ package struct CodeGen{
 		auto byteCode = new LinkedList!string;
 		// stores the `ID` of the while statement
 		static uinteger whileCount = 0;
+		uinteger currentCount = whileCount;
+		whileCount ++;
 		// first comes the jump-back-here position
-		byteCode.append("\twhileStart"~to!string(whileCount)~":");
+		byteCode.append("\twhileStart"~to!string(currentCount)~":");
 		// then comes the condition
 		byteCode.append(generateByteCode(node.condition));
 		// then skip the jump-to-end if true
 		byteCode.append([
 				"\tskipTrue i1",
-				"\tjump whileEnd"~to!string(whileCount)
+				"\tjump whileEnd"~to!string(currentCount)
 			]);
 		// then the loop body
 		byteCode.append(generateByteCode(BlockNode(node.statements)));
 		// then jump back to condition, to see if it'll start again
-		byteCode.append("\tjump whileStart"~to!string(whileCount));
+		byteCode.append("\tjump whileStart"~to!string(currentCount));
 		// then mark the loop end
-		byteCode.append("\twhileEnd"~to!string(whileCount)~":");
+		byteCode.append("\twhileEnd"~to!string(currentCount)~":");
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
-		whileCount ++;
 		return r;
 	}
 
