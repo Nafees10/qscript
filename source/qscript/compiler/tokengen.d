@@ -193,12 +193,13 @@ private TokenList separateTokens(string[] script){
 				break;
 			}
 			if (currentType != prevType || currentType == CharType.Bracket || currentType == CharType.Semicolon ||
-				currentType == CharType.Comma){
+				currentType == CharType.Comma || currentType == CharType.Operator){
 				if (readFrom < i){
 					tokens.append (line[readFrom .. i]);
 					readFrom = i;
 				}
-				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma){
+				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma ||
+					currentType == CharType.Operator){
 					tokens.append (cast(string)[line[i]]);
 					readFrom = i+1;
 				}
