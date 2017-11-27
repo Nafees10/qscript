@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <title>toHtml (qscript.compiler.asthtml.toHtml)</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="style.css" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link rel="prefetch" href="search-results.html" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form id="search" action="search-docs.html">
+			<input placeholder="Find a symbol name..." name="searchTerm" type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>toHtml</h1><div class="breadcrumbs"><a href="qscript.html" class="breadcrumb">qscript</a><a href="qscript.compiler.html" class="breadcrumb">compiler</a><a href="qscript.compiler.asthtml.html" class="breadcrumb">asthtml</a></div><div><div class="documentation-comment synopsis"><div><p>generates html representation for ScriptNode</p></div></div></div><div class="annotated-prototype"><ol class="overloads"><li class="active-overload-option"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">ScriptNode</span> <span class="hid">node</span>)</tt></span><div class="function-prototype"><a id="help-link" href="http://dpldocs.info/reading-prototypes">?</a><div class="attributes"></div><div class="return-type"><span class="builtin-type">string</span>[]</div><div class="function-name">toHtml</div><div class="template-parameters"></div><div class="runtime-parameters">(<div class="parameters-list toplevel"><div class="runtime-parameter-item parameter-item"><span class="parameter-type-holder"><span class="parameter-type"><a class="name" title="qscript.compiler.ast.ScriptNode" href="qscript.compiler.ast.ScriptNode.html" data-ident="ScriptNode">ScriptNode</a></span></span> <span data-ident="node" class="parameter-name name"><a href="#param-node">node</a></span></div></div>)</div><div class="function-contracts"></div></div></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.2.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">FunctionNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.3.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">BlockNode</span> <span class="hid">node</span>, <span class="type">string</span> <span class="hid">blockCaption</span> = <span class="kwrd">null</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.4.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">StatementNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.5.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">AssignmentNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.6.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">FunctionCallNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.7.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">IfNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.8.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">WhileNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.9.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">VarDeclareNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.10.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">CodeNode</span> <span class="hid">node</span>, <span class="type">string</span> <span class="hid">caption</span> = <span class="kwrd">null</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.11.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">LiteralNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.12.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">OperatorNode</span> <span class="hid">node</span>)</tt></span></a></li><li class="overload-option"><a href="qscript.compiler.asthtml.toHtml.13.html"><span class="overload-signature"><tt class="highlighted"><span class="type">string</span>[]</tt> <span class="name">toHtml</span><tt class="highlighted">(<span class="hid">VariableNode</span> <span class="hid">node</span>)</tt></span></a></li></ol></div><div><h2 id="meta"><a href="#meta" class="header-anchor">Meta</a></h2><div class="documentation-comment source-section other-section"><h3 id="source"><a href="#source" class="header-anchor">Source</a></h3><div><p><a href="source/qscript.compiler.asthtml.d.html#L26">See Implementation</a><br /></p></div></div></div></div>
+		<div id="page-nav"><a href="qscript.html" class="parent">qscript</a><a href="qscript.compiler.html" class="parent">compiler</a><a href="qscript.compiler.asthtml.html" class="parent">asthtml</a>
+		<span class="type-separator">functions</span><ul><li><a href="qscript.compiler.asthtml.toHtml.1.html" class="function current">toHtml</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>

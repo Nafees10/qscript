@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <title>qscript.compiler.ast (qscript.compiler.ast)</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="style.css" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link rel="prefetch" href="search-results.html" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form id="search" action="search-docs.html">
+			<input placeholder="Find a symbol name..." name="searchTerm" type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>qscript.compiler.ast</h1><div class="breadcrumbs"><a href="qscript.html" class="breadcrumb">qscript</a><a href="qscript.compiler.html" class="breadcrumb">compiler</a></div><div><div class="documentation-comment synopsis"><div><p>Contains definitions for &quot;nodes&quot; making the AST</p></div></div></div><div class="annotated-prototype"></div><h2 id="members"><a href="#members" class="header-anchor">Members</a></h2><h3 id="structs"><a href="#structs" class="header-anchor">Structs</a></h3><dl class="member-list native"><dt><a href="qscript.compiler.ast.AssignmentNode.html">AssignmentNode</a><div style="max-width: 23ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">AssignmentNode</span></div></dt><dd><div><p>to store assignment statements</p></div></dd><dt><a href="qscript.compiler.ast.BlockNode.html">BlockNode</a><div style="max-width: 17ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">BlockNode</span></div></dt><dd><div><p>a node representing a &quot;set-of-statements&quot; AKA a &quot;block&quot;</p></div></dd><dt><a href="qscript.compiler.ast.CodeNode.html">CodeNode</a><div style="max-width: 16ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">CodeNode</span></div></dt><dd><div><p>a node to represent code that evaluates to some data.</p></div></dd><dt><a href="qscript.compiler.ast.FunctionCallNode.html">FunctionCallNode</a><div style="max-width: 25ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">FunctionCallNode</span></div></dt><dd><div><p>to store functionCall nodes</p></div></dd><dt><a href="qscript.compiler.ast.FunctionNode.html">FunctionNode</a><div style="max-width: 20ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">FunctionNode</span></div></dt><dd><div><p>a node representing a function definition</p></div></dd><dt><a href="qscript.compiler.ast.IfNode.html">IfNode</a><div style="max-width: 14ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">IfNode</span></div></dt><dd><div><p>to store if statements</p></div></dd><dt><a href="qscript.compiler.ast.LiteralNode.html">LiteralNode</a><div style="max-width: 19ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">LiteralNode</span></div></dt><dd><div><p>stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array</p></div></dd><dt><a href="qscript.compiler.ast.OperatorNode.html">OperatorNode</a><div style="max-width: 20ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">OperatorNode</span></div></dt><dd><div><p>stores an operator with operands</p></div></dd><dt><a href="qscript.compiler.ast.ReadElement.html">ReadElement</a><div style="max-width: 19ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">ReadElement</span></div></dt><dd><div><p>stores an &quot;array-read&quot; (instruction <tt class="inline-code">readElement</tt> or for string, <tt class="inline-code">readChar</tt>)</p></div></dd><dt><a href="qscript.compiler.ast.ScriptNode.html">ScriptNode</a><div style="max-width: 18ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">ScriptNode</span></div></dt><dd><div><p>a node representing the script</p></div></dd><dt><a href="qscript.compiler.ast.StatementNode.html">StatementNode</a><div style="max-width: 22ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">StatementNode</span></div></dt><dd><div><p>a node representing statements, including: if, while, function-call..</p></div></dd><dt><a href="qscript.compiler.ast.VarDeclareNode.html">VarDeclareNode</a><div style="max-width: 23ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">VarDeclareNode</span></div></dt><dd><div><p>to store var declaration</p></div></dd><dt><a href="qscript.compiler.ast.VariableNode.html">VariableNode</a><div style="max-width: 20ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">VariableNode</span></div></dt><dd><div><p>stores a variable</p></div></dd><dt><a href="qscript.compiler.ast.WhileNode.html">WhileNode</a><div style="max-width: 17ch;" class="simplified-prototype"><span class="builtin-type">struct</span> <span class="name">WhileNode</span></div></dt><dd><div><p>to store while statements</p></div></dd></dl><div></div></div>
+		<div id="page-nav"><a href="qscript.html" class="parent">qscript</a><a href="qscript.compiler.html" class="parent">compiler</a>
+		<span class="type-separator">modules</span><ul><li><a href="qscript.compiler.ast.html" class="module current">ast</a></li><li><a href="qscript.compiler.astgen.html" class="module">astgen</a></li><li><a href="qscript.compiler.asthtml.html" class="module">asthtml</a></li><li><a href="qscript.compiler.bytecode.html" class="module">bytecode</a></li><li><a href="qscript.compiler.codegen.html" class="module">codegen</a></li><li><a href="qscript.compiler.compiler.html" class="module">compiler</a></li><li><a href="qscript.compiler.misc.html" class="module">misc</a></li><li><a href="qscript.compiler.tokengen.html" class="module">tokengen</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>
