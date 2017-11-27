@@ -2,11 +2,11 @@
 This document contains some information about the functions predefined in QScript.
 
 ## Arrays:
-### setLen
+### setLength
 Modifies length of an existing array.  
 **Arguments:**  
-1. The array to change length of. Data Type: _void[]_ , array of any type, of any dimensions.
-2. The new length. Data Type: _int_ >=0  
+1. The array to change length of. Data Type: `void[]` , array of any type, of any dimensions.
+2. The new length. Data Type: `int` >=0  
 
 **Returns:**  
 The array with the new length. Data Type: same data type as argument1  
@@ -19,10 +19,10 @@ array = setLength(array, 5); # change array's length to hold 5 elements, from in
 ### getLength
 Returns the length of an array.  
 **Arguments:**  
-1. The array to get length of. Data Type: _void[]_ , array of any type, of any dimensions.  
+1. The array to get length of. Data Type: `void[]` , array of any type, of any dimensions.  
 
 **Returns:**  
-The length of array in argument1. Data Type: _int_ >=0  
+The length of array in argument1. Data Type: `int` >=0  
 **Usage:**  
 ```
 int[] (array);
@@ -32,10 +32,10 @@ getLength (array); # returns 4
 ### array
 Puts all provided arguments in an array. Unlike `[...]`, arguments be be literal or not.  
 **Arguments:**  
-* The elements of the resulting array. Data Type: _void_, can be of any type, all arguments must be of the same type.  
+* The elements of the resulting array. Data Type: `void`, can be of any type, all arguments must be of the same type.  
 
 **Returns:**  
-The arguments in an array. Data Type: _void[]_, array of the data type of the arguments.  
+The arguments in an array. Data Type: `void[]`, array of the data type of the arguments.  
 **Usage:**  
 ```
 int[] (array);
@@ -48,10 +48,10 @@ array = array (0, 2, 4, 6); # same as [0, 2, 4, 6], except, this function can be
 ### strLen
 To get the length of a string.  
 **Arguments:**  
-1. The stirng to get the length of. Data Type: _string_  
+1. The stirng to get the length of. Data Type: `string`  
 
 **Rerurns:**  
-The length of the string in argument1. Data Type: _int_ >=0  
+The length of the string in argument1. Data Type: `int` >=0  
 **Usage:**  
 ```
 strLen("hello World!"); # returns 12
@@ -63,10 +63,10 @@ strLen("hello World!"); # returns 12
 ### strToInt
 Reads an integer from a string.  
 **Arguments:**  
-1. The string to read from. Data Type: _string_  
+1. The string to read from. Data Type: `string`  
 
 **Returns:**  
-The integer read from it. Data Type: _int_  
+The integer read from it. Data Type: `int`  
 **Usage:**  
 ```
 int (sum);
@@ -75,10 +75,10 @@ sum = 2 + strToInt("5"); # sum is now: 7
 ### strToDouble
 Reads a double (floating point number) from a string.  
 **Arguments:**  
-1. The string to read from. Data Type: _string_  
+1. The string to read from. Data Type: `string`  
 
 **Returns:**  
-The double read from it. Data Type: _double_  
+The double read from it. Data Type: `double`  
 **Usage:**  
 ```
 double (sum);
@@ -87,10 +87,10 @@ double = 2.0 + strToDouble("5.7"); # sum is now: 7.7
 ### intToStr
 Puts the value of an integer into a string.  
 **Arguments:**  
-1. The integer value to put into a string. Data Type: _int_  
+1. The integer value to put into a string. Data Type: `int`  
 
 **Returns:**  
-The string containing the integer. Data Type: _string_  
+The string containing the integer. Data Type: `string`  
 **Usage:**  
 ```
 string (r);
@@ -99,10 +99,10 @@ r = "sum of 2 & 5 is: "~intToStr(2+5);
 ### intToDouble
 Puts the value of an integer into a double.  
 **Arguments:**  
-1. The integer to put into a double. Data Type: _int_  
+1. The integer to put into a double. Data Type: `int`  
 
 **Returns:**  
-The double containing the same value as the integer. Data Type: _double_  
+The double containing the same value as the integer. Data Type: `double`  
 **Usage:**  
 ```
 double (d);
@@ -111,10 +111,10 @@ d = 5.7 + intToDouble(2);
 ### doubleToStr
 Puts the value of a double into a string.  
 **Arguments:**  
-1. The double value to put into a string. Data Type: _double_  
+1. The double value to put into a string. Data Type: `double`  
 
 **Returns:**  
-The string containing the double. Data Type: _string_  
+The string containing the double. Data Type: `string`  
 **Usage:**  
 ```
 string (r);
@@ -123,10 +123,10 @@ r = "sum of 2 & 5.7 is: "~doubleToStr( 2.0 + 5.7 );
 ### doubleToInt
 Puts the value of a double into an integer, ignoring the decimal value.  
 **Arguments:**  
-1. The double to put into an integer. Data Type: _double_  
+1. The double to put into an integer. Data Type: `double`  
 
 **Returns:**  
-The integer containing the integral value of the double. Data Type: _int_  
+The integer containing the integral value of the double. Data Type: `int`  
 **Usage:**  
 ```
 int (i);
@@ -142,7 +142,7 @@ Returns a value from a function, and exits execution of that function. If used i
 1. The data to return. Data Type: same as the function return type.  
 
 **Returns:**  
-nothing. Data Type: _void_  
+nothing. Data Type: `void`, no return value  
 **Usage:**  
 ```
 # function to get sum of 2 ints
