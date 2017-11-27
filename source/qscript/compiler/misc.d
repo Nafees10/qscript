@@ -346,6 +346,11 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 				continue;
 			}else{
 				if (argTypes[i].type != definedTypes[i].type){
+					// check if is receiving a void[], against a someType[][].., then, it's ok
+					if (argTypes[i].type == DataType.Type.Void &&
+						argTypes[i].arrayNestCount > 0 && definedTypes[i].arrayNestCount > 0){
+						return true;
+					}
 					return false;
 				}
 			}
