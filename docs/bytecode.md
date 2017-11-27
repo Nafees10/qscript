@@ -1,5 +1,7 @@
-## Byte code format:  
-### Function Definitions:  
+# QScript Byte-Code:
+This document contains the spec for the byte code used in QScript
+## Byte code format:
+### Function Definitions:
 ```
 FunctionName
 	[instruction] [argument1] [argument2] [...]
@@ -38,7 +40,7 @@ jump
 instruction4
 ```
   
-### List of instructions:
+## List of instructions:
 #### Instructions for executing functions:
 * execFuncS 	- executes a script-defined function, arg0 is function name (string), arg1 is number (int) of arguments to pop from stack for the function. 
 Result is pushed to stack
@@ -109,7 +111,8 @@ Then does something like: `array[poped0][poped1].. = newVal` and pushes the arra
 ---
 
 ### Format for instruciton arguments: 
-These do not apply to the jump instruction. The jump instruction has just one argument, the name of the "jump point", without any quotation marks.
+These do not apply to the jump instruction. The jump instruction has just one argument, the name of the "jump point", without any quotation marks, 
+or the `s` before quotation marks
 * string:		`s"%STRING%"`
 * double:		`d%DOUBLE%`
 * integer:		`i%INTEGER%`
