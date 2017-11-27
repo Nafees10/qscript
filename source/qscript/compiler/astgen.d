@@ -37,7 +37,6 @@ struct ASTGen{
 	/// The script must be converted to tokens using `qscript.compiler.tokengen.toTokens`
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
 	public ScriptNode generateScriptAST(TokenList scriptTokens, ref CompileError[] errors){
-		compileErrors.clear;
 		tokens = scriptTokens;
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
@@ -480,13 +479,17 @@ struct ASTGen{
 						lastNode = CodeNode(ReadElement(lastNode, indexNode));
 						continue;
 					}
+					separatorExpected = false;
 					if (token.type == Token.Type.Operator){
 						lastNode = CodeNode(generateOperatorAST(lastNode));
 						index --;
+						// in case of operators, generateOperatorAST takes the 2nd operand (!separator), itself, so the next
+						// token, if any, is to be a separator
+						separatorExpected = true;
+						continue;
 					}else{
 						break;
 					}
-					separatorExpected = false;
 				}
 			}
 			return lastNode;
