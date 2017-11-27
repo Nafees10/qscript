@@ -137,12 +137,12 @@ i = 2 + doubleToInt(5.7); # i is now 7, because 2+5=7
 
 ## Functions:
 ### return
-Returns a value from a function, and exits execution of that function. If used in `void functions`, will either just exit execution, or not compile.
+Returns a value from a function, and exits execution of that function. If used in `void functions`, will just exit execution.  
 **Arguments:**  
-1. The data to return. Data Type: same as the function return type.
+1. The data to return. Data Type: same as the function return type.  
 
 **Returns:**  
-nothing. Data Type: _void_
+nothing. Data Type: _void_  
 **Usage:**  
 ```
 # function to get sum of 2 ints
