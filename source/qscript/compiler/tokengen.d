@@ -1,4 +1,7 @@
-﻿module qscript.compiler.tokengen;
+﻿/++
+For reading a script into tokens
++/
+module qscript.compiler.tokengen;
 
 import utils.misc;
 import utils.lists;

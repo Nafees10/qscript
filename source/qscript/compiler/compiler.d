@@ -1,4 +1,7 @@
-﻿module qscript.compiler.compiler;
+﻿/++
+Provides an "interface" to all the compiler modules.
++/
+module qscript.compiler.compiler;
 
 import qscript.compiler.misc;
 import qscript.compiler.tokengen;

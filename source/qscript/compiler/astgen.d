@@ -1,4 +1,7 @@
-﻿module qscript.compiler.astgen;
+﻿/++
+Contains functions to generate AST from tokens
++/
+module qscript.compiler.astgen;
 
 import qscript.compiler.misc;
 import qscript.compiler.tokengen;

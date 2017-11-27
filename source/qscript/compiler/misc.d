@@ -1,4 +1,7 @@
-﻿module qscript.compiler.misc;
+﻿/++
+Some misc stuff used by the compiler
++/
+module qscript.compiler.misc;
 
 import utils.misc;
 import utils.lists;

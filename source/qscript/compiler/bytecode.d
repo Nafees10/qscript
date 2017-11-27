@@ -1,4 +1,7 @@
-﻿module qscript.compiler.bytecode;
+﻿/++
+To load/read bytecode
++/
+module qscript.compiler.bytecode;
 
 import qscript.compiler.misc;
 import qscript.qscript : QData;

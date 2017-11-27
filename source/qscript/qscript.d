@@ -1,3 +1,6 @@
+/++
+Contains everything needed to run QScript scripts.
++/
 module qscript.qscript;
 
 import utils.misc;

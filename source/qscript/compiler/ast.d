@@ -1,4 +1,7 @@
-﻿module qscript.compiler.ast;
+﻿/++
+Contains definitions for "nodes" making the AST
++/
+module qscript.compiler.ast;
 
 import utils.misc;
 import utils.lists;
