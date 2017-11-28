@@ -678,12 +678,14 @@ struct ASTGen{
 				// make sure index & brackEnd are now same
 				if (index == brackEnd){
 					index = brackEnd+1;
-					ifNode.statements = [generateStatementAST()];
+					ifNode.statement = generateStatementAST();
+					ifNode.hasElse = false;
 					// check if there's any else statement
 					if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "else"){
 						// add that as well
 						index ++;
-						ifNode.elseStatements = [generateStatementAST()];
+						ifNode.elseStatement = generateStatementAST();
+						ifNode.hasElse = true;
 					}
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
@@ -708,7 +710,7 @@ struct ASTGen{
 				// skip the brackEnd, if index matches it
 				if (index == brackEnd){
 					index++;
-					whileNode.statements = [generateStatementAST()];
+					whileNode.statement = generateStatementAST();
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
 				}

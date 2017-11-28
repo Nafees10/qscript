@@ -430,7 +430,7 @@ package struct CodeGen{
 				"\tjump ifEnd"~to!string(currentCount)
 			]);
 		// then comes the if-on-true body
-		byteCode.append(generateByteCode(BlockNode(node.statements)));
+		byteCode.append(generateByteCode(node.statement));
 		// then then jump to elseEnd to skip the else statements
 		if (node.hasElse){
 			byteCode.append("\tjump elseEnd"~to!string(currentCount));
@@ -438,7 +438,7 @@ package struct CodeGen{
 		byteCode.append("\tifEnd"~to!string(currentCount)~":");
 		// now the elseBody
 		if (node.hasElse){
-			byteCode.append(generateByteCode(BlockNode(node.elseStatements))~
+			byteCode.append(generateByteCode(node.elseStatement)~
 					["\telseEnd"~to!string(currentCount)~":"]);
 		}
 		string[] r = byteCode.toArray;
@@ -463,7 +463,7 @@ package struct CodeGen{
 				"\tjump whileEnd"~to!string(currentCount)
 			]);
 		// then the loop body
-		byteCode.append(generateByteCode(BlockNode(node.statements)));
+		byteCode.append(generateByteCode(node.statement));
 		// then jump back to condition, to see if it'll start again
 		byteCode.append("\tjump whileStart"~to!string(currentCount));
 		// then mark the loop end

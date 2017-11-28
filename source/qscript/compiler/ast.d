@@ -420,44 +420,47 @@ package struct AssignmentNode{
 package struct IfNode{
 	/// the condition for this if statement
 	public CodeNode condition;
-	/// the statements to execute if the condition is true
-	private StatementNode[] storedStatements;
-	/// returns array containing statements to execute
-	public @property ref StatementNode[] statements(){
-		return storedStatements;
+	/// stores the pointer to the statement to execute
+	private StatementNode* statementPtr;
+	/// returns the statement to execute, if true
+	public @property ref StatementNode statement(){
+		return *statementPtr;
 	}
-	/// to modify the stored statements
-	public @property ref StatementNode[] statements(StatementNode[] newArray){
-		return storedStatements = newArray.dup;
-	}
-	/// the statements to execute if the condition is false. This block will be empty in case there was no else block
-	private StatementNode[] storedElseStatements;
-	/// returns array containing statements to execute on eles
-	public @property ref StatementNode[] elseStatements(){
-		return storedElseStatements;
-	}
-	/// to modify the stored statements to execute on eles
-	public @property ref StatementNode[] elseStatements(StatementNode[] newArray){
-		return storedElseStatements = newArray.dup;
-	}
-	/// constructor
-	this (CodeNode conditionNode, StatementNode[] statementsToExecute, StatementNode[] elseStatementsToExec){
-		condition = conditionNode;
-		storedStatements = statementsToExecute.dup;
-		storedElseStatements = elseStatementsToExec.dup;
-	}
-	/// constructor
-	this (CodeNode conditionNode,  StatementNode[] statementsToExecute){
-		condition = conditionNode;
-		storedStatements = statementsToExecute.dup;
-		storedElseStatements = [];
-	}
-	/// returns true if the else block has a body
-	@property bool hasElse(){
-		if (storedElseStatements.length > 0){
-			return true;
+	/// sets the statement to execute, if true
+	public @property ref StatementNode statement(StatementNode newStatement){
+		if (statementPtr is null){
+			statementPtr = new StatementNode;
 		}
-		return false;
+		return *statementPtr = newStatement;
+	}
+	/// stores the pointer to the statement to execute if the condition is false.
+	private StatementNode* elseStatementPtr;
+	/// returns the statement to execute, if false
+	public @property ref StatementNode elseStatement(){
+		return *elseStatementPtr;
+	}
+	/// sets the statement to execute, if true
+	public @property ref StatementNode elseStatement(StatementNode newElseStatement){
+		if (elseStatementPtr is null){
+			elseStatementPtr = new StatementNode;
+		}
+		return *elseStatementPtr = newElseStatement;
+	}
+
+	/// stores whether this if has an else statement too
+	public bool hasElse = false;
+	/// constructor
+	this (CodeNode conditionNode, StatementNode statementToExecute, StatementNode elseStatementToExec){
+		condition = conditionNode;
+		statement = statementToExecute;
+		elseStatement = elseStatementToExec;
+		hasElse = true;
+	}
+	/// constructor
+	this (CodeNode conditionNode,  StatementNode statementsToExecute){
+		condition = conditionNode;
+		statement = statementsToExecute;
+		hasElse = false;
 	}
 }
 
@@ -465,20 +468,23 @@ package struct IfNode{
 package struct WhileNode{
 	/// the condition for this while statement
 	public CodeNode condition;
-	/// the statements to execute in loop if the condition is true
-	private StatementNode[] storedStatements;
-	/// returns array containing statements to execute
-	public @property ref StatementNode[] statements(){
-		return storedStatements;
+	/// stores the pointer to the statement to execute in loop while the condition is true
+	private StatementNode* statementPtr;
+	/// returns the statement to execute, while true
+	public @property ref StatementNode statement(){
+		return *statementPtr;
 	}
-	/// to modify the stored statements
-	public @property ref StatementNode[] statements(StatementNode[] newArray){
-		return storedStatements = newArray.dup;
+	/// sets the statement to execute, while true
+	public @property ref StatementNode statement(StatementNode newStatement){
+		if (statementPtr is null){
+			statementPtr = new StatementNode;
+		}
+		return *statementPtr = newStatement;
 	}
 	/// constructor
-	this (CodeNode conditionNode, StatementNode[] statementsToExec){
+	this (CodeNode conditionNode, StatementNode statementToExec){
 		condition = conditionNode;
-		storedStatements = statementsToExec.dup;
+		statement = statementToExec;
 	}
 }
 

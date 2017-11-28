@@ -74,22 +74,27 @@ string[] toHtml(BlockNode node, string blockCaption = null){
 	return r;
 }
 /// generates html representation for StatementNode
-string[] toHtml(StatementNode node){
+string[] toHtml(StatementNode node, string caption = null){
+	string[] r;
 	if (node.type == StatementNode.Type.Assignment){
-		return node.node!(StatementNode.Type.Assignment).toHtml();
+		r = node.node!(StatementNode.Type.Assignment).toHtml();
 	}else if (node.type == StatementNode.Type.Block){
-		return node.node!(StatementNode.Type.Block).toHtml();
+		r = node.node!(StatementNode.Type.Block).toHtml();
 	}else if (node.type == StatementNode.Type.FunctionCall){
-		return node.node!(StatementNode.Type.FunctionCall).toHtml();
+		r = node.node!(StatementNode.Type.FunctionCall).toHtml();
 	}else if (node.type == StatementNode.Type.If){
-		return node.node!(StatementNode.Type.If).toHtml();
+		r = node.node!(StatementNode.Type.If).toHtml();
 	}else if (node.type == StatementNode.Type.While){
-		return node.node!(StatementNode.Type.While).toHtml();
+		r = node.node!(StatementNode.Type.While).toHtml();
 	}else if (node.type == StatementNode.Type.VarDeclare){
-		return node.node!(StatementNode.Type.VarDeclare).toHtml();
+		r = node.node!(StatementNode.Type.VarDeclare).toHtml();
 	}else{
 		throw new Exception("invalid stored type");
 	}
+	if (caption != null){
+		return ["<div>"~caption]~r~["</div>"];
+	}
+	return r;
 }
 /// generates html representation for AssignmentNode
 string[] toHtml(AssignmentNode node){
@@ -132,10 +137,10 @@ string[] toHtml(IfNode node){
 	// add condition
 	html.append(node.condition.toHtml("Condition"));
 	// then add body
-	html.append(BlockNode(node.statements).toHtml("On True"));
+	html.append(node.statement.toHtml("On True"));
 	// then add elseBody if any
 	if (node.hasElse){
-		html.append(BlockNode(node.elseStatements).toHtml("On False"));
+		html.append(node.elseStatement.toHtml("On False"));
 	}
 	html.append("</div>");
 	string[] r = html.toArray;
@@ -149,7 +154,7 @@ string[] toHtml(WhileNode node){
 	// add condition
 	html.append(node.condition.toHtml("Condition"));
 	// then add body
-	html.append(BlockNode(node.statements).toHtml("While True"));
+	html.append(node.statement.toHtml("While True"));
 	html.append("</div>");
 	string[] r = html.toArray;
 	.destroy(html);
