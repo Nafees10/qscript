@@ -181,8 +181,10 @@ package struct DataType{
 				// now set the nestCount
 				this.arrayNestCount = prevNestCount;
 			}
+		}else if (data.length == 0){
+			this.type = DataType.Type.Void;
 		}else{
-			// then it must be only one token
+			// then it must be only one token, if is zero, then it's void
 			assert(data.length == 1, "non-array data must be only one token in length");
 			// now check the type, and set it
 			this.type = identifyType(data[0]);
