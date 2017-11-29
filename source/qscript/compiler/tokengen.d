@@ -165,13 +165,22 @@ private TokenList separateTokens(string[] script){
 			// skip strings
 			if (line[i] == '"'){
 				if (readFrom != i){
-					compileErrors.append (CompileError(lineno, "unexpected string"));
+					if (readFrom < i){
+						// add the previous token
+						tokens.append(line[readFrom .. i]);
+						readFrom = i;
+					}else{
+						compileErrors.append (CompileError(lineno, "unexpected string"));
+					}
 				}
 				integer end = line.strEnd(i);
 				if (end == -1){
 					compileErrors.append(CompileError(lineno, "string not closed"));
 					break;
 				}
+				// append the string
+				tokens.append(line[readFrom .. end+1]);
+				readFrom = end+1;
 				i = end;
 				continue;
 			}
@@ -196,13 +205,12 @@ private TokenList separateTokens(string[] script){
 				break;
 			}
 			if (currentType != prevType || currentType == CharType.Bracket || currentType == CharType.Semicolon ||
-				currentType == CharType.Comma || currentType == CharType.Operator){
+				currentType == CharType.Comma){
 				if (readFrom < i){
 					tokens.append (line[readFrom .. i]);
 					readFrom = i;
 				}
-				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma ||
-					currentType == CharType.Operator){
+				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma){
 					tokens.append (cast(string)[line[i]]);
 					readFrom = i+1;
 				}
