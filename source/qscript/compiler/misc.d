@@ -138,11 +138,6 @@ package struct DataType{
 			this.arrayNestCount = 0;
 			this.type = DataType.Type.Void;
 		}
-
-		// make sure it's at least one token
-		if (data.length == 0){
-			throw new Exception("attempting to infer type of data with zero length");
-		}
 		// check if is an array
 		if (data.length > 1 &&
 			data[0].type == Token.Type.IndexBracketOpen && data[data.length-1].type == Token.Type.IndexBracketClose){
