@@ -193,102 +193,110 @@
 <a id="L165" href="#L165" class="br">165 </a>			<span class="com">// skip strings</span>
 <a id="L166" href="#L166" class="br">166 </a>			<span class="kwrd">if</span> (<span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'&quot;'</span>){
 <a id="L167" href="#L167" class="br">167 </a>				<span class="kwrd">if</span> (<span class="hid">readFrom</span> != <span class="hid">i</span>){
-<a id="L168" href="#L168" class="br">168 </a>					<span class="hid">compileErrors.append</span> (<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="str">&quot;unexpected string&quot;</span>));
-<a id="L169" href="#L169" class="br">169 </a>				}
-<a id="L170" href="#L170" class="br">170 </a>				<span class="hid">integer</span> <span class="hid">end</span> = <span class="hid">line.strEnd</span>(<span class="hid">i</span>);
-<a id="L171" href="#L171" class="br">171 </a>				<span class="kwrd">if</span> (<span class="hid">end</span> == -<span class="num">1</span>){
-<a id="L172" href="#L172" class="br">172 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="str">&quot;string not closed&quot;</span>));
-<a id="L173" href="#L173" class="br">173 </a>					<span class="kwrd">break</span>;
-<a id="L174" href="#L174" class="br">174 </a>				}
-<a id="L175" href="#L175" class="br">175 </a>				<span class="hid">i</span> = <span class="hid">end</span>;
-<a id="L176" href="#L176" class="br">176 </a>				<span class="kwrd">continue</span>;
-<a id="L177" href="#L177" class="br">177 </a>			}
-<a id="L178" href="#L178" class="br">178 </a>			<span class="com">// break at comments</span>
-<a id="L179" href="#L179" class="br">179 </a>			<span class="kwrd">if</span> (<span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'#'</span> || <span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">' '</span> || <span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'\t'</span>){
-<a id="L180" href="#L180" class="br">180 </a>				<span class="com">// add a token if remaining</span>
-<a id="L181" href="#L181" class="br">181 </a>				<span class="kwrd">if</span> (<span class="hid">readFrom</span> &lt; <span class="hid">i</span>){
-<a id="L182" href="#L182" class="br">182 </a>					<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>]);
-<a id="L183" href="#L183" class="br">183 </a>				}
-<a id="L184" href="#L184" class="br">184 </a>				<span class="hid">readFrom</span> = <span class="hid">i</span>+<span class="num">1</span>;
-<a id="L185" href="#L185" class="br">185 </a>				<span class="kwrd">if</span> (<span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'#'</span>){
-<a id="L186" href="#L186" class="br">186 </a>					<span class="kwrd">break</span>;
-<a id="L187" href="#L187" class="br">187 </a>				}
-<a id="L188" href="#L188" class="br">188 </a>				<span class="kwrd">continue</span>;
-<a id="L189" href="#L189" class="br">189 </a>			}
-<a id="L190" href="#L190" class="br">190 </a>			<span class="com">// add other types of tokens</span>
-<a id="L191" href="#L191" class="br">191 </a>			<span class="kwrd">try</span>{
-<a id="L192" href="#L192" class="br">192 </a>				<span class="hid">currentType</span> = <span class="hid">getCharType</span>(<span class="hid">line</span>[<span class="hid">i</span>]);
-<a id="L193" href="#L193" class="br">193 </a>			}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
-<a id="L194" href="#L194" class="br">194 </a>				<span class="hid">compileErrors.append</span> (<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="hid">e.msg</span>));
-<a id="L195" href="#L195" class="br">195 </a>				.<span class="hid">destroy</span> (<span class="hid">e</span>);
-<a id="L196" href="#L196" class="br">196 </a>				<span class="kwrd">break</span>;
-<a id="L197" href="#L197" class="br">197 </a>			}
-<a id="L198" href="#L198" class="br">198 </a>			<span class="kwrd">if</span> (<span class="hid">currentType</span> != <span class="hid">prevType</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Bracket</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Semicolon</span> ||
-<a id="L199" href="#L199" class="br">199 </a>				<span class="hid">currentType</span> == <span class="hid">CharType.Comma</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Operator</span>){
-<a id="L200" href="#L200" class="br">200 </a>				<span class="kwrd">if</span> (<span class="hid">readFrom</span> &lt; <span class="hid">i</span>){
-<a id="L201" href="#L201" class="br">201 </a>					<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>]);
-<a id="L202" href="#L202" class="br">202 </a>					<span class="hid">readFrom</span> = <span class="hid">i</span>;
-<a id="L203" href="#L203" class="br">203 </a>				}
-<a id="L204" href="#L204" class="br">204 </a>				<span class="kwrd">if</span> (<span class="hid">currentType</span> == <span class="hid">CharType.Bracket</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Semicolon</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Comma</span> ||
-<a id="L205" href="#L205" class="br">205 </a>					<span class="hid">currentType</span> == <span class="hid">CharType.Operator</span>){
-<a id="L206" href="#L206" class="br">206 </a>					<span class="hid">tokens.append</span> (<span class="kwrd">cast</span>(<span class="type">string</span>)[<span class="hid">line</span>[<span class="hid">i</span>]]);
-<a id="L207" href="#L207" class="br">207 </a>					<span class="hid">readFrom</span> = <span class="hid">i</span>+<span class="num">1</span>;
-<a id="L208" href="#L208" class="br">208 </a>				}
-<a id="L209" href="#L209" class="br">209 </a>			}
-<a id="L210" href="#L210" class="br">210 </a>			<span class="hid">prevType</span> = <span class="hid">currentType</span>;
-<a id="L211" href="#L211" class="br">211 </a>			<span class="com">// add if is at end of line</span>
-<a id="L212" href="#L212" class="br">212 </a>			<span class="kwrd">if</span> (<span class="hid">i</span> == <span class="hid">lastInd</span> &amp;&amp; <span class="hid">readFrom</span> &lt;= <span class="hid">i</span>){
-<a id="L213" href="#L213" class="br">213 </a>				<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>+<span class="num">1</span>]);
-<a id="L214" href="#L214" class="br">214 </a>			}
-<a id="L215" href="#L215" class="br">215 </a>		}
-<a id="L216" href="#L216" class="br">216 </a>		<span class="hid">tokenPerLine</span>[<span class="hid">lineno</span>] = <span class="hid">tokens.count</span> - <span class="hid">tokenCount</span>;
-<a id="L217" href="#L217" class="br">217 </a>		<span class="hid">tokenCount</span> += <span class="hid">tokenPerLine</span>[<span class="hid">lineno</span>];
-<a id="L218" href="#L218" class="br">218 </a>	}
-<a id="L219" href="#L219" class="br">219 </a>	<span class="com">// put them all in TokenList</span>
-<a id="L220" href="#L220" class="br">220 </a>	<span class="hid">TokenList</span> <span class="hid">r</span>;
-<a id="L221" href="#L221" class="br">221 </a>	<span class="hid">r.tokenPerLine</span> = <span class="hid">tokenPerLine</span>; <span class="com">// no need to dup it</span>
-<a id="L222" href="#L222" class="br">222 </a>	<span class="hid">r.tokens</span> = <a title="qscript.compiler.tokengen.stringToTokens" href="qscript.compiler.tokengen.stringToTokens.html" class="hid">stringToTokens</a>(<span class="hid">tokens.toArray</span>);
-<a id="L223" href="#L223" class="br">223 </a>	.<span class="hid">destroy</span> (<span class="hid">tokens</span>);
-<a id="L224" href="#L224" class="br">224 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L225" href="#L225" class="br">225 </a>}
-<a id="L226" href="#L226" class="br">226 </a><span class="com">/// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type</span>
-<a id="L227" href="#L227" class="br">227 </a><span class="com">/// in an array</span>
-<a id="L228" href="#L228" class="br">228 </a><span class="com">/// </span>
-<a id="L229" href="#L229" class="br">229 </a><span class="com">/// `script` is the script to convert to tokens, each line is a separate string, without ending \n</span>
-<a id="L230" href="#L230" class="br">230 </a><span class="com">/// `errors` is the array to which erors will be put</span>
-<a id="L231" href="#L231" class="br">231 </a><span class="com">/// </span>
-<a id="L232" href="#L232" class="br">232 </a><span class="com">/// As a plus, it also checks if the brackets are in correct order (and properly closed)</span>
-<a id="L233" href="#L233" class="br">233 </a><span class="kwrd">package</span> <span class="hid">TokenList</span> <a title="qscript.compiler.tokengen.toTokens" href="qscript.compiler.tokengen.toTokens.html" class="hid">toTokens</a>(<span class="type">string</span>[] <span class="hid">script</span>, <span class="kwrd">ref</span> <span class="hid">CompileError</span>[] <span class="hid">errors</span>){
-<a id="L234" href="#L234" class="br">234 </a>	<span class="hid">compileErrors</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="hid">CompileError</span>;
-<a id="L235" href="#L235" class="br">235 </a>	<span class="com">/// Returns true if a string has chars that only identifiers can have</span>
-<a id="L236" href="#L236" class="br">236 </a>	<span class="hid">TokenList</span> <span class="hid">tokens</span> = <span class="hid">separateTokens</span>(<span class="hid">script</span>);
-<a id="L237" href="#L237" class="br">237 </a>	<span class="kwrd">if</span> (<span class="hid">tokens.tokens</span> == <span class="kwrd">null</span> || <span class="hid">tokens.tokens.length</span> == <span class="num">0</span>){
-<a id="L238" href="#L238" class="br">238 </a>		<span class="com">// there's error</span>
-<a id="L239" href="#L239" class="br">239 </a>		<span class="hid">errors</span> = <span class="hid">compileErrors.toArray</span>;
-<a id="L240" href="#L240" class="br">240 </a>		.<span class="hid">destroy</span>(<span class="hid">compileErrors</span>);
-<a id="L241" href="#L241" class="br">241 </a>		<span class="kwrd">return</span> <span class="hid">tokens</span>;
-<a id="L242" href="#L242" class="br">242 </a>	}<span class="kwrd">else</span>{
-<a id="L243" href="#L243" class="br">243 </a>		<span class="com">// continue with identiying tokens</span>
-<a id="L244" href="#L244" class="br">244 </a>		<span class="com">// fill in tokens with tokenStrings' strings, and identify their type</span>
-<a id="L245" href="#L245" class="br">245 </a>		<span class="kwrd">foreach</span>(<span class="hid">i</span>, <span class="hid">token</span>; <span class="hid">tokens.tokens</span>){
-<a id="L246" href="#L246" class="br">246 </a>			<span class="kwrd">try</span>{
-<a id="L247" href="#L247" class="br">247 </a>				<span class="hid">tokens.tokens</span>[<span class="hid">i</span>].<span class="hid">type</span> = <span class="hid">getTokenType</span>(<span class="hid">token.token</span>);
-<a id="L248" href="#L248" class="br">248 </a>			}<span class="kwrd">catch</span>(<span class="hid">Exception</span> <span class="hid">e</span>){
-<a id="L249" href="#L249" class="br">249 </a>				<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">i</span>), <span class="hid">e.msg</span>));
-<a id="L250" href="#L250" class="br">250 </a>			}
-<a id="L251" href="#L251" class="br">251 </a>		}
-<a id="L252" href="#L252" class="br">252 </a>		<span class="com">// now check brackets</span>
-<a id="L253" href="#L253" class="br">253 </a>		<span class="hid">tokens.checkBrackets</span>(<span class="hid">compileErrors</span>);
-<a id="L254" href="#L254" class="br">254 </a>		<span class="kwrd">if</span> (<span class="hid">compileErrors.count</span> &gt; <span class="num">0</span>){
-<a id="L255" href="#L255" class="br">255 </a>			<span class="hid">errors</span> = <span class="hid">compileErrors.toArray</span>;
-<a id="L256" href="#L256" class="br">256 </a>		}
-<a id="L257" href="#L257" class="br">257 </a>		.<span class="hid">destroy</span>(<span class="hid">compileErrors</span>);
-<a id="L258" href="#L258" class="br">258 </a>		<span class="kwrd">return</span> <span class="hid">tokens</span>;
-<a id="L259" href="#L259" class="br">259 </a>	}
-<a id="L260" href="#L260" class="br">260 </a>}
+<a id="L168" href="#L168" class="br">168 </a>					<span class="kwrd">if</span> (<span class="hid">readFrom</span> &lt; <span class="hid">i</span>){
+<a id="L169" href="#L169" class="br">169 </a>						<span class="com">// add the previous token</span>
+<a id="L170" href="#L170" class="br">170 </a>						<span class="hid">tokens.append</span>(<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>]);
+<a id="L171" href="#L171" class="br">171 </a>						<span class="hid">readFrom</span> = <span class="hid">i</span>;
+<a id="L172" href="#L172" class="br">172 </a>					}<span class="kwrd">else</span>{
+<a id="L173" href="#L173" class="br">173 </a>						<span class="hid">compileErrors.append</span> (<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="str">&quot;unexpected string&quot;</span>));
+<a id="L174" href="#L174" class="br">174 </a>					}
+<a id="L175" href="#L175" class="br">175 </a>				}
+<a id="L176" href="#L176" class="br">176 </a>				<span class="hid">integer</span> <span class="hid">end</span> = <span class="hid">line.strEnd</span>(<span class="hid">i</span>);
+<a id="L177" href="#L177" class="br">177 </a>				<span class="kwrd">if</span> (<span class="hid">end</span> == -<span class="num">1</span>){
+<a id="L178" href="#L178" class="br">178 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="str">&quot;string not closed&quot;</span>));
+<a id="L179" href="#L179" class="br">179 </a>					<span class="kwrd">break</span>;
+<a id="L180" href="#L180" class="br">180 </a>				}
+<a id="L181" href="#L181" class="br">181 </a>				<span class="com">// append the string</span>
+<a id="L182" href="#L182" class="br">182 </a>				<span class="hid">tokens.append</span>(<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">end</span>+<span class="num">1</span>]);
+<a id="L183" href="#L183" class="br">183 </a>				<span class="hid">readFrom</span> = <span class="hid">end</span>+<span class="num">1</span>;
+<a id="L184" href="#L184" class="br">184 </a>				<span class="hid">i</span> = <span class="hid">end</span>;
+<a id="L185" href="#L185" class="br">185 </a>				<span class="kwrd">continue</span>;
+<a id="L186" href="#L186" class="br">186 </a>			}
+<a id="L187" href="#L187" class="br">187 </a>			<span class="com">// break at comments</span>
+<a id="L188" href="#L188" class="br">188 </a>			<span class="kwrd">if</span> (<span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'#'</span> || <span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">' '</span> || <span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'\t'</span>){
+<a id="L189" href="#L189" class="br">189 </a>				<span class="com">// add a token if remaining</span>
+<a id="L190" href="#L190" class="br">190 </a>				<span class="kwrd">if</span> (<span class="hid">readFrom</span> &lt; <span class="hid">i</span>){
+<a id="L191" href="#L191" class="br">191 </a>					<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>]);
+<a id="L192" href="#L192" class="br">192 </a>				}
+<a id="L193" href="#L193" class="br">193 </a>				<span class="hid">readFrom</span> = <span class="hid">i</span>+<span class="num">1</span>;
+<a id="L194" href="#L194" class="br">194 </a>				<span class="kwrd">if</span> (<span class="hid">line</span>[<span class="hid">i</span>] == <span class="str">'#'</span>){
+<a id="L195" href="#L195" class="br">195 </a>					<span class="kwrd">break</span>;
+<a id="L196" href="#L196" class="br">196 </a>				}
+<a id="L197" href="#L197" class="br">197 </a>				<span class="kwrd">continue</span>;
+<a id="L198" href="#L198" class="br">198 </a>			}
+<a id="L199" href="#L199" class="br">199 </a>			<span class="com">// add other types of tokens</span>
+<a id="L200" href="#L200" class="br">200 </a>			<span class="kwrd">try</span>{
+<a id="L201" href="#L201" class="br">201 </a>				<span class="hid">currentType</span> = <span class="hid">getCharType</span>(<span class="hid">line</span>[<span class="hid">i</span>]);
+<a id="L202" href="#L202" class="br">202 </a>			}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
+<a id="L203" href="#L203" class="br">203 </a>				<span class="hid">compileErrors.append</span> (<span class="hid">CompileError</span>(<span class="hid">lineno</span>, <span class="hid">e.msg</span>));
+<a id="L204" href="#L204" class="br">204 </a>				.<span class="hid">destroy</span> (<span class="hid">e</span>);
+<a id="L205" href="#L205" class="br">205 </a>				<span class="kwrd">break</span>;
+<a id="L206" href="#L206" class="br">206 </a>			}
+<a id="L207" href="#L207" class="br">207 </a>			<span class="kwrd">if</span> (<span class="hid">currentType</span> != <span class="hid">prevType</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Bracket</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Semicolon</span> ||
+<a id="L208" href="#L208" class="br">208 </a>				<span class="hid">currentType</span> == <span class="hid">CharType.Comma</span>){
+<a id="L209" href="#L209" class="br">209 </a>				<span class="kwrd">if</span> (<span class="hid">readFrom</span> &lt; <span class="hid">i</span>){
+<a id="L210" href="#L210" class="br">210 </a>					<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>]);
+<a id="L211" href="#L211" class="br">211 </a>					<span class="hid">readFrom</span> = <span class="hid">i</span>;
+<a id="L212" href="#L212" class="br">212 </a>				}
+<a id="L213" href="#L213" class="br">213 </a>				<span class="kwrd">if</span> (<span class="hid">currentType</span> == <span class="hid">CharType.Bracket</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Semicolon</span> || <span class="hid">currentType</span> == <span class="hid">CharType.Comma</span>){
+<a id="L214" href="#L214" class="br">214 </a>					<span class="hid">tokens.append</span> (<span class="kwrd">cast</span>(<span class="type">string</span>)[<span class="hid">line</span>[<span class="hid">i</span>]]);
+<a id="L215" href="#L215" class="br">215 </a>					<span class="hid">readFrom</span> = <span class="hid">i</span>+<span class="num">1</span>;
+<a id="L216" href="#L216" class="br">216 </a>				}
+<a id="L217" href="#L217" class="br">217 </a>			}
+<a id="L218" href="#L218" class="br">218 </a>			<span class="hid">prevType</span> = <span class="hid">currentType</span>;
+<a id="L219" href="#L219" class="br">219 </a>			<span class="com">// add if is at end of line</span>
+<a id="L220" href="#L220" class="br">220 </a>			<span class="kwrd">if</span> (<span class="hid">i</span> == <span class="hid">lastInd</span> &amp;&amp; <span class="hid">readFrom</span> &lt;= <span class="hid">i</span>){
+<a id="L221" href="#L221" class="br">221 </a>				<span class="hid">tokens.append</span> (<span class="hid">line</span>[<span class="hid">readFrom</span> .. <span class="hid">i</span>+<span class="num">1</span>]);
+<a id="L222" href="#L222" class="br">222 </a>			}
+<a id="L223" href="#L223" class="br">223 </a>		}
+<a id="L224" href="#L224" class="br">224 </a>		<span class="hid">tokenPerLine</span>[<span class="hid">lineno</span>] = <span class="hid">tokens.count</span> - <span class="hid">tokenCount</span>;
+<a id="L225" href="#L225" class="br">225 </a>		<span class="hid">tokenCount</span> += <span class="hid">tokenPerLine</span>[<span class="hid">lineno</span>];
+<a id="L226" href="#L226" class="br">226 </a>	}
+<a id="L227" href="#L227" class="br">227 </a>	<span class="com">// put them all in TokenList</span>
+<a id="L228" href="#L228" class="br">228 </a>	<span class="hid">TokenList</span> <span class="hid">r</span>;
+<a id="L229" href="#L229" class="br">229 </a>	<span class="hid">r.tokenPerLine</span> = <span class="hid">tokenPerLine</span>; <span class="com">// no need to dup it</span>
+<a id="L230" href="#L230" class="br">230 </a>	<span class="hid">r.tokens</span> = <a title="qscript.compiler.tokengen.stringToTokens" href="qscript.compiler.tokengen.stringToTokens.html" class="hid">stringToTokens</a>(<span class="hid">tokens.toArray</span>);
+<a id="L231" href="#L231" class="br">231 </a>	.<span class="hid">destroy</span> (<span class="hid">tokens</span>);
+<a id="L232" href="#L232" class="br">232 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L233" href="#L233" class="br">233 </a>}
+<a id="L234" href="#L234" class="br">234 </a><span class="com">/// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type</span>
+<a id="L235" href="#L235" class="br">235 </a><span class="com">/// in an array</span>
+<a id="L236" href="#L236" class="br">236 </a><span class="com">/// </span>
+<a id="L237" href="#L237" class="br">237 </a><span class="com">/// `script` is the script to convert to tokens, each line is a separate string, without ending \n</span>
+<a id="L238" href="#L238" class="br">238 </a><span class="com">/// `errors` is the array to which erors will be put</span>
+<a id="L239" href="#L239" class="br">239 </a><span class="com">/// </span>
+<a id="L240" href="#L240" class="br">240 </a><span class="com">/// As a plus, it also checks if the brackets are in correct order (and properly closed)</span>
+<a id="L241" href="#L241" class="br">241 </a><span class="kwrd">package</span> <span class="hid">TokenList</span> <a title="qscript.compiler.tokengen.toTokens" href="qscript.compiler.tokengen.toTokens.html" class="hid">toTokens</a>(<span class="type">string</span>[] <span class="hid">script</span>, <span class="kwrd">ref</span> <span class="hid">CompileError</span>[] <span class="hid">errors</span>){
+<a id="L242" href="#L242" class="br">242 </a>	<span class="hid">compileErrors</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="hid">CompileError</span>;
+<a id="L243" href="#L243" class="br">243 </a>	<span class="com">/// Returns true if a string has chars that only identifiers can have</span>
+<a id="L244" href="#L244" class="br">244 </a>	<span class="hid">TokenList</span> <span class="hid">tokens</span> = <span class="hid">separateTokens</span>(<span class="hid">script</span>);
+<a id="L245" href="#L245" class="br">245 </a>	<span class="kwrd">if</span> (<span class="hid">tokens.tokens</span> == <span class="kwrd">null</span> || <span class="hid">tokens.tokens.length</span> == <span class="num">0</span>){
+<a id="L246" href="#L246" class="br">246 </a>		<span class="com">// there's error</span>
+<a id="L247" href="#L247" class="br">247 </a>		<span class="hid">errors</span> = <span class="hid">compileErrors.toArray</span>;
+<a id="L248" href="#L248" class="br">248 </a>		.<span class="hid">destroy</span>(<span class="hid">compileErrors</span>);
+<a id="L249" href="#L249" class="br">249 </a>		<span class="kwrd">return</span> <span class="hid">tokens</span>;
+<a id="L250" href="#L250" class="br">250 </a>	}<span class="kwrd">else</span>{
+<a id="L251" href="#L251" class="br">251 </a>		<span class="com">// continue with identiying tokens</span>
+<a id="L252" href="#L252" class="br">252 </a>		<span class="com">// fill in tokens with tokenStrings' strings, and identify their type</span>
+<a id="L253" href="#L253" class="br">253 </a>		<span class="kwrd">foreach</span>(<span class="hid">i</span>, <span class="hid">token</span>; <span class="hid">tokens.tokens</span>){
+<a id="L254" href="#L254" class="br">254 </a>			<span class="kwrd">try</span>{
+<a id="L255" href="#L255" class="br">255 </a>				<span class="hid">tokens.tokens</span>[<span class="hid">i</span>].<span class="hid">type</span> = <span class="hid">getTokenType</span>(<span class="hid">token.token</span>);
+<a id="L256" href="#L256" class="br">256 </a>			}<span class="kwrd">catch</span>(<span class="hid">Exception</span> <span class="hid">e</span>){
+<a id="L257" href="#L257" class="br">257 </a>				<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">i</span>), <span class="hid">e.msg</span>));
+<a id="L258" href="#L258" class="br">258 </a>			}
+<a id="L259" href="#L259" class="br">259 </a>		}
+<a id="L260" href="#L260" class="br">260 </a>		<span class="com">// now check brackets</span>
+<a id="L261" href="#L261" class="br">261 </a>		<span class="hid">tokens.checkBrackets</span>(<span class="hid">compileErrors</span>);
+<a id="L262" href="#L262" class="br">262 </a>		<span class="kwrd">if</span> (<span class="hid">compileErrors.count</span> &gt; <span class="num">0</span>){
+<a id="L263" href="#L263" class="br">263 </a>			<span class="hid">errors</span> = <span class="hid">compileErrors.toArray</span>;
+<a id="L264" href="#L264" class="br">264 </a>		}
+<a id="L265" href="#L265" class="br">265 </a>		.<span class="hid">destroy</span>(<span class="hid">compileErrors</span>);
+<a id="L266" href="#L266" class="br">266 </a>		<span class="kwrd">return</span> <span class="hid">tokens</span>;
+<a id="L267" href="#L267" class="br">267 </a>	}
+<a id="L268" href="#L268" class="br">268 </a>}
 </pre></div>
 		<div id="page-nav">
-		<div id="source-navigation"><div class="list-holder"><ul><li><a href="../qscript.compiler.tokengen.html" class="docs">[Docs] </a><a href="#L1">qscript.compiler.tokengen</a><ul><li><a href="#L12">compileErrors</a></li><li><a href="#L16">getTokenType</a></li><li><a href="../qscript.compiler.tokengen.stringToTokens.html" class="docs">[Docs] </a><a href="#L117">stringToTokens</a></li><li><a href="#L128">separateTokens</a></li><li><a href="../qscript.compiler.tokengen.toTokens.html" class="docs">[Docs] </a><a href="#L233">toTokens</a></li></ul></li></ul></div></div></div>
+		<div id="source-navigation"><div class="list-holder"><ul><li><a href="../qscript.compiler.tokengen.html" class="docs">[Docs] </a><a href="#L1">qscript.compiler.tokengen</a><ul><li><a href="#L12">compileErrors</a></li><li><a href="#L16">getTokenType</a></li><li><a href="../qscript.compiler.tokengen.stringToTokens.html" class="docs">[Docs] </a><a href="#L117">stringToTokens</a></li><li><a href="#L128">separateTokens</a></li><li><a href="../qscript.compiler.tokengen.toTokens.html" class="docs">[Docs] </a><a href="#L241">toTokens</a></li></ul></li></ul></div></div></div>
 	</div>
 	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
 </body>

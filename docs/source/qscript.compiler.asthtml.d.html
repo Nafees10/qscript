@@ -102,155 +102,160 @@
 <a id="L74" href="#L74" class="br">74 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
 <a id="L75" href="#L75" class="br">75 </a>}
 <a id="L76" href="#L76" class="br">76 </a><span class="com">/// generates html representation for StatementNode</span>
-<a id="L77" href="#L77" class="br">77 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">StatementNode</span> <span class="hid">node</span>){
-<a id="L78" href="#L78" class="br">78 </a>	<span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.Assignment</span>){
-<a id="L79" href="#L79" class="br">79 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.Assignment</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L80" href="#L80" class="br">80 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.Block</span>){
-<a id="L81" href="#L81" class="br">81 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.Block</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L82" href="#L82" class="br">82 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.FunctionCall</span>){
-<a id="L83" href="#L83" class="br">83 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.FunctionCall</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L84" href="#L84" class="br">84 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.If</span>){
-<a id="L85" href="#L85" class="br">85 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.If</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L86" href="#L86" class="br">86 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.While</span>){
-<a id="L87" href="#L87" class="br">87 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.While</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L88" href="#L88" class="br">88 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.VarDeclare</span>){
-<a id="L89" href="#L89" class="br">89 </a>		<span class="kwrd">return</span> <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.VarDeclare</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L90" href="#L90" class="br">90 </a>	}<span class="kwrd">else</span>{
-<a id="L91" href="#L91" class="br">91 </a>		<span class="kwrd">throw</span> <span class="kwrd">new</span> <span class="hid">Exception</span>(<span class="str">&quot;invalid stored type&quot;</span>);
-<a id="L92" href="#L92" class="br">92 </a>	}
-<a id="L93" href="#L93" class="br">93 </a>}
-<a id="L94" href="#L94" class="br">94 </a><span class="com">/// generates html representation for AssignmentNode</span>
-<a id="L95" href="#L95" class="br">95 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">AssignmentNode</span> <span class="hid">node</span>){
-<a id="L96" href="#L96" class="br">96 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L97" href="#L97" class="br">97 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Variable Assignment&quot;</span>);
-<a id="L98" href="#L98" class="br">98 </a>	<span class="com">// add the variable</span>
-<a id="L99" href="#L99" class="br">99 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;lvalue&quot;</span>);
-<a id="L100" href="#L100" class="br">100 </a>	<span class="hid">html.append</span>(<span class="hid">node.var.toHtml</span>);
-<a id="L101" href="#L101" class="br">101 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L102" href="#L102" class="br">102 </a>
-<a id="L103" href="#L103" class="br">103 </a>	<span class="com">// then add the value</span>
-<a id="L104" href="#L104" class="br">104 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;rvalue&quot;</span>);
-<a id="L105" href="#L105" class="br">105 </a>	<span class="hid">html.append</span>(<span class="hid">node.val.toHtml</span>(<span class="str">&quot;Value&quot;</span>));
-<a id="L106" href="#L106" class="br">106 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
-<a id="L107" href="#L107" class="br">107 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L108" href="#L108" class="br">108 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L109" href="#L109" class="br">109 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L110" href="#L110" class="br">110 </a>}
-<a id="L111" href="#L111" class="br">111 </a><span class="com">/// generates html representation for FunctionCall</span>
-<a id="L112" href="#L112" class="br">112 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">FunctionCallNode</span> <span class="hid">node</span>){
-<a id="L113" href="#L113" class="br">113 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L114" href="#L114" class="br">114 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Function Call&lt;br&gt;Name: &quot;</span>~<span class="hid">node.fName</span>~<span class="str">&quot;&lt;br&gt; Return Type: &quot;</span>~<span class="hid">node.returnType.toString</span>);
-<a id="L115" href="#L115" class="br">115 </a>	<span class="com">// add the arguments</span>
-<a id="L116" href="#L116" class="br">116 </a>	<span class="kwrd">if</span> (<span class="hid">node.arguments.length</span> &gt; <span class="num">0</span>){
-<a id="L117" href="#L117" class="br">117 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Arguments&quot;</span>);
-<a id="L118" href="#L118" class="br">118 </a>		<span class="kwrd">foreach</span> (<span class="hid">arg</span>; <span class="hid">node.arguments</span>){
-<a id="L119" href="#L119" class="br">119 </a>			<span class="hid">html.append</span>(<span class="hid">arg.toHtml</span>);
-<a id="L120" href="#L120" class="br">120 </a>		}
-<a id="L121" href="#L121" class="br">121 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L122" href="#L122" class="br">122 </a>	}
-<a id="L123" href="#L123" class="br">123 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L124" href="#L124" class="br">124 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L125" href="#L125" class="br">125 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L126" href="#L126" class="br">126 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L127" href="#L127" class="br">127 </a>}
-<a id="L128" href="#L128" class="br">128 </a><span class="com">/// generates html repressntation for IfNode</span>
-<a id="L129" href="#L129" class="br">129 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">IfNode</span> <span class="hid">node</span>){
-<a id="L130" href="#L130" class="br">130 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L131" href="#L131" class="br">131 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;If Statement&quot;</span>);
-<a id="L132" href="#L132" class="br">132 </a>	<span class="com">// add condition</span>
-<a id="L133" href="#L133" class="br">133 </a>	<span class="hid">html.append</span>(<span class="hid">node.condition.toHtml</span>(<span class="str">&quot;Condition&quot;</span>));
-<a id="L134" href="#L134" class="br">134 </a>	<span class="com">// then add body</span>
-<a id="L135" href="#L135" class="br">135 </a>	<span class="hid">html.append</span>(<span class="hid">BlockNode</span>(<span class="hid">node.statements</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="str">&quot;On True&quot;</span>));
-<a id="L136" href="#L136" class="br">136 </a>	<span class="com">// then add elseBody if any</span>
-<a id="L137" href="#L137" class="br">137 </a>	<span class="kwrd">if</span> (<span class="hid">node.hasElse</span>){
-<a id="L138" href="#L138" class="br">138 </a>		<span class="hid">html.append</span>(<span class="hid">BlockNode</span>(<span class="hid">node.elseStatements</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="str">&quot;On False&quot;</span>));
-<a id="L139" href="#L139" class="br">139 </a>	}
-<a id="L140" href="#L140" class="br">140 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L141" href="#L141" class="br">141 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L142" href="#L142" class="br">142 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L143" href="#L143" class="br">143 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L144" href="#L144" class="br">144 </a>}
-<a id="L145" href="#L145" class="br">145 </a><span class="com">/// generates html representation for WhileNode</span>
-<a id="L146" href="#L146" class="br">146 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">WhileNode</span> <span class="hid">node</span>){
-<a id="L147" href="#L147" class="br">147 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L148" href="#L148" class="br">148 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;While Statement&quot;</span>);
-<a id="L149" href="#L149" class="br">149 </a>	<span class="com">// add condition</span>
-<a id="L150" href="#L150" class="br">150 </a>	<span class="hid">html.append</span>(<span class="hid">node.condition.toHtml</span>(<span class="str">&quot;Condition&quot;</span>));
-<a id="L151" href="#L151" class="br">151 </a>	<span class="com">// then add body</span>
-<a id="L152" href="#L152" class="br">152 </a>	<span class="hid">html.append</span>(<span class="hid">BlockNode</span>(<span class="hid">node.statements</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="str">&quot;While True&quot;</span>));
-<a id="L153" href="#L153" class="br">153 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L154" href="#L154" class="br">154 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L155" href="#L155" class="br">155 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L156" href="#L156" class="br">156 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L157" href="#L157" class="br">157 </a>}
-<a id="L158" href="#L158" class="br">158 </a><span class="com">/// generates html representation for VarDeclareNode</span>
-<a id="L159" href="#L159" class="br">159 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">VarDeclareNode</span> <span class="hid">node</span>){
-<a id="L160" href="#L160" class="br">160 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L161" href="#L161" class="br">161 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt; Variable Declaration&lt;br&gt;Type: &quot;</span>~<span class="hid">node.type.toString</span>);
-<a id="L162" href="#L162" class="br">162 </a>	<span class="com">// then add the variables declared</span>
-<a id="L163" href="#L163" class="br">163 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Variables&quot;</span>);
-<a id="L164" href="#L164" class="br">164 </a>	<span class="kwrd">foreach</span> (<span class="hid">var</span>; <span class="hid">node.vars</span>){
-<a id="L165" href="#L165" class="br">165 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">var</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L166" href="#L166" class="br">166 </a>	}
-<a id="L167" href="#L167" class="br">167 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
-<a id="L168" href="#L168" class="br">168 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L169" href="#L169" class="br">169 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L170" href="#L170" class="br">170 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L171" href="#L171" class="br">171 </a>}
-<a id="L172" href="#L172" class="br">172 </a><span class="com">/// generates html representation for CodeNode</span>
-<a id="L173" href="#L173" class="br">173 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">CodeNode</span> <span class="hid">node</span>, <span class="type">string</span> <span class="hid">caption</span> = <span class="kwrd">null</span>){
-<a id="L174" href="#L174" class="br">174 </a>	<span class="type">string</span>[] <span class="hid">r</span>;
-<a id="L175" href="#L175" class="br">175 </a>	<span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.FunctionCall</span>){
-<a id="L176" href="#L176" class="br">176 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.FunctionCall</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L177" href="#L177" class="br">177 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Literal</span>){
-<a id="L178" href="#L178" class="br">178 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Literal</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L179" href="#L179" class="br">179 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Operator</span>){
-<a id="L180" href="#L180" class="br">180 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Operator</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L181" href="#L181" class="br">181 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Variable</span>){
-<a id="L182" href="#L182" class="br">182 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Variable</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
-<a id="L183" href="#L183" class="br">183 </a>	}<span class="kwrd">else</span>{
-<a id="L184" href="#L184" class="br">184 </a>		<span class="kwrd">throw</span> <span class="kwrd">new</span> <span class="hid">Exception</span>(<span class="str">&quot;invalid stored type&quot;</span>);
-<a id="L185" href="#L185" class="br">185 </a>	}
-<a id="L186" href="#L186" class="br">186 </a>	<span class="kwrd">if</span> (<span class="hid">caption</span> != <span class="kwrd">null</span>){
-<a id="L187" href="#L187" class="br">187 </a>		<span class="hid">r</span> = [<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">caption</span>]~<span class="hid">r</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>;
-<a id="L188" href="#L188" class="br">188 </a>	}
-<a id="L189" href="#L189" class="br">189 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L190" href="#L190" class="br">190 </a>}
-<a id="L191" href="#L191" class="br">191 </a><span class="com">/// generates html representation for LiteralNode</span>
-<a id="L192" href="#L192" class="br">192 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">LiteralNode</span> <span class="hid">node</span>){
-<a id="L193" href="#L193" class="br">193 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L194" href="#L194" class="br">194 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Literal&lt;br&gt;Type: &quot;</span>~<span class="hid">node.type.toString</span>);
-<a id="L195" href="#L195" class="br">195 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">node.toByteCode</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L196" href="#L196" class="br">196 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L197" href="#L197" class="br">197 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L198" href="#L198" class="br">198 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L199" href="#L199" class="br">199 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L200" href="#L200" class="br">200 </a>}
-<a id="L201" href="#L201" class="br">201 </a><span class="com">/// generates html representation for OperatorNode</span>
-<a id="L202" href="#L202" class="br">202 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">OperatorNode</span> <span class="hid">node</span>){
-<a id="L203" href="#L203" class="br">203 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
-<a id="L204" href="#L204" class="br">204 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Operator&lt;br&gt;Operator Type: &quot;</span>~<span class="hid">node.operator</span>~
-<a id="L205" href="#L205" class="br">205 </a>		<span class="str">&quot;&lt;br&gt;Return Type: &quot;</span>~<span class="hid">node.returnType.toString</span>);
-<a id="L206" href="#L206" class="br">206 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>);
-<a id="L207" href="#L207" class="br">207 </a>	<span class="kwrd">foreach</span> (<span class="hid">operand</span>; <span class="hid">node.operands</span>){
-<a id="L208" href="#L208" class="br">208 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">operand.toHtml</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
-<a id="L209" href="#L209" class="br">209 </a>	}
-<a id="L210" href="#L210" class="br">210 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
-<a id="L211" href="#L211" class="br">211 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
-<a id="L212" href="#L212" class="br">212 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
-<a id="L213" href="#L213" class="br">213 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L214" href="#L214" class="br">214 </a>}
-<a id="L215" href="#L215" class="br">215 </a><span class="com">/// generates html representation for VariableNode</span>
-<a id="L216" href="#L216" class="br">216 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">VariableNode</span> <span class="hid">node</span>){
-<a id="L217" href="#L217" class="br">217 </a>	<span class="type">string</span>[] <span class="hid">r</span> = [
-<a id="L218" href="#L218" class="br">218 </a>		<span class="str">&quot;&lt;div&gt;Variable&lt;br&gt;Name: &quot;</span>~<span class="hid">node.varName</span>~<span class="str">&quot;&lt;br&gt;Type: &quot;</span>~<span class="hid">node.varType.toString</span>,
-<a id="L219" href="#L219" class="br">219 </a>		<span class="str">&quot;&lt;/div&gt;&quot;</span>
-<a id="L220" href="#L220" class="br">220 </a>		];
-<a id="L221" href="#L221" class="br">221 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
-<a id="L222" href="#L222" class="br">222 </a>}
+<a id="L77" href="#L77" class="br">77 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">StatementNode</span> <span class="hid">node</span>, <span class="type">string</span> <span class="hid">caption</span> = <span class="kwrd">null</span>){
+<a id="L78" href="#L78" class="br">78 </a>	<span class="type">string</span>[] <span class="hid">r</span>;
+<a id="L79" href="#L79" class="br">79 </a>	<span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.Assignment</span>){
+<a id="L80" href="#L80" class="br">80 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.Assignment</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L81" href="#L81" class="br">81 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.Block</span>){
+<a id="L82" href="#L82" class="br">82 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.Block</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L83" href="#L83" class="br">83 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.FunctionCall</span>){
+<a id="L84" href="#L84" class="br">84 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.FunctionCall</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L85" href="#L85" class="br">85 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.If</span>){
+<a id="L86" href="#L86" class="br">86 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.If</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L87" href="#L87" class="br">87 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.While</span>){
+<a id="L88" href="#L88" class="br">88 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.While</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L89" href="#L89" class="br">89 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">StatementNode.Type.VarDeclare</span>){
+<a id="L90" href="#L90" class="br">90 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">StatementNode.Type.VarDeclare</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L91" href="#L91" class="br">91 </a>	}<span class="kwrd">else</span>{
+<a id="L92" href="#L92" class="br">92 </a>		<span class="kwrd">throw</span> <span class="kwrd">new</span> <span class="hid">Exception</span>(<span class="str">&quot;invalid stored type&quot;</span>);
+<a id="L93" href="#L93" class="br">93 </a>	}
+<a id="L94" href="#L94" class="br">94 </a>	<span class="kwrd">if</span> (<span class="hid">caption</span> != <span class="kwrd">null</span>){
+<a id="L95" href="#L95" class="br">95 </a>		<span class="kwrd">return</span> [<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">caption</span>]~<span class="hid">r</span>~[<span class="str">&quot;&lt;/div&gt;&quot;</span>];
+<a id="L96" href="#L96" class="br">96 </a>	}
+<a id="L97" href="#L97" class="br">97 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L98" href="#L98" class="br">98 </a>}
+<a id="L99" href="#L99" class="br">99 </a><span class="com">/// generates html representation for AssignmentNode</span>
+<a id="L100" href="#L100" class="br">100 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">AssignmentNode</span> <span class="hid">node</span>){
+<a id="L101" href="#L101" class="br">101 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L102" href="#L102" class="br">102 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Variable Assignment&quot;</span>);
+<a id="L103" href="#L103" class="br">103 </a>	<span class="com">// add the variable</span>
+<a id="L104" href="#L104" class="br">104 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;lvalue&quot;</span>);
+<a id="L105" href="#L105" class="br">105 </a>	<span class="hid">html.append</span>(<span class="hid">node.var.toHtml</span>);
+<a id="L106" href="#L106" class="br">106 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L107" href="#L107" class="br">107 </a>
+<a id="L108" href="#L108" class="br">108 </a>	<span class="com">// then add the value</span>
+<a id="L109" href="#L109" class="br">109 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;rvalue&quot;</span>);
+<a id="L110" href="#L110" class="br">110 </a>	<span class="hid">html.append</span>(<span class="hid">node.val.toHtml</span>(<span class="str">&quot;Value&quot;</span>));
+<a id="L111" href="#L111" class="br">111 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
+<a id="L112" href="#L112" class="br">112 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L113" href="#L113" class="br">113 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L114" href="#L114" class="br">114 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L115" href="#L115" class="br">115 </a>}
+<a id="L116" href="#L116" class="br">116 </a><span class="com">/// generates html representation for FunctionCall</span>
+<a id="L117" href="#L117" class="br">117 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">FunctionCallNode</span> <span class="hid">node</span>){
+<a id="L118" href="#L118" class="br">118 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L119" href="#L119" class="br">119 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Function Call&lt;br&gt;Name: &quot;</span>~<span class="hid">node.fName</span>~<span class="str">&quot;&lt;br&gt; Return Type: &quot;</span>~<span class="hid">node.returnType.toString</span>);
+<a id="L120" href="#L120" class="br">120 </a>	<span class="com">// add the arguments</span>
+<a id="L121" href="#L121" class="br">121 </a>	<span class="kwrd">if</span> (<span class="hid">node.arguments.length</span> &gt; <span class="num">0</span>){
+<a id="L122" href="#L122" class="br">122 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Arguments&quot;</span>);
+<a id="L123" href="#L123" class="br">123 </a>		<span class="kwrd">foreach</span> (<span class="hid">arg</span>; <span class="hid">node.arguments</span>){
+<a id="L124" href="#L124" class="br">124 </a>			<span class="hid">html.append</span>(<span class="hid">arg.toHtml</span>);
+<a id="L125" href="#L125" class="br">125 </a>		}
+<a id="L126" href="#L126" class="br">126 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L127" href="#L127" class="br">127 </a>	}
+<a id="L128" href="#L128" class="br">128 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L129" href="#L129" class="br">129 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L130" href="#L130" class="br">130 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L131" href="#L131" class="br">131 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L132" href="#L132" class="br">132 </a>}
+<a id="L133" href="#L133" class="br">133 </a><span class="com">/// generates html repressntation for IfNode</span>
+<a id="L134" href="#L134" class="br">134 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">IfNode</span> <span class="hid">node</span>){
+<a id="L135" href="#L135" class="br">135 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L136" href="#L136" class="br">136 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;If Statement&quot;</span>);
+<a id="L137" href="#L137" class="br">137 </a>	<span class="com">// add condition</span>
+<a id="L138" href="#L138" class="br">138 </a>	<span class="hid">html.append</span>(<span class="hid">node.condition.toHtml</span>(<span class="str">&quot;Condition&quot;</span>));
+<a id="L139" href="#L139" class="br">139 </a>	<span class="com">// then add body</span>
+<a id="L140" href="#L140" class="br">140 </a>	<span class="hid">html.append</span>(<span class="hid">node.statement.toHtml</span>(<span class="str">&quot;On True&quot;</span>));
+<a id="L141" href="#L141" class="br">141 </a>	<span class="com">// then add elseBody if any</span>
+<a id="L142" href="#L142" class="br">142 </a>	<span class="kwrd">if</span> (<span class="hid">node.hasElse</span>){
+<a id="L143" href="#L143" class="br">143 </a>		<span class="hid">html.append</span>(<span class="hid">node.elseStatement.toHtml</span>(<span class="str">&quot;On False&quot;</span>));
+<a id="L144" href="#L144" class="br">144 </a>	}
+<a id="L145" href="#L145" class="br">145 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L146" href="#L146" class="br">146 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L147" href="#L147" class="br">147 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L148" href="#L148" class="br">148 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L149" href="#L149" class="br">149 </a>}
+<a id="L150" href="#L150" class="br">150 </a><span class="com">/// generates html representation for WhileNode</span>
+<a id="L151" href="#L151" class="br">151 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">WhileNode</span> <span class="hid">node</span>){
+<a id="L152" href="#L152" class="br">152 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L153" href="#L153" class="br">153 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;While Statement&quot;</span>);
+<a id="L154" href="#L154" class="br">154 </a>	<span class="com">// add condition</span>
+<a id="L155" href="#L155" class="br">155 </a>	<span class="hid">html.append</span>(<span class="hid">node.condition.toHtml</span>(<span class="str">&quot;Condition&quot;</span>));
+<a id="L156" href="#L156" class="br">156 </a>	<span class="com">// then add body</span>
+<a id="L157" href="#L157" class="br">157 </a>	<span class="hid">html.append</span>(<span class="hid">node.statement.toHtml</span>(<span class="str">&quot;While True&quot;</span>));
+<a id="L158" href="#L158" class="br">158 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L159" href="#L159" class="br">159 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L160" href="#L160" class="br">160 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L161" href="#L161" class="br">161 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L162" href="#L162" class="br">162 </a>}
+<a id="L163" href="#L163" class="br">163 </a><span class="com">/// generates html representation for VarDeclareNode</span>
+<a id="L164" href="#L164" class="br">164 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">VarDeclareNode</span> <span class="hid">node</span>){
+<a id="L165" href="#L165" class="br">165 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L166" href="#L166" class="br">166 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt; Variable Declaration&lt;br&gt;Type: &quot;</span>~<span class="hid">node.type.toString</span>);
+<a id="L167" href="#L167" class="br">167 </a>	<span class="com">// then add the variables declared</span>
+<a id="L168" href="#L168" class="br">168 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Variables&quot;</span>);
+<a id="L169" href="#L169" class="br">169 </a>	<span class="kwrd">foreach</span> (<span class="hid">var</span>; <span class="hid">node.vars</span>){
+<a id="L170" href="#L170" class="br">170 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">var</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L171" href="#L171" class="br">171 </a>	}
+<a id="L172" href="#L172" class="br">172 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
+<a id="L173" href="#L173" class="br">173 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L174" href="#L174" class="br">174 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L175" href="#L175" class="br">175 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L176" href="#L176" class="br">176 </a>}
+<a id="L177" href="#L177" class="br">177 </a><span class="com">/// generates html representation for CodeNode</span>
+<a id="L178" href="#L178" class="br">178 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">CodeNode</span> <span class="hid">node</span>, <span class="type">string</span> <span class="hid">caption</span> = <span class="kwrd">null</span>){
+<a id="L179" href="#L179" class="br">179 </a>	<span class="type">string</span>[] <span class="hid">r</span>;
+<a id="L180" href="#L180" class="br">180 </a>	<span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.FunctionCall</span>){
+<a id="L181" href="#L181" class="br">181 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.FunctionCall</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L182" href="#L182" class="br">182 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Literal</span>){
+<a id="L183" href="#L183" class="br">183 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Literal</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L184" href="#L184" class="br">184 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Operator</span>){
+<a id="L185" href="#L185" class="br">185 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Operator</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L186" href="#L186" class="br">186 </a>	}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">node.type</span> == <span class="hid">CodeNode.Type.Variable</span>){
+<a id="L187" href="#L187" class="br">187 </a>		<span class="hid">r</span> = <span class="hid">node.node</span>!(<span class="hid">CodeNode.Type.Variable</span>).<a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>();
+<a id="L188" href="#L188" class="br">188 </a>	}<span class="kwrd">else</span>{
+<a id="L189" href="#L189" class="br">189 </a>		<span class="kwrd">throw</span> <span class="kwrd">new</span> <span class="hid">Exception</span>(<span class="str">&quot;invalid stored type&quot;</span>);
+<a id="L190" href="#L190" class="br">190 </a>	}
+<a id="L191" href="#L191" class="br">191 </a>	<span class="kwrd">if</span> (<span class="hid">caption</span> != <span class="kwrd">null</span>){
+<a id="L192" href="#L192" class="br">192 </a>		<span class="hid">r</span> = [<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">caption</span>]~<span class="hid">r</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>;
+<a id="L193" href="#L193" class="br">193 </a>	}
+<a id="L194" href="#L194" class="br">194 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L195" href="#L195" class="br">195 </a>}
+<a id="L196" href="#L196" class="br">196 </a><span class="com">/// generates html representation for LiteralNode</span>
+<a id="L197" href="#L197" class="br">197 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">LiteralNode</span> <span class="hid">node</span>){
+<a id="L198" href="#L198" class="br">198 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L199" href="#L199" class="br">199 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Literal&lt;br&gt;Type: &quot;</span>~<span class="hid">node.type.toString</span>);
+<a id="L200" href="#L200" class="br">200 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">node.toByteCode</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L201" href="#L201" class="br">201 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L202" href="#L202" class="br">202 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L203" href="#L203" class="br">203 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L204" href="#L204" class="br">204 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L205" href="#L205" class="br">205 </a>}
+<a id="L206" href="#L206" class="br">206 </a><span class="com">/// generates html representation for OperatorNode</span>
+<a id="L207" href="#L207" class="br">207 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">OperatorNode</span> <span class="hid">node</span>){
+<a id="L208" href="#L208" class="br">208 </a>	<span class="hid">LinkedList</span>!<span class="type">string</span> <span class="hid">html</span> = <span class="kwrd">new</span> <span class="hid">LinkedList</span>!<span class="type">string</span>;
+<a id="L209" href="#L209" class="br">209 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;Operator&lt;br&gt;Operator Type: &quot;</span>~<span class="hid">node.operator</span>~
+<a id="L210" href="#L210" class="br">210 </a>		<span class="str">&quot;&lt;br&gt;Return Type: &quot;</span>~<span class="hid">node.returnType.toString</span>);
+<a id="L211" href="#L211" class="br">211 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>);
+<a id="L212" href="#L212" class="br">212 </a>	<span class="kwrd">foreach</span> (<span class="hid">operand</span>; <span class="hid">node.operands</span>){
+<a id="L213" href="#L213" class="br">213 </a>		<span class="hid">html.append</span>(<span class="str">&quot;&lt;div&gt;&quot;</span>~<span class="hid">operand.toHtml</span>~<span class="str">&quot;&lt;/div&gt;&quot;</span>);
+<a id="L214" href="#L214" class="br">214 </a>	}
+<a id="L215" href="#L215" class="br">215 </a>	<span class="hid">html.append</span>(<span class="str">&quot;&lt;/div&gt;&lt;/div&gt;&quot;</span>);
+<a id="L216" href="#L216" class="br">216 </a>	<span class="type">string</span>[] <span class="hid">r</span> = <span class="hid">html.toArray</span>;
+<a id="L217" href="#L217" class="br">217 </a>	.<span class="hid">destroy</span>(<span class="hid">html</span>);
+<a id="L218" href="#L218" class="br">218 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L219" href="#L219" class="br">219 </a>}
+<a id="L220" href="#L220" class="br">220 </a><span class="com">/// generates html representation for VariableNode</span>
+<a id="L221" href="#L221" class="br">221 </a><span class="type">string</span>[] <a title="qscript.compiler.asthtml.toHtml" href="qscript.compiler.asthtml.toHtml.1.html" class="hid">toHtml</a>(<span class="hid">VariableNode</span> <span class="hid">node</span>){
+<a id="L222" href="#L222" class="br">222 </a>	<span class="type">string</span>[] <span class="hid">r</span> = [
+<a id="L223" href="#L223" class="br">223 </a>		<span class="str">&quot;&lt;div&gt;Variable&lt;br&gt;Name: &quot;</span>~<span class="hid">node.varName</span>~<span class="str">&quot;&lt;br&gt;Type: &quot;</span>~<span class="hid">node.varType.toString</span>,
+<a id="L224" href="#L224" class="br">224 </a>		<span class="str">&quot;&lt;/div&gt;&quot;</span>
+<a id="L225" href="#L225" class="br">225 </a>		];
+<a id="L226" href="#L226" class="br">226 </a>	<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L227" href="#L227" class="br">227 </a>}
 </pre></div>
 		<div id="page-nav">
-		<div id="source-navigation"><div class="list-holder"><ul><li><a href="../qscript.compiler.asthtml.html" class="docs">[Docs] </a><a href="#L1">qscript.compiler.asthtml</a><ul><li><a href="#L13">HTML_STYLE</a></li><li><a href="../qscript.compiler.asthtml.toHtml.1.html" class="docs">[Docs] </a><a href="#L26">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.2.html" class="docs">[Docs] </a><a href="#L39">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.3.html" class="docs">[Docs] </a><a href="#L59">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.4.html" class="docs">[Docs] </a><a href="#L77">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.5.html" class="docs">[Docs] </a><a href="#L95">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.6.html" class="docs">[Docs] </a><a href="#L112">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.7.html" class="docs">[Docs] </a><a href="#L129">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.8.html" class="docs">[Docs] </a><a href="#L146">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.9.html" class="docs">[Docs] </a><a href="#L159">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.10.html" class="docs">[Docs] </a><a href="#L173">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.11.html" class="docs">[Docs] </a><a href="#L192">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.12.html" class="docs">[Docs] </a><a href="#L202">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.13.html" class="docs">[Docs] </a><a href="#L216">toHtml</a></li></ul></li></ul></div></div></div>
+		<div id="source-navigation"><div class="list-holder"><ul><li><a href="../qscript.compiler.asthtml.html" class="docs">[Docs] </a><a href="#L1">qscript.compiler.asthtml</a><ul><li><a href="#L13">HTML_STYLE</a></li><li><a href="../qscript.compiler.asthtml.toHtml.1.html" class="docs">[Docs] </a><a href="#L26">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.2.html" class="docs">[Docs] </a><a href="#L39">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.3.html" class="docs">[Docs] </a><a href="#L59">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.4.html" class="docs">[Docs] </a><a href="#L77">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.5.html" class="docs">[Docs] </a><a href="#L100">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.6.html" class="docs">[Docs] </a><a href="#L117">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.7.html" class="docs">[Docs] </a><a href="#L134">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.8.html" class="docs">[Docs] </a><a href="#L151">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.9.html" class="docs">[Docs] </a><a href="#L164">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.10.html" class="docs">[Docs] </a><a href="#L178">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.11.html" class="docs">[Docs] </a><a href="#L197">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.12.html" class="docs">[Docs] </a><a href="#L207">toHtml</a></li><li><a href="../qscript.compiler.asthtml.toHtml.13.html" class="docs">[Docs] </a><a href="#L221">toHtml</a></li></ul></li></ul></div></div></div>
 	</div>
 	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
 </body>
