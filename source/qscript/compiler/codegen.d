@@ -104,35 +104,51 @@ package struct CodeGen{
 		return false;
 	}
 
+	/// returns the number of max vars that exist at one time in a StatementNode[]
+	private static uinteger getMaxVarCount(StatementNode[] statements){
+		uinteger r = 0;
+		uinteger maxSub = 0;
+		foreach (statement; statements){
+			if (statement.type == StatementNode.Type.VarDeclare){
+				// get the number of vars
+				r += statement.node!(StatementNode.Type.VarDeclare).vars.length;
+			}else{
+				uinteger newMaxSub = getVarCountStatement (statement);
+				if (newMaxSub > maxSub){
+					maxSub = newMaxSub;
+				}
+			}
+		}
+		return r + maxSub;
+	}
+	
+	/// returns the number of vars defined in a statement
+	private static uinteger getVarCountStatement (StatementNode statement){
+		if (statement.type == StatementNode.Type.VarDeclare){
+			return statement.node!(StatementNode.Type.VarDeclare).vars.length;
+		}else if (statement.type == StatementNode.Type.Block){
+			return getMaxVarCount (statement.node!(StatementNode.Type.Block).statements);
+		}else if (statement.type == StatementNode.Type.If){
+			uinteger onTrueCount, onFalseCount;
+			onTrueCount = getVarCountStatement (statement.node!(StatementNode.Type.If).statement);
+			onFalseCount = getVarCountStatement (statement.node!(StatementNode.Type.If).elseStatement);
+			return (onTrueCount > onFalseCount ? onTrueCount : onFalseCount);
+		}else if (statement.type == StatementNode.Type.While){
+			return getVarCountStatement (statement.node!(StatementNode.Type.While).statement);
+		}
+		return 0;
+	}
+
 	/// stores the list of errors
 	private LinkedList!CompileError compileErrors;
 
 	/// generates byte code for FunctionNode
 	private string[] generateByteCode(FunctionNode node){
-		/// returns the number of max vars that exist at one time in a a Block
-		uinteger getMaxVarCount(BlockNode node){
-			uinteger r = 0;
-			uinteger maxSub = 0;
-			foreach (statement; node.statements){
-				if (statement.type == StatementNode.Type.VarDeclare){
-					// get the number of vars
-					r += statement.node!(StatementNode.Type.VarDeclare).vars.length;
-				}else if (statement.type == StatementNode.Type.Block){
-					// recursion
-					uinteger newMaxSub = getMaxVarCount (statement.node!(StatementNode.Type.Block));
-					if (newMaxSub > maxSub){
-						maxSub = newMaxSub;
-					}
-				}
-			}
-			return r + maxSub;
-		}
-
 		LinkedList!string byteCode = new LinkedList!string;
 		// push the function name
 		byteCode.append (node.name);
 		// then set the max var count
-		uinteger maxVars = getMaxVarCount(node.bodyBlock);
+		uinteger maxVars = getMaxVarCount(node.bodyBlock.statements);
 		// add the arguments count to this
 		maxVars += node.arguments.length;
 		byteCode.append("\tvarCount i"~to!string(maxVars));
