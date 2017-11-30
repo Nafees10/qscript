@@ -344,8 +344,13 @@ struct ASTGen{
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
 				index++;
+				uinteger errorCount = compileErrors.count;
 				while (index < brackEnd){
 					statements.append(generateStatementAST());
+					// check if error added
+					if (errorCount != compileErrors.count){
+						break;
+					}
 				}
 				// put them all in block
 				blockNode.statements = statements.toArray;
@@ -384,10 +389,9 @@ struct ASTGen{
 			}else if (tokens.tokens[index].type == Token.Type.Identifier){
 				// assignment
 				return StatementNode(generateAssignmentAST());
-			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
-				index ++;
 			}
+			compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid statement"));
+			index ++;
 			return StatementNode();
 		}
 
