@@ -40,6 +40,12 @@ alias DataType = qscript.compiler.misc.DataType;
 /// Used by compiler's functions to return error
 alias CompileError = qscript.compiler.misc.CompileError;
 
+
+/// The abstract class that makes QScript usable.
+/// 
+/// provides interface to the compiler as well
+/// 
+/// Usage is shown in `demos/demo.d`
 public abstract class QScript{
 private:
 	// operator functions/instructions
@@ -532,7 +538,13 @@ public:
 	/// alias to compiler.misc.CompileError
 	alias CompileError = qscript.compiler.misc.CompileError;
 
-	/// compiles and loads a script for execution. Returns errors if any, else, returns empty array
+	/// compiles and loads a script for execution.
+	/// 
+	/// Any previously loaded script/byte code is removed
+	/// 
+	/// `script` is the script to load, with each line as a separate element of the array, without the trailing newline character.
+	/// 
+	/// Returns: array of compile errors. or empty array in case of no errors
 	CompileError[] loadScript(string[] script){
 		// compile to byte code
 		CompileError[] errors;
@@ -545,6 +557,38 @@ public:
 			return [CompileError(0, sError)];
 		}
 		return [];
+	}
+
+	/// compiles and loads a script for execution, while keeping the previously loaded script's or byte code's functions
+	/// 
+	/// `script` is the script to load, with each line as a separate element of the array, without the trailing newline character.
+	/// `overWrite` if true, in case of functions with matching names, the ones from previously loaded one will be replaced with new one
+	/// 
+	/// Returns: array of compile errors. or empty array in case of no errors
+	CompileError[] loadScript(bool overWrite)(string[] script){
+		CompileError[] errors;
+		// copy currently loaded script
+		void delegate()[][string] loadedInstructions = scriptInstructions.dup;
+		QData[][][string] loadedArgs = scriptInstructionsArgs.dup;
+		// now just load it
+		errors = loadScript(script);
+		if (errors.length > 0){
+			return errors;
+		}
+		// now load the saved script back accordingly to `overWrite`
+		foreach (i, functionName; loadedInstructions.keys){
+			// check if it exists in newly compiled one, case true: skip
+			static if (overWrite){
+				if (functionName in scriptInstructions){
+					// skip
+					continue;
+				}
+			}
+			// load it back, no need to dup
+			scriptInstructions[functionName] = loadedInstructions[functionName];
+			// the args too
+			scriptInstructionsArgs[functionName] = loadedArgs[functionName];
+		}
 	}
 
 	/// compiles a script into byte code, returns the byte code
