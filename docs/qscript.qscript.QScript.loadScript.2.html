@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <title>QScript.loadScript (qscript.qscript.QScript.loadScript)</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="style.css" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link rel="prefetch" href="search-results.html" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://dlang.org/">Dlang.org</a>
+		</nav>
+		</div>
+
+		<form id="search" action="search-docs.html">
+			<input placeholder="Find a symbol name..." name="searchTerm" type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>QScript.loadScript</h1><div class="breadcrumbs"><a href="qscript.html" class="breadcrumb">qscript</a><a href="qscript.qscript.html" class="breadcrumb">qscript</a><a href="qscript.qscript.QScript.html" class="breadcrumb">QScript</a></div><div><div class="documentation-comment synopsis"><div><p>compiles and loads a script for execution, while keeping the previously loaded script's or byte code's functions</p><p><tt class="inline-code">script</tt> is the script to load, with each line as a separate element of the array, without the trailing newline character.
+<tt class="inline-code">overWrite</tt> if true, in case of functions with matching names, the ones from previously loaded one will be replaced with new one</p></div></div></div><div class="annotated-prototype"><ol class="overloads"><li class="overload-option"><a href="qscript.qscript.QScript.loadScript.1.html"><span class="overload-signature"><tt class="highlighted"><span class="hid">CompileError</span>[]</tt> <span class="name">loadScript</span><tt class="highlighted">(<span class="type">string</span>[] <span class="hid">script</span>)</tt></span></a></li><li class="active-overload-option"><span class="overload-signature"><tt class="highlighted"><span class="hid">CompileError</span>[]</tt> <span class="name">loadScript</span><tt class="highlighted">(<span class="type">string</span>[] <span class="hid">script</span>)</tt></span><div class="function-prototype"><a id="help-link" href="http://dpldocs.info/reading-prototypes">?</a><div class="parent-prototype"><span class="builtin-type">class</span> <span class="name">QScript</span></div><div><div class="attributes"></div><div class="return-type"><a class="name" title="qscript.qscript.QScript.CompileError" href="qscript.qscript.QScript.CompileError.html" data-ident="CompileError">CompileError</a>[]</div><div class="function-name">loadScript</div><div class="template-parameters">(<div class="parameters-list toplevel"><div class="template-parameter-item parameter-item">	<span><span class="builtin-type">bool</span> <span data-ident="overWrite" class="name">overWrite</span></span></div></div>)</div><div class="runtime-parameters">(<div class="parameters-list toplevel"><div class="runtime-parameter-item parameter-item"><span class="parameter-type-holder"><span class="parameter-type"><span class="builtin-type">string</span>[]</span></span> <span data-ident="script" class="parameter-name name"><a href="#param-script">script</a></span></div></div>)</div><div class="function-contracts"></div></div></div></li></ol></div><div><h2 id="returns"><a href="#returns" class="header-anchor">Return Value</a></h2><div><div class="return-type-holder">Type: <span class="return-type"><a title="qscript.qscript.QScript.CompileError" href="qscript.qscript.QScript.CompileError.html" class="xref"><span data-ident="CompileError" class="name">CompileError</span></a>[]</span></div><div class="documentation-comment returns-description"><div><p>array of compile errors. or empty array in case of no errors</p></div></div></div><h2 id="meta"><a href="#meta" class="header-anchor">Meta</a></h2><div class="documentation-comment source-section other-section"><h3 id="source"><a href="#source" class="header-anchor">Source</a></h3><div><p><a href="source/qscript.qscript.d.html#L568">See Implementation</a><br /></p></div></div></div></div>
+		<div id="page-nav"><a href="qscript.html" class="parent">qscript</a><a href="qscript.qscript.html" class="parent">qscript</a><a href="qscript.qscript.QScript.html" class="parent">QScript</a>
+		<span class="type-separator">aliases</span><ul><li><a href="qscript.qscript.QScript.CompileError.html" class="alias">CompileError</a></li></ul><span class="type-separator">functions</span><ul><li><a href="qscript.qscript.QScript.addFunction.html" class="function">addFunction</a></li><li><a href="qscript.qscript.QScript.compileScript.html" class="function">compileScript</a></li><li><a href="qscript.qscript.QScript.executeScriptFunction.html" class="function">executeScriptFunction</a></li><li><a href="qscript.qscript.QScript.loadByteCode.html" class="function">loadByteCode</a></li><li><a href="qscript.qscript.QScript.loadScript.1.html" class="function current">loadScript</a></li><li><a href="qscript.qscript.QScript.onRuntimeError.html" class="function">onRuntimeError</a></li><li><a href="qscript.qscript.QScript.onUndefinedFunctionCall.html" class="function">onUndefinedFunctionCall</a></li></ul><span class="type-separator">structs</span><ul><li><a href="qscript.qscript.QScript.FunctionCallData.html" class="struct">FunctionCallData</a></li><li><a href="qscript.qscript.QScript.RuntimeError.html" class="struct">RuntimeError</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>
