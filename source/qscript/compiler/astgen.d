@@ -753,7 +753,10 @@ struct ASTGen{
 				}
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
-				return generateCodeAST();
+				index ++;
+				CodeNode r = generateCodeAST();
+				index ++;
+				return r;
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
