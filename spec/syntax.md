@@ -1,9 +1,17 @@
 # QScript syntax
+## Comments
+Comments can be added using the `#` character. Anything following a `#` is ignored by compiler as a comment.  
+For example:  
+```
+function main(){ # This is a comment
+	# This also is a comment
+}
+```
 ## Functions
 ### Function Definition
 ```
 function TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
-	// function body
+	# function body
 }
 ```
 * `TYPE` is the return type of this function
@@ -15,20 +23,26 @@ function TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 A function without any arguments would be defined like:
 ```
 function TYPE FUNCTION_NAME{
-	// function body
+	# function body
+}
+```  
+or:  
+```
+function TYPE FUNCTION_NAME(){
+	# function body
 }
 ```
 ### Returning From Functions
 A return statement can be used to return a value from the function. The type of the return value, and the return type of the function must match.
 A return statement is written as following:
 ```
-return RETURN_VALUE;
+return (RETURN_VALUE);
 ```
 where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code:
 ```
 function int someFunction{
-	return 0;
-	writeln("this won't be written");
+	return (0);
+	writeln("this won't be written"); # because return terminates the execution
 }
 ```
 writeln will not be called.
@@ -70,12 +84,31 @@ intArray = [0, 1, 2, 3];
 If statements are written like:
 ```
 if (CONDITION){
-	// some code
+	# some code
 }else{
-	// some (other?) code
+	# some (other?) code
 }
 ```
-The `else` part is not required. If `CONDITION` is 0 (int), then, if the else exists, it's executed, if `CONDITION` is 1 (int), then `// some code` is executed
+The `else` part is not required. If `CONDITION` is 0 (int), then, if the else exists, it's executed, if `CONDITION` is 1 (int), then `# some code` is executed.  
+It is not necessary that the `# some code` or the `# some (other?) code` be in a block. In case only one statement is to be executed, it can be written like:  
+```
+if (CONDITION)
+	# some code
+else
+	# some other code
+```
+
+### Nested If Statements
+If statements can also be nested inside other if statements, like:  
+```
+if (CONDITION)
+	if (OTHER_CONDITION)
+		writeln("OTHER_CONDITION and CONDITION were 1");
+	else
+		writeln("OTHER_CONDITION was 0, CONDITION was 1");
+else
+	writeln("CONDITION was 0");
+```
 
 ---
 
@@ -83,10 +116,10 @@ The `else` part is not required. If `CONDITION` is 0 (int), then, if the else ex
 While statements are written like:
 ```
 while (CONDITION){
-	// some code in a loop
+	# some code in a loop
 }
 ```
-As long as `CONDITION` is 1 (int), `// some code in a loop` is executed.
+As long as `CONDITION` is 1 (int), `# some code in a loop` is executed. And just like if statements, while loops can also be nested
 
 ---
 
