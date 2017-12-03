@@ -129,9 +129,12 @@ package struct CodeGen{
 		}else if (statement.type == StatementNode.Type.Block){
 			return getMaxVarCount (statement.node!(StatementNode.Type.Block).statements);
 		}else if (statement.type == StatementNode.Type.If){
-			uinteger onTrueCount, onFalseCount;
-			onTrueCount = getVarCountStatement (statement.node!(StatementNode.Type.If).statement);
-			onFalseCount = getVarCountStatement (statement.node!(StatementNode.Type.If).elseStatement);
+			uinteger onTrueCount = 0, onFalseCount = 0;
+			IfNode ifStatement = statement.node!(StatementNode.Type.If);
+			onTrueCount = getVarCountStatement (ifStatement.statement);
+			if (ifStatement.hasElse){
+				onFalseCount = getVarCountStatement (ifStatement.elseStatement);
+			}
 			return (onTrueCount > onFalseCount ? onTrueCount : onFalseCount);
 		}else if (statement.type == StatementNode.Type.While){
 			return getVarCountStatement (statement.node!(StatementNode.Type.While).statement);
@@ -226,7 +229,8 @@ package struct CodeGen{
 			"intToStr"		: "intToStr",
 			"intToDouble"	: "intToDouble",
 			"doubleToStr"	: "doubleToStr",
-			"doubleToInt"	: "doubleToInt"
+			"doubleToInt"	: "doubleToInt",
+			"not"			: "not"
 		];
 		if (node.fName in predefinedFunctions){
 			// then use the predefined function's instruction
@@ -281,7 +285,9 @@ package struct CodeGen{
 			"~" : "concat",
 			"<" : "isLesser",
 			"==": "isSame",
-			">" : "isGreater"
+			">" : "isGreater",
+			"&&": "and",
+			"||": "or"
 		];
 		// check if types are ok
 		const static string[] ArtithmaticOperators = ["*", "/", "+", "-", "%", "<", ">"];
