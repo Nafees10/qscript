@@ -150,3 +150,18 @@ function int sum (int a, int b){
 	return (a + b);
 }
 ```
+
+---
+
+## Misc. :
+### not
+Returns the `not` of a binary number.  
+**Arguments:**  
+1. The binary number, 0 or 1. Data Type: `int`  
+**Returns:**  
+The `not` of the binary number in arg1. If arg1 is `1`, returns `0`, else, returns `1`.  
+**Usage:**  
+```
+writeln (intToStr(not(0))); # writes 1 to terminal
+writeln (intToStr(not(1))); # writes 0 to terminal
+```
