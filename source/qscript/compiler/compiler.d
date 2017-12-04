@@ -20,6 +20,9 @@ public struct Function{
 	/// stores the data type of the arguments received by this function
 	private DataType[] storedArgTypes;
 	/// the data type of the arguments received by this function
+	/// 
+	/// if an argType is defined as void, with array dimensions=0, it means accept any type.
+	/// if an argType is defined as void with array dimensions>0, it means array of any type of that dimensions
 	@property ref DataType[] argTypes(){
 		return storedArgTypes;
 	}
