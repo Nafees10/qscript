@@ -1,56 +1,54 @@
-### **Download from a stable release/tag - at this moment, the master branch is not stable (The compiler is being rewritten)**
-
-## QScript is a fast, and simple scripting language.
-### Features:
-1. Easy syntax (somewhat similar to D)
-2. Arrays - Dynamic Arrays, length can be changed at runtime
-3. Fast execution - The whole script is converted into array of function-pointers, which are just called, no interpretation at run time, QScript has a compiler for this.
-4. Dynamic typed - This is changing in the next version I'm working on.
-
----
-
-### TODO (Features to add):
-1. `if else` statements - planned for next version, 0.6.0
-2. static typing - planned for next version, 0.6.0
-3. `for`, and `do while` loops - planned for 0.6.1
-4. compile-time optimizations - Compiler executes code like `2+2` at compile time - planned for 0.6.2
-
-### Where to report bugs?
-Use the issues tab at the top.
+# QScript
+A fast, static typed, scripting language, with a syntax similar to D Language.
+## Setting it up
+To add QScript to your dub package or project, add the following into dub.json dependencies:
+```
+"qscript": "~>0.6.0"
+```
+or if you have dub.sdl:
+```
+dependency "qscript" version="~>0.6.0"
+```
+After adding that, look at the `demos/demo.d` to see how to use the `QScript` class to execute scripts.
 
 ---
 
-### Where to learn QScript from (Since QScript is a language itself)?
-Use the wiki.
+## Getting Started:
+To get started on using QScript, see the following documents:
+* `spec/syntax.md`		- Contains the specification for QScript's syntax.
+* `spec/functions.md`	- Contains a list of predefined QScript functions.
+* `demos/demo.d`		- A demo usage of QScript in D langauage. Shows how to add new functions, 
+  
+And for the documentation on the code, including QScript's compiler, it is stored in `docs/`.  
+The spec for QScript's byte code is also available, in `spec/bytecode.md`, but knowing it is not necessary for using QScript.
+
+## Features:
+1. Syntax very similar to D
+2. Dynamic arrays
+3. Very fast execution speed. QScript has a virtual machine for this purpose, no interpretation is done at run time.
+4. Static typed. This eliminates a lot of errors.
 
 ---
 
-### Example scripts:  
-##### Hello World  
-		function void main{
-			write("Hello World!");
+## Example scripts:
+The following scripts are written assuming that the program, which is running QScript, provides the `writeln(string)` function, and starts execution from `main`.  
+**Hello World:**
+	```
+		function void main(){
+			writeln ("Hello World!");
 		}
-Just a note: The `write` function is not in QScript by default, it must be defined by the host program, before this script can run.  
-And it's not necessary that execution always starts from `main` function, it is up to the program to decide which function to call.  
-##### Arrays (plus a bit more)  
-
+	```
+**Arrays:**
+	```
 		function void main{
-			int (someArray, i, end);
-			someArray = array();
-			someArray = setLength(someArray,10);
+			int[] (array);
+			array = array(1, 2, 3, 4);
+			int (i, length);
 			i = 0;
-			end = getLength(someArray);
-			//put values in array
-			while (i<end){
-				someArray[i] = i+1;
+			length = getLength(array);
+			while (i < length){
+				writeln (intToStr(array[i]));
 				i = i + 1;
 			}
-			//output
-			i = 0;
-			while (i<end){
-				write("someArray[",intToStr(i),"]=",intToStr(someArray[i]),"\n");
-				i = i + 1;
-			}
 		}
-
-
+	```
