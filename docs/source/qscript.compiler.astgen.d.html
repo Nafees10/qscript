@@ -781,38 +781,41 @@
 <a id="L753" href="#L753" class="br">753 </a>				}
 <a id="L754" href="#L754" class="br">754 </a>			}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">token.type</span> == <span class="hid">Token.Type.ParanthesesOpen</span>){
 <a id="L755" href="#L755" class="br">755 </a>				<span class="com">// some code</span>
-<a id="L756" href="#L756" class="br">756 </a>				<span class="kwrd">return</span> <span class="hid">generateCodeAST</span>();
-<a id="L757" href="#L757" class="br">757 </a>			}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">token.type</span> == <span class="hid">Token.Type.IndexBracketOpen</span>){
-<a id="L758" href="#L758" class="br">758 </a>				<span class="com">// literal array</span>
-<a id="L759" href="#L759" class="br">759 </a>				<span class="hid">uinteger</span> <span class="hid">brackEnd</span> = <span class="hid">tokens.tokens.bracketPos</span>(<span class="hid">index</span>);
-<a id="L760" href="#L760" class="br">760 </a>				<span class="hid">Token</span>[] <span class="hid">data</span> = <span class="hid">tokens.tokens</span>[<span class="hid">index</span> .. <span class="hid">brackEnd</span>+<span class="num">1</span>].<span class="hid">dup</span>;
-<a id="L761" href="#L761" class="br">761 </a>				<a title="qscript.compiler.ast.LiteralNode" href="qscript.compiler.ast.LiteralNode.html" class="hid">LiteralNode</a> <span class="hid">r</span>;
-<a id="L762" href="#L762" class="br">762 </a>				<span class="kwrd">try</span>{
-<a id="L763" href="#L763" class="br">763 </a>					<span class="hid">r.fromTokens</span>(<span class="hid">data</span>);
-<a id="L764" href="#L764" class="br">764 </a>				}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
-<a id="L765" href="#L765" class="br">765 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="hid">e.msg</span>));
-<a id="L766" href="#L766" class="br">766 </a>					.<span class="hid">destroy</span> (<span class="hid">e</span>);
-<a id="L767" href="#L767" class="br">767 </a>				}
-<a id="L768" href="#L768" class="br">768 </a>				<span class="hid">index</span> = <span class="hid">brackEnd</span>+<span class="num">1</span>;
-<a id="L769" href="#L769" class="br">769 </a>				<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>(<span class="hid">r</span>);
-<a id="L770" href="#L770" class="br">770 </a>			}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">token.type</span> == <span class="hid">Token.Type.Double</span> || <span class="hid">token.type</span> == <span class="hid">Token.Type.Integer</span> || <span class="hid">token.type</span> == <span class="hid">Token.Type.String</span>){
-<a id="L771" href="#L771" class="br">771 </a>				<span class="com">// literal</span>
-<a id="L772" href="#L772" class="br">772 </a>				<span class="hid">index</span> ++;
-<a id="L773" href="#L773" class="br">773 </a>				<span class="kwrd">try</span>{
-<a id="L774" href="#L774" class="br">774 </a>					<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>(<a title="qscript.compiler.ast.LiteralNode" href="qscript.compiler.ast.LiteralNode.html" class="hid">LiteralNode</a>([<span class="hid">token</span>]));
-<a id="L775" href="#L775" class="br">775 </a>				}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
-<a id="L776" href="#L776" class="br">776 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="hid">e.msg</span>));
-<a id="L777" href="#L777" class="br">777 </a>					.<span class="hid">destroy</span> (<span class="hid">e</span>);
-<a id="L778" href="#L778" class="br">778 </a>				}
-<a id="L779" href="#L779" class="br">779 </a>			}<span class="kwrd">else</span>{
-<a id="L780" href="#L780" class="br">780 </a>				<span class="hid">index</span> ++;
-<a id="L781" href="#L781" class="br">781 </a>				<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="str">&quot;unexpected token&quot;</span>));
-<a id="L782" href="#L782" class="br">782 </a>			}
-<a id="L783" href="#L783" class="br">783 </a>			<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>();
-<a id="L784" href="#L784" class="br">784 </a>		}
-<a id="L785" href="#L785" class="br">785 </a>
-<a id="L786" href="#L786" class="br">786 </a>	}
-<a id="L787" href="#L787" class="br">787 </a>}
+<a id="L756" href="#L756" class="br">756 </a>				<span class="hid">index</span> ++;
+<a id="L757" href="#L757" class="br">757 </a>				<a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a> <span class="hid">r</span> = <span class="hid">generateCodeAST</span>();
+<a id="L758" href="#L758" class="br">758 </a>				<span class="hid">index</span> ++;
+<a id="L759" href="#L759" class="br">759 </a>				<span class="kwrd">return</span> <span class="hid">r</span>;
+<a id="L760" href="#L760" class="br">760 </a>			}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">token.type</span> == <span class="hid">Token.Type.IndexBracketOpen</span>){
+<a id="L761" href="#L761" class="br">761 </a>				<span class="com">// literal array</span>
+<a id="L762" href="#L762" class="br">762 </a>				<span class="hid">uinteger</span> <span class="hid">brackEnd</span> = <span class="hid">tokens.tokens.bracketPos</span>(<span class="hid">index</span>);
+<a id="L763" href="#L763" class="br">763 </a>				<span class="hid">Token</span>[] <span class="hid">data</span> = <span class="hid">tokens.tokens</span>[<span class="hid">index</span> .. <span class="hid">brackEnd</span>+<span class="num">1</span>].<span class="hid">dup</span>;
+<a id="L764" href="#L764" class="br">764 </a>				<a title="qscript.compiler.ast.LiteralNode" href="qscript.compiler.ast.LiteralNode.html" class="hid">LiteralNode</a> <span class="hid">r</span>;
+<a id="L765" href="#L765" class="br">765 </a>				<span class="kwrd">try</span>{
+<a id="L766" href="#L766" class="br">766 </a>					<span class="hid">r.fromTokens</span>(<span class="hid">data</span>);
+<a id="L767" href="#L767" class="br">767 </a>				}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
+<a id="L768" href="#L768" class="br">768 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="hid">e.msg</span>));
+<a id="L769" href="#L769" class="br">769 </a>					.<span class="hid">destroy</span> (<span class="hid">e</span>);
+<a id="L770" href="#L770" class="br">770 </a>				}
+<a id="L771" href="#L771" class="br">771 </a>				<span class="hid">index</span> = <span class="hid">brackEnd</span>+<span class="num">1</span>;
+<a id="L772" href="#L772" class="br">772 </a>				<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>(<span class="hid">r</span>);
+<a id="L773" href="#L773" class="br">773 </a>			}<span class="kwrd">else</span> <span class="kwrd">if</span> (<span class="hid">token.type</span> == <span class="hid">Token.Type.Double</span> || <span class="hid">token.type</span> == <span class="hid">Token.Type.Integer</span> || <span class="hid">token.type</span> == <span class="hid">Token.Type.String</span>){
+<a id="L774" href="#L774" class="br">774 </a>				<span class="com">// literal</span>
+<a id="L775" href="#L775" class="br">775 </a>				<span class="hid">index</span> ++;
+<a id="L776" href="#L776" class="br">776 </a>				<span class="kwrd">try</span>{
+<a id="L777" href="#L777" class="br">777 </a>					<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>(<a title="qscript.compiler.ast.LiteralNode" href="qscript.compiler.ast.LiteralNode.html" class="hid">LiteralNode</a>([<span class="hid">token</span>]));
+<a id="L778" href="#L778" class="br">778 </a>				}<span class="kwrd">catch</span> (<span class="hid">Exception</span> <span class="hid">e</span>){
+<a id="L779" href="#L779" class="br">779 </a>					<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="hid">e.msg</span>));
+<a id="L780" href="#L780" class="br">780 </a>					.<span class="hid">destroy</span> (<span class="hid">e</span>);
+<a id="L781" href="#L781" class="br">781 </a>				}
+<a id="L782" href="#L782" class="br">782 </a>			}<span class="kwrd">else</span>{
+<a id="L783" href="#L783" class="br">783 </a>				<span class="hid">index</span> ++;
+<a id="L784" href="#L784" class="br">784 </a>				<span class="hid">compileErrors.append</span>(<span class="hid">CompileError</span>(<span class="hid">tokens.getTokenLine</span>(<span class="hid">index</span>), <span class="str">&quot;unexpected token&quot;</span>));
+<a id="L785" href="#L785" class="br">785 </a>			}
+<a id="L786" href="#L786" class="br">786 </a>			<span class="kwrd">return</span> <a title="qscript.compiler.ast.CodeNode" href="qscript.compiler.ast.CodeNode.html" class="hid">CodeNode</a>();
+<a id="L787" href="#L787" class="br">787 </a>		}
+<a id="L788" href="#L788" class="br">788 </a>
+<a id="L789" href="#L789" class="br">789 </a>	}
+<a id="L790" href="#L790" class="br">790 </a>}
 </pre></div>
 		<div id="page-nav">
 		<div id="source-navigation"><div class="list-holder"><ul><li><a href="../qscript.compiler.astgen.html" class="docs">[Docs] </a><a href="#L1">qscript.compiler.astgen</a><ul><li><a href="../qscript.compiler.astgen.ASTGen.html" class="docs">[Docs] </a><a href="#L16">ASTGen</a><ul><li><a href="../qscript.compiler.astgen.ASTGen.this.html" class="docs">[Docs] </a><a href="#L25">this</a></li><li><a href="../qscript.compiler.astgen.ASTGen.~this.html" class="docs">[Docs] </a><a href="#L32">~this</a></li><li><a href="../qscript.compiler.astgen.ASTGen.generateScriptAST.html" class="docs">[Docs] </a><a href="#L42">generateScriptAST</a></li><li><a href="#L70">tokens</a></li><li><a href="#L72">index</a></li><li><a href="#L74">compileErrors</a></li><li><a href="#L76">functionReturnTypes</a></li><li><a href="#L78">onGetFunctionReturnType</a></li><li><a href="#L80">functionArgTypes</a></li><li><a href="#L82">onArgsTypeOk</a></li><li><a href="#L83">__anonymous</a><ul><li><a href="#L85">varDataTypes</a></li><li><a href="#L87">varScopeDepth</a></li><li><a href="#L89">scopeCount</a></li><li><a href="../qscript.compiler.astgen.ASTGen.__anonymous.addVarType.html" class="docs">[Docs] </a><a href="#L91">addVarType</a></li><li><a href="../qscript.compiler.astgen.ASTGen.__anonymous.getVarType.html" class="docs">[Docs] </a><a href="#L99">getVarType</a></li><li><a href="../qscript.compiler.astgen.ASTGen.__anonymous.removeLastScope.html" class="docs">[Docs] </a><a href="#L107">removeLastScope</a></li><li><a href="../qscript.compiler.astgen.ASTGen.__anonymous.increaseScopeCount.html" class="docs">[Docs] </a><a href="#L120">increaseScopeCount</a></li></ul></li><li><a href="#L127">scanTokensForFunctionReturnArgTypes</a></li><li><a href="#L181">getFunctionReturnType</a></li><li><a href="#L203">matchFunctionArgTypes</a></li><li><a href="#L243">readType</a></li><li><a href="#L262">generateFunctionAST</a></li><li><a href="#L338">generateBlockAST</a></li><li><a href="#L369">generateStatementAST</a></li><li><a href="#L399">generateFunctionCallAST</a></li><li><a href="#L452">generateCodeAST</a></li><li><a href="#L511">generateOperatorAST</a></li><li><a href="#L530">generateVariableAST</a></li><li><a href="#L551">generateAssignmentAST</a></li><li><a href="#L611">generateVarDeclareAST</a></li><li><a href="#L673">generateIfAST</a></li><li><a href="#L705">generateWhileAST</a></li><li><a href="#L738">generateNodeAST</a></li></ul></li></ul></li></ul></div></div></div>

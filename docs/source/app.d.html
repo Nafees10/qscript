@@ -86,50 +86,55 @@
 <a id="L58" href="#L58" class="br">58 </a>		<span class="hid">s.length</span>--;
 <a id="L59" href="#L59" class="br">59 </a>		<span class="kwrd">return</span> <span class="hid">QData</span>(<span class="hid">s</span>);
 <a id="L60" href="#L60" class="br">60 </a>	}
-<a id="L61" href="#L61" class="br">61 </a><span class="kwrd">public</span>:
-<a id="L62" href="#L62" class="br">62 </a>	<span class="com">/// constructor</span>
-<a id="L63" href="#L63" class="br">63 </a>	<span class="kwrd">this</span> (){
-<a id="L64" href="#L64" class="br">64 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeln&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>)]), &amp;<span class="hid">writeln</span>);
-<a id="L65" href="#L65" class="br">65 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;write&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>)]), &amp;<span class="hid">write</span>);
-<a id="L66" href="#L66" class="br">66 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeInt&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;int&quot;</span>)]), &amp;<span class="hid">writeInt</span>);
-<a id="L67" href="#L67" class="br">67 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeDbl&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;double&quot;</span>)]), &amp;<span class="hid">writeDbl</span>);
-<a id="L68" href="#L68" class="br">68 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;readln&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>), []), &amp;<span class="hid">readln</span>);
-<a id="L69" href="#L69" class="br">69 </a>	}
-<a id="L70" href="#L70" class="br">70 </a>}
-<a id="L71" href="#L71" class="br">71 </a>
-<a id="L72" href="#L72" class="br">72 </a><span class="type">void</span> <span class="hid">main</span> (<span class="type">string</span>[] <span class="hid">args</span>){
-<a id="L73" href="#L73" class="br">73 </a>	<span class="hid">args</span> = [<span class="kwrd">null</span>, <span class="str">&quot;/home/nafees/Desktop/q.qs&quot;</span>];
-<a id="L74" href="#L74" class="br">74 </a>	<span class="kwrd">if</span> (<span class="hid">args.length</span> &lt; <span class="num">2</span>){
-<a id="L75" href="#L75" class="br">75 </a>		<span class="hid">writeln</span>(<span class="str">&quot;not enough args. Usage:&quot;</span>);
-<a id="L76" href="#L76" class="br">76 </a>		<span class="hid">writeln</span>(<span class="str">&quot;./demo [FILENAME]&quot;</span>);
-<a id="L77" href="#L77" class="br">77 </a>	}<span class="kwrd">else</span>{
-<a id="L78" href="#L78" class="br">78 </a>		<span class="hid">StopWatch</span> <span class="hid">sw</span>;
-<a id="L79" href="#L79" class="br">79 </a>		<span class="hid">ScriptMan</span> <span class="hid">scr</span> = <span class="kwrd">new</span> <span class="hid">ScriptMan</span>();
-<a id="L80" href="#L80" class="br">80 </a>		<span class="hid">CompileError</span>[] <span class="hid">errors</span>;
-<a id="L81" href="#L81" class="br">81 </a>		<span class="type">string</span>[] <span class="hid">byteCode</span> = <span class="hid">scr.compileScript</span>(<span class="hid">fileToArray</span>(<span class="hid">args</span>[<span class="num">1</span>]), <span class="hid">errors</span>);
-<a id="L82" href="#L82" class="br">82 </a>		<span class="kwrd">if</span> (<span class="hid">errors.length</span> &gt; <span class="num">0</span>){
-<a id="L83" href="#L83" class="br">83 </a>			<span class="hid">writeln</span>(<span class="str">&quot;Compilation errors:&quot;</span>);
-<a id="L84" href="#L84" class="br">84 </a>			<span class="kwrd">foreach</span> (<span class="hid">err</span>; <span class="hid">errors</span>){
-<a id="L85" href="#L85" class="br">85 </a>				<span class="hid">writeln</span> (<span class="str">&quot;line#&quot;</span>,<span class="hid">err.lineno</span>, <span class="str">&quot;: &quot;</span>,<span class="hid">err.msg</span>);
-<a id="L86" href="#L86" class="br">86 </a>			}
-<a id="L87" href="#L87" class="br">87 </a>		}
-<a id="L88" href="#L88" class="br">88 </a>		<span class="hid">arrayToFile</span>(<span class="str">&quot;/home/nafees/Desktop/q.code&quot;</span>, <span class="hid">byteCode</span>);
-<a id="L89" href="#L89" class="br">89 </a>		<span class="type">string</span> <span class="hid">err</span>;
-<a id="L90" href="#L90" class="br">90 </a>		<span class="kwrd">if</span> (!<span class="hid">scr.loadByteCode</span>(<span class="hid">byteCode</span>, <span class="hid">err</span>)){
-<a id="L91" href="#L91" class="br">91 </a>			<span class="hid">writeln</span> (<span class="str">&quot;Error loading byte code:&quot;</span>);
-<a id="L92" href="#L92" class="br">92 </a>			<span class="hid">writeln</span> (<span class="hid">err</span>);
-<a id="L93" href="#L93" class="br">93 </a>		}<span class="kwrd">else</span>{
-<a id="L94" href="#L94" class="br">94 </a>			<span class="com">// now execute main</span>
-<a id="L95" href="#L95" class="br">95 </a>			<span class="hid">sw.start</span>;
-<a id="L96" href="#L96" class="br">96 </a>			<span class="hid">scr.executeScriptFunction</span>(<span class="str">&quot;main&quot;</span>,[]);
-<a id="L97" href="#L97" class="br">97 </a>			<span class="hid">sw.stop</span>;
-<a id="L98" href="#L98" class="br">98 </a>			<span class="hid">writeln</span>(<span class="str">&quot;execution took: &quot;</span>, <span class="hid">sw.peek.msecs</span>, <span class="str">&quot;msecs&quot;</span>);
-<a id="L99" href="#L99" class="br">99 </a>		}
-<a id="L100" href="#L100" class="br">100 </a>	}
-<a id="L101" href="#L101" class="br">101 </a>}
+<a id="L61" href="#L61" class="br">61 </a>	<span class="com">/// func</span>
+<a id="L62" href="#L62" class="br">62 </a>	<span class="hid">QData</span> <span class="hid">someFunc</span>(<span class="hid">QData</span>[] <span class="hid">args</span>){
+<a id="L63" href="#L63" class="br">63 </a>		<span class="kwrd">return</span> <span class="hid">QData</span>([<span class="hid">QData</span>(<span class="num">1</span>), <span class="hid">QData</span>(<span class="num">2</span>)]);
+<a id="L64" href="#L64" class="br">64 </a>	}
+<a id="L65" href="#L65" class="br">65 </a><span class="kwrd">public</span>:
+<a id="L66" href="#L66" class="br">66 </a>	<span class="com">/// constructor</span>
+<a id="L67" href="#L67" class="br">67 </a>	<span class="kwrd">this</span> (){
+<a id="L68" href="#L68" class="br">68 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeln&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>)]), &amp;<span class="hid">writeln</span>);
+<a id="L69" href="#L69" class="br">69 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;write&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>)]), &amp;<span class="hid">write</span>);
+<a id="L70" href="#L70" class="br">70 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeInt&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;int&quot;</span>)]), &amp;<span class="hid">writeInt</span>);
+<a id="L71" href="#L71" class="br">71 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;writeDbl&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void&quot;</span>), [<span class="hid">DataType</span>(<span class="str">&quot;double&quot;</span>)]), &amp;<span class="hid">writeDbl</span>);
+<a id="L72" href="#L72" class="br">72 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;readln&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;string&quot;</span>), []), &amp;<span class="hid">readln</span>);
+<a id="L73" href="#L73" class="br">73 </a>		<span class="kwrd">this</span>.<span class="hid">addFunction</span>(<span class="hid">Function</span>(<span class="str">&quot;func&quot;</span>, <span class="hid">DataType</span>(<span class="str">&quot;void[]&quot;</span>), []), &amp;<span class="hid">someFunc</span>);
+<a id="L74" href="#L74" class="br">74 </a>	}
+<a id="L75" href="#L75" class="br">75 </a>}
+<a id="L76" href="#L76" class="br">76 </a>
+<a id="L77" href="#L77" class="br">77 </a><span class="type">void</span> <span class="hid">main</span> (<span class="type">string</span>[] <span class="hid">args</span>){
+<a id="L78" href="#L78" class="br">78 </a>	<span class="hid">args</span> = [<span class="kwrd">null</span>, <span class="str">&quot;/home/nafees/Desktop/q.qs&quot;</span>];
+<a id="L79" href="#L79" class="br">79 </a>	<span class="kwrd">if</span> (<span class="hid">args.length</span> &lt; <span class="num">2</span>){
+<a id="L80" href="#L80" class="br">80 </a>		<span class="hid">writeln</span>(<span class="str">&quot;not enough args. Usage:&quot;</span>);
+<a id="L81" href="#L81" class="br">81 </a>		<span class="hid">writeln</span>(<span class="str">&quot;./demo [FILENAME]&quot;</span>);
+<a id="L82" href="#L82" class="br">82 </a>	}<span class="kwrd">else</span>{
+<a id="L83" href="#L83" class="br">83 </a>		<span class="hid">StopWatch</span> <span class="hid">sw</span>;
+<a id="L84" href="#L84" class="br">84 </a>		<span class="hid">ScriptMan</span> <span class="hid">scr</span> = <span class="kwrd">new</span> <span class="hid">ScriptMan</span>();
+<a id="L85" href="#L85" class="br">85 </a>		<span class="hid">CompileError</span>[] <span class="hid">errors</span>;
+<a id="L86" href="#L86" class="br">86 </a>		<span class="type">string</span>[] <span class="hid">byteCode</span> = <span class="hid">scr.compileScript</span>(<span class="hid">fileToArray</span>(<span class="hid">args</span>[<span class="num">1</span>]), <span class="hid">errors</span>);
+<a id="L87" href="#L87" class="br">87 </a>		<span class="kwrd">if</span> (<span class="hid">errors.length</span> &gt; <span class="num">0</span>){
+<a id="L88" href="#L88" class="br">88 </a>			<span class="hid">writeln</span>(<span class="str">&quot;Compilation errors:&quot;</span>);
+<a id="L89" href="#L89" class="br">89 </a>			<span class="kwrd">foreach</span> (<span class="hid">err</span>; <span class="hid">errors</span>){
+<a id="L90" href="#L90" class="br">90 </a>				<span class="hid">writeln</span> (<span class="str">&quot;line#&quot;</span>,<span class="hid">err.lineno</span>, <span class="str">&quot;: &quot;</span>,<span class="hid">err.msg</span>);
+<a id="L91" href="#L91" class="br">91 </a>			}
+<a id="L92" href="#L92" class="br">92 </a>		}
+<a id="L93" href="#L93" class="br">93 </a>		<span class="hid">arrayToFile</span>(<span class="str">&quot;/home/nafees/Desktop/q.code&quot;</span>, <span class="hid">byteCode</span>);
+<a id="L94" href="#L94" class="br">94 </a>		<span class="type">string</span> <span class="hid">err</span>;
+<a id="L95" href="#L95" class="br">95 </a>		<span class="kwrd">if</span> (!<span class="hid">scr.loadByteCode</span>(<span class="hid">byteCode</span>, <span class="hid">err</span>)){
+<a id="L96" href="#L96" class="br">96 </a>			<span class="hid">writeln</span> (<span class="str">&quot;Error loading byte code:&quot;</span>);
+<a id="L97" href="#L97" class="br">97 </a>			<span class="hid">writeln</span> (<span class="hid">err</span>);
+<a id="L98" href="#L98" class="br">98 </a>		}<span class="kwrd">else</span>{
+<a id="L99" href="#L99" class="br">99 </a>			<span class="com">// now execute main</span>
+<a id="L100" href="#L100" class="br">100 </a>			<span class="hid">sw.start</span>;
+<a id="L101" href="#L101" class="br">101 </a>			<span class="hid">scr.executeScriptFunction</span>(<span class="str">&quot;main&quot;</span>,[]);
+<a id="L102" href="#L102" class="br">102 </a>			<span class="hid">sw.stop</span>;
+<a id="L103" href="#L103" class="br">103 </a>			<span class="hid">writeln</span>(<span class="str">&quot;execution took: &quot;</span>, <span class="hid">sw.peek.msecs</span>, <span class="str">&quot;msecs&quot;</span>);
+<a id="L104" href="#L104" class="br">104 </a>		}
+<a id="L105" href="#L105" class="br">105 </a>	}
+<a id="L106" href="#L106" class="br">106 </a>}
 </pre></div>
 		<div id="page-nav">
-		<div id="source-navigation"><div class="list-holder"><ul><li><a href="#L1">app</a><ul><li><a href="#L8">ScriptMan</a><ul><li><a href="#L10">onRuntimeError</a></li><li><a href="#L23">onUndefinedFunctionCall</a></li><li><a href="#L36">writeln</a></li><li><a href="#L41">write</a></li><li><a href="#L46">writeInt</a></li><li><a href="#L51">writeDbl</a></li><li><a href="#L56">readln</a></li><li><a href="../app.ScriptMan.this.html" class="docs">[Docs] </a><a href="#L63">this</a></li></ul></li><li><a href="#L72">main</a></li></ul></li></ul></div></div></div>
+		<div id="source-navigation"><div class="list-holder"><ul><li><a href="#L1">app</a><ul><li><a href="#L8">ScriptMan</a><ul><li><a href="#L10">onRuntimeError</a></li><li><a href="#L23">onUndefinedFunctionCall</a></li><li><a href="#L36">writeln</a></li><li><a href="#L41">write</a></li><li><a href="#L46">writeInt</a></li><li><a href="#L51">writeDbl</a></li><li><a href="#L56">readln</a></li><li><a href="#L62">someFunc</a></li><li><a href="../app.ScriptMan.this.html" class="docs">[Docs] </a><a href="#L67">this</a></li></ul></li><li><a href="#L77">main</a></li></ul></li></ul></div></div></div>
 	</div>
 	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
 </body>

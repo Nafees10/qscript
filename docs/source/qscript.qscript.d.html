@@ -259,7 +259,7 @@
 <a id="L231" href="#L231" class="br">231 </a>	<span class="type">void</span> <span class="hid">makeArray</span>(){
 <a id="L232" href="#L232" class="br">232 </a>		<span class="hid">currentCall.stack.push</span>(
 <a id="L233" href="#L233" class="br">233 </a>			<a title="qscript.qscript.QData" href="qscript.qscript.QData.html" class="hid">QData</a>(
-<a id="L234" href="#L234" class="br">234 </a>				<span class="hid">currentCall.stack.pop</span>(
+<a id="L234" href="#L234" class="br">234 </a>				<span class="hid">currentCall.stack.pop</span>!(<span class="kwrd">true</span>)(
 <a id="L235" href="#L235" class="br">235 </a>					<span class="hid">currentCall.readInstructionArgs</span>()[<span class="num">0</span>].<span class="hid">intVal</span>
 <a id="L236" href="#L236" class="br">236 </a>					)
 <a id="L237" href="#L237" class="br">237 </a>				)
@@ -415,9 +415,9 @@
 <a id="L387" href="#L387" class="br">387 </a>	<span class="com">/// if last element on stack == 1 (int), pushes 0 (int), else, pushes 1 (int)</span>
 <a id="L388" href="#L388" class="br">388 </a>	<span class="type">void</span> <span class="hid">not</span>(){
 <a id="L389" href="#L389" class="br">389 </a>		<span class="kwrd">if</span> (<span class="hid">currentCall.stack.pop</span>().<span class="hid">intVal</span> == <span class="num">1</span>){
-<a id="L390" href="#L390" class="br">390 </a>			<span class="hid">currentCall.stack.push</span>(<a title="qscript.qscript.QData" href="qscript.qscript.QData.html" class="hid">QData</a>(<span class="kwrd">cast</span>(<span class="hid">integer</span>)<span class="num">1</span>));
+<a id="L390" href="#L390" class="br">390 </a>			<span class="hid">currentCall.stack.push</span>(<a title="qscript.qscript.QData" href="qscript.qscript.QData.html" class="hid">QData</a>(<span class="kwrd">cast</span>(<span class="hid">integer</span>)<span class="num">0</span>));
 <a id="L391" href="#L391" class="br">391 </a>		}<span class="kwrd">else</span>{
-<a id="L392" href="#L392" class="br">392 </a>			<span class="hid">currentCall.stack.push</span>(<a title="qscript.qscript.QData" href="qscript.qscript.QData.html" class="hid">QData</a>(<span class="kwrd">cast</span>(<span class="hid">integer</span>)<span class="num">0</span>));
+<a id="L392" href="#L392" class="br">392 </a>			<span class="hid">currentCall.stack.push</span>(<a title="qscript.qscript.QData" href="qscript.qscript.QData.html" class="hid">QData</a>(<span class="kwrd">cast</span>(<span class="hid">integer</span>)<span class="num">1</span>));
 <a id="L393" href="#L393" class="br">393 </a>		}
 <a id="L394" href="#L394" class="br">394 </a>	}
 <a id="L395" href="#L395" class="br">395 </a>
