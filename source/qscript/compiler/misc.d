@@ -18,7 +18,7 @@ package const string[] KEYWORDS = ["function", "if", "else", "while", "void", "i
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "string"];
 /// An array containing another array conatining all operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "="];
+package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 

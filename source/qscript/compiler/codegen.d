@@ -291,8 +291,9 @@ package struct CodeGen{
 		];
 		// check if types are ok
 		const static string[] ArtithmaticOperators = ["*", "/", "+", "-", "%", "<", ">"];
+		const static string[] IntOperators = ["&&", "||"];
 		const static string[] ArrayStringOperators = ["~"];
-		const static string[] NonArrayOperators = ["=="];
+		const static string[] NonArrayOperators = ["==", "&&", "||"];
 		bool errorFree = true;
 		// first make sure both operands are of same type
 		if (node.operands[0].returnType != node.operands[1].returnType){
@@ -307,6 +308,12 @@ package struct CodeGen{
 			if (node.operands[0].returnType.type != DataType.Type.Double &&
 				node.operands[0].returnType.type != DataType.Type.Integer){
 				compileErrors.append(CompileError(0, "arithmatic operators can only be used on integer or double"));
+				errorFree = false;
+			}
+		}else if (IntOperators.hasElement(node.operator)){
+			// make sure is int
+			if (node.operands[0].returnType != DataType(DataType.Type.Integer)){
+				compileErrors.append(CompileError(0, node.operator~" can only be used on integers"));
 				errorFree = false;
 			}
 		}else if (ArrayStringOperators.hasElement(node.operator)){
@@ -330,17 +337,19 @@ package struct CodeGen{
 			byteCode.append(generateByteCode(node.operands[0])~generateByteCode(node.operands[1]));
 			// now get the operator instruction name
 			string instruction = operatorInstructions[node.operator];
-			// append the data type at the end to get the exact name
-			if (node.operands[0].returnType.isArray){
-				instruction ~= "Array";
-			}else if (node.operands[0].returnType.type == DataType.Type.String){
-				instruction ~= "String";
-			}else if (node.operands[0].returnType.type == DataType.Type.Integer){
-				instruction ~= "Int";
-			}else if (node.operands[0].returnType.type == DataType.Type.Double){
-				instruction ~= "Double";
-			}else{
-				compileErrors.append(CompileError(0, "unsupported data type"));
+			// append the data type at the end to get the exact name, only if is not IntOperator
+			if (!IntOperators.hasElement(node.operator)){
+				if (node.operands[0].returnType.isArray){
+					instruction ~= "Array";
+				}else if (node.operands[0].returnType.type == DataType.Type.String){
+					instruction ~= "String";
+				}else if (node.operands[0].returnType.type == DataType.Type.Integer){
+					instruction ~= "Int";
+				}else if (node.operands[0].returnType.type == DataType.Type.Double){
+					instruction ~= "Double";
+				}else{
+					compileErrors.append(CompileError(0, "unsupported data type"));
+				}
 			}
 			// call the instruction
 			byteCode.append("\t"~instruction);

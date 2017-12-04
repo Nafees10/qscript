@@ -257,7 +257,7 @@ package struct OperatorNode{
 	/// the data type is determined by the data type of the first operand
 	@property DataType returnType(){
 		// if is a bool_operator, then return int
-		if (operator in BOOL_OPERATORS){
+		if (BOOL_OPERATORS.hasElement(operator)){
 			return DataType(DataType.Type.Integer);
 		}
 		return operands[0].returnType;
