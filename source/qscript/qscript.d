@@ -231,7 +231,7 @@ private:
 	void makeArray(){
 		currentCall.stack.push(
 			QData(
-				currentCall.stack.pop(
+				currentCall.stack.pop!(true)(
 					currentCall.readInstructionArgs()[0].intVal
 					)
 				)
