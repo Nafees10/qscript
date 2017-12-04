@@ -387,9 +387,9 @@ private:
 	/// if last element on stack == 1 (int), pushes 0 (int), else, pushes 1 (int)
 	void not(){
 		if (currentCall.stack.pop().intVal == 1){
-			currentCall.stack.push(QData(cast(integer)1));
-		}else{
 			currentCall.stack.push(QData(cast(integer)0));
+		}else{
+			currentCall.stack.push(QData(cast(integer)1));
 		}
 	}
 
