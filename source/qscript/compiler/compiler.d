@@ -72,6 +72,8 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 			return DataType(DataType.Type.Integer);
 		}else if (name == "return"){
 			return DataType(DataType.Type.Void);
+		}else if (name == "not"){
+			return DataType(DataType.Type.Integer);
 		}else{
 			// search in `predefinedFunctions`
 			foreach (currentFunction; predefinedFunctions){
@@ -123,6 +125,11 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 		}else if (name == "return"){
 			// real type checking for this was done at compile-time (AST generator)
 			if (argTypes.length == 1){
+				return true;
+			}
+			return false;
+		}else if (name == "not"){
+			if (argTypes.length == 1 && argTypes[0] == DataType(DataType.Type.Integer)){
 				return true;
 			}
 			return false;
