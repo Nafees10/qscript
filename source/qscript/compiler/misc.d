@@ -23,7 +23,7 @@ package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "=="
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 
 /// Used by compiler's functions to return error
-package struct CompileError{
+public struct CompileError{
 	string msg; /// The error stored in a string
 	uinteger lineno; /// The line number on which the error is
 	this(uinteger lineNumber, string errorMessage){
@@ -33,7 +33,7 @@ package struct CompileError{
 }
 
 /// used to store data types for data at compile time
-package struct DataType{
+public struct DataType{
 	/// enum defining all data types
 	public enum Type{
 		Void,
