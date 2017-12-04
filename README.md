@@ -33,13 +33,13 @@ The spec for QScript's byte code is also available, in `spec/bytecode.md`, but k
 ## Example scripts:
 The following scripts are written assuming that the program, which is running QScript, provides the `writeln(string)` function, and starts execution from `main`.  
 **Hello World:**
-	```
+```
 		function void main(){
 			writeln ("Hello World!");
 		}
-	```
+```
 **Arrays:**
-	```
+```
 		function void main{
 			int[] (array);
 			array = array(1, 2, 3, 4);
@@ -51,4 +51,4 @@ The following scripts are written assuming that the program, which is running QS
 				i = i + 1;
 			}
 		}
-	```
+```
