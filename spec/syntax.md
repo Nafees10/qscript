@@ -18,7 +18,7 @@ function TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
-* more arguments can be added, and are to be separated by space.
+* more arguments can be added, and are to be separated by a comma.
   
 A function without any arguments would be defined like:
 ```
@@ -38,14 +38,14 @@ A return statement is written as following:
 ```
 return (RETURN_VALUE);
 ```
-where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code:
+where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, 
+writeln will not be called.
 ```
 function int someFunction{
 	return (0);
 	writeln("this won't be written"); # because return terminates the execution
 }
 ```
-writeln will not be called.
 
 ---
 
@@ -56,7 +56,7 @@ Variables can be defined only inside functions, like:
 ```
 TYPE (var0, var1, var2);
 ```
-* `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array of those types: `int[]`, or `int'[][]`... .
+* `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 ### Variable Assignment
 Variables can be assigned a value like:
@@ -72,11 +72,17 @@ VAR[ INDEX ] = VALUE;
 * `VAR` is the name of the var/array
 * `INDEX` , in case `VAR` is an array, is the index of the element to assign a value to
 * `VALUE` is the value to assign
+And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
   
 In case you want to modify the whole array, it can be done like:
 ```
 int[] (intArray);
-intArray = [0, 1, 2, 3];
+intArray = [0, 1, 2, 3]; # only works if elements are literals
+```
+or:
+```
+int[] (intArray);
+intArray = array(0, 1, 2, 3); # elements dont necessarily need to be literals, they can be vars or result from function call
 ```
 ---
 
@@ -93,9 +99,16 @@ The `else` part is not required. If `CONDITION` is 0 (int), then, if the else ex
 It is not necessary that the `# some code` or the `# some (other?) code` be in a block. In case only one statement is to be executed, it can be written like:  
 ```
 if (CONDITION)
-	# some code
+	# some code, single statement
 else
-	# some other code
+	# some other code, single statement
+```
+Even indentation is not necessary, it can be written like:
+```
+if (CONDITION)
+# some code, single statement
+else
+# some other code, single statement
 ```
 
 ### Nested If Statements
@@ -148,14 +161,14 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
   
-In QScript, you cannot write `-1`, so instead, use `0-1`.
+In QScript, you cannot write `-1` or any other negative number, so instead, use `0-1` or `0-x` where x is a int. In case you want negative float, use `0.0-x`.
 
 ---
 
 ## Function Call
 There are 2 types of functions, script-defined, and external. External are made available by "registering" them into QScript (the script cannot do this).  
- If a script-defined function has a name `setLength`, and an external function is also named `setLength`, then upon calling `setLength(...)`, the script-defined 
- one will be executed. Both types of functions can be executed like:
+In case a script defined function has the same name as an external one, the script-defined one will be called, external one will be ignored.  
+Both types of functions can be executed like:
 ```
 FUNCTION_NAME (arg0, arg1);
 ```

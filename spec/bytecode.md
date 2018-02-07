@@ -29,7 +29,7 @@ Jump point will be marked as:
 FunctionName
 	instruction0
 	jump someJumpPosition
-	instruciton2
+	instruction2
 	someJumpPosition:
 	instruction3
 ```  
@@ -37,7 +37,7 @@ the instructions will be executed in this order:
 ```
 instruction0
 jump
-instruction4
+instruction3
 ```
   
 ## List of instructions:
@@ -92,12 +92,12 @@ and arg0 of jump should be that %someString% (string), without any spaces or quo
 * getLen		- pops array from stack, pushes the length (integer) of the array
 * readElement	- pops an array, and element-index(int), pushes that element to the stack
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
-Then does something like: `array[poped0][poped1].. = newVal` and pushes the array
+Then does something like: `array[popped0][popped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 * emptyArray	- makes an empty one-dimensional array
 
 #### Instructions for strings
-* strLen		- pops a string from stack, pushes it's length
+* strLen		- pops a string from stack, pushes it's length (int)
 * readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
 
 #### Instructions for converting between data types
