@@ -3,11 +3,11 @@ A fast, static typed, scripting language, with a syntax similar to D Language.
 ## Setting it up
 To add QScript to your dub package or project, add the following into dub.json dependencies:
 ```
-"qscript": "~>0.6.0"
+"qscript": "~>0.6.1"
 ```
 or if you have dub.sdl:
 ```
-dependency "qscript" version="~>0.6.0"
+dependency "qscript" version="~>0.6.1"
 ```
 After adding that, look at the `demos/demo.d` to see how to use the `QScript` class to execute scripts.
 
@@ -29,9 +29,10 @@ The spec for QScript's byte code is also available, in `spec/bytecode.md`, but k
 4. Static typed. This eliminates a lot of errors.
 
 ## Planned Features To Add:
+1. Rewrite the AST generator (parser?) and byte code generator to avoid recursion.
 1. `for`, `do while`, and `foreach` loops
 2. Compile time optimizations, where the compiler executes some code at compile time, to make byte code more efficient
-3. Basic support for classes and structs, will probably take lot of time
+3. Basic support for classes and structs, will probably take lot of times
 
 ---
 
