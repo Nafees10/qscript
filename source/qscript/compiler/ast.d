@@ -493,7 +493,7 @@ package struct WhileNode{
 }
 
 /// to store for loop statements
-package struct ForStatement{
+package struct ForNode{
 	/// stores the pointer to initialization statement, i.e: `for (<this one>; bla; bla)...`
 	private StatementNode* initStatementPtr;
 	/// stores the pointer to the increment statement, i.e: `for (bla; bla; <this one>)...`
