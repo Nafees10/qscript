@@ -540,6 +540,7 @@ package struct CodeGen{
 			"\tforEnd"~to!string(currentCount)~":"
 			]);
 		// decrease scope
+		decreaseScope();
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
