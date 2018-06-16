@@ -324,6 +324,7 @@ package struct StatementNode{
 	public enum Type{
 		If,
 		While,
+		For,
 		Block,
 		Assignment,
 		FunctionCall,
@@ -335,6 +336,7 @@ package struct StatementNode{
 	private union{
 		IfNode ifNode;
 		WhileNode whileNode;
+		ForNode forNode;
 		BlockNode blockNode;
 		FunctionCallNode functionCallNode;
 		VarDeclareNode varDeclareNode;
@@ -348,6 +350,9 @@ package struct StatementNode{
 		}else static if (is (T == WhileNode)){
 			storedType = StatementNode.Type.While;
 			whileNode = newNode;
+		}else static if (is (T == ForNode)){
+			storedType = StatementNode.Type.For;
+			forNode = newNode;
 		}else static if (is (T == BlockNode)){
 			storedType = StatementNode.Type.Block;
 			blockNode = newNode;
@@ -374,6 +379,8 @@ package struct StatementNode{
 			return ifNode;
 		}else static if (T == StatementNode.Type.While){
 			return whileNode;
+		}else static if (T == StatementNode.Type.For){
+			return forNode;
 		}else static if (T == StatementNode.Type.Block){
 			return blockNode;
 		}else static  if (T == StatementNode.Type.FunctionCall){
