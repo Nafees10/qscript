@@ -532,11 +532,14 @@ package struct CodeGen{
 			]);
 		// increment statement
 		byteCode.append(generateByteCode(node.incStatement));
+		// loop body
+		byteCode.append(generateByteCode(node.statement));
 		// end point
 		byteCode.append([
 			"\tjump forStart"~to!string(currentCount),
 			"\tforEnd"~to!string(currentCount)~":"
 			]);
+		// decrease scope
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
