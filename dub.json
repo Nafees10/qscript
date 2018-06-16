@@ -6,5 +6,17 @@
 	"authors": ["nafees"],
 	"dependencies": {
 		"utils": "~>0.2.0"
-	}
+	},"configurations": [
+		{
+			"name": "default",
+			"targetType": "library",
+			"targetName": "qscript"
+		},
+		{
+			"name": "demo",
+			"targetType": "executable",
+			"targetName": "demo",
+			"versions": ["demo"]
+		},
+	],
 }
