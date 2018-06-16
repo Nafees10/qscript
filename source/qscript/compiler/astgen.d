@@ -724,9 +724,36 @@ struct ASTGen{
 			}
 			return whileNode;
 		}
+
+		/// generates AST for for loop statements
+		ForNode generateForAST(){
+			ForNode forNode;
+			// check if is a for statement
+			if (tokens.tokens[index] == Token(Token.Type.Keyword, "for") && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				/// where the parantheses ends
+				uinteger bracketEnd = tokens.tokens.bracketPos(index+1);
+				/// get the init statement
+				forNode.initStatement = generateStatementAST();
+				/// get the condition
+				forNode.condition = generateCodeAST();
+				/// make sure there's a semicolon
+				if (tokens.tokens[index].type != Token.Type.StatementEnd){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "semicolon expected after for loop condition"));
+				}
+				/// get the increment statement
+				forNode.incStatement = generateStatementAST();
+				if (index == bracketEnd){
+					/// now for the for loop body
+					index ++;
+					forNode.statement = generateStatementAST();
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "closing parantheses expected after statement"));
+				}
+			}
+			return forNode;
+		}
 		
 		/// returns a node representing either of the following:
-		/// 
 		/// 1. String literal
 		/// 2. Number literal
 		/// 3. Function Call (uses `generateFunctionCallAST`)
