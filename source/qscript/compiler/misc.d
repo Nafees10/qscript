@@ -44,10 +44,10 @@ public struct DataType{
 	/// the actual data type
 	DataType.Type type;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
-	uinteger arrayNestCount;
+	uinteger arrayDimensionCount;
 	/// returns true if it's an array
 	@property bool isArray(){
-		if (arrayNestCount > 0){
+		if (arrayDimensionCount > 0){
 			return true;
 		}
 		return false;
@@ -56,9 +56,9 @@ public struct DataType{
 	/// 
 	/// dataType is the type to store
 	/// arrayNest is the number of nested arrays
-	this (DataType.Type dataType, uinteger arrayNest = 0){
+	this (DataType.Type dataType, uinteger arrayDimension = 0){
 		type = dataType;
-		arrayNestCount = arrayNest;
+		arrayDimensionCount = arrayDimension;
 	}
 	/// constructor
 	/// 
@@ -111,7 +111,7 @@ public struct DataType{
 		}else{
 			throw new Exception("invalid data type");
 		}
-		arrayNestCount = indexCount;
+		arrayDimensionCount = indexCount;
 	}
 
 	/// identifies the data type from the actual data
@@ -135,22 +135,22 @@ public struct DataType{
 		callCount ++;
 
 		if (callCount == 1){
-			this.arrayNestCount = 0;
+			this.arrayDimensionCount = 0;
 			this.type = DataType.Type.Void;
 		}
 		// check if is an array
 		if (data.length > 1 &&
 			data[0].type == Token.Type.IndexBracketOpen && data[data.length-1].type == Token.Type.IndexBracketClose){
 			// is an array
-			this.arrayNestCount ++;
+			this.arrayDimensionCount ++;
 			// if elements are arrays, do recursion, else, just identify types
 			Token[][] elements = splitArray(data);
 			if (elements.length == 0){
 				this.type = DataType.Type.Void;
 			}else{
 				// determine the type using recursion
-				// stores the arrayNestCount till here
-				uinteger thisNestCount = this.arrayNestCount;
+				// stores the arrayDimensionCount till here
+				uinteger thisNestCount = this.arrayDimensionCount;
 				// stores the nestCount for the preious element, -1 if no previous element
 				integer prevNestCount = -1;
 				// stores the data type of the last element, void if no last element
@@ -160,12 +160,12 @@ public struct DataType{
 					fromData(element);
 					// now make sure the nestCount came out same
 					if (prevNestCount != -1){
-						if (prevNestCount != this.arrayNestCount){
+						if (prevNestCount != this.arrayDimensionCount){
 							throw new Exception("inconsistent data types in array elements");
 						}
 					}else{
 						// set new nestCount
-						prevNestCount = this.arrayNestCount;
+						prevNestCount = this.arrayDimensionCount;
 					}
 					// now to make sure type came out same
 					if (prevType != DataType.Type.Void){
@@ -176,10 +176,10 @@ public struct DataType{
 						prevType = this.type;
 					}
 					// re-set the nestCount for the next element
-					this.arrayNestCount = thisNestCount;
+					this.arrayDimensionCount = thisNestCount;
 				}
 				// now set the nestCount
-				this.arrayNestCount = prevNestCount;
+				this.arrayDimensionCount = prevNestCount;
 			}
 		}else if (data.length == 0){
 			this.type = DataType.Type.Void;
@@ -207,7 +207,7 @@ public struct DataType{
 			throw new Exception("invalid type stored");
 		}
 		uinteger i = r.length;
-		r.length += arrayNestCount * 2;
+		r.length += arrayDimensionCount * 2;
 		for (; i < r.length; i += 2){
 			r[i .. i+2] = "[]";
 		}
