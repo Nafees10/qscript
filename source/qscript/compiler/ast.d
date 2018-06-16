@@ -217,11 +217,11 @@ package struct LiteralNode{
 	string toByteCode(){
 		/// returns array in byte code representation
 		static string fromDataOrArray(QData data, DataType type){
-			if (type.arrayNestCount > 0){
+			if (type.arrayDimensionCount > 0){
 				char[] array = ['['];
 				// the type of the elements
 				DataType subType = type;
-				subType.arrayNestCount --;
+				subType.arrayDimensionCount --;
 				// use recursion
 				foreach (element; data.arrayVal){
 					array ~= cast(char[])fromDataOrArray(element, subType) ~ ',';
@@ -304,10 +304,10 @@ package struct ReadElement{
 	/// returns the data type this node will return
 	public @property DataType returnType(){
 		DataType r = nodes[0].returnType;
-		if (r.arrayNestCount == 0 && r.type == DataType.Type.String){
+		if (r.arrayDimensionCount == 0 && r.type == DataType.Type.String){
 			return DataType(DataType.Type.String);
 		}
-		r.arrayNestCount --;
+		r.arrayDimensionCount --;
 		return r;
 	}
 	/// constructor
@@ -488,6 +488,58 @@ package struct WhileNode{
 	/// constructor
 	this (CodeNode conditionNode, StatementNode statementToExec){
 		condition = conditionNode;
+		statement = statementToExec;
+	}
+}
+
+/// to store for loop statements
+package struct ForStatement{
+	/// stores the pointer to initialization statement, i.e: `for (<this one>; bla; bla)...`
+	private StatementNode* initStatementPtr;
+	/// stores the pointer to the increment statement, i.e: `for (bla; bla; <this one>)...`
+	private StatementNode* incStatementPtr;
+	/// stores the condition CodeNode
+	public CodeNode condition;
+	/// stores the pointer to the statement to execute in loop
+	private StatementNode* statementPtr;
+	/// the init statement for this for loop
+	public @property ref StatementNode initStatement(){
+		return *initStatementPtr;
+	}
+	/// ditto
+	public @property ref StatementNode initStatement(StatementNode newStatement){
+		if (initStatementPtr is null){
+			initStatementPtr = new StatementNode;
+		}
+		return *initStatementPtr = newStatement;
+	}
+	/// the increment statement for this for loop
+	public @property ref StatementNode incStatement(){
+		return *incStatementPtr;
+	}
+	/// ditto
+	public @property ref StatementNode incStatement(StatementNode newStatement){
+		if (incStatementPtr is null){
+			incStatementPtr = new StatementNode;
+		}
+		return *incStatementPtr = newStatement;
+	}
+	/// the statement to execute in loop
+	public @property ref StatementNode statement(){
+		return *statementPtr;
+	}
+	/// ditto
+	public @property ref StatementNode statement(StatementNode newStatement){
+		if (statementPtr is null){
+			statementPtr = new StatementNode;
+		}
+		return *statementPtr = newStatement;
+	}
+	/// constructor
+	this (StatementNode initNode, CodeNode conditionNode, StatementNode incNode, StatementNode statementToExec){
+		initStatement = initNode;
+		condition = conditionNode;
+		incStatement = incNode;
 		statement = statementToExec;
 	}
 }
