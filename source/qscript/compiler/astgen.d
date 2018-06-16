@@ -378,6 +378,9 @@ struct ASTGen{
 				}else if (tokens.tokens[index].token == "while"){
 					// while statement
 					return StatementNode(generateWhileAST());
+				}else if (tokens.tokens[index].token == "for"){
+					// for statement
+					return StatementNode(generateForAST());
 				}
 			}else if (tokens.tokens[index].type == Token.Type.DataType){
 				// var declare
