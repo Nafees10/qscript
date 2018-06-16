@@ -479,7 +479,7 @@ struct ASTGen{
 							break;
 						}
 						// make sure lastNode is an array with enough dimensions
-						if (lastNode.returnType.arrayNestCount == 0 && lastNode.returnType.type != DataType.Type.String){
+						if (lastNode.returnType.arrayDimensionCount == 0 && lastNode.returnType.type != DataType.Type.String){
 							compileErrors.append (CompileError(tokens.getTokenLine(index),
 									"can not read that many dimensions from that array"));
 						}
@@ -588,12 +588,12 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index-1), e.msg));
 				}
 				// also need to check if the var was declared a array or not, and if it's being set a correct type or not
-				if (varType.arrayNestCount < indexes.length){
+				if (varType.arrayDimensionCount < indexes.length){
 					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
 							"variable dimensions in assignment differs from declaration"));
 				}else{
 					// continue with checking
-					DataType expectedType = DataType(varType.type, varType.arrayNestCount - indexes.length);
+					DataType expectedType = DataType(varType.type, varType.arrayDimensionCount - indexes.length);
 					// make sure it matches
 					if (expectedType != val.returnType){
 						compileErrors.append(CompileError(tokens.getTokenLine(index-1),

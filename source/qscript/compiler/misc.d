@@ -348,14 +348,14 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 				if (argTypes[i].type != definedTypes[i].type){
 					// check if is receiving a void[], against a someType[][].., then, it's ok
 					if (argTypes[i].type == DataType.Type.Void &&
-						argTypes[i].arrayNestCount > 0 && definedTypes[i].arrayNestCount > 0){
+						argTypes[i].arrayDimensionCount > 0 && definedTypes[i].arrayDimensionCount > 0){
 						return true;
 					}
 					return false;
 				}
 			}
 			// check the array dimension
-			if (definedTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
+			if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount){
 				return false;
 			}
 		}
