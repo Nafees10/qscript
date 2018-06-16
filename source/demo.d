@@ -77,7 +77,7 @@ version (demo){
 	void main (string[] args){
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
-			writeln("./demo [FILENAME]");
+			writeln("./demo [script] [bytecode, output, optional]");	
 		}else{
 			StopWatch sw;
 			ScriptMan scr = new ScriptMan();
@@ -89,7 +89,9 @@ version (demo){
 					writeln ("line#",err.lineno, ": ",err.msg);
 				}
 			}
-			byteCode.arrayToFile("/home/nafees/Desktop/q.code");
+			if (args.length > 2){
+				byteCode.arrayToFile(args[2]);
+			}
 			string err;
 			if (!scr.loadByteCode(byteCode, err)){
 				writeln ("Error loading byte code:");
