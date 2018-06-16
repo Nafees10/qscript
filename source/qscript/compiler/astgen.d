@@ -736,6 +736,7 @@ struct ASTGen{
 				/// where the parantheses ends
 				uinteger bracketEnd = tokens.tokens.bracketPos(index+1);
 				/// get the init statement
+				index = index + 2;
 				forNode.initStatement = generateStatementAST();
 				/// get the condition
 				forNode.condition = generateCodeAST();
@@ -743,6 +744,7 @@ struct ASTGen{
 				if (tokens.tokens[index].type != Token.Type.StatementEnd){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "semicolon expected after for loop condition"));
 				}
+				index ++;
 				/// get the increment statement
 				forNode.incStatement = generateStatementAST();
 				if (index == bracketEnd){
