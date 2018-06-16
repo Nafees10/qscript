@@ -15,12 +15,19 @@ After adding that, look at the `demos/demo.d` to see how to use the `QScript` cl
 
 ## Getting Started:
 To get started on using QScript, see the following documents:
+
 * `spec/syntax.md`		- Contains the specification for QScript's syntax.
 * `spec/functions.md`	- Contains a list of predefined QScript functions.
-* `demos/demo.d`		- A demo usage of QScript in D langauage. Shows how to add new functions, 
-  
+* `demos/demo.d`		- A demo usage of QScript in D langauage. Shows how to add new functions
+
 And for the documentation on the code, including QScript's compiler, it is stored in `docs/`.  
 The spec for QScript's byte code is also available, in `spec/bytecode.md`, but knowing it is not necessary for using QScript.
+
+### Building Demo:
+To be able to run basic scripts, you can build the demo using:  
+`dub build --config=demo`  
+This will create an executable named `demo` in the directory. To run a script through it, do:  
+`./demo path/to/script`
 
 ## Features:
 1. Syntax very similar to D
@@ -37,14 +44,14 @@ The spec for QScript's byte code is also available, in `spec/bytecode.md`, but k
 ---
 
 ## Example scripts:
-The following scripts are written assuming that the program, which is running QScript, provides the `writeln(string)` function, and starts execution from `main`.  
-**Hello World:**
+These scripts can be run through the demo configuration.
+### Hello World:
 ```
 function void main(){
 	writeln ("Hello World!");
 }
 ```
-**Arrays:**
+### Arrays:
 ```
 function void main{
 	int[] (array);
