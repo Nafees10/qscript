@@ -138,6 +138,10 @@ package struct CodeGen{
 			return (onTrueCount > onFalseCount ? onTrueCount : onFalseCount);
 		}else if (statement.type == StatementNode.Type.While){
 			return getVarCountStatement (statement.node!(StatementNode.Type.While).statement);
+		}else if (statement.type == StatementNode.Type.For){
+			ForNode forNode = statement.node!(StatementNode.Type.For);
+			return getVarCountStatement (forNode.initStatement) + getVarCountStatement (forNode.incStatement) + 
+				getVarCountStatement (forNode.statement);
 		}
 		return 0;
 	}
@@ -199,6 +203,8 @@ package struct CodeGen{
 			return generateByteCode(node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.While){
 			return generateByteCode(node.node!(StatementNode.Type.While));
+		}else if (node.type == StatementNode.Type.For){
+			return generateByteCode(node.node!(StatementNode.Type.For));
 		}else if (node.type == StatementNode.Type.VarDeclare){
 			// VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
 			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
@@ -499,6 +505,38 @@ package struct CodeGen{
 		byteCode.append("\tjump whileStart"~to!string(currentCount));
 		// then mark the loop end
 		byteCode.append("\twhileEnd"~to!string(currentCount)~":");
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
+
+	/// generates byte code for ForNode
+	private string[] generateByteCode(ForNode node){
+		auto byteCode = new LinkedList!string;
+		// stores `ID` of the for loop statements
+		static uinteger forCount = 0;
+		uinteger currentCount = forCount;
+		forCount ++;
+		// increase the var scope
+		increaseScope();
+		// jump-back position
+		byteCode.append("\tforStart"~to!string(currentCount)~":");
+		// now the init statement
+		byteCode.append(generateByteCode(node.initStatement));
+		// now the condition
+		byteCode.append(generateByteCode(node.condition));
+		// skip to end if not true
+		byteCode.append([
+				"\tskipTrue i1",
+				"\tjump forEnd"~to!string(currentCount)
+			]);
+		// increment statement
+		byteCode.append(generateByteCode(node.incStatement));
+		// end point
+		byteCode.append([
+			"\tjump forStart"~to!string(currentCount),
+			"\tforEnd"~to!string(currentCount)~":"
+			]);
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
