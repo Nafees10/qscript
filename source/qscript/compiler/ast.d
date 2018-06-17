@@ -499,6 +499,30 @@ package struct WhileNode{
 	}
 }
 
+/// to store do-while statements
+package struct DoWhileNode{
+	/// the condition for this do-while statement
+	public CodeNode condition;
+	/// stores pointer to the statement to execute in this loop
+	private StatementNode* statementPtr;
+	/// the statement to execute in this loop
+	public @property ref StatementNode statement(){
+		return *statementPtr;
+	}
+	/// ditto
+	public @property ref StatementNode statement(StatementNode newStatement){
+		if (statementPtr is null){
+			statementPtr = new StatementNode;
+		}
+		return *statementPtr = newStatement;
+	}
+	/// constructor
+	this (CodeNode conditionNode, StatementNode statementToExec){
+		condition = conditionNode;
+		statement = statementToExec;
+	}
+}
+
 /// to store for loop statements
 package struct ForNode{
 	/// stores the pointer to initialization statement, i.e: `for (<this one>; bla; bla)...`
