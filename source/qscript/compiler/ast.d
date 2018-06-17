@@ -325,6 +325,7 @@ package struct StatementNode{
 		If,
 		While,
 		For,
+		DoWhile,
 		Block,
 		Assignment,
 		FunctionCall,
@@ -337,6 +338,7 @@ package struct StatementNode{
 		IfNode ifNode;
 		WhileNode whileNode;
 		ForNode forNode;
+		DoWhileNode doWhile;
 		BlockNode blockNode;
 		FunctionCallNode functionCallNode;
 		VarDeclareNode varDeclareNode;
@@ -353,6 +355,9 @@ package struct StatementNode{
 		}else static if (is (T == ForNode)){
 			storedType = StatementNode.Type.For;
 			forNode = newNode;
+		}else static if (is (T == DoWhileNode)){
+			storedType = StatementNode.Type.DoWhile;
+			doWhile = newNode;
 		}else static if (is (T == BlockNode)){
 			storedType = StatementNode.Type.Block;
 			blockNode = newNode;
@@ -381,6 +386,8 @@ package struct StatementNode{
 			return whileNode;
 		}else static if (T == StatementNode.Type.For){
 			return forNode;
+		}else static if (T == StatementNode.Type.DoWhile){
+			return doWhile;
 		}else static if (T == StatementNode.Type.Block){
 			return blockNode;
 		}else static  if (T == StatementNode.Type.FunctionCall){
