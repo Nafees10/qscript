@@ -381,6 +381,9 @@ struct ASTGen{
 				}else if (tokens.tokens[index].token == "for"){
 					// for statement
 					return StatementNode(generateForAST());
+				}else if (tokens.tokens[index].token == "do"){
+					// do while
+					return StatementNode(generateDoWhileAST());
 				}
 			}else if (tokens.tokens[index].type == Token.Type.DataType){
 				// var declare
@@ -756,6 +759,32 @@ struct ASTGen{
 				}
 			}
 			return forNode;
+		}
+
+		/// generates AST for do-while loops statements
+		DoWhileNode generateDoWhileAST(){
+			// TODO
+			DoWhileNode doWhile;
+			if (tokens.tokens[index] == Token(Token.Type.Keyword, "do")){
+				// get the statement
+				index ++;
+				doWhile.statement = generateStatementAST();
+				// now make sure there's a while there
+				if (tokens.tokens[index] == Token(Token.Type.Keyword, "while") &&
+					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+					// read the condition
+					uinteger brackEnd = tokens.tokens.bracketPos(index+1);
+					index += 2;
+					doWhile.condition = generateCodeAST();
+					if (index != brackEnd){
+						compileErrors.append (CompileError(tokens.getTokenLine(index), "syntax error"));
+					}
+				}else{
+					compileErrors.append (CompileError(tokens.getTokenLine(index),
+						"while followed by condition expected after end of loop statement"));
+				}
+			}
+			return doWhile;
 		}
 		
 		/// returns a node representing either of the following:
