@@ -50,14 +50,19 @@ function int someFunction{
 ---
 
 ## Variables
-### Variable Definition
+### Variable Declaration
 QScript does not support global variables. But if needed, using external functions, something similar to global variables can be achieved.  
 Variables can be defined only inside functions, like:
 ```
-TYPE (var0, var1, var2);
+TYPE var0, var1, var2;
 ```
 * `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
+
+Value assignment can also be done in the variable declaration statement like:
+```
+int var0 = 12, var1 = 24;
+```
 ### Variable Assignment
 Variables can be assigned a value like:
 ```
@@ -76,12 +81,12 @@ And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
   
 In case you want to modify the whole array, it can be done like:
 ```
-int[] (intArray);
+int[] intArray;
 intArray = [0, 1, 2, 3]; # only works if elements are literals
 ```
 or:
 ```
-int[] (intArray);
+int[] intArray;
 intArray = array(0, 1, 2, 3); # elements dont necessarily need to be literals, they can be vars or result from function call
 ```
 ---
