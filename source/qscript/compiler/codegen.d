@@ -579,6 +579,7 @@ package struct CodeGen{
 				"skipTrue i1",
 				"jump doWhileStart"~to!string(currentCount)
 			]);
+		decreaseScope();
 		// thats it
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
