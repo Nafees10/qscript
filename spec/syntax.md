@@ -149,7 +149,7 @@ do{
     # some code in a loop
 }while (CONDITION)
 ```
-First the code is executed, then if the condition is true, it's executed again. An optional semicolon can be put at then end of the `while (CONDITION)`. 
+First the code is executed, then if the condition is true, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
 
 ### For:
 The for loop in QScript is a bit different from other languages, it's written like:
