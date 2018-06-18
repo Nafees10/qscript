@@ -210,7 +210,6 @@ package struct CodeGen{
 		}else if (node.type == StatementNode.Type.DoWhile){
 			return generateByteCode(node.node!(StatementNode.Type.DoWhile));
 		}else if (node.type == StatementNode.Type.VarDeclare){
-			// VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
 			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else{
 			compileErrors.append(CompileError(0, "invalid AST generated"));
@@ -434,7 +433,6 @@ package struct CodeGen{
 
 	/// generates byte code for VarDeclareNode
 	private string[] generateByteCode(VarDeclareNode node){
-		// no byte code is generated for varDeclare, just call the addVarID function
 		foreach (var; node.vars){
 			try{
 				getNewVarID(var);
@@ -442,17 +440,27 @@ package struct CodeGen{
 				compileErrors.append(CompileError(0, e.msg));
 			}
 		}
-		// if is an array, then call emptyArray on all the vars
-		if (node.type.isArray){
-			const string makeInst = "\temptyArray";
-			string[] r;
-			r.length = 2*node.vars.length;
-			foreach (i, var; node.vars){
-				r[i*2] = makeInst;
-				r[(i*2)+1] = "\tsetVar i"~to!string(getVarID(var));
+		auto byteCode = new LinkedList!string;
+		// assign the assigned values
+		foreach (var; node.vars){
+			if (node.hasValue(var)){
+				byteCode.append(generateByteCode(node.getValue(var)));
+				byteCode.append("\tsetVar i"~to!string(getVarID(var)));
 			}
-			return r;
 		}
+		// if is an array, then call emptyArray on all those vars that don't have a value assigned to them
+		if (node.type.isArray){
+			foreach (var; node.vars){
+				if (!node.hasValue(var)){
+					byteCode.append([
+							"\temptyArray",
+							"\tsetVar i"~to!string(getVarID(var))
+						]);
+				}
+			}
+		}
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
 		return [];
 	}
 
