@@ -142,6 +142,8 @@ package struct CodeGen{
 			ForNode forNode = statement.node!(StatementNode.Type.For);
 			return getVarCountStatement (forNode.initStatement) + getVarCountStatement (forNode.incStatement) + 
 				getVarCountStatement (forNode.statement);
+		}else if (statement.type == StatementNode.Type.DoWhile){
+			return getVarCountStatement (statement.node!(StatementNode.Type.DoWhile).statement);
 		}
 		return 0;
 	}
@@ -576,8 +578,8 @@ package struct CodeGen{
 		// only be executed if condition is false, so condition=false -> skip-jump -> loop-over. Just use not instruction on condition
 		byteCode.append([
 				"\tnot",
-				"skipTrue i1",
-				"jump doWhileStart"~to!string(currentCount)
+				"\tskipTrue i1",
+				"\tjump doWhileStart"~to!string(currentCount)
 			]);
 		decreaseScope();
 		// thats it
