@@ -335,11 +335,12 @@ struct ASTGen{
 		/// generates AST for a {block-of-code}
 		/// 
 		/// changes `index` to token after block end
-		BlockNode generateBlockAST(){
+		BlockNode generateBlockAST(bool ownScope=true){
 			BlockNode blockNode;
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
-				increaseScopeCount();
+				if (ownScope)
+					increaseScopeCount();
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
@@ -357,7 +358,8 @@ struct ASTGen{
 				.destroy(statements);
 				index = brackEnd+1;
 
-				removeLastScope();
+				if (ownScope)
+					removeLastScope();
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 				index ++;
@@ -763,12 +765,17 @@ struct ASTGen{
 
 		/// generates AST for do-while loops statements
 		DoWhileNode generateDoWhileAST(){
-			// TODO
 			DoWhileNode doWhile;
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "do")){
+				increaseScopeCount();
 				// get the statement
 				index ++;
-				doWhile.statement = generateStatementAST();
+				// if it's a block, call with ownScope=false, so the condition and block share same scope
+				if (tokens.tokens[index].type == Token.Type.BlockStart){
+					doWhile.statement = StatementNode(generateBlockAST(false));
+				}else{
+					doWhile.statement = generateStatementAST();
+				}
 				// now make sure there's a while there
 				if (tokens.tokens[index] == Token(Token.Type.Keyword, "while") &&
 					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
@@ -790,6 +797,7 @@ struct ASTGen{
 					compileErrors.append (CompileError(tokens.getTokenLine(index),
 						"while followed by condition expected after end of loop statement"));
 				}
+				removeLastScope();
 			}
 			return doWhile;
 		}
