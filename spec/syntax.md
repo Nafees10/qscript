@@ -106,9 +106,9 @@ else
 Even indentation is not necessary, it can be written like:
 ```
 if (CONDITION)
-# some code, single statement
+    # some code, single statement
 else
-# some other code, single statement
+    # some other code, single statement
 ```
 
 ### Nested If Statements
@@ -125,14 +125,37 @@ else
 
 ---
 
-## While Statements
-While statements are written like:
+## Loops
+QScript curently has the following types of loops:
+
+### While:
+While loops are written like:
 ```
 while (CONDITION){
 	# some code in a loop
 }
 ```
 As long as `CONDITION` is 1 (int), `# some code in a loop` is executed. And just like if statements, while loops can also be nested
+
+### Do While:
+Do while loops are writen like:
+```
+do{
+    # some code in a loop
+}while (CONDITION)
+```
+First the code is executed, then if the condition is true, it's executed again. An optional semicolon can be put at then end of the `while (CONDITION)`. 
+
+### For:
+The for loop in QScript is a bit different from other languages, it's written like:
+```
+for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT;){
+    # some code in a loop
+}
+```
+in this loop, notice that there is a semicolon after `INCREMENT_STATEMENT`, that is necessary.  
+First, the `INIT_STATEMENT` is executed, right before starting the loop. This is executed only once. Then if `CONDITION` is true, the loop body is executed, then `INCREMENT_STATEMENT` is executed, this is repeated, until condition is false.  
+Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and `INCREMENT_STATEMENT` all must be present.
 
 ---
 
