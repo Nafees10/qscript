@@ -262,8 +262,8 @@ struct ASTGen{
 		FunctionNode generateFunctionAST(){
 			FunctionNode functionNode;
 			// make sure it's a function
-			increaseScopeCount();
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+				increaseScopeCount();
 				// read the type
 				index++;
 				try{
@@ -324,11 +324,11 @@ struct ASTGen{
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function has no body"));
 				}
+				removeLastScope();
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
 				index ++;
 			}
-			removeLastScope();
 			return functionNode;
 		}
 		
@@ -690,13 +690,17 @@ struct ASTGen{
 				// make sure index & brackEnd are now same
 				if (index == brackEnd){
 					index = brackEnd+1;
+					increaseScopeCount();
 					ifNode.statement = generateStatementAST();
+					removeLastScope();
 					ifNode.hasElse = false;
 					// check if there's any else statement
 					if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "else"){
 						// add that as well
 						index ++;
+						increaseScopeCount();
 						ifNode.elseStatement = generateStatementAST();
+						removeLastScope();
 						ifNode.hasElse = true;
 					}
 				}else{
@@ -722,7 +726,9 @@ struct ASTGen{
 				// skip the brackEnd, if index matches it
 				if (index == brackEnd){
 					index++;
+					increaseScopeCount();
 					whileNode.statement = generateStatementAST();
+					removeLastScope();
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "syntax error in condition"));
 				}
@@ -738,6 +744,7 @@ struct ASTGen{
 			ForNode forNode;
 			// check if is a for statement
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "for") && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+				increaseScopeCount();
 				/// where the parantheses ends
 				uinteger bracketEnd = tokens.tokens.bracketPos(index+1);
 				/// get the init statement
@@ -759,6 +766,7 @@ struct ASTGen{
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "closing parantheses expected after statement"));
 				}
+				removeLastScope();
 			}
 			return forNode;
 		}
