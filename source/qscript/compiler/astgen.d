@@ -641,9 +641,11 @@ struct ASTGen{
 						}
 						addVarType(varName, varDeclare.type);
 						// now there must be a comma
-						if (tokens.tokens[index].type != Token.Type.Comma && tokens.tokens[index].type != Token.Type.StatementEnd){
-							compileErrors.append (CompileError(tokens.getTokenLine(index),
-									"variable names must be separated by a comma"));
+						if (tokens.tokens[index].type == Token.Type.Comma){
+							index ++;
+						}else if (tokens.tokens[index].type != Token.Type.StatementEnd){
+							compileErrors.append (CompileError(tokens.getTokenLine(index), 
+							"variable names must be separated by a comma"));
 						}
 						continue;
 					}else{

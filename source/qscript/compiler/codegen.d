@@ -461,7 +461,7 @@ package struct CodeGen{
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
-		return [];
+		return r;
 	}
 
 	/// generates byte code for IfNode
