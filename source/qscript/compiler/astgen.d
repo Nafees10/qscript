@@ -778,6 +778,13 @@ struct ASTGen{
 					doWhile.condition = generateCodeAST();
 					if (index != brackEnd){
 						compileErrors.append (CompileError(tokens.getTokenLine(index), "syntax error"));
+					}else{
+						// skip the bracket end
+						index ++;
+						// the semicolon after `do ... while(...)` is optional, so if it's there, skip it
+						if (tokens.tokens[index].type == Token.Type.StatementEnd){
+							index ++;
+						}
 					}
 				}else{
 					compileErrors.append (CompileError(tokens.getTokenLine(index),
