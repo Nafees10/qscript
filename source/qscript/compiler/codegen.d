@@ -205,6 +205,8 @@ package struct CodeGen{
 			return generateByteCode(node.node!(StatementNode.Type.While));
 		}else if (node.type == StatementNode.Type.For){
 			return generateByteCode(node.node!(StatementNode.Type.For));
+		}else if (node.type == StatementNode.Type.DoWhile){
+			return generateByteCode(node.node!(StatementNode.Type.DoWhile));
 		}else if (node.type == StatementNode.Type.VarDeclare){
 			// VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
 			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
