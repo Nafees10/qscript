@@ -467,11 +467,13 @@ package struct CodeGen{
 		byteCode.append(generateByteCode(node.condition));
 		// then the skipTrue, to skip the jump to else
 		byteCode.append([
-				"\tskipTrue i1",
+				"\tskipTrue",
 				"\tjump ifEnd"~to!string(currentCount)
 			]);
 		// then comes the if-on-true body
+		increaseScope();
 		byteCode.append(generateByteCode(node.statement));
+		decreaseScope();
 		// then then jump to elseEnd to skip the else statements
 		if (node.hasElse){
 			byteCode.append("\tjump elseEnd"~to!string(currentCount));
@@ -479,8 +481,10 @@ package struct CodeGen{
 		byteCode.append("\tifEnd"~to!string(currentCount)~":");
 		// now the elseBody
 		if (node.hasElse){
+			increaseScope();
 			byteCode.append(generateByteCode(node.elseStatement)~
 					["\telseEnd"~to!string(currentCount)~":"]);
+			decreaseScope();
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -500,11 +504,13 @@ package struct CodeGen{
 		byteCode.append(generateByteCode(node.condition));
 		// then skip the jump-to-end if true
 		byteCode.append([
-				"\tskipTrue i1",
+				"\tskipTrue",
 				"\tjump whileEnd"~to!string(currentCount)
 			]);
 		// then the loop body
+		increaseScope();
 		byteCode.append(generateByteCode(node.statement));
+		decreaseScope();
 		// then jump back to condition, to see if it'll start again
 		byteCode.append("\tjump whileStart"~to!string(currentCount));
 		// then mark the loop end
@@ -531,7 +537,7 @@ package struct CodeGen{
 		byteCode.append(generateByteCode(node.condition));
 		// skip to end if not true
 		byteCode.append([
-				"\tskipTrue i1",
+				"\tskipTrue",
 				"\tjump forEnd"~to!string(currentCount)
 			]);
 		// increment statement
