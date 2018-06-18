@@ -548,10 +548,10 @@ package struct CodeGen{
 				"\tskipTrue",
 				"\tjump forEnd"~to!string(currentCount)
 			]);
-		// increment statement
-		byteCode.append(generateByteCode(node.incStatement));
 		// loop body
 		byteCode.append(generateByteCode(node.statement));
+		// increment statement
+		byteCode.append(generateByteCode(node.incStatement));
 		// end point
 		byteCode.append([
 				"\tjump forStart"~to!string(currentCount),
