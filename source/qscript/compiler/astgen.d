@@ -637,21 +637,27 @@ struct ASTGen{
 							varDeclare.addVar(varName, value);
 						}else{
 							varDeclare.addVar(varName);
+							index ++;
 						}
+						addVarType(varName, varDeclare.type);
 						// now there must be a comma
-						if (tokens.tokens[index].type == Token.Type.Comma){
+						if (tokens.tokens[index].type != Token.Type.Comma && tokens.tokens[index].type != Token.Type.StatementEnd){
 							compileErrors.append (CompileError(tokens.getTokenLine(index),
 									"variable names must be separated by a comma"));
 						}
-						index ++;
 						continue;
 					}else{
-						compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid variable name"));
+						compileErrors.append (CompileError(tokens.getTokenLine(index), "variable name expected"));
+						// jump to end of statement
+						while (tokens.tokens[index].type != Token.Type.StatementEnd && index < tokens.tokens.length){
+							index ++;
+						}
+						break;
 					}
 				}
 				// skip the semicolon
 				if (tokens.tokens[index].type == Token.Type.StatementEnd){
-					
+					index ++;
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
