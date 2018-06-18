@@ -621,54 +621,37 @@ struct ASTGen{
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
 			if (DATA_TYPES.hasElement(tokens.tokens[index].token)){
 				// read the type
-				DataType type;
 				try{
-					type = readType();
+					varDeclare.type = readType();
 				}catch(Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
 				}
-				// make sure next token = bracket
-				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
-					// now go through all vars, check if they are vars, and are aeparated by comma
-					uinteger brackEnd = tokens.tokens.bracketPos!true(index);
-					bool commaExpected = false;
-					LinkedList!string vars = new LinkedList!string;
-					for (index = index+1; index < brackEnd; index ++){
-						Token token = tokens.tokens[index];
-						if (commaExpected){
-							if (token.type != Token.Type.Comma){
-								compileErrors.append(CompileError(tokens.getTokenLine(index),
-										"variable names in declaration must be separated by a comma"));
-							}
-							commaExpected = false;
+				while (tokens.tokens[index].type != Token.Type.StatementEnd && index < tokens.tokens.length){
+					if (tokens.tokens[index].type == Token.Type.Identifier){
+						string varName = tokens.tokens[index].token;
+						// see if it has a assigned value, case not, skip to next
+						if (tokens.tokens[index+1].type == Token.Type.AssignmentOperator){
+							index += 2;
+							CodeNode value = generateCodeAST();
+							varDeclare.addVar(varName, value);
 						}else{
-							if (token.type != Token.Type.Identifier){
-								compileErrors.append(CompileError(tokens.getTokenLine(index),
-										"variable name expected in varaible declaration, unexpected token found"));
-							}else{
-								vars.append(token.token);
-								try{
-									addVarType(token.token, type);
-								}catch (Exception e){
-									compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
-									.destroy (e);
-								}
-							}
-							commaExpected = true;
+							varDeclare.addVar(varName);
 						}
-					}
-					varDeclare = VarDeclareNode(type, vars.toArray);
-					.destroy(vars);
-					// skip the semicolon
-					if (tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
-						index = brackEnd+2;
+						// now there must be a comma
+						if (tokens.tokens[index].type == Token.Type.Comma){
+							compileErrors.append (CompileError(tokens.getTokenLine(index),
+									"variable names must be separated by a comma"));
+						}
+						index ++;
+						continue;
 					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1),
-									"variable declaration not followed by semicolon"));
+						compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid variable name"));
 					}
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
+				}
+				// skip the semicolon
+				if (tokens.tokens[index].type == Token.Type.StatementEnd){
+					
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
