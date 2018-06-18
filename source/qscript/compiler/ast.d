@@ -610,19 +610,44 @@ package struct FunctionCallNode{
 package struct VarDeclareNode{
 	/// the data typre of defined vars
 	public DataType type;
-	/// stores names of variables declared
-	private string[] storedVars;
-	/// returns array contataining declared vars
-	public @property ref string[] vars(){
-		return storedVars;
+	/// stores names of vars declared
+	private string[] varNames;
+	/// stores vars' assigned values, with key=varName
+	private CodeNode[string] varValues;
+	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
+	public @property string[] vars(){
+		return varNames.dup;
 	}
-	/// sets value for declared vars
-	public @property ref string[] vars(string[] newVars){
-		return storedVars = newVars.dup;
+	/// Returns: assigned value for a var
+	/// 
+	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
+	public CodeNode getValue(string varName){
+		if (varName in varValues){
+			return varValues[varName];
+		}
+		throw new Exception ("variable "~varName~" does not exist in array");
+	}
+	/// Returns: true if a variable has a value assigned to it
+	public bool hasValue(string varName){
+		if (varName in varValues)
+			return true;
+		return false;
+	}
+	/// adds a variable to the list
+	public void addVar(string varName){
+		varNames = varNames ~ varName;
+	}
+	/// adds a variable to the list, along with it's assigned value
+	public void addVar(string varName, CodeNode value){
+		varValues[varName] = value;
+		varNames = varNames ~ varName;
+	}
+	/// sets a stored var's assigned value
+	public void setVarValue(string varName, CodeNode value){
+		varValues[varName] = value;
 	}
 	/// constructor
-	this (DataType varDataType, string[] varNames){
-		type = varDataType;
-		vars = varNames.dup;
+	this (string[] vars){
+		varNames = vars.dup;
 	}
 }
