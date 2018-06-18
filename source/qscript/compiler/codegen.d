@@ -536,11 +536,48 @@ package struct CodeGen{
 		byteCode.append(generateByteCode(node.statement));
 		// end point
 		byteCode.append([
-			"\tjump forStart"~to!string(currentCount),
-			"\tforEnd"~to!string(currentCount)~":"
+				"\tjump forStart"~to!string(currentCount),
+				"\tforEnd"~to!string(currentCount)~":"
 			]);
 		// decrease scope
 		decreaseScope();
+		string[] r = byteCode.toArray;
+		.destroy(byteCode);
+		return r;
+	}
+
+	/// generates byte code for a do-while loop statement
+	private string[] generateByteCode(DoWhileNode node){
+		auto byteCode = new LinkedList!string;
+		/// stores the `ID` of the do-while loop statements
+		static uinteger doWhileCount = 0;
+		uinteger currentCount = doWhileCount;
+		doWhileCount ++;
+		// increase var scope
+		increaseScope();
+		// jump back position
+		byteCode.append("\tdoWhileStart"~to!string(currentCount)~":");
+		// now for the loop statement
+		// if its a block, any var declared in it wont be availiable to the `while(...)`
+		// because generateByteCode(BlockNode ...) decreases scope, so in case of block, this will generate byte code for that itself
+		if (node.statement.type == StatementNode.Type.Block){
+			BlockNode block = node.statement.node!(StatementNode.Type.Block);
+			foreach (statement; block.statements){
+				byteCode.append(generateByteCode(statement));
+			}
+		}else{
+			byteCode.append (generateByteCode(node.statement));
+		}
+		// now the condition
+		byteCode.append(generateByteCode(node.condition));
+		// now the jump. This jump is different, the jump-back will only be made if the condition is true. That means skipTrue should
+		// only be executed if condition is false, so condition=false -> skip-jump -> loop-over. Just use not instruction on condition
+		byteCode.append([
+				"\tnot",
+				"skipTrue i1",
+				"jump doWhileStart"~to!string(currentCount)
+			]);
+		// thats it
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
