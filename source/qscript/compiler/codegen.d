@@ -529,10 +529,10 @@ package struct CodeGen{
 		forCount ++;
 		// increase the var scope
 		increaseScope();
-		// jump-back position
-		byteCode.append("\tforStart"~to!string(currentCount)~":");
 		// now the init statement
 		byteCode.append(generateByteCode(node.initStatement));
+		// jump-back position
+		byteCode.append("\tforStart"~to!string(currentCount)~":");
 		// now the condition
 		byteCode.append(generateByteCode(node.condition));
 		// skip to end if not true
