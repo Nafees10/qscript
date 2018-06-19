@@ -111,9 +111,9 @@ else
 Even indentation is not necessary, it can be written like:
 ```
 if (CONDITION)
-    # some code, single statement
+# some code, single statement
 else
-    # some other code, single statement
+# some other code, single statement
 ```
 
 ### Nested If Statements
