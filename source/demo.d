@@ -92,14 +92,14 @@ version (demo){
 			if (args.length > 2){
 				byteCode.arrayToFile(args[2]);
 			}
-			string err;
-			if (!scr.loadByteCode(byteCode, err)){
+			string err = scr.loadByteCode(byteCode);
+			if (err.length > 0){
 				writeln ("Error loading byte code:");
 				writeln (err);
 			}else{
 				// now execute main
 				sw.start;
-				scr.executeScriptFunction("main",[]);
+				scr.execute("main",[]);
 				sw.stop;
 				writeln("execution took: ", sw.peek.total!"msecs", "msecs");
 			}
