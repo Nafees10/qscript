@@ -129,7 +129,7 @@ private TokenList separateTokens(string[] script){
 			return CharType.Bracket;
 		}
 		if (c == '.'){
-			if (prev == 0x00 || (cast(string)[prev]).isNum(false)){
+			if (prev == 0x00 || !(cast(string)[prev]).isNum(false)){
 				return CharType.Operator;
 			}
 			return CharType.Ident;
@@ -221,6 +221,29 @@ private TokenList separateTokens(string[] script){
 	r.tokens = stringToTokens(tokens.toArray);
 	.destroy (tokens);
 	return r;
+}
+///
+unittest{
+	string[] script = [
+		"function void main{",
+		"\tint i = 5;",
+		"\t.5sdfdf = (5 - 5);",
+		"\ta.b.c = a;",
+		"\ta = 5.5;"
+	];
+	Token[] tokens = separateTokens(script).tokens;
+	string[] strTokens;
+	strTokens.length = tokens.length;
+	foreach (i, tok; tokens){
+		strTokens[i] = tok.token;
+	}
+	assert (strTokens == [
+			"function", "void", "main", "{",
+			"int", "i", "=", "5", ";",
+			".", "5sdfdf", "=", "(", "5", "-", "5", ")", ";",
+			"a", ".", "b", ".", "c", "=", "a", ";",
+			"a", "=", "5.5", ";"
+		]);
 }
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
