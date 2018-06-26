@@ -18,7 +18,7 @@ package const string[] KEYWORDS = ["function", "if", "else", "while", "for", "do
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "string"];
 /// An array containing another array conatining all operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||"];
+package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||", "."];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 
@@ -526,6 +526,7 @@ package struct Token{
 		Double, /// That the token is a double (floating point) value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 		DataType, /// the  token is a data type
+		MemberSelector, /// a member selector operator
 		AssignmentOperator, /// and assignmentOperator
 		Operator,/// That the token is an operator, like `+`, `==` etc
 		Keyword,/// A `function` or `var` ...

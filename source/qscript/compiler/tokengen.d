@@ -41,8 +41,9 @@ private Token.Type getTokenType(string token){
 	bool isDouble(string s){
 		return isNum(s, true);
 	}
-
-	if (token == "="){
+	if (token == "."){
+		return Token.Type.MemberSelector;
+	}else if (token == "="){
 		return Token.Type.AssignmentOperator;
 	}else if (isInt(token)){
 		return Token.Type.Integer;
@@ -94,6 +95,7 @@ unittest{
 	assert("if".getTokenType == Token.Type.Keyword);
 	assert("while".getTokenType == Token.Type.Keyword);
 	assert("else".getTokenType == Token.Type.Keyword);
+	assert(".".getTokenType == Token.Type.MemberSelector);
 }
 
 /// returns Token[] with type identified based on string[] input
@@ -116,7 +118,7 @@ private TokenList separateTokens(string[] script){
 		Comma, /// a comma
 		Ident /// including the ones for keywords
 	}
-	static CharType getCharType(char c){
+	static CharType getCharType(char c, char prev = 0x00){
 		if (c == ';'){
 			return CharType.Semicolon;
 		}
@@ -125,6 +127,12 @@ private TokenList separateTokens(string[] script){
 		}
 		if (['(','[','{','}',']',')'].hasElement(c)){
 			return CharType.Bracket;
+		}
+		if (c == '.'){
+			if (prev == 0x00 || (cast(string)[prev]).isNum(false)){
+				return CharType.Operator;
+			}
+			return CharType.Ident;
 		}
 		if (isAlphabet(cast(string)[c]) || isNum(cast(string)[c])){
 			return CharType.Ident;
@@ -181,7 +189,7 @@ private TokenList separateTokens(string[] script){
 			}
 			// add other types of tokens
 			try{
-				currentType = getCharType(line[i]);
+				currentType = getCharType(line[i], i > 0 ? line[i-1] : 0x00);
 			}catch (Exception e){
 				compileErrors.append (CompileError(lineno, e.msg));
 				.destroy (e);
