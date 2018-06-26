@@ -33,30 +33,13 @@ private Token.Type getTokenType(string token){
 	}
 	/// Returns true if string contains an integer
 	bool isInt(string s){
-		// make sure it's at least a number
-		if (isNum(s)){
-			foreach (digit; s){
-				if (digit == '.'){
-					return false;
-				}
-			}
-			return true;
-		}
-		return false;
+		return isNum(s, false);
 	}
 	/// Returns true if a string contains a double
 	/// 
 	/// to be identified as a double, the number must have a decimal point in it
 	bool isDouble(string s){
-		if (isNum(s)){
-			foreach (digit; s){
-				if (digit == '.'){
-					return true;
-				}
-			}
-			return false;
-		}
-		return false;
+		return isNum(s, true);
 	}
 
 	if (token == "="){
