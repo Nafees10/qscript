@@ -214,7 +214,7 @@ public struct DataType{
 		return cast(string) r;
 	}
 }
-/// unittests
+/// 
 unittest{
 	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
 	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
@@ -415,17 +415,13 @@ unittest{
 	import qscript.compiler.tokengen : stringToTokens;
 	Token[] tokens;
 	tokens = ["20"].stringToTokens;
-	assert (tokensToQData(tokens).intVal == 20);
+	DataType type;
+	assert (tokensToQData(tokens, type).intVal == 20);
+	assert (type == DataType("int"));
 
 	tokens = ["20.0"].stringToTokens;
-	assert (tokensToQData(tokens).doubleVal == 20.0);
-
-	tokens = ["[", "20", ",", "15", "]"].stringToTokens;
-	QData expectedData;
-	expectedData.arrayVal.length = 2;
-	expectedData.arrayVal[0].intVal = 20;
-	expectedData.arrayVal[1].intVal = 15;
-	assert (tokensToQData(tokens).arrayVal == expectedData.arrayVal);
+	assert (tokensToQData(tokens, type).doubleVal == 20.0);
+	assert (type == DataType("double"));
 }
 
 /// converts a literal data in bytecode format into QData
