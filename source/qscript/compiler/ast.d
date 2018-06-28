@@ -39,6 +39,8 @@ package struct FunctionNode{
 			argType = type;
 		}
 	}
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// stores arguments with their data type
 	private FunctionNode.Argument[] args;
 	/// returns an array of arguments this function receives and their types
@@ -66,6 +68,8 @@ package struct FunctionNode{
 
 /// a node representing a "set-of-statements" AKA a "block"
 package struct BlockNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// an array of statements that make this block
 	private StatementNode[] storedStatements;
 	/// returns the array containing the statements
@@ -90,6 +94,36 @@ package struct BlockNode{
 /// 3. Operators
 /// 4. Variables
 package struct CodeNode{
+	/// Returns: the line number (starts from 1) from which this node begins, or ends
+	@property uinteger lineno(){
+		if (storedType == Type.FunctionCall){
+			return fCall.lineno;
+		}else if (storedType == Type.Literal){
+			return literal.lineno;
+		}else if (storedType == Type.Operator){
+			return operator.lineno;
+		}else if (storedType == Type.Variable){
+			return var.lineno;
+		}else if (storedType == Type.ReadElement){
+			return arrayRead.lineno;
+		}
+		return 0;
+	}
+	/// ditto
+	@property uinteger lineno(uinteger newLineno){
+		if (storedType == Type.FunctionCall){
+			return fCall.lineno = newLineno;
+		}else if (storedType == Type.Literal){
+			return literal.lineno = newLineno;
+		}else if (storedType == Type.Operator){
+			return operator.lineno = newLineno;
+		}else if (storedType == Type.Variable){
+			return var.lineno = newLineno;
+		}else if (storedType == Type.ReadElement){
+			return arrayRead.lineno = newLineno;
+		}
+		return 0;
+	}
 	/// enum defining the possible types this node can store
 	public enum Type{
 		FunctionCall,
@@ -175,6 +209,8 @@ package struct CodeNode{
 
 /// stores a variable
 package struct VariableNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the data type of the variable
 	public DataType varType;
 	/// the name of this var
@@ -194,6 +230,8 @@ package struct VariableNode{
 /// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
 package struct LiteralNode{
 	private import qscript.qscript : QData;
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// stores the data type for the literal
 	public DataType type;
 	/// stores the literal in a QData
@@ -250,6 +288,8 @@ package struct LiteralNode{
 
 /// stores an operator with operands
 package struct OperatorNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// stores the operator (like '+' ...)
 	public string operator;
 	/// returns the result data type
@@ -283,6 +323,8 @@ package struct OperatorNode{
 
 /// stores an "array-read" (instruction `readElement` or for string, `readChar`)
 package struct ReadElement{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// stores the nodes. [0] is the node to read from. [1] is the index
 	private CodeNode[] nodes = [null, null];
 	/// the node to read from
@@ -330,6 +372,48 @@ package struct StatementNode{
 		Assignment,
 		FunctionCall,
 		VarDeclare
+	}
+	/// Returns: the line number (starts from 1) from which this node begins, or ends
+	public @property uinteger lineno(){
+		if (storedType == Type.If){
+			return ifNode.lineno;
+		}else if (storedType == Type.While){
+			return whileNode.lineno;
+		}else if (storedType == Type.For){
+			return forNode.lineno;
+		}else if (storedType == Type.DoWhile){
+			return doWhile.lineno;
+		}else if (storedType == Type.Block){
+			return blockNode.lineno;
+		}else if (storedType == Type.Assignment){
+			return assignNode.lineno;
+		}else if (storedType == Type.FunctionCall){
+			return functionCallNode.lineno;
+		}else if (storedType == Type.VarDeclare){
+			return varDeclareNode.lineno;
+		}
+		return 0;
+	}
+	/// ditto
+	public @property uinteger lineno(uinteger newLineno){
+		if (storedType == Type.If){
+			return ifNode.lineno = newLineno;
+		}else if (storedType == Type.While){
+			return whileNode.lineno = newLineno;
+		}else if (storedType == Type.For){
+			return forNode.lineno = newLineno;
+		}else if (storedType == Type.DoWhile){
+			return doWhile.lineno = newLineno;
+		}else if (storedType == Type.Block){
+			return blockNode.lineno = newLineno;
+		}else if (storedType == Type.Assignment){
+			return assignNode.lineno = newLineno;
+		}else if (storedType == Type.FunctionCall){
+			return functionCallNode.lineno = newLineno;
+		}else if (storedType == Type.VarDeclare){
+			return varDeclareNode.lineno = newLineno;
+		}
+		return 0;
 	}
 	/// type of this statement
 	private Type storedType;
@@ -412,6 +496,8 @@ package struct StatementNode{
 
 /// to store assignment statements
 package struct AssignmentNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the variable to assign to
 	public VariableNode var;
 	/// stores the how "deeper" dimension of the array the value has to be assigned to
@@ -436,6 +522,8 @@ package struct AssignmentNode{
 
 /// to store if statements
 package struct IfNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the condition for this if statement
 	public CodeNode condition;
 	/// stores the pointer to the statement to execute
@@ -484,6 +572,8 @@ package struct IfNode{
 
 /// to store while statements
 package struct WhileNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the condition for this while statement
 	public CodeNode condition;
 	/// stores the pointer to the statement to execute in loop while the condition is true
@@ -508,6 +598,8 @@ package struct WhileNode{
 
 /// to store do-while statements
 package struct DoWhileNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the condition for this do-while statement
 	public CodeNode condition;
 	/// stores pointer to the statement to execute in this loop
@@ -532,6 +624,8 @@ package struct DoWhileNode{
 
 /// to store for loop statements
 package struct ForNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// stores the pointer to initialization statement, i.e: `for (<this one>; bla; bla)...`
 	private StatementNode* initStatementPtr;
 	/// stores the pointer to the increment statement, i.e: `for (bla; bla; <this one>)...`
@@ -584,6 +678,8 @@ package struct ForNode{
 
 /// to store functionCall nodes
 package struct FunctionCallNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the name of the function
 	public string fName;
 	/// the data type of the returned data
@@ -608,6 +704,8 @@ package struct FunctionCallNode{
 
 /// to store var declaration
 package struct VarDeclareNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
 	/// the data typre of defined vars
 	public DataType type;
 	/// stores names of vars declared
