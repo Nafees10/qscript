@@ -146,22 +146,6 @@ package struct CodeNode{
 	@property CodeNode.Type type(){
 		return storedType;
 	}
-	/// returns the data type that the node will return
-	@property DataType returnType(){
-		if (storedType == CodeNode.Type.FunctionCall){
-			return fCall.returnType;
-		}else if (storedType == CodeNode.Type.Literal){
-			return literal.type;
-		}else if (storedType == CodeNode.Type.Operator){
-			return operator.returnType;
-		}else if (storedType == CodeNode.Type.Variable){
-			return var.varType;
-		}else if (storedType == CodeNode.Type.ReadElement){
-			return arrayRead.returnType;
-		}else{
-			throw new Exception("invalid type stored");
-		}
-	}
 	/// sets the stored node
 	@property auto node (T)(T newNode){
 		static if (is (T == FunctionCallNode)){
@@ -211,18 +195,10 @@ package struct CodeNode{
 package struct VariableNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
-	/// the data type of the variable
-	public DataType varType;
 	/// the name of this var
 	public string varName;
 	/// constructor
-	this (DataType type, string name, CodeNode[] index){
-		varType = type;
-		varName = name;
-	}
-	/// constructor
-	this (DataType type, string name){
-		varType = type;
+	this (string name){
 		varName = name;
 	}
 }
@@ -233,12 +209,13 @@ package struct LiteralNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// stores the data type for the literal
-	public DataType type;
+	public DataType returnType;
 	/// stores the literal in a QData
 	public QData literal;
 	/// constructor
 	this (QData data, DataType dataType){
 		literal = data;
+		returnType = dataType;
 	}
 	/// constructor using `fromTokens`
 	this (Token[] tokensLiteral){
@@ -249,7 +226,7 @@ package struct LiteralNode{
 	/// throws Exception on error
 	void fromTokens(Token[] tokensLiteral){
 		// check if is empty array
-		literal = tokensToQData(tokensLiteral, type);
+		literal = tokensToQData(tokensLiteral, returnType);
 	}
 	/// returns this literal as in a string-representation, for the bytecode
 	string toByteCode(){
@@ -282,7 +259,7 @@ package struct LiteralNode{
 				}
 			}
 		}
-		return fromDataOrArray(literal, type);
+		return fromDataOrArray(literal, returnType);
 	}
 }
 
@@ -292,16 +269,6 @@ package struct OperatorNode{
 	public uinteger lineno;
 	/// stores the operator (like '+' ...)
 	public string operator;
-	/// returns the result data type
-	/// 
-	/// the data type is determined by the data type of the first operand
-	@property DataType returnType(){
-		// if is a bool_operator, then return int
-		if (BOOL_OPERATORS.hasElement(operator)){
-			return DataType(DataType.Type.Integer);
-		}
-		return operands[0].returnType;
-	}
 	/// operands. [0] = left, [1] = right
 	private CodeNode[] storedOperands;
 	/// returns an array of operands
@@ -342,15 +309,6 @@ package struct ReadElement{
 	/// the index to read at
 	public @property CodeNode index(CodeNode newNode){
 		return nodes[1] = newNode;
-	}
-	/// returns the data type this node will return
-	public @property DataType returnType(){
-		DataType r = nodes[0].returnType;
-		if (r.arrayDimensionCount == 0 && r.type == DataType.Type.String){
-			return DataType(DataType.Type.String);
-		}
-		r.arrayDimensionCount --;
-		return r;
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
@@ -682,8 +640,6 @@ package struct FunctionCallNode{
 	public uinteger lineno;
 	/// the name of the function
 	public string fName;
-	/// the data type of the returned data
-	public DataType returnType;
 	/// the arguments for this function.
 	private CodeNode[] storedArguments;
 	/// returns the assoc_array storing values for arguments
@@ -695,8 +651,7 @@ package struct FunctionCallNode{
 		return storedArguments = newArgs.dup;
 	}
 	/// constructor
-	this (DataType returnDataType, string functionName, CodeNode[] functionArguments){
-		returnType = returnDataType;
+	this (string functionName, CodeNode[] functionArguments){
 		fName = functionName;
 		arguments = functionArguments;
 	}
