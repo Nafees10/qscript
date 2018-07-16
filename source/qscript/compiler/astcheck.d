@@ -38,14 +38,13 @@ private:
 		varScope[name] = scopeDepth;
 		return true;
 	}
-	/// Returns: the data type of a variable
-	/// 
-	/// Throws: Exception if that variable was not declared, or is not available in current scope
+	/// Returns: the data type of a variable  
+	/// or if var does not exist, returns `DataType()`
 	DataType getVarType(string name){
 		if (name in varTypes){
 			return varTypes[name];
 		}
-		throw new Exception("variable "~name~" was not declared, or is out of scope");
+		return DataType();
 	}
 	/// Returns: true if a var is available in current scope
 	bool varExists(string name){
@@ -75,9 +74,8 @@ private:
 			scopeDepth --;
 		}
 	}
-	/// Returns: return type of a function, works for both script-defined and predefined functions
-	/// 
-	/// Throws: Exception if the function does not exist
+	/// Returns: return type of a function, works for both script-defined and predefined functions  
+	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name){
 		foreach (func; scriptDefFunctions){
 			if (func.name == name){
@@ -89,11 +87,10 @@ private:
 				return func.returnType;
 			}
 		}
-		throw new Exception ("function "~name~" does not exist");
+		return DataType();
 	}
-	/// Returns: return type of a function, works for both script-defined and predefined functions
-	/// 
-	/// Throws: Exception if the function does not exist
+	/// Returns: return type of a function, works for both script-defined and predefined functions  
+	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name, DataType[] argTypes){
 		foreach (func; scriptDefFunctions){
 			if (func.name == name && func.argTypes == argTypes){
@@ -105,15 +102,11 @@ private:
 				return func.returnType;
 			}
 		}
-		throw new Exception ("function "~name~" does not exist");
+		return DataType();
 	}
 	/// Returns: return type for a CodeNode
 	/// 
-	/// Throws: Exception in each of these cases:  
-	/// 1. CodeNode is a function call and function does not exist
-	/// 2. CodeNode is a variable and that variable does not exist
-	/// 3. CodeNode is a operator and both operands are not of same type
-	/// 4. CodeNode is array-read-element (`abc[someIndex]`) but the declared dimensions of array are less than one's present
+	/// In case there's an error, returns `DataType()`
 	DataType getReturnType(CodeNode node){
 		if (node.type == CodeNode.Type.FunctionCall){
 			DataType[] argTypes;
@@ -129,7 +122,7 @@ private:
 			OperatorNode opNode = node.node!(CodeNode.Type.Operator);
 			DataType[2] operandTypes = [getReturnType(opNode.operands[0]), getReturnType(opNode.operands[1])];
 			if (operandTypes[0] != operandTypes[1]){
-				throw new Exception("both operands of an operator must be of same data type");
+				return DataType();
 			}
 			return operandTypes[0];
 		}else if (node.type == CodeNode.Type.ReadElement){
@@ -139,7 +132,7 @@ private:
 				if (readFromType.type == DataType.Type.String){
 					return DataType(DataType.Type.String);
 				}else{
-					throw new Exception ("Cannot use [..] on non-array and non-string data");
+					return DataType();
 				}
 			}
 			readFromType.arrayDimensionCount --;
@@ -200,6 +193,7 @@ protected:
 		}
 		// now check the statements
 		checkAST(node.bodyBlock);
+		decreaseScope();
 	}
 	/// checks if a StatementNode is valid
 	void checkAST(StatementNode node){
@@ -224,15 +218,16 @@ protected:
 	/// checks a AssignmentNode
 	void checkAST(AssignmentNode node){
 		// make sure var exists, checkAST(VariableNode) does that
-		chectAST(node.var);
+		checkAST(node.var);
+		DataType varType = getVarType (node.var.varName);
 		// check if the indexes provided for the var are possible, i.e if the var declaration has >= those indexes
-		if (node.var.varType.arrayDimensionCount < node.indexes.length){
-			compileError.append(CompileError(node.var.lineno, "array's dimension count in assignment differes from declaration"));
+		if (varType.arrayDimensionCount < node.indexes.length){
+			compileErrors.append(CompileError(node.var.lineno, "array's dimension count in assignment differes from declaration"));
 		}else{
 			// check if the data type of the value and var (considering the indexes used) match
-			DataType expectedType = node.var.varType;
+			DataType expectedType = varType;
 			expectedType.arrayDimensionCount -= node.indexes.length;
-			if (node.val.returnType != expectedType){
+			if (getReturnType(node.val) != expectedType){
 				compileErrors.append(CompileError(node.val.lineno, "cannot assign value with different data type to variable"));
 			}
 			// now check the CodeNode's for indexes
@@ -284,7 +279,7 @@ protected:
 		argTypes.length = node.arguments.length;
 		// while moving the type into separate array, perform the checks on the args themselves
 		foreach (i, arg; node.arguments){
-			argTypes[i] = arg.returnType;
+			argTypes[i] = getReturnType(arg);
 			checkAST(arg);
 		}
 		// now make sure that that function exists, and the arg types match
@@ -331,15 +326,9 @@ protected:
 				CodeNode value = node.getValue(varName);
 				checkAST(value);
 				// make sure that value can be assigned
-				DataType valueType;
-				try{
-					valueType = getReturnType(value);
-					if (valueType != node.type){
-						compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
-					}
-				}catch (Exception e){
-					// any error that exception tells was already added by the check that was done before, so destroy it
-					.destroy(e);
+				DataType valueType = getReturnType(value);
+				if (valueType != node.type){
+					compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
 				}
 			}
 		}
@@ -352,6 +341,62 @@ protected:
 		increaseScope();
 		checkAST(node.statement);
 		decreaseScope();
+	}
+	/// checks a CodeNode
+	void checkAST(CodeNode node){
+		if (node.type == CodeNode.Type.FunctionCall){
+			checkAST(node.node!(CodeNode.Type.FunctionCall));
+		}else if (node.type == CodeNode.Type.Literal){
+			// nothing to check
+		}else if (node.type == CodeNode.Type.Operator){
+			checkAST(node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.ReadElement){
+			checkAST(node.node!(CodeNode.Type.ReadElement));
+		}else if (node.type == CodeNode.Type.Variable){
+			checkAST(node.node!(CodeNode.Type.Variable));
+		}
+	}
+	/// checks a OperatorNode
+	void checkAST(OperatorNode node){
+		// check the operands
+		foreach (operand; node.operands){
+			checkAST (operand);
+		}
+		// make sure both operands are of same data type
+		DataType operandType = getReturnType(node.operands[0]);
+		if (getReturnType(node.operands[0]) != getReturnType(node.operands[1])){
+			compileErrors.append(CompileError(node.lineno, "Both operands for operator must be of same type"));
+		}
+		// now make sure that the data type of operands is allowed with that operator
+		if (["+","-","*","/","%", "<", ">"].hasElement(node.operator)){
+			// only double and int allowed
+			if (operandType != DataType(DataType.Type.Integer) && operandType != DataType(DataType.Type.Double)){
+				compileErrors.append (CompileError(node.lineno, "that operator can only be used on double or int"));
+			}
+		}else if (["&&", "||"].hasElement(node.operator)){
+			if (operandType != DataType(DataType.Type.Integer)){
+				compileErrors.append (CompileError(node.lineno, "that operator can only be used on int"));
+			}
+		}else if (node.operator == "~"){
+			if (operandType != DataType(DataType.Type.String) && operandType.arrayDimensionCount == 0){
+				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
+			}
+		}
+	}
+	/// checks a ReadElement
+	void checkAST(ReadElement node){
+		// check the var, and the index
+		checkAST (node.readFromNode);
+		checkAST (node.index);
+		// index must return int
+		if (getReturnType(node.index) != DataType(DataType.Type.Integer)){
+			compileErrors.append (CompileError(node.index.lineno, "index must return integer"));
+		}
+		// now make sure that the data is an array or a string
+		DataType readFromType = getReturnType (node.readFromNode);
+		if (readFromType.arrayDimensionCount == 0 && readFromType != DataType(DataType.Type.String)){
+			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
+		}
 	}
 public:
 	this (Function[] predefinedFunctions){
