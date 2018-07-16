@@ -398,6 +398,13 @@ protected:
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
 		}
 	}
+	/// checks a VariableNode
+	void checkAST(VariableNode node){
+		// make sure that that var was declared
+		if (!varExists(node.varName)){
+			compileErrors.append (CompileError(node.lineno,"variable "~node.varName~" not declared but used"));
+		}
+	}
 public:
 	this (Function[] predefinedFunctions){
 		compileErrors = new LinkedList!CompileError;
