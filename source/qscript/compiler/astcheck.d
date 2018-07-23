@@ -443,11 +443,10 @@ public:
 	/// checks a script's AST for any errors
 	/// 
 	/// Arguments:
-	/// `node` is the ScriptNode for the script  
-	/// `functions` is the array containing data about functions available to the script
+	/// `node` is the ScriptNode for the script
 	/// 
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
-	CompileError[] checkAST(ScriptNode node, Function[] functions){
+	CompileError[] checkAST(ScriptNode node){
 		// empty everything
 		scriptDefFunctions = [];
 		compileErrors.clear;
@@ -468,11 +467,10 @@ public:
 	/// 
 	/// Arguments:
 	/// `node` is the ScriptNode for the script  
-	/// `functions` is the array containing data about functions available to the script  
 	/// `scriptFunctions` is the array to put data about script defined functions in
 	/// 
 	/// Returns: errors in CompileError[], or empty array if there were no errors
-	CompileError[] checkAST(ScriptNode node,Function[] functions, ref Function[] scriptFunctions){
+	CompileError[] checkAST(ScriptNode node, ref Function[] scriptFunctions){
 		CompileError[] errors = checkAST(node, functions);
 		scriptFunctions = scriptDefFunctions.dup;
 		return errors;
