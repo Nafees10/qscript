@@ -309,7 +309,6 @@ protected:
 			checkAST(arg);
 		}
 		// now make sure that that function exists, and the arg types match
-		bool isScriptDef = false;
 		bool functionExists = false;
 		foreach (func; scriptDefFunctions){
 			if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
@@ -443,14 +442,19 @@ public:
 	}
 	/// checks a script's AST for any errors
 	/// 
+	/// Arguments:
+	/// `node` is the ScriptNode for the script  
+	/// `functions` is the array containing data about functions available to the script
+	/// 
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
-	CompileError[] checkAST(ScriptNode node){
+	CompileError[] checkAST(ScriptNode node, Function[] functions){
 		// empty everything
 		scriptDefFunctions = [];
 		compileErrors.clear;
 		varTypes.clear;
 		varScope.clear;
 		scopeDepth = 0;
+		preDefFunctions = functions.dup;
 		readFunctions(node);
 		// call checkAST on every FunctionNode
 		foreach (functionNode; node.functions){
@@ -459,5 +463,18 @@ public:
 		CompileError[] r = compileErrors.toArray;
 		.destroy(compileErrors);
 		return r;
+	}
+	/// checks a script's AST for any errors
+	/// 
+	/// Arguments:
+	/// `node` is the ScriptNode for the script  
+	/// `functions` is the array containing data about functions available to the script  
+	/// `scriptFunctions` is the array to put data about script defined functions in
+	/// 
+	/// Returns: errors in CompileError[], or empty array if there were no errors
+	CompileError[] checkAST(ScriptNode node,Function[] functions, ref Function[] scriptFunctions){
+		CompileError[] errors = checkAST(node, functions);
+		scriptFunctions = scriptDefFunctions.dup;
+		return errors;
 	}
 }
