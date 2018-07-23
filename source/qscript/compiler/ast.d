@@ -147,7 +147,7 @@ package struct CodeNode{
 		return storedType;
 	}
 	/// sets the stored node
-	@property auto node (T)(T newNode){
+	@property auto ref node (T)(T newNode){
 		static if (is (T == FunctionCallNode)){
 			storedType = CodeNode.Type.FunctionCall;
 			return fCall = newNode;
@@ -166,7 +166,7 @@ package struct CodeNode{
 		}
 	}
 	/// returns the stored type
-	@property auto node(CodeNode.Type T)(){
+	@property auto ref node(CodeNode.Type T)(){
 		// make sure it's the correct type
 		if (T != storedType){
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
@@ -197,6 +197,8 @@ package struct VariableNode{
 	public uinteger lineno;
 	/// the name of this var
 	public string varName;
+	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
+	public uinteger id;
 	/// constructor
 	this (string name){
 		varName = name;
@@ -387,7 +389,7 @@ package struct StatementNode{
 		AssignmentNode assignNode;
 	}
 	/// modifies the stored node
-	@property node(T)(T newNode){
+	@property auto ref node(T)(T newNode){
 		static if (is (T == IfNode)){
 			storedType = StatementNode.Type.If;
 			ifNode = newNode;
@@ -417,7 +419,7 @@ package struct StatementNode{
 		}
 	}
 	/// returns the stored type
-	@property node(StatementNode.Type T)(){
+	@property auto ref node(StatementNode.Type T)(){
 		// make sure type is correct
 		if (T != storedType){
 			throw new Exception("stored type does not match with type being retrieved");
