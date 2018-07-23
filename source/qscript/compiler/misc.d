@@ -35,14 +35,14 @@ public struct CompileError{
 /// used to store data types for data at compile time
 public struct DataType{
 	/// enum defining all data types
-	public enum Type : ubyte{
-		Void = 0,
-		String = 1,
-		Integer = 2,
-		Double = 3
+	public enum Type{
+		Void,
+		String,
+		Integer,
+		Double
 	}
 	/// the actual data type
-	DataType.Type type = DataType.Type.Void;
+	Type type = DataType.Type.Void;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
 	uinteger arrayDimensionCount = 0;
 	/// returns true if it's an array
@@ -55,7 +55,7 @@ public struct DataType{
 	/// constructor
 	/// 
 	/// dataType is the type to store
-	/// arrayNest is the number of nested arrays
+	/// arrayDimension is the number of nested arrays
 	this (DataType.Type dataType, uinteger arrayDimension = 0){
 		type = dataType;
 		arrayDimensionCount = arrayDimension;
@@ -204,7 +204,7 @@ public struct DataType{
 		}else if (type == DataType.Type.String){
 			r = cast(char[]) "string";
 		}else{
-			throw new Exception("invalid type stored");
+			throw new Exception("invalid type stored: "~to!string(type));
 		}
 		uinteger i = r.length;
 		r.length += arrayDimensionCount * 2;
@@ -342,10 +342,22 @@ string encodeString(string s){
 /// Returns: the byte code style function name
 string encodeFunctionName (string name, DataType[] argTypes){
 	string r = name ~ '/';
+	const TYPE_CODE = [
+			DataType.Type.Void : '0',
+			DataType.Type.String : '1',
+			DataType.Type.Integer : '2',
+			DataType.Type.Double : '3'
+		];
 	foreach (type; argTypes){
-		r ~= to!string(type.type) ~ to!string(type.arrayDimensionCount) ~ '/';
+		r ~= TYPE_CODE[type.type] ~ to!string(type.arrayDimensionCount) ~ '/';
 	}
 	return r;
+}
+/// 
+unittest{
+	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,14),DataType(DataType.Type.Void)]) == 
+			"abcd/314/00/"
+		);
 }
 
 /// reads a byte code style function name into a function name and argument types
@@ -368,10 +380,16 @@ bool decodeFunctionName (string encodedName, ref string name, ref DataType[] arg
 		return true;
 	string argString = encodedName[slashIndex + 1 .. encodedName.length];
 	DataType type;
+	const TYPE_CODE = [
+			'0' : DataType.Type.Void,
+			'1' : DataType.Type.String,
+			'2' : DataType.Type.Integer,
+			'3' : DataType.Type.Double
+		];
 	for (uinteger i = 0; i < argString.length; i ++){
 		if (['0','1','2','3'].indexOf(argString[i]) < 0)
 			return false;
-		type.type = to!(DataType.Type)(argString[i]);
+		type.type = TYPE_CODE[argString[i]];
 		// make sure the rest is a integer (dimensionCount)
 		i++;
 		for (slashIndex = i; slashIndex < argString.length; slashIndex ++){
@@ -382,8 +400,21 @@ bool decodeFunctionName (string encodedName, ref string name, ref DataType[] arg
 			return false;
 		type.arrayDimensionCount = to!uinteger(argString[i .. slashIndex]);
 		argTypes ~= type;
+		i  = slashIndex;
 	}
 	return true;
+}
+///
+unittest{
+	string name;
+	DataType[] types;
+	"abcd/014/12/23/38/".decodeFunctionName(name, types);
+	assert (name == "abcd");
+	assert (types == [DataType(DataType.Type.Void, 14),
+			DataType(DataType.Type.String, 2),
+			DataType(DataType.Type.Integer, 3),
+			DataType(DataType.Type.Double, 8)
+		]);
 }
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
