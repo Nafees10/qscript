@@ -453,7 +453,6 @@ public:
 		varTypes.clear;
 		varScope.clear;
 		scopeDepth = 0;
-		preDefFunctions = functions.dup;
 		readFunctions(node);
 		// call checkAST on every FunctionNode
 		foreach (functionNode; node.functions){
@@ -471,7 +470,7 @@ public:
 	/// 
 	/// Returns: errors in CompileError[], or empty array if there were no errors
 	CompileError[] checkAST(ScriptNode node, ref Function[] scriptFunctions){
-		CompileError[] errors = checkAST(node, functions);
+		CompileError[] errors = checkAST(node);
 		scriptFunctions = scriptDefFunctions.dup;
 		return errors;
 	}
