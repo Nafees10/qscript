@@ -42,9 +42,9 @@ public struct DataType{
 		Double
 	}
 	/// the actual data type
-	DataType.Type type;
+	DataType.Type type = DataType.Type.Void;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
-	uinteger arrayDimensionCount;
+	uinteger arrayDimensionCount = 0;
 	/// returns true if it's an array
 	@property bool isArray(){
 		if (arrayDimensionCount > 0){
