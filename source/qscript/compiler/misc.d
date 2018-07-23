@@ -35,11 +35,11 @@ public struct CompileError{
 /// used to store data types for data at compile time
 public struct DataType{
 	/// enum defining all data types
-	public enum Type{
-		Void,
-		String,
-		Integer,
-		Double
+	public enum Type : ubyte{
+		Void = 0,
+		String = 1,
+		Integer = 2,
+		Double = 3
 	}
 	/// the actual data type
 	DataType.Type type = DataType.Type.Void;
@@ -333,6 +333,58 @@ string encodeString(string s){
 	return r;
 }
 
+/// converts a function name and it's arguments to a byte code style function name
+/// 
+/// Arguments:
+/// `name` is the function name  
+/// `argTypes` is the array of it's arguments' Data Types
+/// 
+/// Returns: the byte code style function name
+string encodeFunctionName (string name, DataType[] argTypes){
+	string r = name ~ '/';
+	foreach (type; argTypes){
+		r ~= to!string(type.type) ~ to!string(type.arrayDimensionCount) ~ '/';
+	}
+	return r;
+}
+
+/// reads a byte code style function name into a function name and argument types
+/// 
+/// Arguments:
+/// `encodedName` is the encoded function name  
+/// `name` is the variable to put the decoded name in  
+/// `argTypes` is the array to put arguments' data types in
+/// 
+/// Returns: true if the name was in a correct format and was read correctly  
+/// false if there was an error reading it
+bool decodeFunctionName (string encodedName, ref string name, ref DataType[] argTypes){
+	// first read the name, till the first '/'
+	integer slashIndex = encodedName.indexOf ('/');
+	if (slashIndex < 0)
+		return false;
+	name = encodedName[0 .. slashIndex].dup;
+	argTypes = [];
+	if (slashIndex + 1 == encodedName.length)
+		return true;
+	string argString = encodedName[slashIndex + 1 .. encodedName.length];
+	DataType type;
+	for (uinteger i = 0; i < argString.length; i ++){
+		if (['0','1','2','3'].indexOf(argString[i]) < 0)
+			return false;
+		type.type = to!(DataType.Type)(argString[i]);
+		// make sure the rest is a integer (dimensionCount)
+		i++;
+		for (slashIndex = i; slashIndex < argString.length; slashIndex ++){
+			if (argString[slashIndex] == '/')
+				break;
+		}
+		if (slashIndex == argString.length || !argString[i .. slashIndex].isNum)
+			return false;
+		type.arrayDimensionCount = to!uinteger(argString[i .. slashIndex]);
+		argTypes ~= type;
+	}
+	return true;
+}
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
 /// returns true if match successful, else, false
