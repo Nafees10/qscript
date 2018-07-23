@@ -23,6 +23,8 @@ private:
 	
 	/// stores data types of variables in currently-being-checked-FunctionNode
 	DataType[string] varTypes;
+	/// stores the IDs (as index) for vars
+	string[uinteger] varIDs;
 	/// stores the scope-depth of each var in currently-being-checked-FunctionNode which is currently in scope
 	uinteger[string] varScope;
 	/// stores current scope-depth
@@ -36,6 +38,13 @@ private:
 		}
 		varTypes[name] = type;
 		varScope[name] = scopeDepth;
+
+		uinteger i;
+		for (i = 0; ; i ++){
+			if (i !in varIDs)
+				break;
+		}
+		varIDs[i] = name;
 		return true;
 	}
 	/// Returns: the data type of a variable  
@@ -45,6 +54,16 @@ private:
 			return varTypes[name];
 		}
 		return DataType();
+	}
+	/// Returns: the ID for a variable  
+	/// or -1 if it does not exist
+	integer getVarID(string name){
+		foreach (id, varName; varIDs){
+			if (name == varName){
+				return id;
+			}
+		}
+		return -1;
 	}
 	/// Returns: true if a var is available in current scope
 	bool varExists(string name){
@@ -68,6 +87,13 @@ private:
 				varScope.remove(key);
 				// remove from varDataTypes too!
 				varTypes.remove(key);
+				// remove it from varIDs too
+				foreach (id; varIDs.keys){
+					if (varIDs[id] == key){
+						varIDs.remove (id);
+						break;
+					}
+				}
 			}
 		}
 		if (scopeDepth > 0){
@@ -399,11 +425,13 @@ protected:
 		}
 	}
 	/// checks a VariableNode
-	void checkAST(VariableNode node){
+	void checkAST(ref VariableNode node){
 		// make sure that that var was declared
 		if (!varExists(node.varName)){
 			compileErrors.append (CompileError(node.lineno,"variable "~node.varName~" not declared but used"));
 		}
+		// and put the assigned ID to it
+		node.id = getVarID(node.varName);
 	}
 public:
 	this (Function[] predefinedFunctions){
