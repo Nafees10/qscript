@@ -173,37 +173,23 @@ private:
 	/// 
 	/// any error is appended to compileErrors
 	void readFunctions(ScriptNode node){
-		/// stores index of functions in scriptDefFunctions
-		uinteger[][string] funcIndex;
+		/// stores the functions in byte code style, coz that way, its easier to check if same function with same
+		/// arg types has been used more than once
+		string[] byteCodefunctionNames;
 		scriptDefFunctions.length = node.functions.length;
+		byteCodefunctionNames.length = node.functions.length;
 		foreach (i, func; node.functions){
 			// read arg types into a single array
 			DataType[] argTypes;
 			argTypes.length = func.arguments.length;
 			foreach (index, arg; func.arguments)
-				argTypes[i] = arg.argType;
+				argTypes[index] = arg.argType;
 			scriptDefFunctions[i] = Function(func.name, func.returnType, argTypes);
-			if (func.name in funcIndex)
-				funcIndex[func.name] ~= i;
-			else
-				funcIndex[func.name] = [i];
-		}
-		// now make sure that all functions with same names have different arg types
-		foreach (funcName; funcIndex.keys){
-			if (funcIndex[funcName].length > 1){
-				// check these indexes
-				uinteger[] indexes = funcIndex[funcName];
-				/// stores the arg type combinations which have already been used
-				DataType[][] usedArgCombinations;
-				usedArgCombinations.length = indexes.length;
-				foreach (i, index; indexes){
-					if (usedArgCombinations[0 .. i].indexOf(scriptDefFunctions[index].argTypes) >= 0){
-						compileErrors.append(CompileError(node.functions[index].lineno,
-								"functions with same name must have different argument types"
-							));
-					}
-					usedArgCombinations[i] = scriptDefFunctions[index].argTypes;
-				}
+			byteCodefunctionNames[i] = encodeFunctionName(func.name, argTypes);
+			if (byteCodefunctionNames[0 .. i].indexOf(byteCodefunctionNames[i]) >= 0){
+				compileErrors.append (CompileError(node.functions[index].lineno,
+						"functions with same name must have different argument types"
+					));
 			}
 		}
 	}
