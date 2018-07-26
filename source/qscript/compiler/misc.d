@@ -387,7 +387,7 @@ bool decodeFunctionName (string encodedName, ref string name, ref DataType[] arg
 			'3' : DataType.Type.Double
 		];
 	for (uinteger i = 0; i < argString.length; i ++){
-		if (['0','1','2','3'].indexOf(argString[i]) < 0)
+		if (!['0','1','2','3'].hasElement(argString[i]))
 			return false;
 		type.type = TYPE_CODE[argString[i]];
 		// make sure the rest is a integer (dimensionCount)
@@ -427,15 +427,8 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 			if (definedTypes[i].type == DataType.Type.Void){
 				// skip checks
 				continue;
-			}else{
-				if (argTypes[i].type != definedTypes[i].type){
-					// check if is receiving a void[], against a someType[][].., then, it's ok
-					if (argTypes[i].type == DataType.Type.Void &&
-						argTypes[i].arrayDimensionCount > 0 && definedTypes[i].arrayDimensionCount > 0){
-						return true;
-					}
-					return false;
-				}
+			}else if (argTypes[i].type != definedTypes[i].type){
+				return false;
 			}
 			// check the array dimension
 			if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount){
