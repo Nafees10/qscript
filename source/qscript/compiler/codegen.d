@@ -4,12 +4,133 @@ For generating byte code from AST
 module qscript.compiler.codegen;
 
 import qscript.compiler.ast;
+import qscript.compiler.astcheck;
 import qscript.compiler.misc;
+import qscript.compiler.compiler : Funciton;
 
 import utils.misc;
 import utils.lists;
 
 import std.conv : to;
+
+/// class to generate byte code for an AST and performing checks on the AST (using ASTCheck class)
+class CodeGen{
+private:
+	/// stores the pre-defined functions
+	Function[] preDefFunctions;
+	/// stores the name, arg types, and return types for script defined functions
+	Function[] scriptDefFunctions;
+	/// stores the data type of variables
+	DataType[string] varTypes;
+	/// stores the maximum/highest variable ID
+	uinteger maxVarID = 0;
+	/// stores the bytecode as instructions are added to it line-by-line
+	List!string byteCode;
+protected:
+	/// generates byte code for FunctionNode
+	void generateByteCode(FunctionNode node){
+		// add the name 
+		DataType[] argTypes;
+		argTypes.length = node.arguments.length;
+		foreach (i ,arg; node.arguments)
+			argTypes[i] = arg.argType;
+		byteCode.add (encodeFunctionName(node.name, argTypes));
+		// now add the placeholder for the instruction to set the variable-storing-array length
+		byteCode.add ("\tvarCount ?");
+		// save it's index
+		uinteger varCountIndex = byteCode.length-1;
+		// now add the statements
+		maxVarID = argTypes.length == 0 ? 0 : argTypes.length - 1;
+		generateByteCode (node.bodyBlock);
+	}
+	/// generates byte code for BlockNode
+	void generateByteCode (BlockNode node){
+		foreach (statement; node.statements){
+			generateByteCode (statement);
+		}
+	}
+	/// generates byte code for a StatementNode
+	void generateByteCode (StatementNode node){
+		if (node.type == StatementNode.Type.Assignment){
+			generateByteCode (node.node!(StatementNode.Type.Assignment));
+		}else if (node.type == StatementNode.Type.Block){
+			generateByteCode (node.node!(StatementNode.Type.Block));
+		}else if (node.type == StatementNode.Type.DoWhile){
+			generateByteCode (node.node!(StatementNode.Type.DoWhile));
+		}else if (node.type == StatementNode.Type.For){
+			generateByteCode (node.node!(StatementNode.Type.For));
+		}else if (node.type == StatementNode.Type.FunctionCall){
+			generateByteCode (node.node!(StatementNode.Type.FunctionCall));
+		}else if (node.type == StatementNode.Type.If){
+			generateByteCode (node.node!(StatementNode.Type.If));
+		}else if (node.type == StatementNode.Type.VarDeclare){
+			generateByteCode (node.node!(StatementNode.Type.VarDeclare));
+		}else if (node.type == StatementNode.Type.While){
+			generateByteCode (node.node!(StatementNode.Type.While));
+		}
+	}
+	/// generates byte code for AssignmentNode
+	void generateByteCode (AssignmentNode node){
+		uinteger varID = node.var.id;
+		// first check if the var is an array
+		if (node.indexes.length > 0){
+			// push the original value of var, then push all the indexes, then call modifyArray, and setVar
+			auto byteCode = new LinkedList!string;
+			byteCode.append("\tgetVar i"~to!string(varID));
+			// now push the val
+			byteCode.append(generateByteCode(node.val));
+			// now the indexes
+			foreach (index; node.indexes){
+				byteCode.append(generateByteCode(index));
+			}
+			// then modifyArray
+			byteCode.append("\tmodifyArray i"~to!string(node.indexes.length));
+			// finally, set the new array back
+			byteCode.append("\tsetVar i"~to!string(varID));
+			string[] r = byteCode.toArray;
+			.destroy(byteCode);
+			return r;
+		}else{
+			// just push the val, and call setVar on the varID
+			return generateByteCode(node.val)~
+			["\tsetVar i"~to!string(varID)];
+		}
+	}
+public:
+	this (Function[] preDefFunctions){
+		byteCode = new List!string;
+		this.preDefFunctions = preDefFunctions.dup;
+	}
+	~this (){
+		.destroy(byteCode);
+	}
+	/// generates byte code for ScriptNode
+	/// 
+	/// Arguments:
+	/// `node` is the ScriptNode to generate byte code for  
+	/// `errors` is the array in which any errors will be put
+	/// 
+	/// Returns: the bytecode for the script
+	string[] generateByteCode(ScriptNode node, ref CompileError[] errors){
+		// first do the ASTCheck on the script
+		ASTCheck check = new ASTCheck(preDefFunctions.dup);
+		errors = [];
+		errors = check.checkAST(node, scriptDefFunctions);
+		if (errors.length == 0){
+			// clean everything
+			maxVarID = 0;
+			varTypes.clear;
+			byteCode.clear;
+			// now start with the codegen
+			foreach (functionNode; node.functions){
+				generateByteCode(functionNode);
+			}
+		}
+		string[] r = byteCode.toArray;
+		byteCode.clear;
+		return r;
+	}
+}
 
 /// contains functions to generate byte code from AST
 package struct CodeGen{
@@ -71,23 +192,6 @@ package struct CodeGen{
 				}
 			}
 			throw new Exception("variable '"~varName~"' not declared but used");
-		}
-		/// should/must be called when the next few calls of var-related functions will be from inside another block
-		public void increaseScope(){
-			scopeDepth ++;
-		}
-		/// should/must be called when all var related functions from inside a block are done
-		public void decreaseScope(){
-			// clear vars
-			foreach (key; varIDs.keys){
-				if (varScopeDepth[key] == scopeDepth){
-					varScopeDepth.remove(key);
-					varIDs.remove(key);
-				}
-			}
-			if (scopeDepth > 0){
-				scopeDepth --;
-			}
 		}
 	}
 
