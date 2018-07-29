@@ -186,8 +186,8 @@ private:
 				argTypes[index] = arg.argType;
 			scriptDefFunctions[i] = Function(func.name, func.returnType, argTypes);
 			byteCodefunctionNames[i] = encodeFunctionName(func.name, argTypes);
-			if (byteCodefunctionNames[0 .. i].indexOf(byteCodefunctionNames[i]) >= 0){
-				compileErrors.append (CompileError(node.functions[index].lineno,
+			if (byteCodefunctionNames[0 .. i].hasElement(byteCodefunctionNames[i])){
+				compileErrors.append (CompileError(func.lineno,
 						"functions with same name must have different argument types"
 					));
 			}
@@ -297,13 +297,13 @@ protected:
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
 		foreach (func; scriptDefFunctions){
-			if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
+			if (func.name == node.fName && func.argTypes == argTypes){
 				functionExists = true;
 			}
 		}
 		if (!functionExists){
 			foreach (func; preDefFunctions){
-				if (func.name == node.fName && func.argTypes == argTypes){
+				if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
 					functionExists = true;
 				}
 			}
