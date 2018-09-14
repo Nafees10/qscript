@@ -93,6 +93,7 @@ package struct BlockNode{
 /// 2. Literals
 /// 3. Operators
 /// 4. Variables
+/// 5. Arrays (Literal, or with variable elements)
 package struct CodeNode{
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	@property uinteger lineno(){
@@ -106,6 +107,8 @@ package struct CodeNode{
 			return var.lineno;
 		}else if (storedType == Type.ReadElement){
 			return arrayRead.lineno;
+		}else if (storedType == Type.Array){
+			return array.lineno;
 		}
 		return 0;
 	}
@@ -121,6 +124,8 @@ package struct CodeNode{
 			return var.lineno = newLineno;
 		}else if (storedType == Type.ReadElement){
 			return arrayRead.lineno = newLineno;
+		}else if (storedType == Type.Array){
+			return array.lineno = newLineno;
 		}
 		return 0;
 	}
@@ -130,7 +135,8 @@ package struct CodeNode{
 		Literal,
 		Operator,
 		Variable,
-		ReadElement
+		ReadElement,
+		Array
 	}
 	/// the stored type
 	private Type storedType;
@@ -141,6 +147,7 @@ package struct CodeNode{
 		OperatorNode operator;
 		VariableNode var;
 		ReadElement arrayRead;
+		ArrayNode array;
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
@@ -163,6 +170,9 @@ package struct CodeNode{
 		}else static if (is (T == ReadElement)){
 			storedType = CodeNode.Type.ReadElement;
 			return arrayRead = newNode;
+		}else static if(is (T == ArrayNode)){
+			storedType = CodeNode.Type.Array;
+			return array = newNode;
 		}
 	}
 	/// returns the stored type
@@ -181,9 +191,25 @@ package struct CodeNode{
 			return var;
 		}else static if (T == CodeNode.Type.ReadElement){
 			return arrayRead;
+		}else static if (T == CodeNode.Type.Array){
+			return array;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
+	}
+	/// Returns: true if the stored data is literal
+	public @property bool isLiteral (){
+		if ([CodeNode.Type.FunctionCall, CodeNode.Type.Variable].hasElement(storedType))
+			return false;
+		if (storedType == CodeNode.Type.Literal)
+			return true;
+		if (storedType == CodeNode.Type.Operator)
+			return operator.isLiteral;
+		if (storedType == CodeNode.Type.ReadElement)
+			return arrayRead.isLiteral;
+		if (storedType == CodeNode.Type.Array)
+			return array.isLiteral;
+		return false;
 	}
 	/// constructor
 	this (T)(T newNode){
@@ -205,7 +231,35 @@ package struct VariableNode{
 	}
 }
 
-/// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer, array
+/// stores array, for example, `[0, 1, x, y]` will be stored using this
+package struct ArrayNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	uinteger lineno;
+	/// stores the elements
+	private CodeNode[] _elements;
+	/// Returns: the stored elements
+	public @property ref CodeNode[] elements(){
+		return _elements;
+	}
+	/// ditto
+	public @property ref CodeNode[] elements(CodeNode[] newArray){
+		return _elements = newArray.dup;
+	}
+	/// Returns: true if the stored array is a literal
+	public @property bool isLiteral (){
+		foreach (element; _elements)
+			if (!element.isLiteral)
+				return false;
+		return true;
+	}
+	/// constructor
+	this (CodeNode[] elements){
+		this.elements = elements;
+	}
+}
+
+/// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer,  
+/// but arrays (even ones without variables, only literals) are stored in ArrayNode
 package struct LiteralNode{
 	private import qscript.qscript : QData;
 	/// the line number (starts from 1) from which this node begins, or ends
@@ -281,6 +335,14 @@ package struct OperatorNode{
 	@property ref CodeNode[] operands(CodeNode[] newOperands){
 		return storedOperands = newOperands.dup;
 	}
+	/// Returns: true if the stored data is literal
+	public @property bool isLiteral (){
+		foreach (operand; storedOperands){
+			if (!operand.isLiteral)
+				return false;
+		}
+		return true;
+	}
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
@@ -311,6 +373,14 @@ package struct ReadElement{
 	/// the index to read at
 	public @property CodeNode index(CodeNode newNode){
 		return nodes[1] = newNode;
+	}
+	/// Returns: true if the stored data is literal
+	public @property bool isLiteral (){
+		foreach (node; nodes){
+			if (!node.isLiteral)
+				return false;
+		}
+		return true;
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
