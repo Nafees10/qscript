@@ -555,7 +555,7 @@ struct ASTGen{
 					}
 				}else{
 					compileErrors.append (CompileError(tokens.getTokenLine(index),
-						"while followed by condition expected after end of loop statement"));
+							"while followed by condition expected after end of loop statement"));
 				}
 			}
 			return doWhile;
@@ -600,8 +600,8 @@ struct ASTGen{
 				for (; index < brackEnd; index ++){
 					elements = elements ~ generateCodeAST();
 					if (tokens.tokens[index].type != Token.Type.Comma){
-						compileErrors.append (tokens.getTokenLine(index),
-							"Unexpected token, comma must be used to separate array elements");
+						compileErrors.append (CompileError (tokens.getTokenLine(index),
+								"Unexpected token, comma must be used to separate array elements"));
 						index = brackEnd;
 					}
 				}
