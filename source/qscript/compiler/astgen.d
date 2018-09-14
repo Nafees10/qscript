@@ -595,16 +595,18 @@ struct ASTGen{
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
-				Token[] data = tokens.tokens[index .. brackEnd+1].dup;
-				LiteralNode r;
-				try{
-					r.fromTokens(data);
-				}catch (Exception e){
-					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
-					.destroy (e);
+				// read into ArrayNode
+				CodeNode[] elements = [];
+				for (; index < brackEnd; index ++){
+					elements = elements ~ generateCodeAST();
+					if (tokens.tokens[index].type != Token.Type.Comma){
+						compileErrors.append (tokens.getTokenLine(index),
+							"Unexpected token, comma must be used to separate array elements");
+						index = brackEnd;
+					}
 				}
 				index = brackEnd+1;
-				return CodeNode(r);
+				return CodeNode(ArrayNode(elements));
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
 				// literal
 				index ++;
