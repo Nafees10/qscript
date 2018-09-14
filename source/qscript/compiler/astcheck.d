@@ -365,6 +365,8 @@ protected:
 			checkAST(node.node!(CodeNode.Type.ReadElement));
 		}else if (node.type == CodeNode.Type.Variable){
 			checkAST(node.node!(CodeNode.Type.Variable));
+		}else if (node.type == CodeNode.Type.Array){
+			checkAST(node.node!(CodeNode.Type.Array));
 		}
 	}
 	/// checks a OperatorNode
@@ -417,6 +419,12 @@ protected:
 		}
 		// and put the assigned ID to it
 		node.id = getVarID(node.varName);
+	}
+	/// checks an ArrayNode
+	void checkAST(ArrayNode node){
+		foreach (element; node.elements){
+			checkAST (element);
+		}
 	}
 public:
 	this (Function[] predefinedFunctions){
