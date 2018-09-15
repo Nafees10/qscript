@@ -109,6 +109,8 @@ package struct CodeNode{
 			return arrayRead.lineno;
 		}else if (storedType == Type.Array){
 			return array.lineno;
+		}else if (storedType == Type.SOperator){
+			return sOperator.lineno;
 		}
 		return 0;
 	}
@@ -126,6 +128,8 @@ package struct CodeNode{
 			return arrayRead.lineno = newLineno;
 		}else if (storedType == Type.Array){
 			return array.lineno = newLineno;
+		}else if (storedType == Type.SOperator){
+			return sOperator.lineno = newLineno;
 		}
 		return 0;
 	}
@@ -133,7 +137,8 @@ package struct CodeNode{
 	public enum Type{
 		FunctionCall,
 		Literal,
-		Operator,
+		Operator, // double operand operator
+		SOperator, // single operand operator
 		Variable,
 		ReadElement,
 		Array
@@ -145,6 +150,7 @@ package struct CodeNode{
 		FunctionCallNode fCall;
 		LiteralNode literal;
 		OperatorNode operator;
+		SOperatorNode sOperator;
 		VariableNode var;
 		ReadElement arrayRead;
 		ArrayNode array;
@@ -173,6 +179,9 @@ package struct CodeNode{
 		}else static if(is (T == ArrayNode)){
 			storedType = CodeNode.Type.Array;
 			return array = newNode;
+		}else if (is (T == SOperatorNode)){
+			storedType = CodeNode.Type.SOperator;
+			return sOperator = newNode;
 		}
 	}
 	/// returns the stored type
@@ -193,6 +202,8 @@ package struct CodeNode{
 			return arrayRead;
 		}else static if (T == CodeNode.Type.Array){
 			return array;
+		}else static if (T == CodeNode.Type.SOperator){
+			return sOperator;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
