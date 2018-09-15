@@ -434,7 +434,7 @@ bool decodeFunctionName (string encodedName, ref string name, ref DataType[] arg
 unittest{
 	string name;
 	DataType[] types;
-	"abcd/014/12/23/38/".decodeFunctionName(name, types);
+	"abcd/0014/102/203/308/".decodeFunctionName(name, types);
 	assert (name == "abcd");
 	assert (types == [DataType(DataType.Type.Void, 14),
 			DataType(DataType.Type.String, 2),
