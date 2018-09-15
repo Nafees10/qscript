@@ -29,7 +29,7 @@ private Token.Type getTokenType(string token){
 	}
 	/// Returns true is a string is an operator
 	bool isOperator(string s){
-		return OPERATORS.hasElement(s);
+		return OPERATORS.hasElement(s) || SOPERATORS.hasElement(s);
 	}
 	/// Returns true if string contains an integer
 	bool isInt(string s){
@@ -137,7 +137,7 @@ private TokenList separateTokens(string[] script){
 		if (isAlphabet(cast(string)[c]) || isNum(cast(string)[c])){
 			return CharType.Ident;
 		}
-		foreach (operator; OPERATORS){
+		foreach (operator; OPERATORS~SOPERATORS){
 			foreach (opChar; operator){
 				if (c == opChar){
 					return CharType.Operator;
@@ -227,8 +227,8 @@ unittest{
 	string[] script = [
 		"function void main{",
 		"\tint i = 5;",
-		"\t.5sdfdf = (5 - 5);",
-		"\ta.b.c = a;",
+		"\t.5sdfdf = (!5 - 5);",
+		"\ta.b.c = @a;",
 		"\ta = 5.5;"
 	];
 	Token[] tokens = separateTokens(script).tokens;
@@ -240,8 +240,8 @@ unittest{
 	assert (strTokens == [
 			"function", "void", "main", "{",
 			"int", "i", "=", "5", ";",
-			".", "5sdfdf", "=", "(", "5", "-", "5", ")", ";",
-			"a", ".", "b", ".", "c", "=", "a", ";",
+			".", "5sdfdf", "=", "(", "!", "5", "-", "5", ")", ";",
+			"a", ".", "b", ".", "c", "=", "@", "a", ";",
 			"a", "=", "5.5", ";"
 		]);
 }
