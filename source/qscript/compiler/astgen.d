@@ -314,7 +314,8 @@ struct ASTGen{
 			OperatorNode operator;
 			operator.lineno = tokens.getTokenLine(index);
 			// make sure it's an operator, and there is a second operand
-			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
+			if (tokens.tokens[index].type == Token.Type.Operator && OPERATORS.hasElement(tokens.tokens[index].token) &&
+				index+1 < tokens.tokens.length){
 				// read the next operand
 				CodeNode secondOperand;
 				string operatorString = tokens.tokens[index].token;
@@ -328,7 +329,22 @@ struct ASTGen{
 			}
 			return operator;
 		}
-		
+
+		/// generates AST for single operand operators
+		SOperatorNode generateSOperatorAST(){
+			SOperatorNode operator;
+			operator.lineno = tokens.getTokenLine(index);
+			// make sure its a single operand operator
+			if (tokens.tokens[index].type == Token.Type.Operator && SOPERATORS.hasElement(tokens.tokens[index].token)){
+				// read the operator
+				operator.operator = tokens.tokens[index].token;
+				// and the operand
+				operator.operand = generateNodeAST();
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an operator"));
+			}
+			return operator;
+		}
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
 		VariableNode generateVariableAST(){
 			VariableNode var;
@@ -586,6 +602,8 @@ struct ASTGen{
 					// just a var
 					return CodeNode(generateVariableAST());
 				}
+			}else if (token.type == Token.Type.Operator && SOPERATORS.hasElement(token.token)){
+				return CodeNode(generateSOperatorAST());
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
 				index ++;
