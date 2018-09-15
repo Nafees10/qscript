@@ -387,21 +387,14 @@ string encodeString(string s){
 /// Returns: the byte code style function name
 string encodeFunctionName (string name, DataType[] argTypes){
 	string r = name ~ '/';
-	const TYPE_CODE = [
-			DataType.Type.Void : '0',
-			DataType.Type.String : '1',
-			DataType.Type.Integer : '2',
-			DataType.Type.Double : '3'
-		];
-	foreach (type; argTypes){
-		r ~= TYPE_CODE[type.type] ~ to!string(type.arrayDimensionCount) ~ '/';
-	}
+	foreach (argType; argTypes)
+		r = r ~ argType.toByteCode~ '/';
 	return r;
 }
 /// 
 unittest{
 	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,14),DataType(DataType.Type.Void)]) == 
-			"abcd/314/00/"
+			"abcd/3014/000/"
 		);
 }
 
@@ -415,37 +408,25 @@ unittest{
 /// Returns: true if the name was in a correct format and was read correctly  
 /// false if there was an error reading it
 bool decodeFunctionName (string encodedName, ref string name, ref DataType[] argTypes){
-	// first read the name, till the first '/'
-	integer slashIndex = encodedName.indexOf ('/');
-	if (slashIndex < 0)
-		return false;
-	name = encodedName[0 .. slashIndex].dup;
-	argTypes = [];
-	if (slashIndex + 1 == encodedName.length)
-		return true;
-	string argString = encodedName[slashIndex + 1 .. encodedName.length];
-	DataType type;
-	const TYPE_CODE = [
-			'0' : DataType.Type.Void,
-			'1' : DataType.Type.String,
-			'2' : DataType.Type.Integer,
-			'3' : DataType.Type.Double
-		];
-	for (uinteger i = 0; i < argString.length; i ++){
-		if (!['0','1','2','3'].hasElement(argString[i]))
-			return false;
-		type.type = TYPE_CODE[argString[i]];
-		// make sure the rest is a integer (dimensionCount)
-		i++;
-		for (slashIndex = i; slashIndex < argString.length; slashIndex ++){
-			if (argString[slashIndex] == '/')
-				break;
+	// separate it from all the slashes
+	string[] parts;
+	for (uinteger i = 0, readFrom = 0; i < encodedName.length; i ++){
+		if (encodedName[i] == '/'){
+			parts ~= encodedName[readFrom .. i];
+			readFrom = i + 1;
+			if (parts[parts.length -1].length == 0)
+				return false;
+			continue;
 		}
-		if (slashIndex == argString.length || !argString[i .. slashIndex].isNum)
+	}
+	if (parts.length == 0)
+		return false;
+	name = parts[0];
+	parts = parts[1 .. parts.length];
+	argTypes.length = parts.length;
+	foreach (i, part; parts){
+		if (!argTypes[i].fromByteCode(part))
 			return false;
-		type.arrayDimensionCount = to!uinteger(argString[i .. slashIndex]);
-		argTypes ~= type;
-		i  = slashIndex;
 	}
 	return true;
 }
