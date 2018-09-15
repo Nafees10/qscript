@@ -179,7 +179,7 @@ package struct CodeNode{
 		}else static if(is (T == ArrayNode)){
 			storedType = CodeNode.Type.Array;
 			return array = newNode;
-		}else if (is (T == SOperatorNode)){
+		}else static if (is (T == SOperatorNode)){
 			storedType = CodeNode.Type.SOperator;
 			return sOperator = newNode;
 		}
@@ -376,7 +376,7 @@ package struct SOperatorNode{
 		if (operandPtr is null){
 			operandPtr = new CodeNode;
 		}
-		*operandPtr = newOperand;
+		return *operandPtr = newOperand;
 	}
 	/// the operand
 	public @property CodeNode operand(){
@@ -595,7 +595,7 @@ package struct IfNode{
 	/// returns the statement to execute, if true
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *statementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -610,7 +610,7 @@ package struct IfNode{
 	/// returns the statement to execute, if false
 	public @property ref StatementNode elseStatement(){
 		if (elseStatementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *elseStatementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -649,7 +649,7 @@ package struct WhileNode{
 	/// returns the statement to execute, while true
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *statementPtr;
 	}
 	/// sets the statement to execute, while true
@@ -677,7 +677,7 @@ package struct DoWhileNode{
 	/// the statement to execute in this loop
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *statementPtr;
 	}
 	/// ditto
@@ -709,7 +709,7 @@ package struct ForNode{
 	/// the init statement for this for loop
 	public @property ref StatementNode initStatement(){
 		if (initStatementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *initStatementPtr;
 	}
 	/// ditto
@@ -722,7 +722,7 @@ package struct ForNode{
 	/// the increment statement for this for loop
 	public @property ref StatementNode incStatement(){
 		if (incStatementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *incStatementPtr;
 	}
 	/// ditto
@@ -735,7 +735,7 @@ package struct ForNode{
 	/// the statement to execute in loop
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return StatementNode();
+			return *(new StatementNode());
 		return *statementPtr;
 	}
 	/// ditto
