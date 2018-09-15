@@ -17,8 +17,10 @@ package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array
 package const string[] KEYWORDS = ["function", "if", "else", "while", "for", "do", "void", "int", "string", "double"];
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "string"];
-/// An array containing another array conatining all operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||", "."];
+/// An array containing another array conatining double-operand operators
+package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||"];
+/// single-operand operators
+package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 
@@ -437,6 +439,24 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 		}
 		return true;
 	}
+}
+
+/// checks if a function can be called with a set of arguments.
+/// 
+/// fName is the byte-code style function name (see `encodeFunctionName`).  
+/// argTypes is the data types of the arguments
+/// 
+/// Returns: true if it can be called, false if not, or if the fName was incorrect
+bool calCallFunction(string fName, DataType[] argTypes){
+	// decode to get the right name & args
+	DataType[] expectedArgTypes;
+	{
+		string name;
+		if (!decodeFunctionName(fName, name, expectedArgTypes)){
+			return false; 
+		}
+	}
+	return matchArguments(expectedArgTypes, argTypes);
 }
 
 
