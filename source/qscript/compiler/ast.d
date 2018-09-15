@@ -319,7 +319,7 @@ package struct LiteralNode{
 	}
 }
 
-/// stores an operator with operands
+/// stores an operator with two operands
 package struct OperatorNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
@@ -349,6 +349,29 @@ package struct OperatorNode{
 		storedOperands.length = 2;
 		storedOperands[0] = a;
 		storedOperands[1] = b;
+	}
+}
+
+/// stores an operator with single operand (like ! and @)
+package struct SOperatorNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// the operator string
+	public string operator;
+	/// the stored operand
+	private CodeNode* operandPtr;
+	/// the operand
+	public @property CodeNode operand(CodeNode newOperand){
+		if (operandPtr is null){
+			operandPtr = new CodeNode;
+		}
+		*operandPtr = newOperand;
+	}
+	/// the operand
+	public @property CodeNode operand(){
+		if (operandPtr is null)
+			return CodeNode();
+		return *operandPtr;
 	}
 }
 
@@ -560,6 +583,8 @@ package struct IfNode{
 	private StatementNode* statementPtr;
 	/// returns the statement to execute, if true
 	public @property ref StatementNode statement(){
+		if (statementPtr is null)
+			return StatementNode();
 		return *statementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -573,6 +598,8 @@ package struct IfNode{
 	private StatementNode* elseStatementPtr;
 	/// returns the statement to execute, if false
 	public @property ref StatementNode elseStatement(){
+		if (elseStatementPtr is null)
+			return StatementNode();
 		return *elseStatementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -610,6 +637,8 @@ package struct WhileNode{
 	private StatementNode* statementPtr;
 	/// returns the statement to execute, while true
 	public @property ref StatementNode statement(){
+		if (statementPtr is null)
+			return StatementNode();
 		return *statementPtr;
 	}
 	/// sets the statement to execute, while true
@@ -636,6 +665,8 @@ package struct DoWhileNode{
 	private StatementNode* statementPtr;
 	/// the statement to execute in this loop
 	public @property ref StatementNode statement(){
+		if (statementPtr is null)
+			return StatementNode();
 		return *statementPtr;
 	}
 	/// ditto
@@ -666,6 +697,8 @@ package struct ForNode{
 	private StatementNode* statementPtr;
 	/// the init statement for this for loop
 	public @property ref StatementNode initStatement(){
+		if (initStatementPtr is null)
+			return StatementNode();
 		return *initStatementPtr;
 	}
 	/// ditto
@@ -677,6 +710,8 @@ package struct ForNode{
 	}
 	/// the increment statement for this for loop
 	public @property ref StatementNode incStatement(){
+		if (incStatementPtr is null)
+			return StatementNode();
 		return *incStatementPtr;
 	}
 	/// ditto
@@ -688,6 +723,8 @@ package struct ForNode{
 	}
 	/// the statement to execute in loop
 	public @property ref StatementNode statement(){
+		if (statementPtr is null)
+			return StatementNode();
 		return *statementPtr;
 	}
 	/// ditto
