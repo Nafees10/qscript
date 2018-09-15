@@ -102,21 +102,6 @@ private:
 	}
 	/// Returns: return type of a function, works for both script-defined and predefined functions  
 	/// or if the function does not exist, it'll return `DataType()`
-	DataType getFunctionType(string name){
-		foreach (func; scriptDefFunctions){
-			if (func.name == name){
-				return func.returnType;
-			}
-		}
-		foreach (func; preDefFunctions){
-			if (func.name == name){
-				return func.returnType;
-			}
-		}
-		return DataType();
-	}
-	/// Returns: return type of a function, works for both script-defined and predefined functions  
-	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name, DataType[] argTypes){
 		foreach (func; scriptDefFunctions){
 			if (func.name == name && func.argTypes == argTypes){
