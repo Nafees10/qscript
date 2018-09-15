@@ -47,6 +47,8 @@ public struct DataType{
 	Type type = DataType.Type.Void;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
 	uinteger arrayDimensionCount = 0;
+	/// stores if it's a reference to a type
+	bool isRef = false;
 	/// returns true if it's an array
 	@property bool isArray(){
 		if (arrayDimensionCount > 0){
@@ -58,10 +60,13 @@ public struct DataType{
 	/// 
 	/// dataType is the type to store
 	/// arrayDimension is the number of nested arrays
-	this (DataType.Type dataType, uinteger arrayDimension = 0){
+	/// isRef is whether the type is a reference to the actual type
+	this (DataType.Type dataType, uinteger arrayDimension = 0, bool isReference = false){
 		type = dataType;
 		arrayDimensionCount = arrayDimension;
+		isRef = isReference;
 	}
+	
 	/// constructor
 	/// 
 	/// `sType` is the type in string form
@@ -74,10 +79,47 @@ public struct DataType{
 	this (Token[] data){
 		fromData(data);
 	}
+	/// converts this to a byte code style data type, which is a string
+	string toByteCode(){
+		static const TYPE_CODE = [
+			DataType.Type.Void : '0',
+			DataType.Type.String : '1',
+			DataType.Type.Integer : '2',
+			DataType.Type.Double : '3'
+		];
+		return TYPE_CODE[type] ~ (isRef ? "1" : "0") ~ to!string(arrayDimensionCount);
+	}
+	/// reads DataType from a byte code style string
+	/// 
+	/// Returns: true if successful, false if the string was invalid
+	bool fromByteCode(string s){
+		static const TYPE_CODE = [
+			'0' : DataType.Type.Void,
+			'1' : DataType.Type.String,
+			'2' : DataType.Type.Integer,
+			'3' : DataType.Type.Double
+		];
+		if (s.length < 3 || !isNum(s, false) || s[0] !in TYPE_CODE || !['0','1'].hasElement(s[1]))
+			return false;
+		type = TYPE_CODE[s[0]];
+		if (s[1] == '1')
+			isRef = true;
+		else
+			isRef = false;
+		arrayDimensionCount  = to!uinteger(s[2 .. s.length]);
+		return true;
+	}
 	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
 	void fromString(string s){
+		isRef = false;
 		string sType = null;
 		uinteger indexCount = 0;
+		// check if it's a ref
+		if (s.length > 0 && s[0] == '@'){
+			isRef = true;
+			s = s.dup;
+			s = s[1 .. s.length];
+		}
 		// read the type
 		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
 			if (s[i] == '['){
@@ -117,6 +159,7 @@ public struct DataType{
 	}
 
 	/// identifies the data type from the actual data
+	/// keep in mind, this won't be able to identify if the data type is a reference or not
 	/// 
 	/// throws Exception on failure
 	void fromData(Token[] data){
