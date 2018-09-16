@@ -562,6 +562,8 @@ package struct StatementNode{
 package struct AssignmentNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
+	/// stores whether the assignment is to a variable (false) or if it has to dereference first (true)
+	public bool deref = false;
 	/// the variable to assign to
 	public VariableNode var;
 	/// stores the how "deeper" dimension of the array the value has to be assigned to
@@ -577,10 +579,11 @@ package struct AssignmentNode{
 	/// the value to assign
 	public CodeNode val;
 	/// constructor
-	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value){
+	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value, bool deref = false){
 		var = variable;
 		storedIndexes = varIndexes.dup;
 		val = value;
+		this.deref = deref;
 	}
 }
 

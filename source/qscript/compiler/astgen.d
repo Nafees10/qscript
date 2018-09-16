@@ -60,6 +60,9 @@ struct ASTGen{
 		/// returns type in DataType struct, changes `index` to token after last token of type
 		DataType readType(){
 			uinteger startIndex = index;
+			// check if it's a ref
+			if (tokens.tokens[index].token == "@")
+				index ++;
 			// the first token has to be the type (int, string, double)
 			index ++;
 			// then comes the brackets making it an array
@@ -199,14 +202,16 @@ struct ASTGen{
 					// do while
 					return StatementNode(generateDoWhileAST());
 				}
-			}else if (tokens.tokens[index].type == Token.Type.DataType){
+			}else if (tokens.tokens[index].type == Token.Type.DataType || 
+				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.DataType)){
 				// var declare
 				return StatementNode(generateVarDeclareAST());
 			}else if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// is a function call
 				return StatementNode(generateFunctionCallAST());
-			}else if (tokens.tokens[index].type == Token.Type.Identifier){
+			}else if (tokens.tokens[index].type == Token.Type.Identifier || 
+				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.Identifier)){
 				// assignment
 				return StatementNode(generateAssignmentAST());
 			}
@@ -366,6 +371,10 @@ struct ASTGen{
 			AssignmentNode assignment;
 			assignment.lineno = tokens.getTokenLine(index);
 			// get the variable to assign to
+			// check if the var is being deref-ed first
+			if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
+				assignment.deref = true;
+			}
 			CodeNode varCodeNode = generateCodeAST();
 			VariableNode var;
 			// make sure it's a var
