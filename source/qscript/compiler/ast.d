@@ -765,7 +765,7 @@ package struct FunctionCallNode{
 	public string fName;
 	/// the arguments for this function.
 	private CodeNode[] storedArguments;
-	/// returns the assoc_array storing values for arguments
+	/// returns the values for arguments
 	@property ref CodeNode[] arguments(){
 		return storedArguments;
 	}
