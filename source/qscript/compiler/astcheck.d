@@ -20,7 +20,10 @@ private:
 	Function[] scriptDefFunctions;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
-	
+	/// functions that have their own instructions. Index is the byte-code style function name, val is the instruction name
+	string[string] instructionFunctions;
+	/// stores return types for instructionFunctions
+	DataType[string] instructionFunctionReturnTypes;
 	/// stores data types of variables in currently-being-checked-FunctionNode
 	DataType[string] varTypes;
 	/// stores the IDs (as index) for vars
@@ -103,6 +106,11 @@ private:
 	/// Returns: return type of a function, works for both script-defined and predefined functions  
 	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name, DataType[] argTypes){
+		// check if it's an instruction function
+		string byteCodeName = encodeFunctionName(name, argTypes);
+		if (byteCodeName in instructionFunctions){
+			return instructionFunctionReturnTypes[byteCodeName];
+		}
 		foreach (func; scriptDefFunctions){
 			if (func.name == name && func.argTypes == argTypes){
 				return func.returnType;
@@ -136,6 +144,15 @@ private:
 				return DataType();
 			}
 			return operandTypes[0];
+		}else if (node.type == CodeNode.Type.SOperator){
+			SOperatorNode opNode = node.node!(CodeNode.Type.SOperator);
+			DataType operandType = getReturnType(opNode.operand);
+			// hardcoded stuff, beware
+			if (opNode.operator == "@"){
+				operandType.isRef = operandType.isRef ? false : true;
+			}
+			// </hardcoded>
+			return operandType;
 		}else if (node.type == CodeNode.Type.ReadElement){
 			ReadElement arrayRead = node.node!(CodeNode.Type.ReadElement);
 			DataType readFromType = getReturnType(arrayRead.readFromNode);
@@ -224,6 +241,13 @@ protected:
 			// check if the data type of the value and var (considering the indexes used) match
 			DataType expectedType = varType;
 			expectedType.arrayDimensionCount -= node.indexes.length;
+			// check with deref (if has to deref the var)
+			if (node.deref){
+				expectedType.isRef = false;
+				if (!varType.isRef){
+					compileErrors.append (CompileError(node.val.lineno, "can only deref (@) a reference"));
+				}
+			}
 			if (getReturnType(node.val) != expectedType){
 				compileErrors.append(CompileError(node.val.lineno, "cannot assign value with different data type to variable"));
 			}
@@ -346,6 +370,8 @@ protected:
 			// nothing to check
 		}else if (node.type == CodeNode.Type.Operator){
 			checkAST(node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.SOperator){
+			checkAST(node.node!(CodeNode.Type.SOperator));
 		}else if (node.type == CodeNode.Type.ReadElement){
 			checkAST(node.node!(CodeNode.Type.ReadElement));
 		}else if (node.type == CodeNode.Type.Variable){
@@ -380,6 +406,22 @@ protected:
 				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
 			}
 		}
+	}
+	/// checks a SOperatorNode
+	void checkAST(SOperatorNode node){
+		// check the operand
+		checkAST(node.operand);
+		// now it it's `!`, only accept int, if `@`, var
+		if (node.operator == "!"){
+			if (getReturnType(node.operand) != DataType(DataType.Type.Integer)){
+				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! a non-int data type"));
+			}
+		}else if (node.operator == "@"){
+			if (node.operand.type != CodeNode.Type.Variable){
+				compileErrors.append (CompileError(node.operand.lineno, "can only ref/deref (@) a variable"));
+			}
+		}else
+			compileErrors.append (CompileError(node.lineno, "invalid operator"));
 	}
 	/// checks a ReadElement
 	void checkAST(ReadElement node){
@@ -418,6 +460,14 @@ public:
 	}
 	~this(){
 		.destroy(compileErrors);
+	}
+	/// adds a new "instruction-function". Any call that matches this function will be converted to an instruction rather than a 
+	/// function call.
+	/// 
+	/// if an instruction already exists for that function, it will be overwritten
+	void addInstructionFunction(Function f, string instruction){
+		string fName = encodeFunctionName(f.name, f.argTypes);
+		instructionFunctions[fName] = instruction;
 	}
 	/// checks a script's AST for any errors
 	/// 
