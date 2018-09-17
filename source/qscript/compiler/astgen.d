@@ -377,7 +377,6 @@ struct ASTGen{
 			}
 			CodeNode varCodeNode = generateCodeAST();
 			VariableNode var;
-			// make sure it's a var
 			CodeNode[] indexes;
 			if (varCodeNode.type == CodeNode.Type.ReadElement){
 				LinkedList!CodeNode indexesList = new LinkedList!CodeNode;
@@ -388,6 +387,11 @@ struct ASTGen{
 					varCodeNode = indexRead.readFromNode;
 				}
 				indexes = indexesList.toArray.reverseArray;
+			}
+			// make sure it's a var
+			if (varCodeNode.type != CodeNode.Type.Variable){
+				compileErrors.append (CompileError(tokens.getTokenLine(index),
+						"can only assign to variables or deref-ed (@) references"));
 			}
 			var = varCodeNode.node!(CodeNode.Type.Variable);
 			// now at index, the token should be a `=` operator
