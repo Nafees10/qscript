@@ -110,9 +110,9 @@ Then does something like: `array[popped0][popped1].. = newVal` and pushes the ar
 
 ---
 
-### Format for instruciton arguments: 
-These do not apply to the jump instruction. The jump instruction has just one argument, the name of the "jump point", without any quotation marks, 
-or the `s` before quotation marks
+### Format for instruction arguments: 
+These do not apply to the jump instruction. The jump instruction has just one argument, the name of the "jump point", without any quotation marks, or the `s` before quotation marks.
+
 * string:		`s"%STRING%"`
 * double:		`d%DOUBLE%`
 * integer:		`i%INTEGER%`
