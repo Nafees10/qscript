@@ -444,20 +444,29 @@ unittest{
 }
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
-/// returns true if match successful, else, false
+/// 
+/// `void` will match true against all types (arrays, and even references)  
+/// `@void` will match true against only references of any type
+/// `@void[]` will match true against only references of any type of array
+/// `void[]` will match true against only any type of array (even references)
+/// 
+/// returns: true if match successful, else, false
 bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 	if (argTypes.length != definedTypes.length){
 		return false;
 	}else{
 		for (uinteger i = 0; i < argTypes.length; i ++){
-			if (definedTypes[i].type == DataType.Type.Void){
-				// skip checks
-				continue;
-			}else if (argTypes[i].type != definedTypes[i].type){
+			if (definedTypes[i].isRef && argTypes[i].isRef != true){
 				return false;
 			}
 			// check the array dimension
-			if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount){
+			if (definedTypes[i].arrayDimensionCount > 0 && argTypes[i].arrayDimensionCount == 0){
+				return false;
+			}
+			if (definedTypes[i].type == DataType.Type.Void){
+				// skip all checks
+				continue;
+			}else if (argTypes[i].type != definedTypes[i].type){
 				return false;
 			}
 		}
