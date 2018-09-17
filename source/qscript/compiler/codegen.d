@@ -6,7 +6,7 @@ module qscript.compiler.codegen;
 import qscript.compiler.ast;
 import qscript.compiler.astcheck;
 import qscript.compiler.misc;
-import qscript.compiler.compiler : Funciton;
+import qscript.compiler.compiler : Function;
 
 import utils.misc;
 import utils.lists;
@@ -18,14 +18,36 @@ class CodeGen{
 private:
 	/// stores the pre-defined functions
 	Function[] preDefFunctions;
+	/// stores byte code style names of preDefFunctions
+	string[] preDefFunctionNames;
 	/// stores the name, arg types, and return types for script defined functions
 	Function[] scriptDefFunctions;
+	/// stores the byte code style names of scriptDefFunctions, match by index
+	string[] scriptDefFunctionNames;
+	/// stores instruction functions
+	Function[] instFunctions;
+	/// stores the instruction name for instruction functions, match by index
+	string[] instFunctionName;
 	/// stores the data type of variables
 	DataType[string] varTypes;
 	/// stores the maximum/highest variable ID
-	uinteger maxVarID = 0;
+	uinteger maxVarID;
+	/// stores the next avialable ID for a jump position
+	uinteger jumpID;
 	/// stores the bytecode as instructions are added to it line-by-line
 	List!string byteCode;
+	/// encodes function names into byte code style ones and writes them into 
+	/// `scriptDefFunctionNames` & `preDefFunctionNames`
+	void encodeAllFunctionNames (){
+		scriptDefFunctionNames.length = scriptDefFunctions.length;
+		preDefFunctionNames.length = preDefFunctions.length;
+		foreach (i, func; preDefFunctions){
+			preDefFunctionNames[i] = encodeFunctionName(func.name, func.argTypes);
+		}
+		foreach (i, func; scriptDefFunctions){
+			scriptDefFunctionNames[i] = encodeFunctionName(func.name, func.argTypes);
+		}
+	}
 protected:
 	/// generates byte code for FunctionNode
 	void generateByteCode(FunctionNode node){
@@ -41,7 +63,10 @@ protected:
 		uinteger varCountIndex = byteCode.length-1;
 		// now add the statements
 		maxVarID = argTypes.length == 0 ? 0 : argTypes.length - 1;
+		jumpID = 0;
 		generateByteCode (node.bodyBlock);
+		// set the varCount now
+		byteCode.set (varCountIndex, "\tvarCount i"~to!string(maxVarID));
 	}
 	/// generates byte code for BlockNode
 	void generateByteCode (BlockNode node){
@@ -75,25 +100,109 @@ protected:
 		// first check if the var is an array
 		if (node.indexes.length > 0){
 			// push the original value of var, then push all the indexes, then call modifyArray, and setVar
-			auto byteCode = new LinkedList!string;
-			byteCode.append("\tgetVar i"~to!string(varID));
+			byteCode.add("\tgetVar i"~to!string(varID));
 			// now push the val
-			byteCode.append(generateByteCode(node.val));
+			generateByteCode(node.val);
 			// now the indexes
 			foreach (index; node.indexes){
-				byteCode.append(generateByteCode(index));
+				generateByteCode(index);
 			}
 			// then modifyArray
-			byteCode.append("\tmodifyArray i"~to!string(node.indexes.length));
+			byteCode.add("\tmodifyArray i"~to!string(node.indexes.length));
 			// finally, set the new array back
-			byteCode.append("\tsetVar i"~to!string(varID));
-			string[] r = byteCode.toArray;
-			.destroy(byteCode);
-			return r;
+			byteCode.add("\tsetVar i"~to!string(varID));
 		}else{
 			// just push the val, and call setVar on the varID
-			return generateByteCode(node.val)~
-			["\tsetVar i"~to!string(varID)];
+			generateByteCode(node.val);
+			byteCode.add ("\tsetVar i"~to!string(varID));
+		}
+	}
+	/// generates byte code for DoWhileNode
+	void generateByteCode (DoWhileNode node){
+		// get the jump ID
+		uinteger jumpPos = jumpID;
+		// make this jumpPos taken for this function
+		jumpID ++;
+		// mark start of loop, and add the loop body
+		byteCode.add ("\t"~to!string (jumpPos)~":");
+		generateByteCode (node.statement);
+		// now the condition
+		generateByteCode (node.condition);
+		// jump back
+		byteCode.addArray([
+				"\tnot",
+				"\tskipTrue",
+				"\tjump "~to!string(jumpPos)
+			]);
+	}
+	/// generates byte code for ForNode
+	void generateByteCode (ForNode node){
+		// get jump ID
+		uinteger jumpPos = jumpID;
+		jumpPos ++;
+		// init statement
+		generateByteCode (node.initStatement);
+		// then the condition, skip to after the inc-statement
+		generateByteCode (node.condition);
+		byteCode.addArray ([
+				"\tskipTrue",
+				"\tjmup "~to!string (jumpPos)
+			]);
+		// now the loop body
+		generateByteCode (node.statement);
+		// and inc statement, followed by loop-end-jump-position
+		generateByteCode (node.incStatement);
+		byteCode.add ("\t"~to!string (jumpPos));
+	}
+	/// generates byte code for FunctionCallNode
+	void generateByteCode (FunctionCallNode node){
+		// get the byte code style name of the function
+		DataType[] argTypes;
+		argTypes.length = node.arguments.length;
+		foreach (i, arg; node.arguments){
+			argTypes[i] = arg.argType;
+		}
+		// push the args
+		foreach (arg; node.arguments){
+			generateByteCode (arg);
+		}
+		// first check if it's an instruction-function
+		/// stores whether a function with the the name existed
+		bool functionNameExists = false;
+		/// stores whether a suitable function was found
+		bool found = false;
+		foreach (i, func; instFunctions){
+			if (func.name == node.fName){
+				functionNameExists =  true;
+				if (matchArguments(func.argTypes, argTypes)){
+					byteCode.add ("\t"~instFunctionName[i]);
+					found = true;
+					break;
+				}
+			}
+		}
+		// check if it's a script defined one
+		foreach (i, func; scriptDefFunctions){
+			if (func.name == node.fName){
+				functionNameExists = true;
+				// in script defined functions, arguments must match exactly
+				if (func.argTypes == argTypes){
+					byteCode.add ("\texecFuncS s\""~scriptDefFunctionNames[i]~"\" i"~to!string(argTypes.length));
+					found = true;
+					break;
+				}
+			}
+		}
+		// finally, if it's pre def function
+		foreach (i, func; preDefFunctions){
+			if (func.name == node.fName){
+				functionNameExists = true;
+				if (matchArguments(func.argTypes, argTypes)){
+					byteCode.add ("\texecFuncE s\""~preDefFunctionNames[i]~"\" i"~to!string(argTypes.length));
+					found = true;
+					break;
+				}
+			}
 		}
 	}
 public:
@@ -103,6 +212,14 @@ public:
 	}
 	~this (){
 		.destroy(byteCode);
+	}
+	/// adds a new "instruction-function". Any call that matches this function will be converted to an instruction rather than a 
+	/// function call.
+	/// 
+	/// if an instruction already exists for that function, it will be overwritten
+	void addInstructionFunction(Function f, string instruction){
+		instFunctions ~= f;
+		instFunctionName ~= instruction;
 	}
 	/// generates byte code for ScriptNode
 	/// 
@@ -118,10 +235,10 @@ public:
 		errors = check.checkAST(node, scriptDefFunctions);
 		if (errors.length == 0){
 			// clean everything
-			maxVarID = 0;
 			varTypes.clear;
 			byteCode.clear;
 			// now start with the codegen
+			encodeAllFunctionNames(); // required for generating byte code for FunctionCallNode
 			foreach (functionNode; node.functions){
 				generateByteCode(functionNode);
 			}
@@ -133,7 +250,7 @@ public:
 }
 
 /// contains functions to generate byte code from AST
-package struct CodeGen{
+/*package struct CodeGen{
 	/// generates byte code for a script
 	public string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
 		compileErrors = new LinkedList!CompileError;
@@ -718,4 +835,4 @@ package struct CodeGen{
 		return ["\tpush "~literal];
 	}
 
-}
+}*/
