@@ -85,7 +85,7 @@ protected:
 		}else if (node.type == StatementNode.Type.For){
 			generateByteCode (node.node!(StatementNode.Type.For));
 		}else if (node.type == StatementNode.Type.FunctionCall){
-			generateByteCode (node.node!(StatementNode.Type.FunctionCall));
+			generateByteCode (node.node!(StatementNode.Type.FunctionCall), true);
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode (node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.VarDeclare){
@@ -155,7 +155,7 @@ protected:
 		byteCode.add ("\t"~to!string (jumpPos));
 	}
 	/// generates byte code for FunctionCallNode
-	void generateByteCode (FunctionCallNode node){
+	void generateByteCode (FunctionCallNode node, bool popReturnValue = false){
 		// get the byte code style name of the function
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
@@ -204,6 +204,12 @@ protected:
 				}
 			}
 		}
+		if (popReturnValue)
+			byteCode.add ("\tpop i1");
+	}
+	/// generates byte code for IfNode
+	void generateByteCode (IfNode node){
+		
 	}
 public:
 	this (Function[] preDefFunctions){
