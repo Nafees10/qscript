@@ -232,7 +232,18 @@ protected:
 			byteCode.add ("\t"~to!string (elseEndJump)~':');
 		}
 	}
-	
+	/// generates byte code for VarDeclareNode
+	void generateByteCode (VarDeclareNode node){
+		// add to record what type the vars are
+		foreach (var; node.vars){
+			varTypes[var] = node.type;
+			// if a value was assigned to it, assign it
+			if (node.hasValue(var)){
+				generateByteCode (node.getValue(var));
+				byteCode.add ("\tsetVar i"~to!string (node.varIDs[var]));
+			}
+		}
+	}
 public:
 	this (Function[] preDefFunctions){
 		byteCode = new List!string;
