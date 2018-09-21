@@ -209,8 +209,30 @@ protected:
 	}
 	/// generates byte code for IfNode
 	void generateByteCode (IfNode node){
-		
+		// execute condition
+		generateByteCode (node.condition);
+		/// jump id for if-end, and else-end
+		uinteger endJump = jumpID, elseEndJump = jumpID+1;
+		jumpID = elseEndJump+1;
+		// skip to end of if-true-body if false
+		byteCode.addArray([
+				"\tskipTrue",
+				"\tjump "~to!string (endJump)
+				]);
+		// now if-true-body
+		generateByteCode (node.statement);
+		// if else part exists, make if-true-body skip it
+		if (node.hasElse){
+			// and add position of endJump right before else-body
+			byteCode.addArray ([
+					"\tjump "~to!string (elseEndJump),
+					"\t"~to!string (endJump)~':'
+					]);
+			generateByteCode (node.elseStatement);
+			byteCode.add ("\t"~to!string (elseEndJump)~':');
+		}
 	}
+	
 public:
 	this (Function[] preDefFunctions){
 		byteCode = new List!string;
