@@ -788,11 +788,17 @@ package struct VarDeclareNode{
 	public DataType type;
 	/// stores names of vars declared
 	private string[] varNames;
+	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
+	private uinteger[string] _varIDs;
 	/// stores vars' assigned values, with key=varName
 	private CodeNode[string] varValues;
 	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
 	public @property string[] vars(){
 		return varNames.dup;
+	}
+	/// returns: array containig ID's of variables in assoc_array
+	public @property uinteger[string] varIDs(){
+		return _varIDs.dup;
 	}
 	/// Returns: assigned value for a var
 	/// 
@@ -821,6 +827,10 @@ package struct VarDeclareNode{
 	/// sets a stored var's assigned value
 	public void setVarValue(string varName, CodeNode value){
 		varValues[varName] = value;
+	}
+	/// sets a stored var's ID
+	public void setVarID(string varName, uinteger id){
+		_varIDs[varName] = id;
 	}
 	/// constructor
 	this (string[] vars){
