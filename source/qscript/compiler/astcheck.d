@@ -337,7 +337,7 @@ protected:
 		}
 	}
 	/// checks a VarDeclareNode
-	void checkAST(VarDeclareNode node){
+	void checkAST(ref VarDeclareNode node){
 		foreach (i, varName; node.vars){
 			if (varExists(varName)){
 				compileErrors.append(CompileError(node.lineno, "variable "~varName~" has already been declared"));
@@ -350,6 +350,10 @@ protected:
 				if (valueType != node.type){
 					compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
 				}
+				// assign it an id
+				addVar (varName, node.type);
+				// set it's ID
+				node.setVarID(varName, getVarID(varName));
 			}
 		}
 	}
