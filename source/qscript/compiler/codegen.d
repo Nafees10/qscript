@@ -244,6 +244,22 @@ protected:
 			}
 		}
 	}
+	/// generates byte code for WhileNode
+	void generateByteCode (WhileNode node){
+		/// jump to start of loop (before condition) & to end of loop
+		uinteger startJump = jumpID, endJump = jumpID + 1;
+		jumpID = endJump + 1;
+		byteCode.add ("\t"~to!string (startJump)~':');
+		// condition
+		generateByteCode (node.condition);
+		// skip jump-to-end if true
+		byteCode.addArray ([
+				"\tskipTrue",
+				"\tjump "~to!string (endJump)
+				]);
+		generateByteCode (node.statement);
+		byteCode.add ("\t"~to!string (endJump)~':');
+	}
 public:
 	this (Function[] preDefFunctions){
 		byteCode = new List!string;
