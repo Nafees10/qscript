@@ -453,8 +453,15 @@ protected:
 	}
 	/// checks an ArrayNode
 	void checkAST(ArrayNode node){
+		// check each element, and make sure all their types are same
+		DataType type = node.elements.length > 0 ? getReturnType(node.elements[0]) : DataType();
+		bool typeMatches = true;
 		foreach (element; node.elements){
 			checkAST (element);
+			if (typeMatches && getReturnType(element) != type){
+				compileErrors.append (CompileError(element.lineno, "Elements in array must be of same type"));
+				typeMatches = false;
+			}
 		}
 	}
 public:
