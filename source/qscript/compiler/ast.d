@@ -210,17 +210,49 @@ package struct CodeNode{
 	}
 	/// Returns: true if the stored data is literal
 	public @property bool isLiteral (){
-		if ([CodeNode.Type.FunctionCall, CodeNode.Type.Variable].hasElement(storedType))
-			return false;
 		if (storedType == CodeNode.Type.Literal)
 			return true;
-		if (storedType == CodeNode.Type.Operator)
-			return operator.isLiteral;
-		if (storedType == CodeNode.Type.ReadElement)
-			return arrayRead.isLiteral;
 		if (storedType == CodeNode.Type.Array)
 			return array.isLiteral;
 		return false;
+	}
+	/// the return type, only available after ASTCheck has checked it
+	@property DataType returnType (){
+		if (storedType == CodeNode.Type.Array){
+			return array.returnType;
+		}else if (storedType == CodeNode.Type.FunctionCall){
+			return fCall.returnType;
+		}else if (storedType == CodeNode.Type.Literal){
+			return literal.returnType;
+		}else if (storedType == CodeNode.Type.Operator){
+			return operator.returnType;
+		}else if (storedType == CodeNode.Type.ReadElement){
+			return arrayRead.returnType;
+		}else if (storedType == CodeNode.Type.SOperator){
+			return sOperator.returnType;
+		}else if (storedType == CodeNode.Type.Variable){
+			return var.returnType;
+		}
+		return DataType();
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		if (storedType == CodeNode.Type.Array){
+			return array.returnType = newType;
+		}else if (storedType == CodeNode.Type.FunctionCall){
+			return fCall.returnType = newType;
+		}else if (storedType == CodeNode.Type.Literal){
+			return literal.returnType = newType;
+		}else if (storedType == CodeNode.Type.Operator){
+			return operator.returnType = newType;
+		}else if (storedType == CodeNode.Type.ReadElement){
+			return arrayRead.returnType = newType;
+		}else if (storedType == CodeNode.Type.SOperator){
+			return sOperator.returnType = newType;
+		}else if (storedType == CodeNode.Type.Variable){
+			return var.returnType = newType;
+		}
+		return DataType();
 	}
 	/// constructor
 	this (T)(T newNode){
@@ -236,6 +268,16 @@ package struct VariableNode{
 	public string varName;
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
 	public uinteger id;
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
+	}
 	/// constructor
 	this (string name){
 		varName = name;
@@ -262,6 +304,16 @@ package struct ArrayNode{
 			if (!element.isLiteral)
 				return false;
 		return true;
+	}
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
 	}
 	/// constructor
 	this (CodeNode[] elements){
@@ -354,6 +406,16 @@ package struct OperatorNode{
 		}
 		return true;
 	}
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
+	}
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
@@ -383,6 +445,16 @@ package struct SOperatorNode{
 		if (operandPtr is null)
 			return CodeNode();
 		return *operandPtr;
+	}
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
 	}
 }
 
@@ -415,6 +487,16 @@ package struct ReadElement{
 				return false;
 		}
 		return true;
+	}
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
@@ -772,6 +854,16 @@ package struct FunctionCallNode{
 	/// sets value for storedArguments
 	@property ref CodeNode[] arguments(CodeNode[] newArgs){
 		return storedArguments = newArgs.dup;
+	}
+	/// stores the return type. Only stored after ASTCheck has checked it
+	private DataType _returnType;
+	/// the return type
+	@property DataType returnType (){
+		return _returnType;
+	}
+	/// ditto
+	@property DataType returnType (DataType newType){
+		return _returnType = newType;
 	}
 	/// constructor
 	this (string functionName, CodeNode[] functionArguments){
