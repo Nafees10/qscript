@@ -29,21 +29,37 @@ private Token.Type getTokenType(string token){
 	}
 	/// Returns true is a string is an operator
 	bool isOperator(string s){
-		return OPERATORS.hasElement(s) || SOPERATORS.hasElement(s);
+		return OPERATORS.hasElement(s);
 	}
 	/// Returns true if string contains an integer
 	bool isInt(string s){
-		return isNum(s, false);
+		// make sure it's at least a number
+		if (isNum(s)){
+			foreach (digit; s){
+				if (digit == '.'){
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
 	}
 	/// Returns true if a string contains a double
 	/// 
 	/// to be identified as a double, the number must have a decimal point in it
 	bool isDouble(string s){
-		return isNum(s, true);
+		if (isNum(s)){
+			foreach (digit; s){
+				if (digit == '.'){
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
 	}
-	if (token == "."){
-		return Token.Type.MemberSelector;
-	}else if (token == "="){
+
+	if (token == "="){
 		return Token.Type.AssignmentOperator;
 	}else if (isInt(token)){
 		return Token.Type.Integer;
@@ -95,7 +111,6 @@ unittest{
 	assert("if".getTokenType == Token.Type.Keyword);
 	assert("while".getTokenType == Token.Type.Keyword);
 	assert("else".getTokenType == Token.Type.Keyword);
-	assert(".".getTokenType == Token.Type.MemberSelector);
 }
 
 /// returns Token[] with type identified based on string[] input
@@ -118,7 +133,7 @@ private TokenList separateTokens(string[] script){
 		Comma, /// a comma
 		Ident /// including the ones for keywords
 	}
-	static CharType getCharType(char c, char prev = 0x00){
+	static CharType getCharType(char c){
 		if (c == ';'){
 			return CharType.Semicolon;
 		}
@@ -128,16 +143,10 @@ private TokenList separateTokens(string[] script){
 		if (['(','[','{','}',']',')'].hasElement(c)){
 			return CharType.Bracket;
 		}
-		if (c == '.'){
-			if (prev == 0x00 || !(cast(string)[prev]).isNum(false)){
-				return CharType.Operator;
-			}
-			return CharType.Ident;
-		}
 		if (isAlphabet(cast(string)[c]) || isNum(cast(string)[c])){
 			return CharType.Ident;
 		}
-		foreach (operator; OPERATORS~SOPERATORS){
+		foreach (operator; OPERATORS){
 			foreach (opChar; operator){
 				if (c == opChar){
 					return CharType.Operator;
@@ -189,7 +198,7 @@ private TokenList separateTokens(string[] script){
 			}
 			// add other types of tokens
 			try{
-				currentType = getCharType(line[i], i > 0 ? line[i-1] : 0x00);
+				currentType = getCharType(line[i]);
 			}catch (Exception e){
 				compileErrors.append (CompileError(lineno, e.msg));
 				.destroy (e);
@@ -221,29 +230,6 @@ private TokenList separateTokens(string[] script){
 	r.tokens = stringToTokens(tokens.toArray);
 	.destroy (tokens);
 	return r;
-}
-///
-unittest{
-	string[] script = [
-		"function void main{",
-		"\tint i = 5;",
-		"\t.5sdfdf = (!5 - 5);",
-		"\ta.b.c = @a;",
-		"\ta = 5.5;"
-	];
-	Token[] tokens = separateTokens(script).tokens;
-	string[] strTokens;
-	strTokens.length = tokens.length;
-	foreach (i, tok; tokens){
-		strTokens[i] = tok.token;
-	}
-	assert (strTokens == [
-			"function", "void", "main", "{",
-			"int", "i", "=", "5", ";",
-			".", "5sdfdf", "=", "(", "!", "5", "-", "5", ")", ";",
-			"a", ".", "b", ".", "c", "=", "@", "a", ";",
-			"a", "=", "5.5", ";"
-		]);
 }
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array

@@ -68,7 +68,7 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 				throw new Exception ("cannot make an empty array using 'array()', use [] instead");
 			}
 			DataType r = argTypes[0];
-			r.arrayDimensionCount ++;
+			r.arrayNestCount ++;
 			return r;
 		}else if (name == "strLen"){
 			// returns length, int
@@ -92,15 +92,15 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 		// over here, the QScript pre-defined functions are hardcoded :(
 		if (name == "setLength"){
 			// first arg, must be array, second must be int
-			if (argTypes.length == 2 && argTypes[0].arrayDimensionCount > 0 &&
-				argTypes[1].type == DataType.Type.Integer && argTypes[1].arrayDimensionCount == 0){
+			if (argTypes.length == 2 && argTypes[0].arrayNestCount > 0 &&
+				argTypes[1].type == DataType.Type.Integer && argTypes[1].arrayNestCount == 0){
 				return true;
 			}else{
 				return false;
 			}
 		}else if (name == "getLength"){
 			// first arg, the array, that's it!
-			if (argTypes.length == 1 && argTypes[0].arrayDimensionCount > 0){
+			if (argTypes.length == 1 && argTypes[0].arrayNestCount > 0){
 				return true;
 			}else{
 				return false;

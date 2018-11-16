@@ -14,13 +14,11 @@ import std.conv : to;
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_', '.'];
 /// An array containing all keywords
-package const string[] KEYWORDS = ["function", "if", "else", "while", "for", "do", "void", "int", "string", "double"];
+package const string[] KEYWORDS = ["function", "if", "else", "while", "void", "int", "string", "double"];
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "string"];
-/// An array containing another array conatining double-operand operators
+/// An array containing another array conatining all operators
 package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||"];
-/// single-operand operators
-package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
 
@@ -44,14 +42,12 @@ public struct DataType{
 		Double
 	}
 	/// the actual data type
-	Type type = DataType.Type.Void;
+	DataType.Type type;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
-	uinteger arrayDimensionCount = 0;
-	/// stores if it's a reference to a type
-	bool isRef = false;
+	uinteger arrayNestCount;
 	/// returns true if it's an array
 	@property bool isArray(){
-		if (arrayDimensionCount > 0){
+		if (arrayNestCount > 0){
 			return true;
 		}
 		return false;
@@ -59,14 +55,11 @@ public struct DataType{
 	/// constructor
 	/// 
 	/// dataType is the type to store
-	/// arrayDimension is the number of nested arrays
-	/// isRef is whether the type is a reference to the actual type
-	this (DataType.Type dataType, uinteger arrayDimension = 0, bool isReference = false){
+	/// arrayNest is the number of nested arrays
+	this (DataType.Type dataType, uinteger arrayNest = 0){
 		type = dataType;
-		arrayDimensionCount = arrayDimension;
-		isRef = isReference;
+		arrayNestCount = arrayNest;
 	}
-	
 	/// constructor
 	/// 
 	/// `sType` is the type in string form
@@ -79,47 +72,10 @@ public struct DataType{
 	this (Token[] data){
 		fromData(data);
 	}
-	/// converts this to a byte code style data type, which is a string
-	string toByteCode(){
-		static const TYPE_CODE = [
-			DataType.Type.Void : '0',
-			DataType.Type.String : '1',
-			DataType.Type.Integer : '2',
-			DataType.Type.Double : '3'
-		];
-		return TYPE_CODE[type] ~ (isRef ? "1" : "0") ~ to!string(arrayDimensionCount);
-	}
-	/// reads DataType from a byte code style string
-	/// 
-	/// Returns: true if successful, false if the string was invalid
-	bool fromByteCode(string s){
-		static const TYPE_CODE = [
-			'0' : DataType.Type.Void,
-			'1' : DataType.Type.String,
-			'2' : DataType.Type.Integer,
-			'3' : DataType.Type.Double
-		];
-		if (s.length < 3 || !isNum(s, false) || s[0] !in TYPE_CODE || !['0','1'].hasElement(s[1]))
-			return false;
-		type = TYPE_CODE[s[0]];
-		if (s[1] == '1')
-			isRef = true;
-		else
-			isRef = false;
-		arrayDimensionCount  = to!uinteger(s[2 .. s.length]);
-		return true;
-	}
 	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
 	void fromString(string s){
-		isRef = false;
 		string sType = null;
 		uinteger indexCount = 0;
-		// check if it's a ref
-		if (s.length > 0 && s[0] == '@'){
-			isRef = true;
-			s = s.dup;
-			s = s[1 .. s.length];
-		}
 		// read the type
 		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
 			if (s[i] == '['){
@@ -155,11 +111,10 @@ public struct DataType{
 		}else{
 			throw new Exception("invalid data type");
 		}
-		arrayDimensionCount = indexCount;
+		arrayNestCount = indexCount;
 	}
 
 	/// identifies the data type from the actual data
-	/// keep in mind, this won't be able to identify if the data type is a reference or not
 	/// 
 	/// throws Exception on failure
 	void fromData(Token[] data){
@@ -180,22 +135,22 @@ public struct DataType{
 		callCount ++;
 
 		if (callCount == 1){
-			this.arrayDimensionCount = 0;
+			this.arrayNestCount = 0;
 			this.type = DataType.Type.Void;
 		}
 		// check if is an array
 		if (data.length > 1 &&
 			data[0].type == Token.Type.IndexBracketOpen && data[data.length-1].type == Token.Type.IndexBracketClose){
 			// is an array
-			this.arrayDimensionCount ++;
+			this.arrayNestCount ++;
 			// if elements are arrays, do recursion, else, just identify types
 			Token[][] elements = splitArray(data);
 			if (elements.length == 0){
 				this.type = DataType.Type.Void;
 			}else{
 				// determine the type using recursion
-				// stores the arrayDimensionCount till here
-				uinteger thisNestCount = this.arrayDimensionCount;
+				// stores the arrayNestCount till here
+				uinteger thisNestCount = this.arrayNestCount;
 				// stores the nestCount for the preious element, -1 if no previous element
 				integer prevNestCount = -1;
 				// stores the data type of the last element, void if no last element
@@ -205,12 +160,12 @@ public struct DataType{
 					fromData(element);
 					// now make sure the nestCount came out same
 					if (prevNestCount != -1){
-						if (prevNestCount != this.arrayDimensionCount){
+						if (prevNestCount != this.arrayNestCount){
 							throw new Exception("inconsistent data types in array elements");
 						}
 					}else{
 						// set new nestCount
-						prevNestCount = this.arrayDimensionCount;
+						prevNestCount = this.arrayNestCount;
 					}
 					// now to make sure type came out same
 					if (prevType != DataType.Type.Void){
@@ -221,10 +176,10 @@ public struct DataType{
 						prevType = this.type;
 					}
 					// re-set the nestCount for the next element
-					this.arrayDimensionCount = thisNestCount;
+					this.arrayNestCount = thisNestCount;
 				}
 				// now set the nestCount
-				this.arrayDimensionCount = prevNestCount;
+				this.arrayNestCount = prevNestCount;
 			}
 		}else if (data.length == 0){
 			this.type = DataType.Type.Void;
@@ -249,17 +204,17 @@ public struct DataType{
 		}else if (type == DataType.Type.String){
 			r = cast(char[]) "string";
 		}else{
-			throw new Exception("invalid type stored: "~to!string(type));
+			throw new Exception("invalid type stored");
 		}
 		uinteger i = r.length;
-		r.length += arrayDimensionCount * 2;
+		r.length += arrayNestCount * 2;
 		for (; i < r.length; i += 2){
 			r[i .. i+2] = "[]";
 		}
 		return cast(string) r;
 	}
 }
-/// 
+/// unittests
 unittest{
 	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
 	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
@@ -378,118 +333,34 @@ string encodeString(string s){
 	return r;
 }
 
-/// converts a function name and it's arguments to a byte code style function name
-/// 
-/// Arguments:
-/// `name` is the function name  
-/// `argTypes` is the array of it's arguments' Data Types
-/// 
-/// Returns: the byte code style function name
-string encodeFunctionName (string name, DataType[] argTypes){
-	string r = name ~ '/';
-	foreach (argType; argTypes)
-		r = r ~ argType.toByteCode~ '/';
-	return r;
-}
-/// 
-unittest{
-	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,14),DataType(DataType.Type.Void)]) == 
-			"abcd/3014/000/"
-		);
-}
-
-/// reads a byte code style function name into a function name and argument types
-/// 
-/// Arguments:
-/// `encodedName` is the encoded function name  
-/// `name` is the variable to put the decoded name in  
-/// `argTypes` is the array to put arguments' data types in
-/// 
-/// Returns: true if the name was in a correct format and was read correctly  
-/// false if there was an error reading it
-bool decodeFunctionName (string encodedName, ref string name, ref DataType[] argTypes){
-	// separate it from all the slashes
-	string[] parts;
-	for (uinteger i = 0, readFrom = 0; i < encodedName.length; i ++){
-		if (encodedName[i] == '/'){
-			parts ~= encodedName[readFrom .. i];
-			readFrom = i + 1;
-			if (parts[parts.length -1].length == 0)
-				return false;
-			continue;
-		}
-	}
-	if (parts.length == 0)
-		return false;
-	name = parts[0];
-	parts = parts[1 .. parts.length];
-	argTypes.length = parts.length;
-	foreach (i, part; parts){
-		if (!argTypes[i].fromByteCode(part))
-			return false;
-	}
-	return true;
-}
-///
-unittest{
-	string name;
-	DataType[] types;
-	"abcd/0014/102/203/308/".decodeFunctionName(name, types);
-	assert (name == "abcd");
-	assert (types == [DataType(DataType.Type.Void, 14),
-			DataType(DataType.Type.String, 2),
-			DataType(DataType.Type.Integer, 3),
-			DataType(DataType.Type.Double, 8)
-		]);
-}
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
-/// 
-/// `void` will match true against all types (arrays, and even references)  
-/// `@void` will match true against only references of any type
-/// `@void[]` will match true against only references of any type of array
-/// `void[]` will match true against only any type of array (even references)
-/// 
-/// returns: true if match successful, else, false
+/// returns true if match successful, else, false
 bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 	if (argTypes.length != definedTypes.length){
 		return false;
 	}else{
 		for (uinteger i = 0; i < argTypes.length; i ++){
-			if (definedTypes[i].isRef && argTypes[i].isRef != true){
-				return false;
+			if (definedTypes[i].type == DataType.Type.Void){
+				// skip checks
+				continue;
+			}else{
+				if (argTypes[i].type != definedTypes[i].type){
+					// check if is receiving a void[], against a someType[][].., then, it's ok
+					if (argTypes[i].type == DataType.Type.Void &&
+						argTypes[i].arrayNestCount > 0 && definedTypes[i].arrayNestCount > 0){
+						return true;
+					}
+					return false;
+				}
 			}
 			// check the array dimension
-			if (definedTypes[i].arrayDimensionCount > 0 && argTypes[i].arrayDimensionCount == 0){
-				return false;
-			}
-			if (definedTypes[i].type == DataType.Type.Void){
-				// skip all checks
-				continue;
-			}else if (argTypes[i].type != definedTypes[i].type){
+			if (definedTypes[i].arrayNestCount != argTypes[i].arrayNestCount){
 				return false;
 			}
 		}
 		return true;
 	}
-}
-
-/// checks if a function can be called with a set of arguments.
-/// 
-/// fName is the byte-code style function name (see `encodeFunctionName`).  
-/// argTypes is the data types of the arguments
-/// 
-/// Returns: true if it can be called, false if not, or if the fName was incorrect
-bool calCallFunction(string fName, DataType[] argTypes){
-	// decode to get the right name & args
-	DataType[] expectedArgTypes;
-	{
-		string name;
-		if (!decodeFunctionName(fName, name, expectedArgTypes)){
-			return false; 
-		}
-	}
-	return matchArguments(expectedArgTypes, argTypes);
 }
 
 
@@ -544,13 +415,17 @@ unittest{
 	import qscript.compiler.tokengen : stringToTokens;
 	Token[] tokens;
 	tokens = ["20"].stringToTokens;
-	DataType type;
-	assert (tokensToQData(tokens, type).intVal == 20);
-	assert (type == DataType("int"));
+	assert (tokensToQData(tokens).intVal == 20);
 
 	tokens = ["20.0"].stringToTokens;
-	assert (tokensToQData(tokens, type).doubleVal == 20.0);
-	assert (type == DataType("double"));
+	assert (tokensToQData(tokens).doubleVal == 20.0);
+
+	tokens = ["[", "20", ",", "15", "]"].stringToTokens;
+	QData expectedData;
+	expectedData.arrayVal.length = 2;
+	expectedData.arrayVal[0].intVal = 20;
+	expectedData.arrayVal[1].intVal = 15;
+	assert (tokensToQData(tokens).arrayVal == expectedData.arrayVal);
 }
 
 /// converts a literal data in bytecode format into QData
@@ -651,7 +526,6 @@ package struct Token{
 		Double, /// That the token is a double (floating point) value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 		DataType, /// the  token is a data type
-		MemberSelector, /// a member selector operator
 		AssignmentOperator, /// and assignmentOperator
 		Operator,/// That the token is an operator, like `+`, `==` etc
 		Keyword,/// A `function` or `var` ...

@@ -4,308 +4,15 @@ For generating byte code from AST
 module qscript.compiler.codegen;
 
 import qscript.compiler.ast;
-import qscript.compiler.astcheck;
 import qscript.compiler.misc;
-import qscript.compiler.compiler : Function;
 
 import utils.misc;
 import utils.lists;
 
 import std.conv : to;
 
-/// class to generate byte code for an AST and performing checks on the AST (using ASTCheck class)
-class CodeGen{
-private:
-	/// stores the pre-defined functions
-	Function[] preDefFunctions;
-	/// stores byte code style names of preDefFunctions
-	string[] preDefFunctionNames;
-	/// stores the name, arg types, and return types for script defined functions
-	Function[] scriptDefFunctions;
-	/// stores the byte code style names of scriptDefFunctions, match by index
-	string[] scriptDefFunctionNames;
-	/// stores instruction functions
-	Function[] instFunctions;
-	/// stores the instruction name for instruction functions, match by index
-	string[] instFunctionName;
-	/// stores the data type of variables
-	DataType[string] varTypes;
-	/// stores the maximum/highest variable ID
-	uinteger maxVarID;
-	/// stores the next avialable ID for a jump position
-	uinteger jumpID;
-	/// stores the bytecode as instructions are added to it line-by-line
-	List!string byteCode;
-	/// encodes function names into byte code style ones and writes them into 
-	/// `scriptDefFunctionNames` & `preDefFunctionNames`
-	void encodeAllFunctionNames (){
-		scriptDefFunctionNames.length = scriptDefFunctions.length;
-		preDefFunctionNames.length = preDefFunctions.length;
-		foreach (i, func; preDefFunctions){
-			preDefFunctionNames[i] = encodeFunctionName(func.name, func.argTypes);
-		}
-		foreach (i, func; scriptDefFunctions){
-			scriptDefFunctionNames[i] = encodeFunctionName(func.name, func.argTypes);
-		}
-	}
-protected:
-	/// generates byte code for FunctionNode
-	void generateByteCode(FunctionNode node){
-		// add the name 
-		DataType[] argTypes;
-		argTypes.length = node.arguments.length;
-		foreach (i ,arg; node.arguments)
-			argTypes[i] = arg.argType;
-		byteCode.add (encodeFunctionName(node.name, argTypes));
-		// now add the placeholder for the instruction to set the variable-storing-array length
-		byteCode.add ("\tvarCount ?");
-		// save it's index
-		uinteger varCountIndex = byteCode.length-1;
-		// now add the statements
-		maxVarID = argTypes.length == 0 ? 0 : argTypes.length - 1;
-		jumpID = 0;
-		generateByteCode (node.bodyBlock);
-		// set the varCount now
-		byteCode.set (varCountIndex, "\tvarCount i"~to!string(maxVarID));
-	}
-	/// generates byte code for BlockNode
-	void generateByteCode (BlockNode node){
-		foreach (statement; node.statements){
-			generateByteCode (statement);
-		}
-	}
-	/// generates byte code for a StatementNode
-	void generateByteCode (StatementNode node){
-		if (node.type == StatementNode.Type.Assignment){
-			generateByteCode (node.node!(StatementNode.Type.Assignment));
-		}else if (node.type == StatementNode.Type.Block){
-			generateByteCode (node.node!(StatementNode.Type.Block));
-		}else if (node.type == StatementNode.Type.DoWhile){
-			generateByteCode (node.node!(StatementNode.Type.DoWhile));
-		}else if (node.type == StatementNode.Type.For){
-			generateByteCode (node.node!(StatementNode.Type.For));
-		}else if (node.type == StatementNode.Type.FunctionCall){
-			generateByteCode (node.node!(StatementNode.Type.FunctionCall), true);
-		}else if (node.type == StatementNode.Type.If){
-			generateByteCode (node.node!(StatementNode.Type.If));
-		}else if (node.type == StatementNode.Type.VarDeclare){
-			generateByteCode (node.node!(StatementNode.Type.VarDeclare));
-		}else if (node.type == StatementNode.Type.While){
-			generateByteCode (node.node!(StatementNode.Type.While));
-		}
-	}
-	/// generates byte code for AssignmentNode
-	void generateByteCode (AssignmentNode node){
-		uinteger varID = node.var.id;
-		// first check if the var is an array
-		if (node.indexes.length > 0){
-			// push the original value of var, then push all the indexes, then call modifyArray, and setVar
-			byteCode.add("\tgetVar i"~to!string(varID));
-			// now push the val
-			generateByteCode(node.val);
-			// now the indexes
-			foreach (index; node.indexes){
-				generateByteCode(index);
-			}
-			// then modifyArray
-			byteCode.add("\tmodifyArray i"~to!string(node.indexes.length));
-			// finally, set the new array back
-			byteCode.add("\tsetVar i"~to!string(varID));
-		}else{
-			// just push the val, and call setVar on the varID
-			generateByteCode(node.val);
-			byteCode.add ("\tsetVar i"~to!string(varID));
-		}
-	}
-	/// generates byte code for DoWhileNode
-	void generateByteCode (DoWhileNode node){
-		// get the jump ID
-		uinteger jumpPos = jumpID;
-		// make this jumpPos taken for this function
-		jumpID ++;
-		// mark start of loop, and add the loop body
-		byteCode.add ("\t"~to!string (jumpPos)~":");
-		generateByteCode (node.statement);
-		// now the condition
-		generateByteCode (node.condition);
-		// jump back
-		byteCode.addArray([
-				"\tnot",
-				"\tskipTrue",
-				"\tjump "~to!string(jumpPos)
-			]);
-	}
-	/// generates byte code for ForNode
-	void generateByteCode (ForNode node){
-		// get jump ID
-		uinteger jumpPos = jumpID;
-		jumpPos ++;
-		// init statement
-		generateByteCode (node.initStatement);
-		// then the condition, skip to after the inc-statement
-		generateByteCode (node.condition);
-		byteCode.addArray ([
-				"\tskipTrue",
-				"\tjmup "~to!string (jumpPos)
-			]);
-		// now the loop body
-		generateByteCode (node.statement);
-		// and inc statement, followed by loop-end-jump-position
-		generateByteCode (node.incStatement);
-		byteCode.add ("\t"~to!string (jumpPos));
-	}
-	/// generates byte code for FunctionCallNode
-	void generateByteCode (FunctionCallNode node, bool popReturnValue = false){
-		// get the byte code style name of the function
-		DataType[] argTypes;
-		argTypes.length = node.arguments.length;
-		foreach (i, arg; node.arguments){
-			argTypes[i] = arg.argType;
-		}
-		// push the args
-		foreach (arg; node.arguments){
-			generateByteCode (arg);
-		}
-		// first check if it's an instruction-function
-		/// stores whether a function with the the name existed
-		bool functionNameExists = false;
-		/// stores whether a suitable function was found
-		bool found = false;
-		foreach (i, func; instFunctions){
-			if (func.name == node.fName){
-				functionNameExists =  true;
-				if (matchArguments(func.argTypes, argTypes)){
-					byteCode.add ("\t"~instFunctionName[i]);
-					found = true;
-					break;
-				}
-			}
-		}
-		// check if it's a script defined one
-		foreach (i, func; scriptDefFunctions){
-			if (func.name == node.fName){
-				functionNameExists = true;
-				// in script defined functions, arguments must match exactly
-				if (func.argTypes == argTypes){
-					byteCode.add ("\texecFuncS s\""~scriptDefFunctionNames[i]~"\" i"~to!string(argTypes.length));
-					found = true;
-					break;
-				}
-			}
-		}
-		// finally, if it's pre def function
-		foreach (i, func; preDefFunctions){
-			if (func.name == node.fName){
-				functionNameExists = true;
-				if (matchArguments(func.argTypes, argTypes)){
-					byteCode.add ("\texecFuncE s\""~preDefFunctionNames[i]~"\" i"~to!string(argTypes.length));
-					found = true;
-					break;
-				}
-			}
-		}
-		if (popReturnValue)
-			byteCode.add ("\tpop i1");
-	}
-	/// generates byte code for IfNode
-	void generateByteCode (IfNode node){
-		// execute condition
-		generateByteCode (node.condition);
-		/// jump id for if-end, and else-end
-		uinteger endJump = jumpID, elseEndJump = jumpID+1;
-		jumpID = elseEndJump+1;
-		// skip to end of if-true-body if false
-		byteCode.addArray([
-				"\tskipTrue",
-				"\tjump "~to!string (endJump)
-				]);
-		// now if-true-body
-		generateByteCode (node.statement);
-		// if else part exists, make if-true-body skip it
-		if (node.hasElse){
-			// and add position of endJump right before else-body
-			byteCode.addArray ([
-					"\tjump "~to!string (elseEndJump),
-					"\t"~to!string (endJump)~':'
-					]);
-			generateByteCode (node.elseStatement);
-			byteCode.add ("\t"~to!string (elseEndJump)~':');
-		}
-	}
-	/// generates byte code for VarDeclareNode
-	void generateByteCode (VarDeclareNode node){
-		// add to record what type the vars are
-		foreach (var; node.vars){
-			varTypes[var] = node.type;
-			// if a value was assigned to it, assign it
-			if (node.hasValue(var)){
-				generateByteCode (node.getValue(var));
-				byteCode.add ("\tsetVar i"~to!string (node.varIDs[var]));
-			}
-		}
-	}
-	/// generates byte code for WhileNode
-	void generateByteCode (WhileNode node){
-		/// jump to start of loop (before condition) & to end of loop
-		uinteger startJump = jumpID, endJump = jumpID + 1;
-		jumpID = endJump + 1;
-		byteCode.add ("\t"~to!string (startJump)~':');
-		// condition
-		generateByteCode (node.condition);
-		// skip jump-to-end if true
-		byteCode.addArray ([
-				"\tskipTrue",
-				"\tjump "~to!string (endJump)
-				]);
-		generateByteCode (node.statement);
-		byteCode.add ("\t"~to!string (endJump)~':');
-	}
-public:
-	this (Function[] preDefFunctions){
-		byteCode = new List!string;
-		this.preDefFunctions = preDefFunctions.dup;
-	}
-	~this (){
-		.destroy(byteCode);
-	}
-	/// adds a new "instruction-function". Any call that matches this function will be converted to an instruction rather than a 
-	/// function call.
-	/// 
-	/// if an instruction already exists for that function, it will be overwritten
-	void addInstructionFunction(Function f, string instruction){
-		instFunctions ~= f;
-		instFunctionName ~= instruction;
-	}
-	/// generates byte code for ScriptNode
-	/// 
-	/// Arguments:
-	/// `node` is the ScriptNode to generate byte code for  
-	/// `errors` is the array in which any errors will be put
-	/// 
-	/// Returns: the bytecode for the script
-	string[] generateByteCode(ScriptNode node, ref CompileError[] errors){
-		// first do the ASTCheck on the script
-		ASTCheck check = new ASTCheck(preDefFunctions.dup);
-		errors = [];
-		errors = check.checkAST(node, scriptDefFunctions);
-		if (errors.length == 0){
-			// clean everything
-			varTypes.clear;
-			byteCode.clear;
-			// now start with the codegen
-			encodeAllFunctionNames(); // required for generating byte code for FunctionCallNode
-			foreach (functionNode; node.functions){
-				generateByteCode(functionNode);
-			}
-		}
-		string[] r = byteCode.toArray;
-		byteCode.clear;
-		return r;
-	}
-}
-
 /// contains functions to generate byte code from AST
-/*package struct CodeGen{
+package struct CodeGen{
 	/// generates byte code for a script
 	public string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
 		compileErrors = new LinkedList!CompileError;
@@ -365,6 +72,23 @@ public:
 			}
 			throw new Exception("variable '"~varName~"' not declared but used");
 		}
+		/// should/must be called when the next few calls of var-related functions will be from inside another block
+		public void increaseScope(){
+			scopeDepth ++;
+		}
+		/// should/must be called when all var related functions from inside a block are done
+		public void decreaseScope(){
+			// clear vars
+			foreach (key; varIDs.keys){
+				if (varScopeDepth[key] == scopeDepth){
+					varScopeDepth.remove(key);
+					varIDs.remove(key);
+				}
+			}
+			if (scopeDepth > 0){
+				scopeDepth --;
+			}
+		}
 	}
 
 	/// contains a list of script0-defined functions
@@ -414,12 +138,6 @@ public:
 			return (onTrueCount > onFalseCount ? onTrueCount : onFalseCount);
 		}else if (statement.type == StatementNode.Type.While){
 			return getVarCountStatement (statement.node!(StatementNode.Type.While).statement);
-		}else if (statement.type == StatementNode.Type.For){
-			ForNode forNode = statement.node!(StatementNode.Type.For);
-			return getVarCountStatement (forNode.initStatement) + getVarCountStatement (forNode.incStatement) + 
-				getVarCountStatement (forNode.statement);
-		}else if (statement.type == StatementNode.Type.DoWhile){
-			return getVarCountStatement (statement.node!(StatementNode.Type.DoWhile).statement);
 		}
 		return 0;
 	}
@@ -481,11 +199,8 @@ public:
 			return generateByteCode(node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.While){
 			return generateByteCode(node.node!(StatementNode.Type.While));
-		}else if (node.type == StatementNode.Type.For){
-			return generateByteCode(node.node!(StatementNode.Type.For));
-		}else if (node.type == StatementNode.Type.DoWhile){
-			return generateByteCode(node.node!(StatementNode.Type.DoWhile));
 		}else if (node.type == StatementNode.Type.VarDeclare){
+			// VarDeclare wont be converted to anything, these only exist to tell FunctionNode the varCount
 			return generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else{
 			compileErrors.append(CompileError(0, "invalid AST generated"));
@@ -709,6 +424,7 @@ public:
 
 	/// generates byte code for VarDeclareNode
 	private string[] generateByteCode(VarDeclareNode node){
+		// no byte code is generated for varDeclare, just call the addVarID function
 		foreach (var; node.vars){
 			try{
 				getNewVarID(var);
@@ -716,28 +432,18 @@ public:
 				compileErrors.append(CompileError(0, e.msg));
 			}
 		}
-		auto byteCode = new LinkedList!string;
-		// assign the assigned values
-		foreach (var; node.vars){
-			if (node.hasValue(var)){
-				byteCode.append(generateByteCode(node.getValue(var)));
-				byteCode.append("\tsetVar i"~to!string(getVarID(var)));
-			}
-		}
-		// if is an array, then call emptyArray on all those vars that don't have a value assigned to them
+		// if is an array, then call emptyArray on all the vars
 		if (node.type.isArray){
-			foreach (var; node.vars){
-				if (!node.hasValue(var)){
-					byteCode.append([
-							"\temptyArray",
-							"\tsetVar i"~to!string(getVarID(var))
-						]);
-				}
+			const string makeInst = "\temptyArray";
+			string[] r;
+			r.length = 2*node.vars.length;
+			foreach (i, var; node.vars){
+				r[i*2] = makeInst;
+				r[(i*2)+1] = "\tsetVar i"~to!string(getVarID(var));
 			}
+			return r;
 		}
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
+		return [];
 	}
 
 	/// generates byte code for IfNode
@@ -751,13 +457,11 @@ public:
 		byteCode.append(generateByteCode(node.condition));
 		// then the skipTrue, to skip the jump to else
 		byteCode.append([
-				"\tskipTrue",
+				"\tskipTrue i1",
 				"\tjump ifEnd"~to!string(currentCount)
 			]);
 		// then comes the if-on-true body
-		increaseScope();
 		byteCode.append(generateByteCode(node.statement));
-		decreaseScope();
 		// then then jump to elseEnd to skip the else statements
 		if (node.hasElse){
 			byteCode.append("\tjump elseEnd"~to!string(currentCount));
@@ -765,10 +469,8 @@ public:
 		byteCode.append("\tifEnd"~to!string(currentCount)~":");
 		// now the elseBody
 		if (node.hasElse){
-			increaseScope();
 			byteCode.append(generateByteCode(node.elseStatement)~
 					["\telseEnd"~to!string(currentCount)~":"]);
-			decreaseScope();
 		}
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
@@ -788,91 +490,15 @@ public:
 		byteCode.append(generateByteCode(node.condition));
 		// then skip the jump-to-end if true
 		byteCode.append([
-				"\tskipTrue",
+				"\tskipTrue i1",
 				"\tjump whileEnd"~to!string(currentCount)
 			]);
 		// then the loop body
-		increaseScope();
 		byteCode.append(generateByteCode(node.statement));
-		decreaseScope();
 		// then jump back to condition, to see if it'll start again
 		byteCode.append("\tjump whileStart"~to!string(currentCount));
 		// then mark the loop end
 		byteCode.append("\twhileEnd"~to!string(currentCount)~":");
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for ForNode
-	private string[] generateByteCode(ForNode node){
-		auto byteCode = new LinkedList!string;
-		// stores `ID` of the for loop statements
-		static uinteger forCount = 0;
-		uinteger currentCount = forCount;
-		forCount ++;
-		// increase the var scope
-		increaseScope();
-		// now the init statement
-		byteCode.append(generateByteCode(node.initStatement));
-		// jump-back position
-		byteCode.append("\tforStart"~to!string(currentCount)~":");
-		// now the condition
-		byteCode.append(generateByteCode(node.condition));
-		// skip to end if not true
-		byteCode.append([
-				"\tskipTrue",
-				"\tjump forEnd"~to!string(currentCount)
-			]);
-		// loop body
-		byteCode.append(generateByteCode(node.statement));
-		// increment statement
-		byteCode.append(generateByteCode(node.incStatement));
-		// end point
-		byteCode.append([
-				"\tjump forStart"~to!string(currentCount),
-				"\tforEnd"~to!string(currentCount)~":"
-			]);
-		// decrease scope
-		decreaseScope();
-		string[] r = byteCode.toArray;
-		.destroy(byteCode);
-		return r;
-	}
-
-	/// generates byte code for a do-while loop statement
-	private string[] generateByteCode(DoWhileNode node){
-		auto byteCode = new LinkedList!string;
-		/// stores the `ID` of the do-while loop statements
-		static uinteger doWhileCount = 0;
-		uinteger currentCount = doWhileCount;
-		doWhileCount ++;
-		// increase var scope
-		increaseScope();
-		// jump back position
-		byteCode.append("\tdoWhileStart"~to!string(currentCount)~":");
-		// now for the loop statement
-		// if its a block, any var declared in it wont be availiable to the `while(...)`
-		// because generateByteCode(BlockNode ...) decreases scope, so in case of block, this will generate byte code for that itself
-		if (node.statement.type == StatementNode.Type.Block){
-			BlockNode block = node.statement.node!(StatementNode.Type.Block);
-			foreach (statement; block.statements){
-				byteCode.append(generateByteCode(statement));
-			}
-		}else{
-			byteCode.append (generateByteCode(node.statement));
-		}
-		// now the condition
-		byteCode.append(generateByteCode(node.condition));
-		// now the jump. This jump is different, the jump-back will only be made if the condition is true. That means skipTrue should
-		// only be executed if condition is false, so condition=false -> skip-jump -> loop-over. Just use not instruction on condition
-		byteCode.append([
-				"\tnot",
-				"\tskipTrue i1",
-				"\tjump doWhileStart"~to!string(currentCount)
-			]);
-		decreaseScope();
-		// thats it
 		string[] r = byteCode.toArray;
 		.destroy(byteCode);
 		return r;
@@ -890,4 +516,4 @@ public:
 		return ["\tpush "~literal];
 	}
 
-}*/
+}

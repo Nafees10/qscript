@@ -14,6 +14,24 @@ import std.conv : to;
 
 /// contains functions and stuff to convert a QScript from tokens to Syntax Trees
 struct ASTGen{
+	/// constructor
+	/// 
+	/// `onGetReturnTypeFunction` is a pointer to a function that will return the data type a function returns,
+	/// or throws Exception if that function doesnt exist. The function will receive name of function &
+	/// DataTypes of arguments it's being called with.
+	/// 
+	/// `onArgsTypeOkFunction` is a pointer to a function that will return true if the argument types for a pre-defined function
+	/// are ok, else, false. It receives the functionName, and the argument types
+	this (DataType delegate (string, DataType[]) onGetReturnTypeFunction,
+		bool delegate(string, DataType[]) onArgsTypeOkFunction){
+		onArgsTypeOk = onArgsTypeOkFunction;
+		onGetFunctionReturnType = onGetReturnTypeFunction;
+		compileErrors = new LinkedList!CompileError;
+	}
+	/// destructor
+	~this (){
+		.destroy(compileErrors);
+	}
 	/// generates an AST representing a script.
 	/// 
 	/// `tokens` is the TokenList to generate AST from
@@ -23,11 +41,10 @@ struct ASTGen{
 	/// If any errors occur, they will be contanied in `qscript.compiler.misc.`
 	public ScriptNode generateScriptAST(TokenList scriptTokens, ref CompileError[] errors){
 		tokens = scriptTokens;
-		tokens.tokens = tokens.tokens.dup;
-		tokens.tokenPerLine = tokens.tokenPerLine.dup;
 		ScriptNode scriptNode;
 		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
-		compileErrors = new LinkedList!CompileError;
+		// scan for return types & arg types of script-defined functions
+		scanTokensForFunctionReturnArgTypes();
 		// go through the script, compile function nodes, link them to this node
 		index = 0;
 		for (uinteger lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
@@ -55,14 +72,176 @@ struct ASTGen{
 		uinteger index;
 		/// stores all compilation errors
 		LinkedList!CompileError compileErrors;
+		/// stores functions' return types
+		DataType[string] functionReturnTypes;
+		/// called to get predefined function's return type
+		DataType delegate(string, DataType[]) onGetFunctionReturnType;
+		/// stores functions' argument types
+		DataType[][string] functionArgTypes;
+		/// called to check pre-defined functions' argument types
+		bool delegate(string, DataType[]) onArgsTypeOk;
+		struct{
+			/// stores data types for variable in currently-being-converted function
+			private DataType[string] varDataTypes;
+			/// stores the scope depth count for each var
+			private uinteger[string] varScopeDepth;
+			/// stores current scope
+			private uinteger scopeCount = 0;
+			/// adds a var, throws Exception if var with same name already exists
+			void addVarType(string name, DataType type){
+				if (name in varDataTypes){
+					throw new Exception("variable '"~name~"' declared twice");
+				}
+				varDataTypes[name] = type;
+				varScopeDepth[name] = scopeCount;
+			}
+			/// returns data type of a var, throws Exception if var doesnt exist
+			DataType getVarType(string name){
+				if (name in varDataTypes){
+					return varDataTypes[name];
+				}else{
+					throw new Exception("variable '"~name~"' not declared");
+				}
+			}
+			/// removes vars of last scope, and decreases scopeCount
+			void removeLastScope(){
+				foreach (key; varScopeDepth.keys){
+					if (varScopeDepth[key] == scopeCount){
+						varScopeDepth.remove(key);
+						// remove from varDataTypes too!
+						varDataTypes.remove(key);
+					}
+				}
+				if (scopeCount > 0){
+					scopeCount --;
+				}
+			}
+			/// increases scope count
+			void increaseScopeCount(){
+				scopeCount ++;
+			}
+		}
+		/// scans tokens for script-defined functions' return types and argument types
+		/// 
+		/// keep in mind that it messes up the value of `index`! so only call it before anything else, and reset `index` then.
+		void scanTokensForFunctionReturnArgTypes(){
+			LinkedList!DataType argTypes = new LinkedList!DataType;
+			for (index = 0; index < tokens.tokens.length; index ++){
+				if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+					index ++;
+					DataType returnType;
+					try{
+						returnType = readType();
+					}catch(Exception e){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+						.destroy (e);
+					}
+					string fName = tokens.tokens[index].token;
+					functionReturnTypes[fName] = returnType;
+					// now for the args
+					index ++; // skip the name
+					if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
+						// it's got args
+						uinteger brackEnd = tokens.tokens.bracketPos(index);
+						for (index += 1; index < brackEnd; index ++){
+							DataType argType;
+							try{
+								argType = readType();
+							}catch (Exception e){
+								compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+								.destroy (e);
+							}
+							argTypes.append(argType);
+							// now should be the arg_name, ignore that
+							assert (tokens.tokens[index].type == Token.Type.Identifier,
+								"argument type should be followed by argument name");
+							index ++;
+							// now skip the comma, or could be a parenthesesEnd
+							assert (tokens.tokens[index].type == Token.Type.ParanthesesClose ||
+								tokens.tokens[index].type == Token.Type.Comma,
+								"arguments must be separated using a comma");
+							// index ++ in for statement does the job this time
+						}
+						functionArgTypes[fName] = argTypes.toArray;
+						argTypes.clear;
+					}else{
+						// no args
+						functionArgTypes[fName] = [];
+					}
+				}
+				// skip brackets
+				if ([Token.Type.BlockStart, Token.Type.IndexBracketOpen, Token.Type.ParanthesesOpen].
+					hasElement(tokens.tokens[index].type)){
+					index = tokens.tokens.bracketPos(index);
+				}
+			}
+			.destroy (argTypes);
+		}
+		/// returns return type of a function, if function doesnt exist, throws Exception
+		DataType getFunctionReturnType(string functionName, DataType[] argTypes){
+			/// stores whether the all the tokens have been scanned for function return types
+			static bool scannedAllTokens = false;
+			if (functionName in functionReturnTypes){
+				return functionReturnTypes[functionName];
+			}else{
+				if (onGetFunctionReturnType !is null){
+					try{
+						return onGetFunctionReturnType(functionName, argTypes.dup);
+					}catch (Exception e){
+						compileErrors.append (CompileError(tokens.getTokenLine(index), e.msg));
+						return DataType(DataType.Type.Void);
+					}
+
+				}else{
+					throw new Exception("function '"~functionName~"' not defined");
+				}
+			}
+		}
+		/// matches arguments' types to see if they can be used for a function
+		/// 
+		/// in case they dont match, appends error to compileErrors
+		bool matchFunctionArgTypes(string functionName, DataType[] argTypes){
+			bool r = true;
+			// check if is predefined
+			if (functionName in functionArgTypes){
+				DataType[] acceptableTypes = functionArgTypes[functionName];
+				if (argTypes.length != acceptableTypes.length){
+					compileErrors.append(
+						CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid number of arguments"));
+					r = false;
+				}else{
+					if (!matchArguments(acceptableTypes.dup, argTypes.dup)){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' called with invalid arguments"));
+						return false;
+					}else{
+						return true;
+					}
+				}
+			}else{
+				// use onArgsTypeOk
+				if (onArgsTypeOk !is null){
+					try{
+						if (!onArgsTypeOk(functionName, argTypes)){
+							compileErrors.append(CompileError(tokens.getTokenLine(index),
+									"function '"~functionName~"' called with invalid arguments"));
+							return false;
+						}
+					}catch (Exception e){
+						compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+						return false;
+					}
+
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "function '"~functionName~"' not defined"));
+				}
+			}
+			return r;
+		}
 		/// reads a type from TokensList
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
 		DataType readType(){
 			uinteger startIndex = index;
-			// check if it's a ref
-			if (tokens.tokens[index].token == "@")
-				index ++;
 			// the first token has to be the type (int, string, double)
 			index ++;
 			// then comes the brackets making it an array
@@ -82,8 +261,8 @@ struct ASTGen{
 		/// changes `index` to the token after function definition
 		FunctionNode generateFunctionAST(){
 			FunctionNode functionNode;
-			functionNode.lineno = tokens.getTokenLine(index);
 			// make sure it's a function
+			increaseScopeCount();
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
 				// read the type
 				index++;
@@ -131,6 +310,7 @@ struct ASTGen{
 							commaExpected = true;
 							// add it to list
 							argList.append (arg);
+							addVarType(arg.argName, arg.argType);
 						}
 					}
 					// put args in list
@@ -148,6 +328,7 @@ struct ASTGen{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a function definition"));
 				index ++;
 			}
+			removeLastScope();
 			return functionNode;
 		}
 		
@@ -156,9 +337,9 @@ struct ASTGen{
 		/// changes `index` to token after block end
 		BlockNode generateBlockAST(){
 			BlockNode blockNode;
-			blockNode.lineno = tokens.getTokenLine(index);
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
+				increaseScopeCount();
 				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
@@ -175,6 +356,8 @@ struct ASTGen{
 				blockNode.statements = statements.toArray;
 				.destroy(statements);
 				index = brackEnd+1;
+
+				removeLastScope();
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a block"));
 				index ++;
@@ -195,23 +378,15 @@ struct ASTGen{
 				}else if (tokens.tokens[index].token == "while"){
 					// while statement
 					return StatementNode(generateWhileAST());
-				}else if (tokens.tokens[index].token == "for"){
-					// for statement
-					return StatementNode(generateForAST());
-				}else if (tokens.tokens[index].token == "do"){
-					// do while
-					return StatementNode(generateDoWhileAST());
 				}
-			}else if (tokens.tokens[index].type == Token.Type.DataType || 
-				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.DataType)){
+			}else if (tokens.tokens[index].type == Token.Type.DataType){
 				// var declare
 				return StatementNode(generateVarDeclareAST());
 			}else if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// is a function call
 				return StatementNode(generateFunctionCallAST());
-			}else if (tokens.tokens[index].type == Token.Type.Identifier || 
-				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.Identifier)){
+			}else if (tokens.tokens[index].type == Token.Type.Identifier){
 				// assignment
 				return StatementNode(generateAssignmentAST());
 			}
@@ -222,8 +397,7 @@ struct ASTGen{
 
 		/// generates AST for function call, changes `index` to token after statementEnd
 		FunctionCallNode generateFunctionCallAST(){
-			FunctionCallNode functionCallNode;
-			functionCallNode.lineno = tokens.getTokenLine(index);
+			FunctionCallNode functionCallNode = FunctionCallNode();
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
@@ -244,6 +418,20 @@ struct ASTGen{
 					}
 					functionCallNode.arguments = args.toArray;
 					.destroy(args);
+				}
+				// match argument types
+				DataType[] argTypes;
+				argTypes.length = functionCallNode.arguments.length;
+				foreach(i, arg; functionCallNode.arguments){
+					argTypes[i] = arg.returnType;
+				}
+				matchFunctionArgTypes(functionCallNode.fName, argTypes);
+				// then the return type
+				try{
+					functionCallNode.returnType = getFunctionReturnType(functionCallNode.fName, argTypes);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy(e);
 				}
 				// move index to bracketend or semicolon
 				index = brackEnd+1;
@@ -290,6 +478,11 @@ struct ASTGen{
 							index++;
 							break;
 						}
+						// make sure lastNode is an array with enough dimensions
+						if (lastNode.returnType.arrayNestCount == 0 && lastNode.returnType.type != DataType.Type.String){
+							compileErrors.append (CompileError(tokens.getTokenLine(index),
+									"can not read that many dimensions from that array"));
+						}
 						lastNode = CodeNode(ReadElement(lastNode, indexNode));
 						continue;
 					}
@@ -317,10 +510,8 @@ struct ASTGen{
 		/// changes `index` to the index of the token after the last token related to the operator
 		OperatorNode generateOperatorAST(CodeNode firstOperand){
 			OperatorNode operator;
-			operator.lineno = tokens.getTokenLine(index);
 			// make sure it's an operator, and there is a second operand
-			if (tokens.tokens[index].type == Token.Type.Operator && OPERATORS.hasElement(tokens.tokens[index].token) &&
-				index+1 < tokens.tokens.length){
+			if (tokens.tokens[index].type == Token.Type.Operator && index+1 < tokens.tokens.length){
 				// read the next operand
 				CodeNode secondOperand;
 				string operatorString = tokens.tokens[index].token;
@@ -334,30 +525,20 @@ struct ASTGen{
 			}
 			return operator;
 		}
-
-		/// generates AST for single operand operators
-		SOperatorNode generateSOperatorAST(){
-			SOperatorNode operator;
-			operator.lineno = tokens.getTokenLine(index);
-			// make sure its a single operand operator
-			if (tokens.tokens[index].type == Token.Type.Operator && SOPERATORS.hasElement(tokens.tokens[index].token)){
-				// read the operator
-				operator.operator = tokens.tokens[index].token;
-				// and the operand
-				operator.operand = generateNodeAST();
-			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an operator"));
-			}
-			return operator;
-		}
+		
 		/// generates AST for a variable (or array) and changes value of index to the token after variable ends
 		VariableNode generateVariableAST(){
 			VariableNode var;
-			var.lineno = tokens.getTokenLine(index);
 			// make sure first token is identifier
 			if (tokens.tokens[index].type == Token.Type.Identifier){
 				// set var name
 				var.varName = tokens.tokens[index].token;
+				try{
+					var.varType = getVarType(var.varName);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy(e);
+				}
 				index ++;
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a variable"));
@@ -369,14 +550,10 @@ struct ASTGen{
 		/// generates AST for assignment operator
 		AssignmentNode generateAssignmentAST(){
 			AssignmentNode assignment;
-			assignment.lineno = tokens.getTokenLine(index);
 			// get the variable to assign to
-			// check if the var is being deref-ed first
-			if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
-				assignment.deref = true;
-			}
 			CodeNode varCodeNode = generateCodeAST();
 			VariableNode var;
+			// make sure it's a var
 			CodeNode[] indexes;
 			if (varCodeNode.type == CodeNode.Type.ReadElement){
 				LinkedList!CodeNode indexesList = new LinkedList!CodeNode;
@@ -387,11 +564,6 @@ struct ASTGen{
 					varCodeNode = indexRead.readFromNode;
 				}
 				indexes = indexesList.toArray.reverseArray;
-			}
-			// make sure it's a var
-			if (varCodeNode.type != CodeNode.Type.Variable){
-				compileErrors.append (CompileError(tokens.getTokenLine(index),
-						"can only assign to variables or deref-ed (@) references"));
 			}
 			var = varCodeNode.node!(CodeNode.Type.Variable);
 			// now at index, the token should be a `=` operator
@@ -408,6 +580,26 @@ struct ASTGen{
 					// skip the semicolon too
 					index++;
 				}
+				// make sure the variable data type matches the val's data type
+				DataType varType;
+				try{
+					varType = getVarType(var.varName);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index-1), e.msg));
+				}
+				// also need to check if the var was declared a array or not, and if it's being set a correct type or not
+				if (varType.arrayNestCount < indexes.length){
+					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
+							"variable dimensions in assignment differs from declaration"));
+				}else{
+					// continue with checking
+					DataType expectedType = DataType(varType.type, varType.arrayNestCount - indexes.length);
+					// make sure it matches
+					if (expectedType != val.returnType){
+						compileErrors.append(CompileError(tokens.getTokenLine(index-1),
+								"cannot assign value with different data type to variable"));
+					}
+				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
 				index ++;
@@ -418,48 +610,57 @@ struct ASTGen{
 		/// generates AST for variable declarations
 		VarDeclareNode generateVarDeclareAST(){
 			VarDeclareNode varDeclare;
-			varDeclare.lineno = tokens.getTokenLine(index);
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
 			if (DATA_TYPES.hasElement(tokens.tokens[index].token)){
 				// read the type
+				DataType type;
 				try{
-					varDeclare.type = readType();
+					type = readType();
 				}catch(Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
 				}
-				while (tokens.tokens[index].type != Token.Type.StatementEnd && index < tokens.tokens.length){
-					if (tokens.tokens[index].type == Token.Type.Identifier){
-						string varName = tokens.tokens[index].token;
-						// see if it has a assigned value, case not, skip to next
-						if (tokens.tokens[index+1].type == Token.Type.AssignmentOperator){
-							index += 2;
-							CodeNode value = generateCodeAST();
-							varDeclare.addVar(varName, value);
+				// make sure next token = bracket
+				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
+					// now go through all vars, check if they are vars, and are aeparated by comma
+					uinteger brackEnd = tokens.tokens.bracketPos!true(index);
+					bool commaExpected = false;
+					LinkedList!string vars = new LinkedList!string;
+					for (index = index+1; index < brackEnd; index ++){
+						Token token = tokens.tokens[index];
+						if (commaExpected){
+							if (token.type != Token.Type.Comma){
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"variable names in declaration must be separated by a comma"));
+							}
+							commaExpected = false;
 						}else{
-							varDeclare.addVar(varName);
-							index ++;
+							if (token.type != Token.Type.Identifier){
+								compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"variable name expected in varaible declaration, unexpected token found"));
+							}else{
+								vars.append(token.token);
+								try{
+									addVarType(token.token, type);
+								}catch (Exception e){
+									compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+									.destroy (e);
+								}
+							}
+							commaExpected = true;
 						}
-						// now there must be a comma
-						if (tokens.tokens[index].type == Token.Type.Comma){
-							index ++;
-						}else if (tokens.tokens[index].type != Token.Type.StatementEnd){
-							compileErrors.append (CompileError(tokens.getTokenLine(index), 
-							"variable names must be separated by a comma"));
-						}
-						continue;
-					}else{
-						compileErrors.append (CompileError(tokens.getTokenLine(index), "variable name expected"));
-						// jump to end of statement
-						while (tokens.tokens[index].type != Token.Type.StatementEnd && index < tokens.tokens.length){
-							index ++;
-						}
-						break;
 					}
-				}
-				// skip the semicolon
-				if (tokens.tokens[index].type == Token.Type.StatementEnd){
-					index ++;
+					varDeclare = VarDeclareNode(type, vars.toArray);
+					.destroy(vars);
+					// skip the semicolon
+					if (tokens.tokens[brackEnd+1].type == Token.Type.StatementEnd){
+						index = brackEnd+2;
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(brackEnd+1),
+									"variable declaration not followed by semicolon"));
+					}
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
 				}
 			}else{
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid variable declaration"));
@@ -471,7 +672,6 @@ struct ASTGen{
 		/// generates AST for if statements
 		IfNode generateIfAST(){
 			IfNode ifNode;
-			ifNode.lineno = tokens.getTokenLine(index);
 			// check if is an if
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
@@ -504,7 +704,6 @@ struct ASTGen{
 		/// generates AST for while statements
 		WhileNode generateWhileAST(){
 			WhileNode whileNode;
-			whileNode.lineno = tokens.getTokenLine(index);
 			// check if is an if
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
@@ -525,72 +724,9 @@ struct ASTGen{
 			}
 			return whileNode;
 		}
-
-		/// generates AST for for loop statements
-		ForNode generateForAST(){
-			ForNode forNode;
-			forNode.lineno = tokens.getTokenLine(index);
-			// check if is a for statement
-			if (tokens.tokens[index] == Token(Token.Type.Keyword, "for") && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-				/// where the parantheses ends
-				uinteger bracketEnd = tokens.tokens.bracketPos(index+1);
-				/// get the init statement
-				index = index + 2;
-				forNode.initStatement = generateStatementAST();
-				/// get the condition
-				forNode.condition = generateCodeAST();
-				/// make sure there's a semicolon
-				if (tokens.tokens[index].type != Token.Type.StatementEnd){
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "semicolon expected after for loop condition"));
-				}
-				index ++;
-				/// get the increment statement
-				forNode.incStatement = generateStatementAST();
-				if (index == bracketEnd){
-					/// now for the for loop body
-					index ++;
-					forNode.statement = generateStatementAST();
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "closing parantheses expected after statement"));
-				}
-			}
-			return forNode;
-		}
-
-		/// generates AST for do-while loops statements
-		DoWhileNode generateDoWhileAST(){
-			DoWhileNode doWhile;
-			doWhile.lineno = tokens.getTokenLine(index);
-			if (tokens.tokens[index] == Token(Token.Type.Keyword, "do")){
-				// get the statement
-				index ++;
-				doWhile.statement = generateStatementAST();
-				// now make sure there's a while there
-				if (tokens.tokens[index] == Token(Token.Type.Keyword, "while") &&
-					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-					// read the condition
-					uinteger brackEnd = tokens.tokens.bracketPos(index+1);
-					index += 2;
-					doWhile.condition = generateCodeAST();
-					if (index != brackEnd){
-						compileErrors.append (CompileError(tokens.getTokenLine(index), "syntax error"));
-					}else{
-						// skip the bracket end
-						index ++;
-						// the semicolon after `do ... while(...)` is optional, so if it's there, skip it
-						if (tokens.tokens[index].type == Token.Type.StatementEnd){
-							index ++;
-						}
-					}
-				}else{
-					compileErrors.append (CompileError(tokens.getTokenLine(index),
-							"while followed by condition expected after end of loop statement"));
-				}
-			}
-			return doWhile;
-		}
 		
 		/// returns a node representing either of the following:
+		/// 
 		/// 1. String literal
 		/// 2. Number literal
 		/// 3. Function Call (uses `generateFunctionCallAST`)
@@ -615,8 +751,6 @@ struct ASTGen{
 					// just a var
 					return CodeNode(generateVariableAST());
 				}
-			}else if (token.type == Token.Type.Operator && SOPERATORS.hasElement(token.token)){
-				return CodeNode(generateSOperatorAST());
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
 				index ++;
@@ -626,18 +760,16 @@ struct ASTGen{
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
-				// read into ArrayNode
-				CodeNode[] elements = [];
-				for (; index < brackEnd; index ++){
-					elements = elements ~ generateCodeAST();
-					if (tokens.tokens[index].type != Token.Type.Comma){
-						compileErrors.append (CompileError (tokens.getTokenLine(index),
-								"Unexpected token, comma must be used to separate array elements"));
-						index = brackEnd;
-					}
+				Token[] data = tokens.tokens[index .. brackEnd+1].dup;
+				LiteralNode r;
+				try{
+					r.fromTokens(data);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
 				}
 				index = brackEnd+1;
-				return CodeNode(ArrayNode(elements));
+				return CodeNode(r);
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
 				// literal
 				index ++;
