@@ -283,27 +283,33 @@ package struct OperatorNode{
 
 /// stores an "array-read" (instruction `readElement` or for string, `readChar`)
 package struct ReadElement{
-	/// stores the nodes. [0] is the node to read from. [1] is the index
-	private CodeNode[] nodes = [null, null];
+	/// the node to read from
+	private CodeNode* readFromPtr = null;
+	/// the index to read at
+	private CodeNode* readIndexPtr = null;
 	/// the node to read from
 	public @property CodeNode readFromNode(){
-		return nodes[0];
+		return *readFromPtr;
 	}
 	/// the node to read from
 	public @property CodeNode readFromNode(CodeNode newNode){
-		return nodes[0] = newNode;
+		if (readFromPtr is null)
+			readFromPtr = new CodeNode();
+		return *readFromPtr = newNode;
 	}
 	/// the index to read at
 	public @property CodeNode index(){
-		return nodes[1];
+		return *readIndexPtr;
 	}
 	/// the index to read at
 	public @property CodeNode index(CodeNode newNode){
-		return nodes[1] = newNode;
+		if (readIndexPtr is null)
+			readIndexPtr = new CodeNode();
+		return *readIndexPtr = newNode;
 	}
 	/// returns the data type this node will return
 	public @property DataType returnType(){
-		DataType r = nodes[0].returnType;
+		DataType r = (*readFromPtr).returnType;
 		if (r.arrayNestCount == 0 && r.type == DataType.Type.String){
 			return DataType(DataType.Type.String);
 		}
@@ -312,9 +318,8 @@ package struct ReadElement{
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
-		nodes.length = 2;
-		nodes[0] = toReadNode;
-		nodes[1] = index;
+		this.readFromNode = toReadNode;
+		this.index = index;
 	}
 }
 
