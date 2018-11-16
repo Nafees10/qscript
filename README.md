@@ -3,11 +3,11 @@ A fast, static typed, scripting language, with a syntax similar to D Language.
 ## Setting it up
 To add QScript to your dub package or project, add the following into dub.json dependencies:
 ```
-"qscript": "~>0.6.0"
+"qscript": "~>0.6.2"
 ```
 or if you have dub.sdl:
 ```
-dependency "qscript" version="~>0.6.0"
+dependency "qscript" version="~>0.6.2"
 ```
 After adding that, look at the `demos/demo.d` to see how to use the `QScript` class to execute scripts.
 
@@ -17,10 +17,15 @@ After adding that, look at the `demos/demo.d` to see how to use the `QScript` cl
 To get started on using QScript, see the following documents:
 * `spec/syntax.md`		- Contains the specification for QScript's syntax.
 * `spec/functions.md`	- Contains a list of predefined QScript functions.
-* `demos/demo.d`		- A demo usage of QScript in D langauage. Shows how to add new functions, 
-  
-And for the documentation on the code, including QScript's compiler, it is stored in `docs/`.  
+* `source/demo.d`		- A demo usage of QScript in D langauage. Shows how to add new functions
+
 The spec for QScript's byte code is also available, in `spec/bytecode.md`, but knowing it is not necessary for using QScript.
+
+### Building the demo:
+To build the demo, `cd` into qscript's directory, and run this:  
+`dub build --config=demo --build=release`  
+This will create an executable file named `demo` in the folder. Use it to run scripts using:  
+`./demo path/to/script`
 
 ## Features:
 1. Syntax very similar to D
