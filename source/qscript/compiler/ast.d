@@ -462,47 +462,47 @@ package struct SOperatorNode{
 package struct ReadElement{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
-	/// stores the nodes. [0] is the node to read from. [1] is the index
-	private CodeNode[] nodes = [null, null];
+	/// the node to read from
+	private CodeNode* readFromPtr = null;
+	/// the index to read at
+	private CodeNode* readIndexPtr = null;
 	/// the node to read from
 	public @property CodeNode readFromNode(){
-		return nodes[0];
+		return *readFromPtr;
 	}
 	/// the node to read from
 	public @property CodeNode readFromNode(CodeNode newNode){
-		return nodes[0] = newNode;
+		if (readFromPtr is null)
+			readFromPtr = new CodeNode();
+		return *readFromPtr = newNode;
 	}
 	/// the index to read at
 	public @property CodeNode index(){
-		return nodes[1];
+		return *readIndexPtr;
 	}
 	/// the index to read at
 	public @property CodeNode index(CodeNode newNode){
-		return nodes[1] = newNode;
+		if (readIndexPtr is null)
+			readIndexPtr = new CodeNode();
+		return *readIndexPtr = newNode;
 	}
-	/// Returns: true if the stored data is literal
-	public @property bool isLiteral (){
-		foreach (node; nodes){
-			if (!node.isLiteral)
-				return false;
+	/// returns the data type this node will return
+	public @property DataType returnType(){
+		DataType r = (*readFromPtr).returnType;
+		if (r.arrayDimensionCount == 0 && r.type == DataType.Type.String){
+			return DataType(DataType.Type.String);
 		}
-		return true;
+		r.arrayDimensionCount --;
+		return r;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
-	/// the return type
-	@property DataType returnType (){
-		return _returnType;
-	}
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
+	/// does nothing, besides existing but needed for compiling
+	public @property DataType returnType(DataType newType){
+		return this.returnType;
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
-		nodes.length = 2;
-		nodes[0] = toReadNode;
-		nodes[1] = index;
+		this.readFromNode = toReadNode;
+		this.index = index;
 	}
 }
 
