@@ -1,5 +1,5 @@
 # QScript
-**This readme is for the upcoming version, for the latest stable version, download from [releases](https://github.com/Nafees10/qscript/releases).**  
+**This readme is for the upcoming version, for the latest stable version, download from [releases](https://github.com/Nafees10/qscript/releases) or clone from master branch.**  
 A fast, static typed, scripting language, with a syntax similar to D Language.
 ## Setting it up
 To add QScript to your dub package or project, add the following into dub.json dependencies:
