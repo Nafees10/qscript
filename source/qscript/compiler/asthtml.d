@@ -3,7 +3,7 @@ Used for debugging the astgen.
 Contains functions to generate a html representation of AST.
 +/
 module qscript.compiler.asthtml;
-
+/*
 import qscript.compiler.ast;
 import qscript.compiler.misc;
 
@@ -224,4 +224,4 @@ string[] toHtml(VariableNode node){
 		"</div>"
 		];
 	return r;
-}
+}*/
