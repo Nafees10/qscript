@@ -506,6 +506,31 @@ package struct ReadElement{
 	}
 }
 
+/// MemberGetter node, aka the `.` operator
+package struct MemberNode{
+	/// the line number on which this node was present
+	public uinteger lineno;
+	/// the node containing the member node's name
+	public string memberName;
+	/// the node containing member node, aka parentNode (idk if it's really called that)
+	private CodeNode* parentNodePtr;
+	/// ditto
+	public @property CodeNode parentNode(){
+		return *parentNodePtr;
+	}
+	/// ditto
+	public @property CodeNode parentNode(CodeNode node){
+		if (parentNodePtr is null)
+			parentNodePtr = new CodeNode;
+		return *parentNodePtr = node;
+	}
+	/// constructor
+	this (CodeNode parent, string member){
+		this.parentNode = parent;
+		this.memberName = member;
+	}
+}
+
 /// a node representing statements, including: if, while, function-call..
 package struct StatementNode{
 	/// types of a statement
