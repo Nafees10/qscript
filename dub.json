@@ -18,5 +18,11 @@
 			"targetName": "demo",
 			"versions": ["demo"]
 		},
+		{
+			"name": "compiler",
+			"targetType": "executable",
+			"targetName": "compiler",
+			"versions": ["compiler"]
+		},
 	],
 }
