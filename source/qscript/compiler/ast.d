@@ -214,6 +214,14 @@ package struct CodeNode{
 			return true;
 		if (storedType == CodeNode.Type.Array)
 			return array.isLiteral;
+		if (storedType == CodeNode.Type.Operator)
+			return operator.isLiteral;
+		if (storedType == CodeNode.Type.ReadElement)
+			return arrayRead.isLiteral;
+		if (storedType == CodeNode.Type.SOperator)
+			return sOperator.isLiteral;
+		if (storedType == CodeNode.Type.Variable)
+			return var.isLiteral;
 		return false;
 	}
 	/// the return type, only available after ASTCheck has checked it
@@ -274,6 +282,10 @@ package struct VariableNode{
 	@property DataType returnType (){
 		return _returnType;
 	}
+	/// true if its return value is static, i.e, will always return same value when executed
+	/// 
+	/// determined by ASTCheck
+	public bool isLiteral;
 	/// ditto
 	@property DataType returnType (DataType newType){
 		return _returnType = newType;
@@ -298,7 +310,7 @@ package struct ArrayNode{
 	public @property ref CodeNode[] elements(CodeNode[] newArray){
 		return _elements = newArray.dup;
 	}
-	/// Returns: true if the stored array is a literal
+	/// Returns: true if its return value is static, i.e, will always return same value when executed
 	public @property bool isLiteral (){
 		foreach (element; _elements)
 			if (!element.isLiteral)
@@ -398,7 +410,7 @@ package struct OperatorNode{
 	@property ref CodeNode[] operands(CodeNode[] newOperands){
 		return storedOperands = newOperands.dup;
 	}
-	/// Returns: true if the stored data is literal
+	/// Returns: true if its return value is static, i.e, will always return same value when executed
 	public @property bool isLiteral (){
 		foreach (operand; storedOperands){
 			if (!operand.isLiteral)
@@ -452,6 +464,10 @@ package struct SOperatorNode{
 	@property DataType returnType (){
 		return _returnType;
 	}
+	/// Returns: true if its return value is static, i.e will always be same when executed
+	@property bool isLiteral(){
+		return (operandPtr !is null && operand.isLiteral);
+	}
 	/// ditto
 	@property DataType returnType (DataType newType){
 		return _returnType = newType;
@@ -498,6 +514,10 @@ package struct ReadElement{
 	/// does nothing, besides existing but needed for compiling
 	public @property DataType returnType(DataType newType){
 		return this.returnType;
+	}
+	/// Returns: true if its return value is static, i.e, will always return same value when executed
+	@property bool isLiteral(){
+		return (readFromPtr !is null && readIndexPtr !is null && readFromNode.isLiteral && index.isLiteral);
 	}
 	/// constructor
 	this (CodeNode toReadNode, CodeNode index){
