@@ -14,7 +14,7 @@ import utils.lists;
 import std.conv : to;
 
 /// class to generate byte code for an AST and performing checks on the AST (using ASTCheck class)
-class CodeGen{
+/*class CodeGen{
 private:
 	/// stores the pre-defined functions
 	Function[] preDefFunctions;
@@ -160,7 +160,7 @@ protected:
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
 		foreach (i, arg; node.arguments){
-			argTypes[i] = arg.argType;
+			argTypes[i] = arg.returnType;
 		}
 		// push the args
 		foreach (arg; node.arguments){
@@ -260,6 +260,43 @@ protected:
 		generateByteCode (node.statement);
 		byteCode.add ("\t"~to!string (endJump)~':');
 	}
+	/// generates byte code for CodeNode
+	void generateByteCode (CodeNode node){
+		if (node.type == CodeNode.Type.Array){
+			generateByteCode(node.node!(CodeNode.Type.Array));
+		}else if (node.type == CodeNode.Type.FunctionCall){
+			generateByteCode (node.node!(CodeNode.Type.FunctionCall));
+		}else if (node.type == CodeNode.Type.Literal){
+			generateByteCode (node.node!(CodeNode.Type.Literal));
+		}else if (node.type == CodeNode.Type.Operator){
+			generateByteCode (node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.ReadElement){
+			generateByteCode (node.node!(CodeNode.Type.ReadElement));
+		}else if (node.type == CodeNode.Type.SOperator){
+			generateByteCode (node.node!(CodeNode.Type.SOperator));
+		}else if (node.type == CodeNode.Type.Variable){
+			generateByteCode (node.node!(CodeNode.Type.Variable));
+		}
+	}
+	/// generates byte code for ArrayNode
+	void generateByteCode (ArrayNode node){
+		if (node.elements.length == 0){
+			byteCode.add ("\temptyArray");
+		}else{
+			foreach (element; node.elements){
+				generateByteCode (element);
+			}
+			byteCode.add ("\tmakeArray i"~to!string(node.elements.length));
+		}
+	}
+	/// generates byte code for LiteralNode
+	void generateByteCode (LiteralNode node){
+		byteCode.add ("\tpush "~node.toByteCode);
+	}
+	/// generates byte code for OperatorNode
+	void generateByteCode (OperatorNode node){
+
+	}
 public:
 	this (Function[] preDefFunctions){
 		byteCode = new List!string;
@@ -303,9 +340,10 @@ public:
 		return r;
 	}
 }
-
+*/
 /// contains functions to generate byte code from AST
-/*package struct CodeGen{
+/* OLD CODE, just sits here in case I forget how something was done in the byte code earlier
+package struct CodeGen{
 	/// generates byte code for a script
 	public string[] generateByteCode(ScriptNode scriptNode, ref CompileError[] errors){
 		compileErrors = new LinkedList!CompileError;

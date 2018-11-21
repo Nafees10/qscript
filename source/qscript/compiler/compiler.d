@@ -49,7 +49,7 @@ public alias DataType = qscript.compiler.misc.DataType;
 /// `script` is the script to compile
 /// `predefinedFunctions` is an array containing data about a function in Function[]
 /// `errors` is the array to which errors will be appended
-public string[] compileQScriptToByteCode(string[] script, Function[] predefinedFunctions, ref CompileError[] errors){
+/*public string[] compileQScriptToByteCode(string[] script, Function[] predefinedFunctions, ref CompileError[] errors){
 	/// called by ASTGen to get return type of pre-defined functions
 	DataType onGetReturnType(string name, DataType[] argTypes){
 		// some hardcoded stuff
@@ -179,4 +179,4 @@ public string[] compileQScriptToByteCode(string[] script, Function[] predefinedF
 		return [];
 	}
 	return code;
-}
+}*/

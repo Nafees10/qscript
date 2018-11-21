@@ -109,11 +109,11 @@ public:
 	/// Throws: Exception if there was an error loading the byte code
 	CompileError[] loadScript(string[] script){
 		CompileError[] errors;
-		string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
-		string err = qvm.loadByteCode(byteCode);
+		/*string[] byteCode = compileQScriptToByteCode(script.dup, extFunctionTypes, errors); TODO
+		string err = qvm.loadByteCode(byteCode); TODO
 		if (err.length > 0){
 			throw new Exception ("error loading byte code: "~err);
-		}
+		}*/
 		return errors;
 	}
 
@@ -131,7 +131,8 @@ public:
 	/// `script` is the script to compile, each line in a separate element, without the trailing '\n'
 	/// `errors` is the array to put compilation errors, if any, in
 	string[] compileScript(string[] script, ref CompileError[] errors){
-		return compileQScriptToByteCode(script.dup, extFunctionTypes, errors);
+		//return compileQScriptToByteCode(script.dup, extFunctionTypes, errors); TODO
+		return [];
 	}
 
 	/// executes a script defined function

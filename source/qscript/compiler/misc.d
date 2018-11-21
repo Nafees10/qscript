@@ -81,7 +81,7 @@ public struct DataType{
 	}
 	/// converts this to a byte code style data type, which is a string
 	string toByteCode(){
-		static const TYPE_CODE = [
+		auto TYPE_CODE = [
 			DataType.Type.Void : '0',
 			DataType.Type.String : '1',
 			DataType.Type.Integer : '2',
@@ -93,7 +93,7 @@ public struct DataType{
 	/// 
 	/// Returns: true if successful, false if the string was invalid
 	bool fromByteCode(string s){
-		static const TYPE_CODE = [
+		auto TYPE_CODE = [
 			'0' : DataType.Type.Void,
 			'1' : DataType.Type.String,
 			'2' : DataType.Type.Integer,
