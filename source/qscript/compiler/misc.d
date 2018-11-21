@@ -256,7 +256,7 @@ public struct DataType{
 		for (; i < r.length; i += 2){
 			r[i .. i+2] = "[]";
 		}
-		return cast(string) r;
+		return cast(string) isRef ? '@'~r : r;
 	}
 }
 /// 
