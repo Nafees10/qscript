@@ -628,9 +628,10 @@ struct ASTGen{
 				uinteger brackEnd = tokens.tokens.bracketPos(index);
 				// read into ArrayNode
 				CodeNode[] elements = [];
+				index ++;
 				for (; index < brackEnd; index ++){
 					elements = elements ~ generateCodeAST();
-					if (tokens.tokens[index].type != Token.Type.Comma){
+					if (tokens.tokens[index].type != Token.Type.Comma && index != brackEnd){
 						compileErrors.append (CompileError (tokens.getTokenLine(index),
 								"Unexpected token, comma must be used to separate array elements"));
 						index = brackEnd;
