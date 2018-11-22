@@ -12,18 +12,10 @@ import std.conv : to;
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
-	private FunctionNode[] storedFunctions;
-	/// returns the array containing the functions
-	@property ref FunctionNode[] functions(){
-		return storedFunctions;
-	}
-	/// sets the storedFunctions array
-	@property ref FunctionNode[] functions(FunctionNode[] scriptFunctions){
-		return storedFunctions = scriptFunctions.dup;
-	}
+	public FunctionNode[] functions;
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
-		storedFunctions = scriptFunctions.dup;
+		functions = scriptFunctions.dup;
 	}
 }
 
@@ -42,17 +34,9 @@ package struct FunctionNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// stores arguments with their data type
-	private FunctionNode.Argument[] args;
-	/// returns an array of arguments this function receives and their types
-	@property ref FunctionNode.Argument[] arguments(){
-		return args;
-	}
-	/// sets value of array containing arguments + types
-	@property ref FunctionNode.Argument[] arguments(FunctionNode.Argument[] newArgs){
-		return args = newArgs.dup;
-	}
+	public FunctionNode.Argument[] arguments;
 	/// the name of the function
-	string name;
+	public string name;
 	/// body block of this function
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
@@ -61,7 +45,7 @@ package struct FunctionNode{
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
 		name = fName;
-		args = funcArgs.dup;
+		arguments = funcArgs.dup;
 		returnType = returnType;
 	}
 }
@@ -71,18 +55,10 @@ package struct BlockNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// an array of statements that make this block
-	private StatementNode[] storedStatements;
-	/// returns the array containing the statements
-	@property ref StatementNode[] statements(){
-		return storedStatements;
-	}
-	/// sets the array containing statements
-	@property ref StatementNode[] statements(StatementNode[] blockStatements){
-		return storedStatements = blockStatements.dup;
-	}
+	public StatementNode[] statements;
 	/// constructor
 	this (StatementNode[] blockStatements){
-		storedStatements = blockStatements.dup;
+		statements = blockStatements.dup;
 	}
 }
 
@@ -277,21 +253,13 @@ package struct VariableNode{
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
 	public uinteger id;
 	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
-	/// the return type
-	@property DataType returnType (){
-		return _returnType;
-	}
+	public DataType returnType;
 	/// true if its return value is static, i.e, will always return same value when executed
 	/// 
 	/// determined by ASTCheck
 	/// 
 	/// TODO yet to be implemented, probably won't be done till 0.7.1
 	public bool isLiteral = false;
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
-	}
 	/// constructor
 	this (string name){
 		varName = name;
@@ -304,27 +272,19 @@ package struct ArrayNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	uinteger lineno;
 	/// stores the elements
-	private CodeNode[] _elements;
-	/// Returns: the stored elements
-	public @property ref CodeNode[] elements(){
-		return _elements;
-	}
-	/// ditto
-	public @property ref CodeNode[] elements(CodeNode[] newArray){
-		return _elements = newArray.dup;
-	}
+	public CodeNode[] elements;
 	/// Returns: true if its return value is static, i.e, will always return same value when executed
 	public @property bool isLiteral (){
-		foreach (element; _elements)
+		foreach (element; elements)
 			if (!element.isLiteral)
 				return false;
 		return true;
 	}
 	/// the return type
 	@property DataType returnType (){
-		if (_elements.length == 0)
+		if (elements.length == 0)
 			return DataType(DataType.Type.Void,1);
-		DataType r = _elements[0].returnType;
+		DataType r = elements[0].returnType;
 		r.arrayDimensionCount++;
 		return r;
 	}
@@ -406,39 +366,23 @@ package struct OperatorNode{
 	/// stores the operator (like '+' ...)
 	public string operator;
 	/// operands. [0] = left, [1] = right
-	private CodeNode[] storedOperands;
-	/// returns an array of operands
-	@property ref CodeNode[] operands(){
-		return storedOperands;
-	}
-	/// sets value of array storing operands
-	@property ref CodeNode[] operands(CodeNode[] newOperands){
-		return storedOperands = newOperands.dup;
-	}
+	public CodeNode[] operands;
 	/// Returns: true if its return value is static, i.e, will always return same value when executed
 	public @property bool isLiteral (){
-		foreach (operand; storedOperands){
+		foreach (operand; operands){
 			if (!operand.isLiteral)
 				return false;
 		}
 		return true;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
-	/// the return type
-	@property DataType returnType (){
-		return _returnType;
-	}
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
-	}
+	public DataType returnType;
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
-		storedOperands.length = 2;
-		storedOperands[0] = a;
-		storedOperands[1] = b;
+		operands.length = 2;
+		operands[0] = a;
+		operands[1] = b;
 	}
 }
 
@@ -451,31 +395,21 @@ package struct SOperatorNode{
 	/// the stored operand
 	private CodeNode* operandPtr;
 	/// the operand
-	public @property CodeNode operand(CodeNode newOperand){
+	public @property ref CodeNode operand(CodeNode newOperand){
 		if (operandPtr is null){
 			operandPtr = new CodeNode;
 		}
 		return *operandPtr = newOperand;
 	}
 	/// the operand
-	public @property CodeNode operand(){
-		if (operandPtr is null)
-			return CodeNode();
+	public @property ref CodeNode operand(){
 		return *operandPtr;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
-	/// the return type
-	@property DataType returnType (){
-		return _returnType;
-	}
+	public DataType returnType;
 	/// Returns: true if its return value is static, i.e will always be same when executed
 	@property bool isLiteral(){
 		return (operandPtr !is null && operand.isLiteral);
-	}
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
 	}
 }
 
@@ -488,23 +422,27 @@ package struct ReadElement{
 	/// the index to read at
 	private CodeNode* readIndexPtr = null;
 	/// the node to read from
-	public @property CodeNode readFromNode(){
+	public @property ref CodeNode readFromNode(){
+		if (readFromPtr is null)
+			readFromPtr = new CodeNode;
 		return *readFromPtr;
 	}
 	/// the node to read from
-	public @property CodeNode readFromNode(CodeNode newNode){
+	public @property ref CodeNode readFromNode(CodeNode newNode){
 		if (readFromPtr is null)
-			readFromPtr = new CodeNode();
+			readFromPtr = new CodeNode;
 		return *readFromPtr = newNode;
 	}
 	/// the index to read at
-	public @property CodeNode index(){
+	public @property ref CodeNode index(){
+		if (readIndexPtr is null)
+			readIndexPtr = new CodeNode;
 		return *readIndexPtr;
 	}
 	/// the index to read at
-	public @property CodeNode index(CodeNode newNode){
+	public @property ref CodeNode index(CodeNode newNode){
 		if (readIndexPtr is null)
-			readIndexPtr = new CodeNode();
+			readIndexPtr = new CodeNode;
 		return *readIndexPtr = newNode;
 	}
 	/// returns the data type this node will return
@@ -674,21 +612,13 @@ package struct AssignmentNode{
 	/// the variable to assign to
 	public VariableNode var;
 	/// stores the how "deeper" dimension of the array the value has to be assigned to
-	private CodeNode[] storedIndexes;
-	/// returns to which index(es) the val has to be assigned
-	public @property ref CodeNode[] indexes(){
-		return storedIndexes;
-	}
-	/// sets to which index(es) the val has to be assigned
-	public @property ref CodeNode[] indexes(CodeNode[] newArray){
-		return storedIndexes = newArray.dup;
-	}
+	public CodeNode[] indexes;
 	/// the value to assign
 	public CodeNode val;
 	/// constructor
 	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value, bool deref = false){
 		var = variable;
-		storedIndexes = varIndexes.dup;
+		indexes = varIndexes.dup;
 		val = value;
 		this.deref = deref;
 	}
@@ -705,7 +635,7 @@ package struct IfNode{
 	/// returns the statement to execute, if true
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return *(new StatementNode());
+			statementPtr = new StatementNode;
 		return *statementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -720,7 +650,7 @@ package struct IfNode{
 	/// returns the statement to execute, if false
 	public @property ref StatementNode elseStatement(){
 		if (elseStatementPtr is null)
-			return *(new StatementNode());
+			elseStatementPtr = new StatementNode;
 		return *elseStatementPtr;
 	}
 	/// sets the statement to execute, if true
@@ -759,7 +689,7 @@ package struct WhileNode{
 	/// returns the statement to execute, while true
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return *(new StatementNode());
+			statementPtr = new StatementNode;
 		return *statementPtr;
 	}
 	/// sets the statement to execute, while true
@@ -787,7 +717,7 @@ package struct DoWhileNode{
 	/// the statement to execute in this loop
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return *(new StatementNode());
+			statementPtr = new StatementNode;
 		return *statementPtr;
 	}
 	/// ditto
@@ -819,7 +749,7 @@ package struct ForNode{
 	/// the init statement for this for loop
 	public @property ref StatementNode initStatement(){
 		if (initStatementPtr is null)
-			return *(new StatementNode());
+			initStatementPtr = new StatementNode;
 		return *initStatementPtr;
 	}
 	/// ditto
@@ -832,7 +762,7 @@ package struct ForNode{
 	/// the increment statement for this for loop
 	public @property ref StatementNode incStatement(){
 		if (incStatementPtr is null)
-			return *(new StatementNode());
+			incStatementPtr = new StatementNode;
 		return *incStatementPtr;
 	}
 	/// ditto
@@ -845,7 +775,7 @@ package struct ForNode{
 	/// the statement to execute in loop
 	public @property ref StatementNode statement(){
 		if (statementPtr is null)
-			return *(new StatementNode());
+			statementPtr = new StatementNode;
 		return *statementPtr;
 	}
 	/// ditto
@@ -881,15 +811,7 @@ package struct FunctionCallNode{
 		return storedArguments = newArgs.dup;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
-	/// the return type
-	@property DataType returnType (){
-		return _returnType;
-	}
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
-	}
+	public DataType returnType;
 	/// constructor
 	this (string functionName, CodeNode[] functionArguments){
 		fName = functionName;
@@ -920,7 +842,7 @@ package struct VarDeclareNode{
 	/// Returns: assigned value for a var
 	/// 
 	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
-	public CodeNode getValue(string varName){
+	public ref CodeNode getValue(string varName){
 		if (varName in varValues){
 			return varValues[varName];
 		}
