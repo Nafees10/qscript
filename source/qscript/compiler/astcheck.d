@@ -190,7 +190,7 @@ private:
 	}
 protected:
 	/// checks if a FunctionNode is valid
-	void checkAST(FunctionNode node){
+	void checkAST(ref FunctionNode node){
 		increaseScope();
 		// add the arg's to the var scope. make sure one arg name is not used more than once
 		foreach (i, arg; node.arguments){
@@ -203,7 +203,7 @@ protected:
 		decreaseScope();
 	}
 	/// checks if a StatementNode is valid
-	void checkAST(StatementNode node){
+	void checkAST(ref StatementNode node){
 		if (node.type == StatementNode.Type.Assignment){
 			checkAST(node.node!(StatementNode.Type.Assignment));
 		}else if (node.type == StatementNode.Type.Block){
@@ -223,7 +223,7 @@ protected:
 		}
 	}
 	/// checks a AssignmentNode
-	void checkAST(AssignmentNode node){
+	void checkAST(ref AssignmentNode node){
 		// make sure var exists, checkAST(VariableNode) does that
 		checkAST(node.var);
 		DataType varType = getVarType (node.var.varName);
@@ -253,7 +253,7 @@ protected:
 		}
 	}
 	/// checks a BlockNode
-	void checkAST(BlockNode node, bool ownScope = true){
+	void checkAST(ref BlockNode node, bool ownScope = true){
 		if (ownScope)
 			increaseScope();
 		foreach (statement; node.statements){
@@ -263,7 +263,7 @@ protected:
 			decreaseScope();
 	}
 	/// checks a DoWhileNode
-	void checkAST(DoWhileNode node){
+	void checkAST(ref DoWhileNode node){
 		increaseScope();
 		if (node.statement.type == StatementNode.Type.Block){
 			checkAST(node.statement.node!(StatementNode.Type.Block), false);
@@ -274,7 +274,7 @@ protected:
 		decreaseScope();
 	}
 	/// checks a ForNode
-	void checkAST(ForNode node){
+	void checkAST(ref ForNode node){
 		increaseScope();
 		// first the init statement
 		checkAST(node.initStatement);
@@ -287,7 +287,7 @@ protected:
 		decreaseScope();
 	}
 	/// checks a FunctionCallNode
-	void checkAST(FunctionCallNode node){
+	void checkAST(ref FunctionCallNode node){
 		/// store the arguments types
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
@@ -316,7 +316,7 @@ protected:
 		}
 	}
 	/// checks an IfNode
-	void checkAST(IfNode node){
+	void checkAST(ref IfNode node){
 		// first the condition
 		checkAST(node.condition);
 		// then statements
@@ -351,7 +351,7 @@ protected:
 		}
 	}
 	/// checks a WhileNode
-	void checkAST(WhileNode node){
+	void checkAST(ref WhileNode node){
 		// first condition
 		checkAST(node.condition);
 		// the the statement
@@ -360,7 +360,7 @@ protected:
 		decreaseScope();
 	}
 	/// checks a CodeNode
-	void checkAST(CodeNode node){
+	void checkAST(ref CodeNode node){
 		if (node.type == CodeNode.Type.FunctionCall){
 			checkAST(node.node!(CodeNode.Type.FunctionCall));
 		}else if (node.type == CodeNode.Type.Literal){
@@ -378,7 +378,7 @@ protected:
 		}
 	}
 	/// checks a OperatorNode
-	void checkAST(OperatorNode node){
+	void checkAST(ref OperatorNode node){
 		// check the operands
 		foreach (operand; node.operands){
 			checkAST (operand);
@@ -405,7 +405,7 @@ protected:
 		}
 	}
 	/// checks a SOperatorNode
-	void checkAST(SOperatorNode node){
+	void checkAST(ref SOperatorNode node){
 		// check the operand
 		checkAST(node.operand);
 		// now it it's `!`, only accept int, if `@`, var
@@ -421,7 +421,7 @@ protected:
 			compileErrors.append (CompileError(node.lineno, "invalid operator"));
 	}
 	/// checks a ReadElement
-	void checkAST(ReadElement node){
+	void checkAST(ref ReadElement node){
 		// check the var, and the index
 		checkAST (node.readFromNode);
 		checkAST (node.index);
@@ -447,9 +447,11 @@ protected:
 		}
 		// and put the assigned ID to it
 		node.id = getVarID(node.varName);
+		// set it's type
+		node.returnType = getVarType(node.varName);
 	}
 	/// checks an ArrayNode
-	void checkAST(ArrayNode node){
+	void checkAST(ref ArrayNode node){
 		// check each element, and make sure all their types are same
 		DataType type = node.elements.length > 0 ? getReturnType(node.elements[0]) : DataType();
 		bool typeMatches = true;
@@ -475,7 +477,7 @@ public:
 	/// `node` is the ScriptNode for the script
 	/// 
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
-	CompileError[] checkAST(ScriptNode node){
+	CompileError[] checkAST(ref ScriptNode node){
 		// empty everything
 		scriptDefFunctions = [];
 		compileErrors.clear;
@@ -498,7 +500,7 @@ public:
 	/// `scriptFunctions` is the array to put data about script defined functions in
 	/// 
 	/// Returns: errors in CompileError[], or empty array if there were no errors
-	CompileError[] checkAST(ScriptNode node, ref Function[] scriptFunctions){
+	CompileError[] checkAST(ref ScriptNode node, ref Function[] scriptFunctions){
 		CompileError[] errors = checkAST(node);
 		scriptFunctions = scriptDefFunctions.dup;
 		return errors;
