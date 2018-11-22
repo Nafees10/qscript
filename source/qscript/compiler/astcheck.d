@@ -20,10 +20,6 @@ private:
 	Function[] scriptDefFunctions;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
-	/// functions that have their own instructions. Index is the byte-code style function name, val is the instruction name
-	string[string] instructionFunctions;
-	/// stores return types for instructionFunctions
-	DataType[string] instructionFunctionReturnTypes;
 	/// stores data types of variables in currently-being-checked-FunctionNode
 	DataType[string] varTypes;
 	/// stores the IDs (as index) for vars
@@ -108,9 +104,6 @@ private:
 	DataType getFunctionType(string name, DataType[] argTypes){
 		// check if it's an instruction function
 		string byteCodeName = encodeFunctionName(name, argTypes);
-		if (byteCodeName in instructionFunctions){
-			return instructionFunctionReturnTypes[byteCodeName];
-		}
 		foreach (func; scriptDefFunctions){
 			if (func.name == name && func.argTypes == argTypes){
 				return func.returnType;
@@ -463,7 +456,7 @@ protected:
 		foreach (element; node.elements){
 			checkAST (element);
 			if (typeMatches && getReturnType(element) != type){
-				compileErrors.append (CompileError(element.lineno, "Elements in array must be of same type"));
+				compileErrors.append (CompileError(element.lineno, "elements in array must be of same type"));
 				typeMatches = false;
 			}
 		}
@@ -475,14 +468,6 @@ public:
 	}
 	~this(){
 		.destroy(compileErrors);
-	}
-	/// adds a new "instruction-function". Any call that matches this function will be converted to an instruction rather than a 
-	/// function call.
-	/// 
-	/// if an instruction already exists for that function, it will be overwritten
-	void addInstructionFunction(Function f, string instruction){
-		string fName = encodeFunctionName(f.name, f.argTypes);
-		instructionFunctions[fName] = instruction;
 	}
 	/// checks a script's AST for any errors
 	/// 
