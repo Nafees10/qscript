@@ -438,8 +438,12 @@ protected:
 		}
 		// now make sure that the data is an array or a string
 		DataType readFromType = getReturnType (node.readFromNode);
-		if (readFromType.arrayDimensionCount == 0 && readFromType != DataType(DataType.Type.String)){
+		if (readFromType.arrayDimensionCount == 0 && readFromType.type != DataType.Type.String){
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
+		}
+		/// `[..]` can not be used on refs
+		if (readFromType.isRef){
+			compileErrors.append (CompileError(node.readFromNode.lineno, "cannot use [..] on references"));
 		}
 	}
 	/// checks a VariableNode
