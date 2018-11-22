@@ -285,7 +285,9 @@ package struct VariableNode{
 	/// true if its return value is static, i.e, will always return same value when executed
 	/// 
 	/// determined by ASTCheck
-	public bool isLiteral;
+	/// 
+	/// TODO yet to be implemented, probably won't be done till 0.7.1
+	public bool isLiteral = false;
 	/// ditto
 	@property DataType returnType (DataType newType){
 		return _returnType = newType;
@@ -293,6 +295,7 @@ package struct VariableNode{
 	/// constructor
 	this (string name){
 		varName = name;
+		isLiteral = false;
 	}
 }
 
