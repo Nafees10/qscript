@@ -320,15 +320,17 @@ package struct ArrayNode{
 				return false;
 		return true;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	private DataType _returnType;
 	/// the return type
 	@property DataType returnType (){
-		return _returnType;
+		if (_elements.length == 0)
+			return DataType(DataType.Type.Void,1);
+		DataType r = _elements[0].returnType;
+		r.arrayDimensionCount++;
+		return r;
 	}
-	/// ditto
-	@property DataType returnType (DataType newType){
-		return _returnType = newType;
+	/// does nothing (besides existing)
+	@property DataType returnType(DataType newType){
+		return this.returnType;
 	}
 	/// constructor
 	this (CodeNode[] elements){
