@@ -253,7 +253,7 @@ package struct VariableNode{
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
 	public uinteger id;
 	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// true if its return value is static, i.e, will always return same value when executed
 	/// 
 	/// determined by ASTCheck
@@ -264,6 +264,7 @@ package struct VariableNode{
 	this (string name){
 		varName = name;
 		isLiteral = false;
+		returnType = DataType(DataType.Type.Void);
 	}
 }
 
@@ -285,6 +286,8 @@ package struct ArrayNode{
 		if (elements.length == 0)
 			return DataType(DataType.Type.Void,1);
 		DataType r = elements[0].returnType;
+		if (r.type == DataType.Type.Void)
+			return r;
 		r.arrayDimensionCount++;
 		return r;
 	}
@@ -305,7 +308,7 @@ package struct LiteralNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// stores the data type for the literal
-	public DataType returnType;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// stores the literal in a QData
 	public QData literal;
 	/// constructor
@@ -351,7 +354,7 @@ package struct LiteralNode{
 				}else if (type.type == DataType.Type.String){
 					return "s\""~encodeString(data.strVal)~'"';
 				}else{
-					throw new Exception("invalid type stored");
+					return "NULL"; /// actually an error TODO do something about it
 				}
 			}
 		}
@@ -376,13 +379,14 @@ package struct OperatorNode{
 		return true;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
 		operands.length = 2;
 		operands[0] = a;
 		operands[1] = b;
+		returnType = DataType(DataType.Type.Void);
 	}
 }
 
@@ -406,7 +410,7 @@ package struct SOperatorNode{
 		return *operandPtr;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// Returns: true if its return value is static, i.e will always be same when executed
 	@property bool isLiteral(){
 		return (operandPtr !is null && operand.isLiteral);
@@ -811,11 +815,12 @@ package struct FunctionCallNode{
 		return storedArguments = newArgs.dup;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType;
+	public DataType returnType = DataType(DataType.Type.Void);
 	/// constructor
 	this (string functionName, CodeNode[] functionArguments){
 		fName = functionName;
 		arguments = functionArguments;
+		returnType = DataType(DataType.Type.Void);
 	}
 }
 
