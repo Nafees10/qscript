@@ -102,8 +102,6 @@ private:
 	/// Returns: return type of a function, works for both script-defined and predefined functions  
 	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name, DataType[] argTypes){
-		// check if it's an instruction function
-		string byteCodeName = encodeFunctionName(name, argTypes);
 		foreach (func; scriptDefFunctions){
 			if (func.name == name && func.argTypes == argTypes){
 				return func.returnType;
@@ -120,6 +118,9 @@ private:
 	/// 
 	/// In case there's an error, returns `DataType()`
 	DataType getReturnType(CodeNode node){
+		if (node.returnType != DataType(DataType.Type.Void)){
+			return node.returnType;
+		}
 		if (node.type == CodeNode.Type.FunctionCall){
 			DataType[] argTypes;
 			FunctionCallNode fCall = node.node!(CodeNode.Type.FunctionCall);
@@ -127,16 +128,15 @@ private:
 			foreach (i, arg; fCall.arguments){
 				argTypes[i] = getReturnType(arg);
 			}
-			return getFunctionType(fCall.fName, argTypes);
+			node.returnType = getFunctionType(fCall.fName, argTypes);
+			return node.returnType;
 		}else if (node.type == CodeNode.Type.Literal){
 			return node.node!(CodeNode.Type.Literal).returnType;
 		}else if (node.type == CodeNode.Type.Operator){
 			OperatorNode opNode = node.node!(CodeNode.Type.Operator);
-			DataType[2] operandTypes = [getReturnType(opNode.operands[0]), getReturnType(opNode.operands[1])];
-			if (operandTypes[0] != operandTypes[1]){
-				return DataType();
-			}
-			return operandTypes[0];
+			if (BOOL_OPERATORS.hasElement(opNode.operator))
+				return DataType(DataType.Type.Integer);
+			return opNode.operands[0].returnType;
 		}else if (node.type == CodeNode.Type.SOperator){
 			SOperatorNode opNode = node.node!(CodeNode.Type.SOperator);
 			DataType operandType = getReturnType(opNode.operand);
@@ -161,6 +161,14 @@ private:
 		}else if (node.type == CodeNode.Type.Variable){
 			VariableNode varNode = node.node!(CodeNode.Type.Variable);
 			return getVarType(varNode.varName);
+		}else if (node.type == CodeNode.Type.Array){
+			ArrayNode arNode = node.node!(CodeNode.Type.Array);
+			if (arNode.elements.length == 0){
+				return DataType(DataType.Type.Void,1);
+			}
+			DataType r = getReturnType(arNode.elements[0]);
+			r.arrayDimensionCount ++;
+			return r;
 		}
 		return DataType(DataType.Type.Void);
 	}
