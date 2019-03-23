@@ -343,6 +343,7 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Operator && SOPERATORS.hasElement(tokens.tokens[index].token)){
 				// read the operator
 				operator.operator = tokens.tokens[index].token;
+				index++;
 				// and the operand
 				operator.operand = generateNodeAST();
 			}else{
@@ -420,7 +421,8 @@ struct ASTGen{
 			VarDeclareNode varDeclare;
 			varDeclare.lineno = tokens.getTokenLine(index);
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
-			if (DATA_TYPES.hasElement(tokens.tokens[index].token)){
+			if ((tokens.tokens[index].token == "@" && DATA_TYPES.hasElement(tokens.tokens[index+1].token)) ||
+				DATA_TYPES.hasElement(tokens.tokens[index].token)){
 				// read the type
 				try{
 					varDeclare.type = readType();

@@ -19,6 +19,9 @@ import utils.misc;
 
 version(compiler){
 	void main(string[] args){
+		debug{
+			args = ["", "ast", "sample.qs"];
+		}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON");

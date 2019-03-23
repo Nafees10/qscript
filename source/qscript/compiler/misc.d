@@ -251,10 +251,12 @@ public struct DataType{
 		}else{
 			throw new Exception("invalid type stored: "~to!string(type));
 		}
-		uinteger i = r.length;
-		r.length += arrayDimensionCount * 2;
-		for (; i < r.length; i += 2){
-			r[i .. i+2] = "[]";
+		if (arrayDimensionCount > 0){
+			uinteger i = r.length;
+			r.length += arrayDimensionCount * 2;
+			for (; i < r.length; i += 2){
+				r[i .. i+2] = "[]";
+			}
 		}
 		return cast(string) (isRef ? '@'~r : r);
 	}
@@ -445,10 +447,10 @@ unittest{
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
 /// 
-/// `void` will match true against all types (arrays, and even references)  
-/// `@void` will match true against only references of any type
-/// `@void[]` will match true against only references of any type of array
-/// `void[]` will match true against only any type of array (even references)
+/// * `void` will match true against all types (arrays, and even references)
+/// * `@void` will match true against only references of any type
+/// * `@void[]` will match true against only references of any type of array
+/// * `void[]` will match true against only any type of array (even references)
 /// 
 /// returns: true if match successful, else, false
 bool matchArguments(DataType[] definedTypes, DataType[] argTypes){

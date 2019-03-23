@@ -119,6 +119,8 @@ private:
 	/// In case there's an error, returns `DataType()`
 	DataType getReturnType(CodeNode node){
 		if (node.returnType != DataType(DataType.Type.Void)){
+			debug{import std.stdio;
+				stderr.writeln(node.returnType.toString);}
 			return node.returnType;
 		}
 		if (node.type == CodeNode.Type.FunctionCall){
@@ -351,11 +353,11 @@ protected:
 				if (valueType != node.type){
 					compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
 				}
-				// assign it an id
-				addVar (varName, node.type);
-				// set it's ID
-				node.setVarID(varName, getVarID(varName));
 			}
+			// assign it an id
+			addVar (varName, node.type);
+			// set it's ID
+			node.setVarID(varName, getVarID(varName));
 		}
 	}
 	/// checks a WhileNode
@@ -461,13 +463,15 @@ protected:
 	/// checks an ArrayNode
 	void checkAST(ref ArrayNode node){
 		// check each element, and make sure all their types are same
-		DataType type = node.elements.length > 0 ? getReturnType(node.elements[0]) : DataType();
-		bool typeMatches = true;
-		foreach (element; node.elements){
-			checkAST (element);
-			if (typeMatches && getReturnType(element) != type){
-				compileErrors.append (CompileError(element.lineno, "elements in array must be of same type"));
-				typeMatches = false;
+		if (node.elements.length > 0){
+			DataType type = getReturnType(node.elements[0]);
+			bool typeMatches = true;
+			foreach (element; node.elements){
+				checkAST (element);
+				if (typeMatches && getReturnType(element) != type){
+					compileErrors.append (CompileError(element.lineno, "elements in array must be of same type"));
+					typeMatches = false;
+				}
 			}
 		}
 	}
