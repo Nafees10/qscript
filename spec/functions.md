@@ -5,16 +5,16 @@ This document contains some information about the functions predefined in QScrip
 ### setLength
 Modifies length of an existing array.  
 **Arguments:**  
-1. The array to change length of. Data Type: `void[]` , array of any type, of any dimensions.
+1. The array to change length of. Data Type: `@void[]` , reference to array of any type, of any dimensions.
 2. The new length. Data Type: `int` >=0  
 
 **Returns:**  
-The array with the new length. Data Type: same data type as argument1  
+`void`  
 
 **Usage:**  
 ```
 int[] array;
-array = setLength(array, 5); # change array's length to hold 5 elements, from index 0 to index 4
+setLength(@array, 5); # change array's length to hold 5 elements, from index 0 to index 4
 ```
 ### getLength
 Returns the length of an array.  
@@ -28,18 +28,6 @@ The length of array in argument1. Data Type: `int` >=0
 int[] array;
 array = [0, 2, 4, 6];
 getLength (array); # returns 4
-```
-### array
-Puts all provided arguments in an array. Unlike `[...]`, arguments be be literal or not.  
-**Arguments:**  
-* The elements of the resulting array. Data Type: `void`, can be of any type, all arguments must be of the same type.  
-
-**Returns:**  
-The arguments in an array. Data Type: `void[]`, array of the data type of the arguments.  
-**Usage:**  
-```
-int[] array;
-array = array (0, 2, 4, 6); # same as [0, 2, 4, 6], except, this function can be used with variables
 ```
 
 ---
@@ -60,108 +48,39 @@ strLen("hello World!"); # returns 12
 ---
 
 ## Data Type Conversion:
-### strToInt
-Reads an integer from a string.  
+### toInt
+Reads an integer from a string or reads integer value from double.  
 **Arguments:**  
-1. The string to read from. Data Type: `string`  
+1. The string to read from, or the double to read integer from. Data Type: `string` or `double`  
 
 **Returns:**  
 The integer read from it. Data Type: `int`  
 **Usage:**  
 ```
 int sum;
-sum = 2 + strToInt("5"); # sum is now: 7
+sum = toInt(2.7) + toInt("5"); # sum is now: 7, as in 2+5
 ```
-### strToDouble
-Reads a double (floating point number) from a string.  
+### toDouble
+Reads a double (floating point number) from a string, or from integer.  
 **Arguments:**  
-1. The string to read from. Data Type: `string`  
+1. The string to read from, or integer. Data Type: `string` or `int`  
 
 **Returns:**  
 The double read from it. Data Type: `double`  
 **Usage:**  
 ```
 double sum;
-double = 2.0 + strToDouble("5.7"); # sum is now: 7.7
+double = toDouble(2) + toDouble("5.7"); # sum is now: 7.7
 ```
-### intToStr
-Puts the value of an integer into a string.  
+### toStr
+Puts the value of an integer or double into a string.  
 **Arguments:**  
-1. The integer value to put into a string. Data Type: `int`  
+1. The integer or double value to put into a string. Data Type: `int` or `double`  
 
 **Returns:**  
-The string containing the integer. Data Type: `string`  
+The string containing the integer or double. Data Type: `string`  
 **Usage:**  
 ```
 string r;
-r = "sum of 2 & 5 is: "~intToStr(2+5);
-```
-### intToDouble
-Puts the value of an integer into a double.  
-**Arguments:**  
-1. The integer to put into a double. Data Type: `int`  
-
-**Returns:**  
-The double containing the same value as the integer. Data Type: `double`  
-**Usage:**  
-```
-double d;
-d = 5.7 + intToDouble(2);
-```
-### doubleToStr
-Puts the value of a double into a string.  
-**Arguments:**  
-1. The double value to put into a string. Data Type: `double`  
-
-**Returns:**  
-The string containing the double. Data Type: `string`  
-**Usage:**  
-```
-string r;
-r = "sum of 2 & 5.7 is: "~doubleToStr( 2.0 + 5.7 );
-```
-### doubleToInt
-Puts the value of a double into an integer, ignoring the decimal value.  
-**Arguments:**  
-1. The double to put into an integer. Data Type: `double`  
-
-**Returns:**  
-The integer containing the integral value of the double. Data Type: `int`  
-**Usage:**  
-```
-int i;
-i = 2 + doubleToInt(5.7); # i is now 7, because 2+5=7
-```
-
----
-
-## Functions:
-### return
-Returns a value from a function, and exits execution of that function. If used in `void functions`, will just exit execution.  
-**Arguments:**  
-1. The data to return. Data Type: same as the function return type.  
-
-**Returns:**  
-nothing. Data Type: `void`, no return value  
-**Usage:**  
-```
-# function to get sum of 2 ints
-function int sum (int a, int b){
-	return (a + b);
-}
-```
-
----
-
-## Misc. :
-### not
-Returns the `not` of a binary number.  
-**Arguments:**  
-1. The binary number, 0 or 1. Data Type: `int`  
-**Returns:**  
-The `not` of the binary number in arg1. If arg1 is `1`, returns `0`, else, returns `1`.  
-**Usage:**  
-```
-writeln (intToStr(not(0))); # writes 1 to terminal
-writeln (intToStr(not(1))); # writes 0 to terminal
+r = "i="toStr(5)~" d="~toInt(5.4);# r is now "i=5 d=5.4"
 ```
