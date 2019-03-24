@@ -393,25 +393,26 @@ struct ASTGen{
 			if (varCodeNode.type != CodeNode.Type.Variable){
 				compileErrors.append (CompileError(tokens.getTokenLine(index),
 						"can only assign to variables or deref-ed (@) references"));
-			}
-			var = varCodeNode.node!(CodeNode.Type.Variable);
-			// now at index, the token should be a `=` operator
-			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
-				// everything's ok till the `=` operator
-				index++;
-				CodeNode val = generateCodeAST();
-				assignment = AssignmentNode(var, indexes, val);
-				// make sure it's followed by a semicolon
-				if (tokens.tokens[index].type != Token.Type.StatementEnd){
-					compileErrors.append(CompileError(tokens.getTokenLine(index),
-							"assingment statement not followed by semicolon"));
-				}else{
-					// skip the semicolon too
-					index++;
-				}
 			}else{
-				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
-				index ++;
+				var = varCodeNode.node!(CodeNode.Type.Variable);
+				// now at index, the token should be a `=` operator
+				if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
+					// everything's ok till the `=` operator
+					index++;
+					CodeNode val = generateCodeAST();
+					assignment = AssignmentNode(var, indexes, val);
+					// make sure it's followed by a semicolon
+					if (tokens.tokens[index].type != Token.Type.StatementEnd){
+						compileErrors.append(CompileError(tokens.getTokenLine(index),
+								"assingment statement not followed by semicolon"));
+					}else{
+						// skip the semicolon too
+						index++;
+					}
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
+					index ++;
+				}
 			}
 			return assignment;
 		}
