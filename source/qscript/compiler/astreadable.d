@@ -162,7 +162,7 @@ JSONValue toJSON(VarDeclareNode node){
 	foreach (i, varName; node.vars){
 		JSONValue var;
 		var["name"] = JSONValue(varName);
-		var["id"] = JSONValue(node.varIDs[varName]);
+		//var["id"] = JSONValue(node.varIDs[varName]);// TODO fixme Y U NO WORK (see ASTCheck.checkAST(ref VarDeclareNode node))
 		if (node.hasValue(varName))
 			var["value"] = node.getValue(varName).toJSON;
 		varTypeValueList[i] = var;
