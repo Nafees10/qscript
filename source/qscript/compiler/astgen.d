@@ -401,7 +401,9 @@ struct ASTGen{
 					// everything's ok till the `=` operator
 					index++;
 					CodeNode val = generateCodeAST();
-					assignment = AssignmentNode(var, indexes, val);
+					assignment.var = var;
+					assignment.indexes = indexes;
+					assignment.val = val;
 					// make sure it's followed by a semicolon
 					if (tokens.tokens[index].type != Token.Type.StatementEnd){
 						compileErrors.append(CompileError(tokens.getTokenLine(index),
