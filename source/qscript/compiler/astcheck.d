@@ -119,8 +119,6 @@ private:
 	/// In case there's an error, returns `DataType()`
 	DataType getReturnType(CodeNode node){
 		if (node.returnType != DataType(DataType.Type.Void)){
-			debug{import std.stdio;
-				stderr.writeln(node.returnType.toString);}
 			return node.returnType;
 		}
 		if (node.type == CodeNode.Type.FunctionCall){
@@ -357,7 +355,8 @@ protected:
 			// assign it an id
 			addVar (varName, node.type);
 			// set it's ID
-			node.setVarID(varName, getVarID(varName));
+			node.setVarID(varName, getVarID(varName)); // TODO FIXME I've absolutely no idea why this doesn't work.
+			// the results of above statement dont make it to astreadable, idk why
 		}
 	}
 	/// checks a WhileNode
