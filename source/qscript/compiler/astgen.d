@@ -375,6 +375,7 @@ struct ASTGen{
 			// check if the var is being deref-ed first
 			if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
 				assignment.deref = true;
+				index++;
 			}
 			CodeNode varCodeNode = generateCodeAST();
 			VariableNode var;
