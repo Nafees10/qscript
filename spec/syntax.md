@@ -3,7 +3,7 @@
 Comments can be added using the `#` character. Anything following a `#` is ignored by compiler as a comment.  
 For example:  
 ```
-function main(){ # This is a comment
+function void main(){ # This is a comment
 	# This also is a comment
 }
 ```
@@ -36,13 +36,13 @@ function TYPE FUNCTION_NAME(){
 A return statement can be used to return a value from the function. The type of the return value, and the return type of the function must match.
 A return statement is written as following:
 ```
-return (RETURN_VALUE);
+return RETURN_VALUE;
 ```
 where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, 
 writeln will not be called.
 ```
 function int someFunction{
-	return (0);
+	return 0;
 	writeln("this won't be written"); # because return terminates the execution
 }
 ```
@@ -51,7 +51,7 @@ function int someFunction{
 
 ## Variables
 ### Variable Declaration
-QScript does not support global variables. But if needed, using external functions, something similar to global variables can be achieved.  
+QScript does not support global variables. But if needed, using external functions, or references, something similar to global variables can be achieved.  
 Variables can be defined only inside functions, like:
 ```
 TYPE var0, var1, var2;
@@ -88,6 +88,47 @@ or:
 ```
 int[] intArray;
 intArray = array(0, 1, 2, 3); # elements dont necessarily need to be literals, they can be vars or result from function call
+```
+### Reference Declaration
+QScript has references instead of pointers. Their function is the same as pointers, to point to another variable.  
+They can be declared like:
+```
+@TYPE ref0, ref1, ref3;
+```
+`TYPE` can be any valid data type, for example:
+```
+@int ptrInt;
+```
+or:
+```
+@int[] refToIntArray; # this is a pointer to array of int
+```
+Array of references is currently not possible in QScript.
+### Using References
+References can be assigned like:
+```
+int i;
+@int ref;
+ref = @i; # ref is now pointing to i, @i returns the reference to i
+```
+and read like:
+```
+int i;
+@int ref = @i;
+i = rand(); # assuming rand() is a function that returns int
+writeln("Value of i="toString(@ref)); # @ref returns the value of the variable it is pointing 
+```
+References are also valid when passed to other functions as arguments, as in the following example:
+```
+function void main(){
+	int i;
+	setRefTo(@i, 1024);
+	# i is now 1024
+	writeln (toString(i)); # prints 1024, assuming writeln function exists
+}
+function void setRefTo(@int ref, int to){
+	@ref = to;
+}
 ```
 ---
 
@@ -188,6 +229,9 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `<` returns 1 (int) if `value0` int/float is lesser than `value1` int/float.
 * `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
+### Other Operators:
+* `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
+* `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable a reference is pointing to when operand is reference.
   
 In QScript, you cannot write `-1` or any other negative number, so instead, use `0-1` or `0-x` where x is a int. In case you want negative float, use `0.0-x`.
 
