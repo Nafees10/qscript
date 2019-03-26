@@ -1,5 +1,6 @@
 /++
 Functions to check if a script is valid (or certain nodes) by its generated AST
+FIXME the assigning returnTypes and varIDs at this stage is messed up, it might better to do that part in astgen too
 +/
 module qscript.compiler.astcheck;
 
@@ -234,6 +235,11 @@ protected:
 	void checkAST(ref AssignmentNode node){
 		// make sure var exists, checkAST(VariableNode) does that
 		checkAST(node.var);
+		checkAST(node.val);
+		// now check the CodeNode's for indexes
+		foreach (indexCodeNode; node.indexes){
+			checkAST(indexCodeNode);
+		}
 		DataType varType = getVarType (node.var.varName);
 		// check if the indexes provided for the var are possible, i.e if the var declaration has >= those indexes
 		if (varType.arrayDimensionCount < node.indexes.length){
@@ -252,12 +258,6 @@ protected:
 			if (getReturnType(node.val) != expectedType){
 				compileErrors.append(CompileError(node.val.lineno, "cannot assign value with different data type to variable"));
 			}
-			// now check the CodeNode's for indexes
-			foreach (indexCodeNode; node.indexes){
-				checkAST(indexCodeNode);
-			}
-			// now check the value's CodeNode
-			checkAST(node.val);
 		}
 	}
 	/// checks a BlockNode
@@ -301,8 +301,8 @@ protected:
 		argTypes.length = node.arguments.length;
 		// while moving the type into separate array, perform the checks on the args themselves
 		foreach (i, arg; node.arguments){
-			argTypes[i] = getReturnType(arg);
 			checkAST(arg);
+			argTypes[i] = getReturnType(arg);
 		}
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
@@ -403,14 +403,17 @@ protected:
 			if (operandType != DataType(DataType.Type.Integer) && operandType != DataType(DataType.Type.Double)){
 				compileErrors.append (CompileError(node.lineno, "that operator can only be used on double or int"));
 			}
+			node.returnType = operandType;
 		}else if (["&&", "||"].hasElement(node.operator)){
 			if (operandType != DataType(DataType.Type.Integer)){
 				compileErrors.append (CompileError(node.lineno, "that operator can only be used on int"));
 			}
+			node.returnType = DataType(DataType.Type.Integer);
 		}else if (node.operator == "~"){
 			if (operandType != DataType(DataType.Type.String) && operandType.arrayDimensionCount == 0){
 				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
 			}
+			node.returnType = operandType;
 		}
 	}
 	/// checks a SOperatorNode
@@ -422,10 +425,13 @@ protected:
 			if (getReturnType(node.operand) != DataType(DataType.Type.Integer)){
 				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! a non-int data type"));
 			}
+			node.returnType = DataType(DataType.Type.Integer);
 		}else if (node.operator == "@"){
 			if (node.operand.type != CodeNode.Type.Variable){
 				compileErrors.append (CompileError(node.operand.lineno, "can only ref/deref (@) a variable"));
 			}
+			node.returnType = node.operand.returnType;
+			node.returnType.isRef = !node.returnType.isRef;
 		}else
 			compileErrors.append (CompileError(node.lineno, "invalid operator"));
 	}
@@ -443,6 +449,8 @@ protected:
 		if (readFromType.arrayDimensionCount == 0 && readFromType.type != DataType.Type.String){
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
 		}
+		node.returnType = readFromType;
+		node.returnType.arrayDimensionCount --;
 		/// `[..]` can not be used on refs
 		if (readFromType.isRef){
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannot use [..] on references"));
@@ -472,7 +480,10 @@ protected:
 					typeMatches = false;
 				}
 			}
-		}
+			node.returnType = type;
+			node.returnType.arrayDimensionCount ++;
+		}else
+			node.returnType = DataType(DataType.Type.Void,1);
 	}
 public:
 	this (Function[] predefinedFunctions){
