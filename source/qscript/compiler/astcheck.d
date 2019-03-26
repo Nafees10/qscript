@@ -1,6 +1,7 @@
 /++
 Functions to check if a script is valid (or certain nodes) by its generated AST
-FIXME the assigning returnTypes and varIDs at this stage is messed up, it might better to do that part in astgen too
+TODO FIXME: changing anything in the AST at this stage, like assigning IDs to VariableNodes doesn't work. If the AST is later
+read, the values are not set. i.e, ASTCheck sets id to 2, later reading shows its still 0. my guess: no idea
 +/
 module qscript.compiler.astcheck;
 
@@ -466,7 +467,6 @@ protected:
 		node.id = getVarID(node.varName);
 		// set it's type
 		node.returnType = getVarType(node.varName);
-		debug{import std.stdio; stderr.writeln(node.returnType.toString);}
 	}
 	/// checks an ArrayNode
 	void checkAST(ref ArrayNode node){
