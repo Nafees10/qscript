@@ -201,6 +201,7 @@ JSONValue toJSON(VariableNode node){
 	r["node"] = JSONValue("VariableNode");
 	r["type"] = JSONValue(node.returnType.toString);
 	r["name"] = JSONValue(node.varName);
+	r["id"] = JSONValue(node.id);
 	return r;
 }
 

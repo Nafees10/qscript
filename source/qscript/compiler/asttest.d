@@ -1,4 +1,7 @@
-﻿module qscript.compiler.asttest;
+﻿/++
+Provides function for debugging AST* parts of compiler
++/
+module qscript.compiler.asttest;
 
 import qscript.compiler.compiler;
 import qscript.compiler.ast;

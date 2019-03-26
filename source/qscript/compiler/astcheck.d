@@ -273,12 +273,12 @@ protected:
 	/// checks a DoWhileNode
 	void checkAST(ref DoWhileNode node){
 		increaseScope();
+		checkAST(node.condition);
 		if (node.statement.type == StatementNode.Type.Block){
 			checkAST(node.statement.node!(StatementNode.Type.Block), false);
 		}else{
 			checkAST(node.statement);
 		}
-		checkAST(node.condition);
 		decreaseScope();
 	}
 	/// checks a ForNode
@@ -466,6 +466,7 @@ protected:
 		node.id = getVarID(node.varName);
 		// set it's type
 		node.returnType = getVarType(node.varName);
+		debug{import std.stdio; stderr.writeln(node.returnType.toString);}
 	}
 	/// checks an ArrayNode
 	void checkAST(ref ArrayNode node){
