@@ -1,7 +1,5 @@
 /++
 Functions to check if a script is valid (or certain nodes) by its generated AST
-TODO FIXME: changing anything in the AST at this stage, like assigning IDs to VariableNodes doesn't work. If the AST is later
-read, the values are not set. i.e, ASTCheck sets id to 2, later reading shows its still 0. my guess: no idea
 +/
 module qscript.compiler.astcheck;
 
@@ -238,8 +236,8 @@ protected:
 		checkAST(node.var);
 		checkAST(node.val);
 		// now check the CodeNode's for indexes
-		foreach (indexCodeNode; node.indexes){
-			checkAST(indexCodeNode);
+		for (uinteger i=0; i < node.indexes.length; i++){
+			checkAST(node.indexes[i]);
 		}
 		DataType varType = getVarType (node.var.varName);
 		// check if the indexes provided for the var are possible, i.e if the var declaration has >= those indexes
@@ -265,8 +263,8 @@ protected:
 	void checkAST(ref BlockNode node, bool ownScope = true){
 		if (ownScope)
 			increaseScope();
-		foreach (statement; node.statements){
-			checkAST(statement);
+		for (uinteger i=0; i < node.statements.length; i ++){
+			checkAST(node.statements[i]);
 		}
 		if (ownScope)
 			decreaseScope();
@@ -301,9 +299,9 @@ protected:
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
 		// while moving the type into separate array, perform the checks on the args themselves
-		foreach (i, arg; node.arguments){
-			checkAST(arg);
-			argTypes[i] = getReturnType(arg);
+		for (uinteger i=0; i < node.arguments.length; i ++){
+			checkAST(node.arguments[i]);
+			argTypes[i] = node.arguments[i].returnType;
 		}
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
@@ -356,8 +354,7 @@ protected:
 			// assign it an id
 			addVar (varName, node.type);
 			// set it's ID
-			node.setVarID(varName, getVarID(varName)); // TODO FIXME I've absolutely no idea why this doesn't work.
-			// the results of above statement dont make it to astreadable, idk why
+			node.setVarID(varName, getVarID(varName));
 		}
 	}
 	/// checks a WhileNode
@@ -390,8 +387,8 @@ protected:
 	/// checks a OperatorNode
 	void checkAST(ref OperatorNode node){
 		// check the operands
-		foreach (operand; node.operands){
-			checkAST (operand);
+		for (uinteger i=0; i < node.operands.length; i ++){
+			checkAST (node.operands[i]);
 		}
 		// make sure both operands are of same data type
 		DataType operandType = getReturnType(node.operands[0]);
@@ -474,10 +471,10 @@ protected:
 		if (node.elements.length > 0){
 			DataType type = getReturnType(node.elements[0]);
 			bool typeMatches = true;
-			foreach (element; node.elements){
-				checkAST (element);
-				if (typeMatches && getReturnType(element) != type){
-					compileErrors.append (CompileError(element.lineno, "elements in array must be of same type"));
+			for (uinteger i=0; i < node.elements.length; i ++){
+				checkAST (node.elements[i]);
+				if (typeMatches && node.elements[i].returnType != type){
+					compileErrors.append (CompileError(node.elements[i].lineno, "elements in array must be of same type"));
 					typeMatches = false;
 				}
 			}
@@ -509,8 +506,8 @@ public:
 		scopeDepth = 0;
 		readFunctions(node);
 		// call checkAST on every FunctionNode
-		foreach (functionNode; node.functions){
-			checkAST(functionNode);
+		for (uinteger i=0; i < node.functions.length; i++){
+			checkAST(node.functions[i]);
 		}
 		CompileError[] r = compileErrors.toArray;
 		.destroy(compileErrors);
