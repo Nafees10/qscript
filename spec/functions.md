@@ -2,9 +2,10 @@
 This document contains some information about the functions predefined in QScript.
 
 ## Arrays:
-### setLength
+## length ( @void[], int )
 Modifies length of an existing array.  
 **Arguments:**  
+
 1. The array to change length of. Data Type: `@void[]` , reference to array of any type, of any dimensions.
 2. The new length. Data Type: `int` >=0  
 
@@ -14,11 +15,12 @@ Modifies length of an existing array.
 **Usage:**  
 ```
 int[] array;
-setLength(@array, 5); # change array's length to hold 5 elements, from index 0 to index 4
+length(@array, 5); # change array's length to hold 5 elements, from index 0 to index 4
 ```
-### getLength
+## length ( void[] )
 Returns the length of an array.  
 **Arguments:**  
+
 1. The array to get length of. Data Type: `void[]` , array of any type, of any dimensions.  
 
 **Returns:**  
@@ -27,30 +29,32 @@ The length of array in argument1. Data Type: `int` >=0
 ```
 int[] array;
 array = [0, 2, 4, 6];
-getLength (array); # returns 4
+length (array); # returns 4
 ```
 
 ---
 
 ## Strings:
-### strLen
+## length ( string )
 To get the length of a string.  
 **Arguments:**  
+
 1. The stirng to get the length of. Data Type: `string`  
 
 **Rerurns:**  
 The length of the string in argument1. Data Type: `int` >=0  
 **Usage:**  
 ```
-strLen("hello World!"); # returns 12
+length("hello World!"); # returns 12
 ```
 
 ---
 
 ## Data Type Conversion:
-### toInt
+## toInt ( string/double )
 Reads an integer from a string or reads integer value from double.  
 **Arguments:**  
+
 1. The string to read from, or the double to read integer from. Data Type: `string` or `double`  
 
 **Returns:**  
@@ -60,9 +64,10 @@ The integer read from it. Data Type: `int`
 int sum;
 sum = toInt(2.7) + toInt("5"); # sum is now: 7, as in 2+5
 ```
-### toDouble
+## toDouble ( string/int )
 Reads a double (floating point number) from a string, or from integer.  
 **Arguments:**  
+
 1. The string to read from, or integer. Data Type: `string` or `int`  
 
 **Returns:**  
@@ -72,9 +77,10 @@ The double read from it. Data Type: `double`
 double sum;
 double = toDouble(2) + toDouble("5.7"); # sum is now: 7.7
 ```
-### toStr
+## toStr ( int/double )
 Puts the value of an integer or double into a string.  
 **Arguments:**  
+
 1. The integer or double value to put into a string. Data Type: `int` or `double`  
 
 **Returns:**  
