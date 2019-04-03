@@ -2,7 +2,7 @@
 This document contains the spec for the byte code used in QScript
 ## Function Definitions:
 ```
-FunctionName
+FunctionID
 stack:
 	[stack element#0]
 	[stack element#1]
@@ -12,7 +12,7 @@ instructions:
 	[instruction] [argument1] [argument2] [...]
 	[instruction] [argument1] [argument2] [...]
 	...
-AnotherFunctionName
+AnotherFunctionID
 stack:
 	[stack element#0]
 	[stack element#1]
@@ -26,7 +26,7 @@ instructions:
 ## Comments:
 Comments can be added in the byte code. They are written like:  
 ```
-FunctionName
+FunctionID
 stack:
 	[stack element] # comment
 	# another comment
@@ -35,20 +35,24 @@ instructions:
 	# another comment
 ```
 
-## Literal Data:
-All the literals (numbers/strings which are known at compile time) are written in this format:
+## Stack elements:
+The stack elements are written in this format:
 
-* string:	`s"%STRING%"`
-* double:	`d%DOUBLE%`
-* integer:	`i%INTEGER%`
-* array:	`[%ELEMENT%,%ELEMENT%]` - ELEMENT is either string, double, integer, or static array, each element must be of the same data type
-* empty:	`0` - This should be used to leave an element in the stack empty.
+1. string:		`s"%STRING%"`
+2. double:		`d%DOUBLE%`
+3. integer:		`i%INTEGER%`
+4. array:		`[%ELEMENT%,%ELEMENT%]` - ELEMENT is either string, double, integer, or static array, each element must be of the same data type
+5. empty:		`0` - This should be used to leave an element in the stack empty.
+6. null:			`null` - Any data written to this element will be ignored.
+7. reference:	`@%index%` - This means the value of this element is always equal to the value of another element.  
+
+Number 1-4 are also used for arguments for instructions.
 
 ## Jumps:
 The `jump` instruction can be used to jump to a different instruction, provided that the "jump point" is in the same function.  
 Jump point will be marked as:  
 ```
-FunctionName
+FunctionID
 stack:
 	[stack element#0]
 	...
@@ -89,71 +93,61 @@ And this is how instructions are executed & how they access the stack:
 4. The `peek index` is again increased by `n`.
 5. Repeat for the next instruction.
 
-# TODO figure out what instructions should be removed/added/modified
 ## Instructions:
+** TODO figure out what instructions should be removed/added/modified**
 ### Instructions for executing functions:
-* execFuncS 	- executes a script-defined function, arg0 is function name (string), arg1 is number (int) of arguments to pop from stack for the function. 
-Result is pushed to stack
-* execFuncE		- executes an external function, arg0 is function name (string), arg1 is number (int) of arguments to pop from stack for the function. 
-Result is pushed to stack
+* execFuncS 	- executes a script-defined function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
+* execFuncE		- executes an external function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
 
-### Instructions for handling variables:
-* varCount		- changes the max number of vars available
-* getVar		- pushes value of a variable to stack, arg0 is ID (int, >=0) of the var
-* setVar		- sets value of a var of the last value pushed to stack, arg0 is ID (int, >=0) of the var
-
-### Instructions for mathematical operators:
-* addInt		- adds last two integers pushed to stack, pushes the result to stack
-* addDouble		- adds last two doubles pushed to stack, pushes the result to stack
-* subtractInt	- subtracts last two integers pushed to stack, pushes the result to stack
-* subtractDouble- subtracts last two doubles pushed to stack, pushes the result to stack
-* multiplyInt	- multiplies last two integers pushed to stack, pushes the result to stack
-* multiplyDouble- multiplies last two doubles pushed to stack, pushes the result to stack
-* divideInt		- adds last two integers pushed to stack, pushes the result to stack
-* divideDouble	- adds last two doubles pushed to stack, pushes the result to stack
-* modInt		- divides last two integers pushed to stack, pushes the remainder to stack
-* modDouble		- divides last two doubles pushed to stack, pushes the remainder to stack
-* concatArray	- concatenates last two arrays pushed to stack, pushes the result to stack
-* concatString	- concatenates last two strings pushed to stack, pushes the result to stack
+### Instructions for mathematical and array/string operators:
+* addInt			- adds two integers
+* addDouble			- adds two doubles
+* subtractInt		- subtracts two integers
+* subtractDouble	- subtracts two doubles
+* multiplyInt		- multiplies two integers
+* multiplyDouble	- multiplies two doubles
+* divideInt			- divides two integers
+* divideDouble		- divides two doubles
+* modInt			- remainder of division of two integers
+* modDouble			- remainder of division of two doubles
+* concatArray		- concatenates two arrays
+* concatString		- concatenates two strings
 
 ### Instructions for comparing 2 vals:
-* isSameInt		- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
-* isSameDouble	- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
-* isSameString	- pops 2 values, if both are same, pushes 1(int) to stack, else, pushes 0(int)
-* isLesserInt	- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
-* isLesserDouble- pops 2 values(int), if first value is less, pushes 1(int) to stack, else, pushes 0(int)
-* isGreaterInt	- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
-* isGreaterDouble- pops 2 values(int), if first value is larger, pushes 1(int) to stack, else, pushes 0(int)
-* not			- if last element pushed == 1(int), then pushes 0(int), else, pushes 1(int)
-* and			- if last 2 elements on stack (int) == 1, pushes 1, else pushes 0
-* or			- if either of last 2 elements on stack == 1 (int), pushes 1, else pushes 0
+* isSameInt		- writes 1(int) if two integers on stack are same
+* isSameDouble	- writes 1(int) if two doubles on stack are same
+* isSameString	- writes 1(int) if two strings on stack are same
+* isLesserInt	- writes 1(int) if first element(int) on stack is less than second(int)
+* isLesserDouble- writes 1(int) if first element(double) on stack is less than second(double)
+* isGreaterInt	- writes 1(int) if first element(int) on stack is greater than second(int)
+* isGreaterDouble- writes 1(int) if first element(double) on stack is greater than second(double)
+* not			- if element(int) on stack == 1, writes 1(int), else, 0(int)
+* and			- if 2 elements on stack (int) == 1, writes 1(int), else writes 0(int)
+* or			- if either of 2 elements on stack == 1 (int), writes 1(int), else writes 0(int)
 
 ### Misc. instructions:
-* push 			- pushes all arguments to stack
-* clear 		- clears the stack, pops all elements
-* pop			- clears a number of elements from the stack, the number is arg0 (integer)
+* write 		- writes arg0 (any data type) to stack **TODO: might have to remove this, as I may not need this**
 * jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" 
 and arg0 of jump should be that %someString% (string), without any spaces or quotation marks.
-* skipTrue		- skips the next instrcution if the last element on stack == 1 (int)
-* return 		- sets the last value pushed to stack as the return value, and breaks execution of the function
+* skipTrue		- skips the next instrcution if element on stack == 1 (int)
+* return 		- sets the element read from stack as the return value, and breaks execution of the function
 
 ### Instructions for arrays
-* setLen		- modifies length of an array, the array-to-modify, and new-length are pop-ed from stack, new array is pushed
-* getLen		- pops array from stack, pushes the length (integer) of the array
-* readElement	- pops an array, and element-index(int), pushes that element to the stack
+* setLen		- modifies length of an array. First element read is ref to array, second is new length(int).
+* getLen		- writes length of array. First element read is array.
+* readElement	- writes the element at index of an array. Array is read first, then index.
 * modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
 Then does something like: `array[popped0][popped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
-* emptyArray	- makes an empty one-dimensional array
 
 ### Instructions for strings
-* strLen		- pops a string from stack, pushes it's length (int)
-* readChar		- pops a string, and index(int) from stack. Pushed the char at that index in the string
+* strLen		- writes length of string. First element read is string.
+* readChar		- writes the char at an index of string. First string is read, then index.
 
 ### Instructions for converting between data types
-* strToInt		- pops a string from stack, uses `to!int` or `to!long` to convert to int, pushes the int
-* strToDouble	- pops a string from stack, uses `to!double` to convert to double, pushes the double
-* intToStr		- pops an int from stack, pushes a string containing the int
-* intToDouble	- pops an int from string, pushes a double with the same value as the int
-* doubleToStr	- pops a double from stack, pushes a string containing the double
-* doubleToInt	- pops a double from stack, pushes an int, with the same value, ignoring the decimals, to stack.
+* strToInt		- reads an integer from a string.
+* strToDouble	- reads a double from a string.
+* intToStr		- writes a string containing the integer's string representation.
+* intToDouble	- writes a double with the same value as an integer.
+* doubleToStr	- writes a string containing the double's string representation.
+* doubleToInt	- writes an integer with the same value as the integer part of a double.
