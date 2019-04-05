@@ -48,28 +48,6 @@ The stack elements are written in this format:
 
 Number 1-4 are also used for arguments for instructions.
 
-## Jumps:
-The `jump` instruction can be used to jump to a different instruction, provided that the "jump point" is in the same function.  
-Jump point will be marked as:  
-```
-FunctionID
-stack:
-	[stack element#0]
-	...
-instructions:
-	instruction0
-	jump someJumpPosition
-	instruction2
-	someJumpPosition:
-	instruction3
-```  
-the instructions will be executed in this order:  
-```
-instruction0
-jump
-instruction3
-```
-
 ## How instructions read/write from/to stack:
 Some terms that will be used here:
 
@@ -95,11 +73,11 @@ And this is how instructions are executed & how they access the stack:
 
 ## Instructions:
 ** TODO figure out what instructions should be removed/added/modified**
-### Instructions for executing functions:
+### Executing functions:
 * execFuncS 	- executes a script-defined function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
 * execFuncE		- executes an external function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
 
-### Instructions for mathematical and array/string operators:
+### Operators:
 * addInt			- adds two integers
 * addDouble			- adds two doubles
 * subtractInt		- subtracts two integers
@@ -113,7 +91,7 @@ And this is how instructions are executed & how they access the stack:
 * concatArray		- concatenates two arrays
 * concatString		- concatenates two strings
 
-### Instructions for comparing 2 vals:
+### Comparision Operators:
 * isSameInt		- writes 1(int) if two integers on stack are same
 * isSameDouble	- writes 1(int) if two doubles on stack are same
 * isSameString	- writes 1(int) if two strings on stack are same
@@ -125,14 +103,21 @@ And this is how instructions are executed & how they access the stack:
 * and			- if 2 elements on stack (int) == 1, writes 1(int), else writes 0(int)
 * or			- if either of 2 elements on stack == 1 (int), writes 1(int), else writes 0(int)
 
-### Misc. instructions:
-* write 		- writes arg0 (any data type) to stack **TODO: might have to remove this, as I may not need this**
-* jump			- jumps to another instruction. The instruction to jump to is specified by preceding that instruction by: "%someString%:" 
+### Modifying stack:
+* write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
+* writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
+* getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int) number of indexes is specified in arg1 (int). The indexes are read from stack.
+* peekInc		- increases the peek index by arg0 (int). _Be careful as it allows it to exceed the last index, that might cause a segfault_
+* peekDec		- decreases the peek index by arg0 (int). _Be careful as the peek index is unsigned_
+
+### Misc.:
+* jumpInc		- jumps to another instruction, and increases peek index by arg1(int). The instruction to jump to is specified by preceding that instruction by: "%someString%:"
+* jumpDec		- jumps to another instruction, and decreases peek index by arg1(int). The instruction to jump to is specified by preceding that instruction by: "%someString%:"
 and arg0 of jump should be that %someString% (string), without any spaces or quotation marks.
-* skipTrue		- skips the next instrcution if element on stack == 1 (int)
+* doIf			- only execute the next instrcution if element on stack == 1 (int)
 * return 		- sets the element read from stack as the return value, and breaks execution of the function
 
-### Instructions for arrays
+### Arrays
 * setLen		- modifies length of an array. First element read is ref to array, second is new length(int).
 * getLen		- writes length of array. First element read is array.
 * readElement	- writes the element at index of an array. Array is read first, then index.
@@ -140,11 +125,11 @@ and arg0 of jump should be that %someString% (string), without any spaces or quo
 Then does something like: `array[popped0][popped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 
-### Instructions for strings
+### Strings
 * strLen		- writes length of string. First element read is string.
 * readChar		- writes the char at an index of string. First string is read, then index.
 
-### Instructions for converting between data types
+### Converting between data types
 * strToInt		- reads an integer from a string.
 * strToDouble	- reads a double from a string.
 * intToStr		- writes a string containing the integer's string representation.
