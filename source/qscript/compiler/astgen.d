@@ -604,8 +604,16 @@ struct ASTGen{
 			if (tokens.tokens[index].token != "return"){
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a return statement"));
 			}else{
+				ReturnNode r;
+				r.lineno = tokens.getTokenLine(index);
 				index ++;
-				return ReturnNode(tokens.getTokenLine(index), generateCodeAST());
+				r.value = generateCodeAST();
+				if (tokens.tokens[index].type == Token.Type.StatementEnd){
+					index ++; //skip semicolon
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index),"semicolon expected"));
+				}
+				return r;
 			}
 			return ReturnNode();
 		}
