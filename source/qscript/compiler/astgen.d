@@ -201,6 +201,9 @@ struct ASTGen{
 				}else if (tokens.tokens[index].token == "do"){
 					// do while
 					return StatementNode(generateDoWhileAST());
+				}else if (tokens.tokens[index].token == "return"){
+					// return statement
+					return StatementNode(generateReturnAST());
 				}
 			}else if (tokens.tokens[index].type == Token.Type.DataType || 
 				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.DataType)){
@@ -595,7 +598,18 @@ struct ASTGen{
 			}
 			return doWhile;
 		}
-		
+
+		/// returns a node representing a return statement
+		ReturnNode generateReturnAST(){
+			if (tokens.tokens[index].token != "return"){
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a return statement"));
+			}else{
+				index ++;
+				return ReturnNode(tokens.getTokenLine(index), generateCodeAST());
+			}
+			return ReturnNode();
+		}
+
 		/// returns a node representing either of the following:
 		/// 1. String literal
 		/// 2. Number literal

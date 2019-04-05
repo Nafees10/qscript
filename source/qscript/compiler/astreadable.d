@@ -77,6 +77,8 @@ JSONValue toJSON(StatementNode node){
 		r["statement"] = node.node!(StatementNode.Type.VarDeclare).toJSON;
 	}else if (node.type == StatementNode.Type.While){
 		r["statement"] = node.node!(StatementNode.Type.While).toJSON;
+	}else if (node.type == StatementNode.Type.Return){
+		r["statement"] = node.node!(StatementNode.Type.Return).toJSON;
 	}
 	return r;
 }
@@ -168,6 +170,14 @@ JSONValue toJSON(VarDeclareNode node){
 		varTypeValueList[i] = var;
 	}
 	r["vars"] = JSONValue(varTypeValueList);
+	return r;
+}
+
+/// Creates JSONValue for ReturnNode
+JSONValue toJSON(ReturnNode node){
+	JSONValue r;
+	r["node"] = JSONValue("ReturnNode");
+	r["value"] = node.value.toJSON;
 	return r;
 }
 

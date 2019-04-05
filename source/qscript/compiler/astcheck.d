@@ -26,6 +26,8 @@ private:
 	string[uinteger] varIDs;
 	/// stores the scope-depth of each var in currently-being-checked-FunctionNode which is currently in scope
 	uinteger[string] varScope;
+	/// stores expected return type of currently-being-checked function
+	DataType functionReturnType;
 	/// stores current scope-depth
 	uinteger scopeDepth;
 	/// registers a new var in current scope
@@ -200,6 +202,7 @@ protected:
 	/// checks if a FunctionNode is valid
 	void checkAST(ref FunctionNode node){
 		increaseScope();
+		functionReturnType = node.returnType;
 		// add the arg's to the var scope. make sure one arg name is not used more than once
 		foreach (i, arg; node.arguments){
 			if (!addVar(arg.argName, arg.argType)){
@@ -228,6 +231,8 @@ protected:
 			checkAST(node.node!(StatementNode.Type.VarDeclare));
 		}else if (node.type == StatementNode.Type.While){
 			checkAST(node.node!(StatementNode.Type.While));
+		}else if (node.type == StatementNode.Type.Return){
+			checkAST(node.node!(StatementNode.Type.Return));
 		}
 	}
 	/// checks a AssignmentNode
@@ -365,6 +370,14 @@ protected:
 		increaseScope();
 		checkAST(node.statement);
 		decreaseScope();
+	}
+	/// checks a ReturnNode
+	void checkAST(ref ReturnNode node){
+		/// check the value
+		checkAST(node.value);
+		if (node.value.returnType != functionReturnType || functionReturnType.type == DataType.Type.Void){
+			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"));
+		}
 	}
 	/// checks a CodeNode
 	void checkAST(ref CodeNode node){

@@ -484,7 +484,8 @@ package struct StatementNode{
 		Block,
 		Assignment,
 		FunctionCall,
-		VarDeclare
+		VarDeclare,
+		Return
 	}
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	public @property uinteger lineno(){
@@ -504,6 +505,8 @@ package struct StatementNode{
 			return functionCallNode.lineno;
 		}else if (storedType == Type.VarDeclare){
 			return varDeclareNode.lineno;
+		}else if (storedType == Type.Return){
+			return returnNode.lineno;
 		}
 		return 0;
 	}
@@ -525,6 +528,8 @@ package struct StatementNode{
 			return functionCallNode.lineno = newLineno;
 		}else if (storedType == Type.VarDeclare){
 			return varDeclareNode.lineno = newLineno;
+		}else if (storedType == Type.Return){
+			return returnNode.lineno = newLineno;
 		}
 		return 0;
 	}
@@ -540,6 +545,7 @@ package struct StatementNode{
 		FunctionCallNode functionCallNode;
 		VarDeclareNode varDeclareNode;
 		AssignmentNode assignNode;
+		ReturnNode returnNode;
 	}
 	/// modifies the stored node
 	@property auto ref node(T)(T newNode){
@@ -564,9 +570,12 @@ package struct StatementNode{
 		}else static if (is (T == VarDeclareNode)){
 			storedType = StatementNode.Type.VarDeclare;
 			varDeclareNode = newNode;
-		}else if (is (T == AssignmentNode)){
+		}else static if (is (T == AssignmentNode)){
 			storedType = StatementNode.Type.Assignment;
 			assignNode = newNode;
+		}else static if (is (T == ReturnNode)){
+			storedType = Type.Return;
+			returnNode = newNode;
 		}else{
 			throw new Exception("attempting to assign invalid node type to StatementNode.node");
 		}
@@ -591,8 +600,10 @@ package struct StatementNode{
 			return functionCallNode;
 		}else static if (T == StatementNode.Type.VarDeclare){
 			return varDeclareNode;
-		}else if (T == StatementNode.Type.Assignment){
+		}else static if (T == StatementNode.Type.Assignment){
 			return assignNode;
+		}else static if (T == StatementNode.Type.Return){
+			return returnNode;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from StatementNode.node");
 		}
@@ -880,4 +891,11 @@ package struct VarDeclareNode{
 	this (string[] vars){
 		varNames = vars.dup;
 	}
+}
+
+package struct ReturnNode{
+	/// the line number on which this node was read from
+	public uinteger lineno;
+	/// the value to return from function
+	public CodeNode value;
 }
