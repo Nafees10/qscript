@@ -310,15 +310,19 @@ protected:
 		}
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
-		foreach (func; scriptDefFunctions){
+		foreach (i, func; scriptDefFunctions){// TODO assign function ids
 			if (func.name == node.fName && func.argTypes == argTypes){
 				functionExists = true;
+				node.isScriptDefined = true;
+				node.id = i;
 			}
 		}
 		if (!functionExists){
-			foreach (func; preDefFunctions){
+			foreach (i, func; preDefFunctions){
 				if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
 					functionExists = true;
+					node.isScriptDefined = false;
+					node.id = i;
 				}
 			}
 		}
@@ -521,6 +525,7 @@ public:
 		// call checkAST on every FunctionNode
 		for (uinteger i=0; i < node.functions.length; i++){
 			checkAST(node.functions[i]);
+			node.functions[i].id = i; // set the id
 		}
 		CompileError[] r = compileErrors.toArray;
 		.destroy(compileErrors);

@@ -41,6 +41,8 @@ package struct FunctionNode{
 	public BlockNode bodyBlock;
 	/// the data type of the return value of this function
 	public DataType returnType = DataType(DataType.Type.Void);
+	/// the id of this function, assigned after checkAST has been called on this
+	public uinteger id;
 	/// constructor
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
@@ -815,6 +817,10 @@ package struct FunctionCallNode{
 	public uinteger lineno;
 	/// the name of the function
 	public string fName;
+	/// the id of the function, assigned after checkAST has been called on this
+	public uinteger id;
+	/// if the function being called is script defined or not, assigned after checkAST has been called on this
+	public bool isScriptDefined;
 	/// the arguments for this function.
 	private CodeNode[] storedArguments;
 	/// returns the values for arguments
