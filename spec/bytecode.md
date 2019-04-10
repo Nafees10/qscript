@@ -1,5 +1,16 @@
 # QScript Byte-Code:
 This document contains the spec for the byte code used in QScript
+## Function Map:
+At the beginning of the byte code, there must be a "function map", which maps function IDs to the function names, and its argument types. The return type is not included in this. It's format is:
+```
+functions: # comments are valid in any part of the byte code, even here
+	main/101/210/ # 0 is function named main that accepts arg0 as array of string, and arg1
+	# as a ref to int
+	fillRand/111/ # 1 is function named fillRand. Accepts arg0 as ref to array of string.
+	fillRand/211/ # 2 is overload of fillRand. Accepts arg0 as ref to array of int.
+```
+These function names ( like `main/101/210/` ) are encoded using `qscript.compiler.misc.encodeFunctionName();`  
+And decoded using `qscript.compiler.misc.decodeFunctionName();`.
 ## Function Definitions:
 ```
 FunctionID
