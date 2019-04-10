@@ -1,7 +1,8 @@
 ﻿/++
-Provides function for debugging AST* parts of compiler
+Provides function for partial compilation of scripts.  
+Exists so I can debug the compiler.
 +/
-module qscript.compiler.asttest;
+module qscript.compiler.compilertest;
 
 import qscript.compiler.compiler;
 import qscript.compiler.ast;
@@ -14,7 +15,10 @@ import qscript.compiler.misc;
 import utils.misc;
 import std.json;
 
-public string astJSONTest(string[] script, Function[] preDefFunctions,ref CompileError[] errors){
+/// Generates an AST for a script, uses ASTCheck.checkAST on it.
+/// 
+/// Returns: the final AST in readable JSON.
+public string astJSONTest(string[] script, Function[] preDefFunctions, ref CompileError[] errors){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length == 0){
 		ASTGen astMake;

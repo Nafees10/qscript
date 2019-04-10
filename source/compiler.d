@@ -4,15 +4,15 @@ To create a executable which serves as a front end to just the compiler.
 This can be used to:
 * convert script to AST, and output the AST in JSON
 * convert script to byte code, and output the byte code (to be added)
-* optimize existing byte code, and output new optimized byte code (to be added)
-* convert script to byte code, optimize it, and output optimized byte code (to be added)
+* optimize existing byte code, and output new optimized byte code (to be added, when optimizer is added)
+* convert script to byte code, optimize it, and output optimized byte code (to be added, when optimizer is added)
 +/
 module compiler;
 
 import std.stdio;
 import std.file;
 
-import qscript.compiler.asttest;
+import qscript.compiler.compilertest;
 import qscript.compiler.compiler : CompileError;
 
 import utils.misc;
