@@ -1,7 +1,7 @@
 # QScript Byte-Code:
 This document contains the spec for the byte code used in QScript
 ## Function Map:
-At the beginning of the byte code, there must be a "function map", which maps function IDs to the function names, and its argument types. The return type is not included in this. It's format is:
+At the beginning of the byte code, there must be a "function map", which maps function IDs to the function names, and its argument types. The return type is not included in this, and only script defined functions are included in this map. It's format is:
 ```
 functions: # comments are valid in any part of the byte code, even here
 	main/101/210/ # 0 is function named main that accepts arg0 as array of string, and arg1
