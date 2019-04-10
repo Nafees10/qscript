@@ -315,6 +315,7 @@ protected:
 				functionExists = true;
 				node.isScriptDefined = true;
 				node.id = i;
+				node.returnType = func.returnType;
 			}
 		}
 		if (!functionExists){
@@ -323,6 +324,7 @@ protected:
 					functionExists = true;
 					node.isScriptDefined = false;
 					node.id = i;
+					node.returnType = func.returnType;
 				}
 			}
 		}
