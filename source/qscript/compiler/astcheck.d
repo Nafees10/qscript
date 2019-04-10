@@ -310,7 +310,7 @@ protected:
 		}
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
-		foreach (i, func; scriptDefFunctions){// TODO assign function ids
+		foreach (i, func; scriptDefFunctions){
 			if (func.name == node.fName && func.argTypes == argTypes){
 				functionExists = true;
 				node.isScriptDefined = true;
