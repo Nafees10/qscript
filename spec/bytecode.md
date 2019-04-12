@@ -122,9 +122,8 @@ And this is how instructions are executed & how they access the stack:
 * peekDec		- decreases the peek index by arg0 (int). _Be careful as the peek index is unsigned_
 
 ### Misc.:
-* jumpInc		- jumps to another instruction, and increases peek index by arg1(int). The instruction to jump to is specified by preceding that instruction by: "%someString%:"
-* jumpDec		- jumps to another instruction, and decreases peek index by arg1(int). The instruction to jump to is specified by preceding that instruction by: "%someString%:"
-and arg0 of jump should be that %someString% (string), without any spaces or quotation marks.
+* jumpInc		- jumps to another instruction, which is arg0(int) instructions ahead, and increases peek index by arg1(int).
+* jumpDec		- jumps to another instruction, which is arg0(int) instructions behind, and decreases peek index by arg1(int).
 * doIf			- only execute the next instrcution if element on stack == 1 (int)
 * return 		- sets the element read from stack as the return value, and breaks execution of the function
 
