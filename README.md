@@ -3,11 +3,11 @@ A fast, static typed, scripting language, with a syntax similar to D Language.
 ## Setting it up
 To add QScript to your dub package or project, add the following into dub.json dependencies:
 ```
-"qscript": "~>0.6.2"
+"qscript": "~>0.6.3"
 ```
 or if you have dub.sdl:
 ```
-dependency "qscript" version="~>0.6.2"
+dependency "qscript" version="~>0.6.3"
 ```
 After adding that, look at the `demos/demo.d` to see how to use the `QScript` class to execute scripts.
 
