@@ -16,7 +16,8 @@ public union QData{
 	integer intVal; /// integer value
 	double doubleVal; /// double/float value
 	QData[] arrayVal; /// array value
-	// constructor
+	/// constructor
+	/// data can be any of the type which it can store
 	this (T)(T data){
 		static if (is (T == string)){
 			strVal = data;
