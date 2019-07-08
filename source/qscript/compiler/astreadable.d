@@ -1,5 +1,5 @@
 ﻿/++
-Used for debugging the astgen.  
+Used for debugging the astgen.
 Contains functions to generate a readable string respresentation of AST nodes
 +/
 module qscript.compiler.astreadable;
@@ -41,6 +41,7 @@ JSONValue toJSON(FunctionNode node){
 	r["name"] = node.name;
 	r["arguments"] = JSONValue(argListJSON);
 	r["body"] = JSONValue(bodyJSON);
+	r["id"] = JSONValue(node.id);
 	return r;
 }
 
