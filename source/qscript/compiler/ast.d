@@ -43,6 +43,8 @@ package struct FunctionNode{
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// the id of this function, assigned after checkAST has been called on this
 	public uinteger id;
+	/// the maximum number of variables available in this function at a time (max var id + 1). assinged after checkAST
+	public uinteger varCount;
 	/// constructor
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
