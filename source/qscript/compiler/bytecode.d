@@ -33,25 +33,63 @@ public class ByteCode{
 		string name;
 		/// arguments of instruction. These are written in the byte code encoded way
 		///
-		/// these are stored as string instead of QData so its possible to generate readable byte code\
+		/// these are stored as string instead of QData so its possible to generate readable byte code
 		string[] args;
 	}
 	/// used to store byte code's function in a more readable format
 	public struct Function{
 		/// id of the function
 		uinteger id;
+		/// byte code style (byte code encoded) name of this function
+		string name;
 		/// instructions that make up this function
 		Instruction[] instructions;
 		/// The stack that's loaded before this function is executed
 		StackElement[] stack;
 	}
-	/// stores the funtion map. Maps function id to their names
-	public string[uinteger] functionMap;
-	/// stores the functions with their instructions. id is the function id
-	public Function[uinteger] functions;
-	// functions to help codegen generate byte code
-	package{
-		// TODO add functions to help codegen
+
+	/// stores the functions with their instructions
+	public ByteCode.Function[] functions;
+	/// generates a readable string representation of this byte code
+	/// 
+	/// Note: at this point, only generating this is supported, there is no way to generate a ByteCode back from this. Only for debugging
+	public string[] tostring(){
+		List!string code = new List!string;
+		// append the function map
+		code.append("functions:");
+		/// same as this.functions, but sorted by id
+		ByteCode.Function[] sortedFuncs;
+		sortedFuncs.length = functions.length;
+		for (uinteger i=0; i < functions.length; i ++){
+			sortedFuncs[functions[i].id] = functions[i];
+		}
+		// write them to byte code
+		foreach (func; sortedFuncs){
+			code.append("\t"~func.name);
+		}
+		// now start with the functions
+		foreach (func; sortedFuncs){
+			code.append([to!string(func.id),
+					"stack:"]);
+			// first do the stack
+			foreach (element; func.stack){
+				if (element.type == ByteCode.StackElement.Type.Literal){
+					code.append("\t"~element.literal);
+				}else if (element.type == ByteCode.StackElement.Type.Reference){
+					code.append("\t@"~to!string(element.refIndex));
+				}
+			}
+			// then the instructions
+			code.append("instructions:");
+			foreach (instruction; func.instructions){
+				// put the args in a single string
+				string args = "";
+				foreach (arg; instruction.args){
+					args ~= arg;
+				}
+				code.append("\t"~instruction.name~" "~args);
+			}
+		}
 	}
 }
 
@@ -62,7 +100,7 @@ private static string[] readWords(string line){
 	// first remove whitespace from it
 	line = line.removeWhitespace('#');
 	auto words = new LinkedList!string;
-	for (uinteger i = 0, readFrom = 0, lastInd+1 = line.length; i < line.length; i ++){
+	for (uinteger i = 0, readFrom = 0, lastInd = line.length-1; i < line.length; i ++){
 		// if a string, skip it
 		if (line[i] == '"'){
 			i = line.strEnd(i);
