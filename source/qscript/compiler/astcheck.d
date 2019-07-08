@@ -28,6 +28,8 @@ private:
 	uinteger[string] varScope;
 	/// stores expected return type of currently-being-checked function
 	DataType functionReturnType;
+	/// the largest variable id in currectly being-checked function
+	integer maxVarId;
 	/// stores current scope-depth
 	uinteger scopeDepth;
 	/// registers a new var in current scope
@@ -201,6 +203,7 @@ private:
 protected:
 	/// checks if a FunctionNode is valid
 	void checkAST(ref FunctionNode node){
+		maxVarId = (cast(integer)node.arguments.length) - 1;
 		increaseScope();
 		functionReturnType = node.returnType;
 		// add the arg's to the var scope. make sure one arg name is not used more than once
@@ -212,6 +215,7 @@ protected:
 		// now check the statements
 		checkAST(node.bodyBlock);
 		decreaseScope();
+		node.varCount = maxVarId + 1;
 	}
 	/// checks if a StatementNode is valid
 	void checkAST(ref StatementNode node){
@@ -365,7 +369,10 @@ protected:
 			// assign it an id
 			addVar (varName, node.type);
 			// set it's ID
-			node.setVarID(varName, getVarID(varName));
+			uinteger vId = getVarID(varName);
+			if (vId > maxVarId)
+				maxVarId = vId;
+			node.setVarID(varName, vId);
 		}
 	}
 	/// checks a WhileNode
