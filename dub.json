@@ -5,7 +5,7 @@
 	"license":"MIT",
 	"authors": ["nafees"],
 	"dependencies": {
-		"utils": "~>0.2.0"
+		"utils": "~>0.3.2"
 	},"configurations": [
 		{
 			"name": "default",
