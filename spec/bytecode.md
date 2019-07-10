@@ -107,9 +107,9 @@ And this is how instructions are executed & how they access the stack:
 * isSameDouble	- writes 1(int) if two doubles on stack are same
 * isSameString	- writes 1(int) if two strings on stack are same
 * isLesserInt	- writes 1(int) if first element(int) on stack is less than second(int)
-* isLesserDouble- writes 1(int) if first element(double) on stack is less than second(double)
+* isLesserDouble - writes 1(int) if first element(double) on stack is less than second(double)
 * isGreaterInt	- writes 1(int) if first element(int) on stack is greater than second(int)
-* isGreaterDouble- writes 1(int) if first element(double) on stack is greater than second(double)
+* isGreaterDouble - writes 1(int) if first element(double) on stack is greater than second(double)
 * not			- if element(int) on stack == 1, writes 1(int), else, 0(int)
 * and			- if 2 elements on stack (int) == 1, writes 1(int), else writes 0(int)
 * or			- if either of 2 elements on stack == 1 (int), writes 1(int), else writes 0(int)
@@ -117,7 +117,8 @@ And this is how instructions are executed & how they access the stack:
 ### Modifying stack:
 * write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
-* getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int) number of indexes is specified in arg1 (int). The indexes are read from stack.
+* getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
+* getRefRefArray - writes reference to `@var[index0][index1][...]` where the ref-to-array is first read from stack. Number of indexes specified in arg0(int). Indxes are read from stack.
 * peekInc		- increases the peek index by arg0 (int). _Be careful as it allows it to exceed the last index, that might cause a segfault_
 * peekDec		- decreases the peek index by arg0 (int). _Be careful as the peek index is unsigned_
 
