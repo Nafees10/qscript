@@ -671,7 +671,9 @@ struct ASTGen{
 				// literal
 				index ++;
 				try{
-					return CodeNode(LiteralNode([token]));
+					LiteralNode r = LiteralNode([token]);
+					r.lineno = tokens.getTokenLine(index);
+					return CodeNode(r);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
