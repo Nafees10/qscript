@@ -284,6 +284,7 @@ struct ASTGen{
 					// check if there's an [...] to read the array
 					if (token.type == Token.Type.IndexBracketOpen){
 						// read the index
+						uinteger brackStartIndex = index;
 						uinteger brackEnd = tokens.tokens.bracketPos(index);
 						index ++;
 						CodeNode indexNode = generateCodeAST();
@@ -294,6 +295,7 @@ struct ASTGen{
 							break;
 						}
 						lastNode = CodeNode(ReadElement(lastNode, indexNode));
+						lastNode.lineno = tokens.getTokenLine(brackStartIndex);
 						continue;
 					}
 					separatorExpected = false;
