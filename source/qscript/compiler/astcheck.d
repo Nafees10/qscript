@@ -451,9 +451,6 @@ protected:
 			}
 			node.returnType = DataType(DataType.Type.Integer);
 		}else if (node.operator == "@"){
-			if (node.operand.type != CodeNode.Type.Variable){
-				compileErrors.append (CompileError(node.operand.lineno, "can only ref/deref (@) a variable"));
-			}
 			node.returnType = node.operand.returnType;
 			node.returnType.isRef = !node.returnType.isRef;
 		}else
