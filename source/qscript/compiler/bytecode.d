@@ -63,6 +63,17 @@ public class ByteCode{
 			this.literal = data.toByteCode(dataType);
 			type = this.Type.Literal;
 		}
+		/// Returns: a byte code representation of this in string
+		string toByteCode(){
+			if (this.type == this.Type.Reference)
+				return "\t@"~to!string(refIndex);
+			else if (this.type == this.Type.Empty)
+				return "\t0";
+			else if (this.type == this.Type.nill)
+				return "\tnull";
+			else
+				return literal;
+		}
 	}
 	/// used to store byte code's instruction in a more readable format
 	public struct Instruction{
@@ -117,7 +128,7 @@ public class ByteCode{
 	/// generates a readable string representation of this byte code
 	/// 
 	/// Note: at this point, only generating this is supported, there is no way to generate a ByteCode back from this. Only for debugging
-	/*public string[] tostring(){
+	public string[] tostring(){
 		List!string code = new List!string;
 		// append the function map
 		code.append("functions:");
@@ -149,7 +160,7 @@ public class ByteCode{
 				// put the args in a single string
 				string args = "";
 				foreach (arg; instruction.args){
-					args ~= arg;
+					args ~= arg.toByteCode;
 				}
 				code.append("\t"~instruction.name~" "~args);
 			}
@@ -157,7 +168,7 @@ public class ByteCode{
 		string[] r = code.toArray;
 		.destroy(code);
 		return r;
-	}*/
+	}
 }
 
 /// contains some functions to make it easier to generate byte code in CodeGen
