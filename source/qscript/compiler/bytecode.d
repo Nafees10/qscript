@@ -148,11 +148,7 @@ public class ByteCode{
 					"stack:"]);
 			// first do the stack
 			foreach (element; func.stack){
-				if (element.type == ByteCode.Data.Type.Literal){
-					code.append("\t"~element.literal);
-				}else if (element.type == ByteCode.Data.Type.Reference){
-					code.append("\t@"~to!string(element.refIndex));
-				}
+				code.append(element.toByteCode);
 			}
 			// then the instructions
 			code.append("instructions:");
@@ -160,7 +156,8 @@ public class ByteCode{
 				// put the args in a single string
 				string args = "";
 				foreach (arg; instruction.args){
-					args ~= arg.toByteCode;
+					string argBC = arg.toByteCode;
+					args = argBC[1 .. argBC.length];// remove that `\t` from start
 				}
 				code.append("\t"~instruction.name~" "~args);
 			}
