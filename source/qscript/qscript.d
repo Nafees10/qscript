@@ -6,6 +6,7 @@ module qscript.qscript;
 import utils.misc;
 import utils.lists;
 import qscript.compiler.compiler;
+import qscript.compiler.misc : encodeString;
 import qscript.vm;
 import std.stdio;
 import std.conv:to;
@@ -29,6 +30,35 @@ public union QData{
 			arrayVal = cast(QData[])data;
 		}else{
 			throw new Exception("cannot store "~T.stringof~" in QData");
+		}
+	}
+	/// Returns: this QData as it would be written in byte code
+	string toByteCode(DataType type){
+		if (type.arrayDimensionCount > 0){
+			char[] array = ['['];
+			// the type of the elements
+			DataType subType = type;
+			subType.arrayDimensionCount --;
+			// use recursion
+			foreach (element; this.arrayVal){
+				array ~= cast(char[])element.toByteCode(subType) ~ ',';
+			}
+			if (array.length == 1){
+				array ~= ']';
+			}else{
+				array[array.length - 1] = ']';
+			}
+			return cast(string)array;
+		}else{
+			if (type.type == DataType.Type.Double){
+				return "d"~to!string(this.doubleVal);
+			}else if (type.type == DataType.Type.Integer){
+				return "i"~to!string(this.intVal);
+			}else if (type.type == DataType.Type.String){
+				return "s\""~encodeString(this.strVal)~'"';
+			}else{
+				return "NULL"; /// actually an error TODO do something about it
+			}
 		}
 	}
 }

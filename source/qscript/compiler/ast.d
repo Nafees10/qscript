@@ -333,36 +333,7 @@ package struct LiteralNode{
 	}
 	/// returns this literal as in a string-representation, for the bytecode
 	string toByteCode(){
-		/// returns array in byte code representation
-		static string fromDataOrArray(QData data, DataType type){
-			if (type.arrayDimensionCount > 0){
-				char[] array = ['['];
-				// the type of the elements
-				DataType subType = type;
-				subType.arrayDimensionCount --;
-				// use recursion
-				foreach (element; data.arrayVal){
-					array ~= cast(char[])fromDataOrArray(element, subType) ~ ',';
-				}
-				if (array.length == 1){
-					array ~= ']';
-				}else{
-					array[array.length - 1] = ']';
-				}
-				return cast(string)array;
-			}else{
-				if (type.type == DataType.Type.Double){
-					return "d"~to!string(data.doubleVal);
-				}else if (type.type == DataType.Type.Integer){
-					return "i"~to!string(data.intVal);
-				}else if (type.type == DataType.Type.String){
-					return "s\""~encodeString(data.strVal)~'"';
-				}else{
-					return "NULL"; /// actually an error TODO do something about it
-				}
-			}
-		}
-		return fromDataOrArray(literal, returnType);
+		return literal.toByteCode(returnType);
 	}
 }
 
