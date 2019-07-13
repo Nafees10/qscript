@@ -42,6 +42,7 @@ JSONValue toJSON(FunctionNode node){
 	r["arguments"] = JSONValue(argListJSON);
 	r["body"] = JSONValue(bodyJSON);
 	r["id"] = JSONValue(node.id);
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -55,6 +56,7 @@ JSONValue toJSON(BlockNode node){
 	JSONValue r;
 	r["node"] = JSONValue("BlockNode");
 	r["statements"] = JSONValue(statementListJSON);
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -81,6 +83,7 @@ JSONValue toJSON(StatementNode node){
 	}else if (node.type == StatementNode.Type.Return){
 		r["statement"] = node.node!(StatementNode.Type.Return).toJSON;
 	}
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -97,6 +100,8 @@ JSONValue toJSON(AssignmentNode node){
 	}
 	r["indexes"] = JSONValue(indexes);
 	r["val"] = node.val.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -108,6 +113,8 @@ JSONValue toJSON(IfNode node){
 	r["onTrue"] = node.statement.toJSON;
 	if (node.hasElse)
 		r["onFalse"] = node.elseStatement.toJSON;
+	
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -117,6 +124,8 @@ JSONValue toJSON(WhileNode node){
 	r["node"] = JSONValue("WhileNode");
 	r["condtion"] = node.condition.toJSON;
 	r["statement"] = node.statement.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -126,6 +135,8 @@ JSONValue toJSON(DoWhileNode node){
 	r["node"] = JSONValue("DoWhileNode");
 	r["condition"] = node.condition.toJSON;
 	r["statement"] = node.statement.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -137,6 +148,8 @@ JSONValue toJSON(ForNode node){
 	r["condition"] = node.condition.toJSON;
 	r["inc"] = node.incStatement.toJSON;
 	r["statement"] = node.statement.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -152,6 +165,8 @@ JSONValue toJSON(FunctionCallNode node){
 		argListJSON[i] = arg.toJSON;
 	}
 	r["args"] = JSONValue(argListJSON);
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -171,6 +186,8 @@ JSONValue toJSON(VarDeclareNode node){
 		varTypeValueList[i] = var;
 	}
 	r["vars"] = JSONValue(varTypeValueList);
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -203,6 +220,7 @@ JSONValue toJSON(CodeNode node){
 	}else if (node.type == CodeNode.Type.Variable){
 		r["code"] = node.node!(CodeNode.Type.Variable).toJSON;
 	}
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -213,6 +231,8 @@ JSONValue toJSON(VariableNode node){
 	r["type"] = JSONValue(node.returnType.toString);
 	r["name"] = JSONValue(node.varName);
 	r["id"] = JSONValue(node.id);
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -228,6 +248,8 @@ JSONValue toJSON(ArrayNode node){
 		elementList[i] = element.toJSON;
 	}
 	r["elements"] = JSONValue(elementList);
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -237,6 +259,8 @@ JSONValue toJSON(LiteralNode node){
 	r["node"] = JSONValue("LiteralNode");
 	r["type"] = JSONValue(node.returnType.toString);
 	r["value"] = JSONValue(node.toByteCode);
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -249,6 +273,8 @@ JSONValue toJSON(OperatorNode node){
 	r["operator"] = JSONValue(node.operator);
 	r["operandA"] = node.operands[0].toJSON;
 	r["operandB"] = node.operands[1].toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -260,6 +286,8 @@ JSONValue toJSON(SOperatorNode node){
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["operator"] = JSONValue(node.operator);
 	r["operand"] = node.operand.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
 
@@ -271,5 +299,7 @@ JSONValue toJSON(ReadElement node){
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["array"] = node.readFromNode.toJSON;
 	r["index"] = node.index.toJSON;
+
+	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
