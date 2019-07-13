@@ -10,31 +10,95 @@ import utils.misc;
 import utils.lists;
 
 import std.conv : to;
+import core.vararg;
 
 /// provides functions for dealing with byte code generate using qscript.compiler.codegen
 public class ByteCode{
-	/// stores an element on the fucntion stack. The stack is made by simply making aray of this
-	public struct StackElement{
+	/// stores an element on the fucntion stack. The stack is made by simply making aray of this. Also used to store instruction args
+	public struct Data{
 		/// possible types of element
 		enum Type{
 			Reference, /// a reference to another element in same stack
 			Literal, /// a literal QData
+			Empty, /// leaves the element un-initialized. Use this if this space is to be used at runtime
+			nill, /// would name this null but keyword. Use this if this just exists to eat space, never used
 		}
 		/// stores the type this StackElement is
-		public Type type;
+		public Type type = this.Type.Empty;
 		/// stores the literal QData in byte code encoded format. Only valid if type==Type.literal
 		public string literal;
 		/// stores the index of the element being referenced. Only valid if type==Type.Reference
 		public uinteger refIndex;
+		/// constructor - type only
+		this (ByteCode.Data.Type type){
+			this.type = type;
+		}
+		/// constructor - for type=Type.Literal (string)
+		this (string literalString){
+			this.literal = QData(literalString).toByteCode(DataType(DataType.Type.String));
+			type = this.Type.Literal;
+		}
+		/// constructor - for type=Type.Literal (integer)
+		this (integer literalInt){
+			this.literal = QData(literalInt).toByteCode(DataType(DataType.Type.Integer));
+			type = this.Type.Literal;
+		}
+		/// constructor - for integers and references.
+		this (uinteger literalInt, bool isRef=false){
+			if (isRef){
+				this.refIndex = literalInt;
+				this.type = this.Type.Reference;
+			}else{
+				this.literal = QData(cast(uinteger)literalInt).toByteCode(DataType(DataType.Type.Integer));
+				type = this.Type.Literal;
+			}
+		}
+		/// constructor - for type=Type.Literal (double)
+		this (double literalDouble){
+			this.literal = QData(literalDouble).toByteCode(DataType(DataType.Type.Double));
+			type = this.Type.Literal;
+		}
+		/// constructor - for when type is some array
+		this (QData data, DataType dataType){
+			this.literal = data.toByteCode(dataType);
+			type = this.Type.Literal;
+		}
 	}
 	/// used to store byte code's instruction in a more readable format
 	public struct Instruction{
 		/// instruction name
 		string name;
-		/// arguments of instruction. These are written in the byte code encoded way
-		///
-		/// these are stored as string instead of QData so its possible to generate readable byte code
-		string[] args;
+		/// arguments of instruction.
+		Data[] args;
+		/// constructor
+		this (string name, Data[] args){
+			this.name = name;
+			this.args = args.dup;
+		}
+		/// constructor. The var_args are args for instruction.
+		/// 
+		/// They can be of these types (in this constructor):  
+		/// 1. ByteCode.Data.Type - for use with ByteCode.Data.Type.Empty  
+		/// 2. string  
+		/// 3. integer/uinteger (both are stored as a signed integer, refs not possible using this)  
+		/// 4. double
+		this (string name, ...){
+			this.name = name;
+			this.args.length = _arguments.length;
+			for (uinteger i=0; i < _arguments.length; i++){
+				if (_arguments[i] == typeid(ByteCode.Data.Type)){
+					this.args[i] = Data(va_arg!(ByteCode.Data.Type)(_argptr));
+				}else if (_arguments[i] == typeid(string)){
+					this.args[i] = Data(va_arg!(string)(_argptr));
+				}else if (_arguments[i] == typeid(integer)){
+					this.args[i] = Data(va_arg!(integer)(_argptr));
+				}else if (_arguments[i] == typeid(uinteger)){
+					this.args[i] = Data(va_arg!(uinteger)(_argptr));
+				}else if (_arguments[i] == typeid(double)){
+					this.args[i] = Data(va_arg!(double)(_argptr));
+				}
+			}
+		}
 	}
 	/// used to store byte code's function in a more readable format
 	public struct Function{
@@ -45,7 +109,7 @@ public class ByteCode{
 		/// instructions that make up this function
 		Instruction[] instructions;
 		/// The stack that's loaded before this function is executed
-		StackElement[] stack;
+		Data[] stack;
 	}
 
 	/// stores the functions with their instructions
@@ -53,7 +117,7 @@ public class ByteCode{
 	/// generates a readable string representation of this byte code
 	/// 
 	/// Note: at this point, only generating this is supported, there is no way to generate a ByteCode back from this. Only for debugging
-	public string[] tostring(){
+	/*public string[] tostring(){
 		List!string code = new List!string;
 		// append the function map
 		code.append("functions:");
@@ -73,9 +137,9 @@ public class ByteCode{
 					"stack:"]);
 			// first do the stack
 			foreach (element; func.stack){
-				if (element.type == ByteCode.StackElement.Type.Literal){
+				if (element.type == ByteCode.Data.Type.Literal){
 					code.append("\t"~element.literal);
-				}else if (element.type == ByteCode.StackElement.Type.Reference){
+				}else if (element.type == ByteCode.Data.Type.Reference){
 					code.append("\t@"~to!string(element.refIndex));
 				}
 			}
@@ -88,6 +152,135 @@ public class ByteCode{
 					args ~= arg;
 				}
 				code.append("\t"~instruction.name~" "~args);
+			}
+		}
+		string[] r = code.toArray;
+		.destroy(code);
+		return r;
+	}*/
+}
+
+/// contains some functions to make it easier to generate byte code in CodeGen
+package class ByteCodeWriter{
+private:
+	/// the ByteCode to write to
+	ByteCode code;
+	/// the current function's id to which instructions and stack elements are added to
+	uinteger funcId;
+	/// the current function's name to which instruction and stack elements are added to
+	string funcName;
+	/// the stack of the current function
+	List!(ByteCode.Data) funcStack;
+	/// the instructions for the current function
+	List!(ByteCode.Instruction) funcInstructions;
+	/// stores indexes of elements to be added to a "bundle"
+	List!uinteger bundleElements;
+public:
+	/// constructor
+	this(ByteCode bCode){
+		code =  bCode;
+		funcStack = new List!(ByteCode.Data);
+		funcInstructions = new List!(ByteCode.Instruction);
+		bundleElements = new List!uinteger;
+	}
+	/// destructor
+	~this(){
+		.destroy (funcStack);
+		.destroy (funcInstructions);
+		.destroy (bundleElements);
+	}
+	/// sets current function to a new function
+	/// 
+	/// the `name` and `id` must be unique. And if any function was being edited before this, that must be appended first before calling this 
+	/// 
+	/// Returns: true if successful, false if not, in case name or id is already used, or if last function was not appended
+	bool setCurrentFunction(string name, uinteger id){
+		// make sure last function was appended
+		if (funcStack.length + funcInstructions.length > 0)
+			return false;
+		// make sure name and id are unique
+		foreach (func; code.functions){
+			if (func.name == name || func.id == id)
+				return false;
+		}
+		funcId = id;
+		funcName = name;
+		return true;
+	}
+	/// call this when done adding instructions and stack elements to a function.
+	/// This adds that function to the ByteCode.
+	/// 
+	/// Returns: true if successful, false if not (in case funcName is empty, or id not unique)
+	bool appendFunction(){
+		// recheck if id and name are unique, this is necessary because `code` can be modified outside from this class
+		foreach (func; code.functions){
+			if (func.name == funcName || func.id == funcId)
+				return false;
+		}
+		code.functions ~= ByteCode.Function(funcId, funcName, funcInstructions.toArray, funcStack.toArray);
+		// clear the stack and instructions for next function
+		funcStack.clear;
+		funcInstructions.clear;
+		return true;
+	}
+	/// adds an instruction
+	void appendInstruction(ByteCode.Instruction inst){
+		funcInstructions.append(inst);
+	}
+	/// adds a stack element
+	void appendStack(ByteCode.Data element){
+		funcStack.append(element);
+	}
+	/// Returns: index of last instruction appended
+	///
+	/// Throws: Exception if no instructions are present
+	@property uinteger lastInstructionIndex(){
+		if (funcInstructions.length == 0)
+			throw new Exception("no instruction present");
+		return funcInstructions.length-1;
+	}
+	/// Returns: index of last stack element appended
+	///
+	/// Throws: Exception if no stack elements are present
+	@property uinteger lastStackElementIndex(){
+		if (funcStack.length == 0)
+			throw new Exception("no stack element present");
+		return funcStack.length-1;
+	}
+	/// clears the current "bundle" (see this.bundleAppend)
+	void clearBundle(){
+		bundleElements.clear;
+	}
+	/// appends a stack element to bundle.
+	/// 
+	/// A bundle is just consecutive elements in stack, that are references to other elements. This is necessary because instructions 
+	/// need data on stack in certain order, and to be consecutive, in case it is not, a bundle is used.
+	void appendToBundle(uinteger index){
+		bundleElements.append(index);
+	}
+	/// appends the bundle to stack, if necessary. If the elements are already in order, and consecutive, nothing is done.  
+	/// Also clears the bundle
+	void appendBundle(){
+		// bundle needs to be appended at all
+		if (bundleElements.length > 0){
+			// if it needs to append bundle separately
+			bool needsToAppend = false;
+			// check if elements are already at end of stack
+			if (bundleElements.readLast == lastInstructionIndex){
+				// now just make sure they're in order
+				for (uinteger i=1, lastRead=bundleElements.read(0); i < bundleElements.length; i++){
+					if (bundleElements.read(i) != lastRead){
+						needsToAppend = true;
+						break;
+					}
+					lastRead = bundleElements.read(i);
+				}
+			}else
+				needsToAppend = true;
+			if (needsToAppend){
+				foreach (index; bundleElements.toArray){
+					funcStack.append(ByteCode.Data(index, true));
+				}
 			}
 		}
 	}
