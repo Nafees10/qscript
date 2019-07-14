@@ -119,12 +119,10 @@ And this is how instructions are executed & how they access the stack:
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
 * getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
 * getRefRefArray - writes reference to `@var[index0][index1][...]` where the ref-to-array is first read from stack. Number of indexes specified in arg0(int). Indxes are read from stack.
-* peekInc		- increases the peek index by arg0 (int). _Be careful as it allows it to exceed the last index, that might cause a segfault_
-* peekDec		- decreases the peek index by arg0 (int). _Be careful as the peek index is unsigned_
+* peek			- sets peek index to arg0(int)
 
 ### Misc.:
-* jumpInc		- jumps to another instruction, which is arg0(int) instructions ahead, and increases peek index by arg1(int).
-* jumpDec		- jumps to another instruction, which is arg0(int) instructions behind, and decreases peek index by arg1(int).
+* jump			- jumps to instruction at index arg0(int). sets peek to arg1(int)
 * doIf			- only execute the next instrcution if element on stack == 1 (int)
 * return 		- sets the element read from stack as the return value, and breaks execution of the function
 
