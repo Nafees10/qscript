@@ -182,20 +182,22 @@ private:
 	/// the instructions for the current function
 	List!(ByteCode.Instruction) funcInstructions;
 	/// stores indexes of elements to be added to a "bundle"
-	List!uinteger bundleElements;
+	List!uinteger[uinteger] bundles;
 public:
 	/// constructor
 	this(ByteCode bCode){
 		code =  bCode;
 		funcStack = new List!(ByteCode.Data);
 		funcInstructions = new List!(ByteCode.Instruction);
-		bundleElements = new List!uinteger;
 	}
 	/// destructor
 	~this(){
 		.destroy (funcStack);
 		.destroy (funcInstructions);
-		.destroy (bundleElements);
+		foreach (id, bundle; bundles){
+			.destroy (bundle);
+			bundles.remove (id);
+		}
 	}
 	/// sets current function to a new function
 	/// 
@@ -255,20 +257,53 @@ public:
 			throw new Exception("no stack element present");
 		return funcStack.length-1;
 	}
-	/// clears the current "bundle" (see this.bundleAppend)
-	void clearBundle(){
-		bundleElements.clear;
-	}
-	/// appends a stack element to bundle.
+	/// creates a new bundle.
 	/// 
 	/// A bundle is just consecutive elements in stack, that are references to other elements. This is necessary because instructions 
 	/// need data on stack in certain order, and to be consecutive, in case it is not, a bundle is used.
-	void appendToBundle(uinteger index){
-		bundleElements.append(index);
+	/// 
+	/// Returns: the bundle id, this is used to identify this bundle in other functions.
+	uinteger newBundle(){
+		// look for a un-used id
+		uinteger i;
+		for (i = 0; ;i ++){
+			if (i !in bundles)
+				break;
+		}
+		bundles[i] = new List!uinteger;
+		return i;
 	}
-	/// appends the bundle to stack, if necessary. If the elements are already in order, and consecutive, nothing is done.  
-	/// Also clears the bundle
-	void appendBundle(){
+	/// appends a stack element to bundle.
+	/// 
+	/// Returns: true if done, false if not (in case the bundle doesn't exist)
+	bool appendToBundle(uinteger bundle, uinteger index){
+		if (bundle !in bundles)
+			return false;
+		bundles[bundle].append(index);
+		return true;
+	}
+	/// appends the last stack element to bundle.
+	/// 
+	/// Returns: true if done, false if not (in case the bundle doesn't exist, or no element on stack)
+	bool appendToBundle(uinteger bundle){
+		if (bundle !in bundles)
+			return false;
+		try{
+			bundles[bundle].append(lastStackElementIndex);
+		}catch (Exception e){
+			.destroy (e);
+			return false;
+		}
+		return true;
+	}
+	/// appends the bundle to stack, if necessary. If the elements are already in order, and consecutive, nothing is done.
+	/// After calling this, that bundle id is disassociated.
+	/// 
+	/// Returns: true if done, false if that bundle doesn't exist
+	bool appendBundle(uinteger bundle){
+		if (bundle !in bundles)
+			return false;
+		List!uinteger bundleElements = bundles[bundle];
 		// bundle needs to be appended at all
 		if (bundleElements.length > 0){
 			// if it needs to append bundle separately
@@ -291,6 +326,9 @@ public:
 				}
 			}
 		}
+		.destroy(bundles[bundle]);
+		bundles.remove (bundle);
+		return true;
 	}
 }
 
