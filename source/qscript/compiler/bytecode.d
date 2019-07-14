@@ -279,6 +279,14 @@ public:
 			throw new Exception("no stack element present");
 		return funcStack.length-1;
 	}
+	/// Returns: number of instructions
+	@property uinteger instructionCount(){
+		return funcInstructions.length;
+	}
+	/// Returns: number of stack elements
+	@property uinteger stackElementCount(){
+		return funcStack.length;
+	}
 	/// creates a new bundle.
 	/// 
 	/// A bundle is just consecutive elements in stack, that are references to other elements. This is necessary because instructions 
