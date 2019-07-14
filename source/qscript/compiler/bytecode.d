@@ -248,7 +248,7 @@ public:
 	/// sets the value of an instruction at an index
 	/// 
 	/// Returns: true if done, false if index out of bounds
-	void setInstruction(uinteger index, ByteCode.Instruction inst){
+	bool setInstruction(uinteger index, ByteCode.Instruction inst){
 		if (index >= funcInstructions.length)
 			return false;
 		funcInstructions.set(index, inst);
@@ -257,7 +257,7 @@ public:
 	/// sets the value of a stack element at an index
 	/// 
 	/// Returns: true if done, false if index out of bounds
-	void setStackElement(uinteger index, ByteCode.Data element){
+	bool setStackElement(uinteger index, ByteCode.Data element){
 		if (index >= funcStack.length)
 			return false;
 		funcStack.set(index, element);

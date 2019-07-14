@@ -104,12 +104,6 @@ protected:
 			writer.appendInstruction(ByteCode.Instruction("write", node.var.id));
 		}
 	}
-	/// generates ByteCode for BlockNode
-	void generateByteCode(BlockNode node){
-		foreach (statement; node.statements){
-			generateByteCode(statement);
-		}
-	}
 	/// generates ByteCode for DoWhileNode
 	void generateByteCode(DoWhileNode node){
 		// the peek index to jump back to
@@ -141,7 +135,7 @@ protected:
 		// jump back to condition
 		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
 		// put in the correct indexes in jump-to-exit
-		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jumpIfNot", writer.instructionCount+1,
+		writer.setInstruction(jumpInstruction, ByteCode.Instruction("jumpIfNot", writer.instructionCount+1,
 				writer.stackElementCount));
 		// done
 	}
