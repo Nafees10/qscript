@@ -103,4 +103,25 @@ protected:
 			writer.appendInstruction(ByteCode.Instruction("write", node.var.id));
 		}
 	}
+	/// generates ByteCode for BlockNode
+	void generateByteCode(BlockNode node){
+		foreach (statement; node.statements){
+			generateByteCode(statement);
+		}
+	}
+	/// generates ByteCode for DoWhileNode
+	void generateByteCode(DoWhileNode node){
+		// the peek index to jump back to
+		uinteger peekBack = writer.lastStackElementIndex;
+		// the instruction to jump back to
+		uinteger jumpBack = writer.lastInstructionIndex;
+		// execute the statement
+		generateByteCode(node.statement);
+		// now comes time for condition
+		generateByteCode(node.condition);
+		writer.appendInstruction(ByteCode.Instruction("doIf"));
+		writer.appendInstruction(ByteCode.Instruction("jumpDec", (writer.lastInstructionIndex+1) - jumpBack,
+				writer.lastStackElementIndex - peekBack));
+	}
+	/// generates byte code for ForNode
 }
