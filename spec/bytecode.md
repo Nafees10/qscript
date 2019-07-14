@@ -79,7 +79,7 @@ And this is how instructions are executed & how they access the stack:
 1. The data that an instruction needs from stack is read using `stack[peek index .. peek index +n]` where `n` is the number of elements it wants to read.
 2. The `peek index` is increased by `n`.
 3. If the instruction needs to write back to the stack, it is written at `stack[peek index .. peek index + n]`. Here, `n` is number of elements to write, because an instruction can write more than one element.
-4. The `peek index` is again increased by `n`.
+4. The `peek index` is **NOT** increased. This is because the output is likely to be input for next instruction.
 5. Repeat for the next instruction.
 
 ## Instructions:
