@@ -245,6 +245,24 @@ public:
 	void appendStack(ByteCode.Data element){
 		funcStack.append(element);
 	}
+	/// sets the value of an instruction at an index
+	/// 
+	/// Returns: true if done, false if index out of bounds
+	void setInstruction(uinteger index, ByteCode.Instruction inst){
+		if (index >= funcInstructions.length)
+			return false;
+		funcInstructions.set(index, inst);
+		return true;
+	}
+	/// sets the value of a stack element at an index
+	/// 
+	/// Returns: true if done, false if index out of bounds
+	void setStackElement(uinteger index, ByteCode.Data element){
+		if (index >= funcStack.length)
+			return false;
+		funcStack.set(index, element);
+		return true;
+	}
 	/// Returns: index of last instruction appended
 	///
 	/// Throws: Exception if no instructions are present
