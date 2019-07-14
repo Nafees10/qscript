@@ -122,7 +122,7 @@ And this is how instructions are executed & how they access the stack:
 * _peek_		- sets peek index to arg0(int)
 
 ### Misc.:
-* _jump_		- jumps to instruction at index arg0(int). sets peek to arg1(int)
+* jump		- jumps to instruction at index arg0(int). sets peek to arg1(int)
 * jumpIf		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 1 (int)
 * jumpIfNot		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 0 (int)
 * _doIf_		- only execute the next instrcution if element on stack == 1 (int)
