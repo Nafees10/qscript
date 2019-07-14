@@ -29,7 +29,9 @@ private:
 protected:
 	/// generates byte code for a FunctionNode
 	void generateByteCode(FunctionNode node){
+		writer.setCurrentFunction(node.name, node.id);
 		generateByteCode(node.bodyBlock);
+		writer.appendFunction();
 	}
 	/// generates byte code for a BlockNode
 	void generateByteCode(BlockNode node){
@@ -51,8 +53,6 @@ protected:
 			generateByteCode(node.node!(StatementNode.Type.FunctionCall));
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode(node.node!(StatementNode.Type.If));
-		}else if (node.type == StatementNode.Type.VarDeclare){
-			generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else if (node.type == StatementNode.Type.While){
 			generateByteCode(node.node!(StatementNode.Type.While));
 		}else if (node.type == StatementNode.Type.Return){
@@ -113,9 +113,9 @@ protected:
 	/// generates ByteCode for DoWhileNode
 	void generateByteCode(DoWhileNode node){
 		// the peek index to jump back to
-		uinteger peekBack = writer.lastStackElementIndex+1;
+		uinteger peekBack = writer.stackElementCount;
 		// the instruction to jump back to
-		uinteger jumpBack = writer.lastInstructionIndex+1;
+		uinteger jumpBack = writer.instructionCount;
 		// execute the statement
 		generateByteCode(node.statement);
 		// now comes time for condition
@@ -126,9 +126,9 @@ protected:
 	void generateByteCode(ForNode node){
 		generateByteCode(node.initStatement);
 		/// the peek index to jump back to
-		uinteger peekBack = writer.lastStackElementIndex+1;
+		uinteger peekBack = writer.stackElementCount;
 		/// the instruction to jump back to
-		uinteger jumpBack = writer.lastInstructionIndex+1;
+		uinteger jumpBack = writer.instructionCount;
 		// eval the condition
 		generateByteCode(node.condition);
 		// jump if not
@@ -141,8 +141,8 @@ protected:
 		// jump back to condition
 		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
 		// put in the correct indexes in jump-to-exit
-		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jumpIfNot", writer.lastInstructionIndex+2,
-				writer.lastStackElementIndex+1));
+		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jumpIfNot", writer.instructionCount+1,
+				writer.stackElementCount));
 		// done
 	}
 	/// generates byte code for FunctionCallNode
@@ -171,11 +171,31 @@ protected:
 		// now the jump to skip the ifTrue statement
 		writer.appendInstruction(ByteCode.Instruction("jump", 0)); // 0 is placeholder
 		uinteger jumpSkipTrue = writer.lastInstructionIndex;
-		writer.setInstruction(jumpToTrue, ByteCode.Instruction("jumpIf", writer.lastInstructionIndex+2,
-				writer.lastStackElementIndex+1 ));
+		writer.setInstruction(jumpToTrue, ByteCode.Instruction("jumpIf", writer.instructionCount+1,
+				writer.stackElementCount ));
 		// now the ifTrue statement
 		generateByteCode(node.statement);
-		writer.setInstruction(jumpSkipTrue, ByteCode.Instruction("jump", writer.lastInstructionIndex+2,
-				writer.lastStackElementIndex+1 ));
+		writer.setInstruction(jumpSkipTrue, ByteCode.Instruction("jump", writer.instructionCount+1,
+				writer.stackElementCount ));
+	}
+	/// generates byte code for WhileNode
+	void generateByteCode(WhileNode node){
+		// the instruction index, and peek index to jump back to condition eval
+		uinteger jumpBack = writer.instructionCount, peekBack = writer.stackElementCount;
+		// eval the condition
+		generateByteCode (node.condition);
+		writer.appendInstruction(ByteCode.Instruction("jumpIfNot", 0, 0)); // placeholder
+		uinteger exitJump = writer.lastInstructionIndex;
+		generateByteCode(node.statement);
+		// jump back
+		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
+		// fix that jump to exit placeholder
+		writer.setInstruction(exitJump, ByteCode.Instruction("jumpIfNot", writer.instructionCount, writer.stackElementCount));
+		// done
+	}
+	/// generates byte code for ReturnNode
+	void generateByteCode(ReturnNode node){
+		generateByteCode(node.value);
+		writer.appendInstruction(ByteCode.Instruction("return"));
 	}
 }
