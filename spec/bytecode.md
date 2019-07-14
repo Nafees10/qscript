@@ -83,7 +83,7 @@ And this is how instructions are executed & how they access the stack:
 5. Repeat for the next instruction.
 
 ## Instructions:
-** TODO figure out what instructions should be removed/added/modified**
+** TODO figure out what instructions should be removed/added/modified. Instructions that might be removed are in italics**
 ### Executing functions:
 * execFuncS 	- executes a script-defined function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
 * execFuncE		- executes an external function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
@@ -119,11 +119,13 @@ And this is how instructions are executed & how they access the stack:
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
 * getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
 * getRefRefArray - writes reference to `@var[index0][index1][...]` where the ref-to-array is first read from stack. Number of indexes specified in arg0(int). Indxes are read from stack.
-* peek			- sets peek index to arg0(int)
+* _peek_		- sets peek index to arg0(int)
 
 ### Misc.:
-* jump			- jumps to instruction at index arg0(int). sets peek to arg1(int)
-* doIf			- only execute the next instrcution if element on stack == 1 (int)
+* _jump_		- jumps to instruction at index arg0(int). sets peek to arg1(int)
+* jumpIf		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 1 (int)
+* jumpIfNot		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 0 (int)
+* _doIf_		- only execute the next instrcution if element on stack == 1 (int)
 * return 		- sets the element read from stack as the return value, and breaks execution of the function
 
 ### Arrays
