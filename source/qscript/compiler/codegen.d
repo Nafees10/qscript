@@ -112,16 +112,40 @@ protected:
 	/// generates ByteCode for DoWhileNode
 	void generateByteCode(DoWhileNode node){
 		// the peek index to jump back to
-		uinteger peekBack = writer.lastStackElementIndex;
+		uinteger peekBack = writer.lastStackElementIndex+1;
 		// the instruction to jump back to
-		uinteger jumpBack = writer.lastInstructionIndex;
+		uinteger jumpBack = writer.lastInstructionIndex+1;
 		// execute the statement
 		generateByteCode(node.statement);
 		// now comes time for condition
 		generateByteCode(node.condition);
 		writer.appendInstruction(ByteCode.Instruction("doIf"));
-		writer.appendInstruction(ByteCode.Instruction("jumpDec", (writer.lastInstructionIndex+1) - jumpBack,
-				writer.lastStackElementIndex - peekBack));
+		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
 	}
 	/// generates byte code for ForNode
+	void generateByteCode(ForNode node){
+		generateByteCode(node.initStatement);
+		/// the peek index to jump back to
+		uinteger peekBack = writer.lastStackElementIndex+1;
+		/// the instruction to jump back to
+		uinteger jumpBack = writer.lastInstructionIndex+1;
+		// eval the condition
+		generateByteCode(node.condition);
+		// not it, so it jump if conditon not true
+		writer.appendInstruction(ByteCode.Instruction("not"));
+		writer.appendInstruction(ByteCode.Instruction("doIf"));
+		writer.appendInstruction(ByteCode.Instruction("jumpInc", 0, 0)); // the 0, 0 are placeholders.
+		/// stores the index of the jump instruction, so the index to jump to can be later modified
+		uinteger jumpInstruction = writer.lastInstructionIndex;
+		// eval the statements
+		generateByteCode(node.statement);
+		generateByteCode(node.incStatement);
+		// jump back to condition
+		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack. peekBack));
+		// put in the correct indexes in jump-to-exit
+		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jump", writer.lastInstructionIndex+1,
+				writer.lastStackElementIndex+1));
+		// done
+	}
+	
 }
