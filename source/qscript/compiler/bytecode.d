@@ -110,6 +110,16 @@ public class ByteCode{
 				}
 			}
 		}
+		/// Returns: a byte code representation of this in string
+		string toByteCode(){
+			// put the args in a single string
+			string argsStr = "";
+			foreach (arg; args){
+				string argBC = arg.toByteCode;
+				argsStr = argBC[1 .. argBC.length];// remove that `\t` from start
+			}
+			return "\t"~name~" "~argsStr;
+		}
 	}
 	/// used to store byte code's function in a more readable format
 	public struct Function{
@@ -153,13 +163,7 @@ public class ByteCode{
 			// then the instructions
 			code.append("instructions:");
 			foreach (instruction; func.instructions){
-				// put the args in a single string
-				string args = "";
-				foreach (arg; instruction.args){
-					string argBC = arg.toByteCode;
-					args = argBC[1 .. argBC.length];// remove that `\t` from start
-				}
-				code.append("\t"~instruction.name~" "~args);
+				code.append(instruction.toByteCode);
 			}
 		}
 		string[] r = code.toArray;
