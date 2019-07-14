@@ -75,6 +75,7 @@ protected:
 			}
 			// get ref to element
 			writer.appendBundle(bundle);
+			writer.appendStack(ByteCode.Data()); // empty space for getRefRefArray/getRefRefArray to write its return to
 			if (node.deref)
 				writer.appendInstruction(ByteCode.Instruction("getRefRefArray", node.indexes.length));
 			else
@@ -119,8 +120,7 @@ protected:
 		generateByteCode(node.statement);
 		// now comes time for condition
 		generateByteCode(node.condition);
-		writer.appendInstruction(ByteCode.Instruction("doIf"));
-		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
+		writer.appendInstruction(ByteCode.Instruction("jumpIf", jumpBack, peekBack));
 	}
 	/// generates byte code for ForNode
 	void generateByteCode(ForNode node){
@@ -131,21 +131,51 @@ protected:
 		uinteger jumpBack = writer.lastInstructionIndex+1;
 		// eval the condition
 		generateByteCode(node.condition);
-		// not it, so it jump if conditon not true
-		writer.appendInstruction(ByteCode.Instruction("not"));
-		writer.appendInstruction(ByteCode.Instruction("doIf"));
-		writer.appendInstruction(ByteCode.Instruction("jumpInc", 0, 0)); // the 0, 0 are placeholders.
+		// jump if not
+		writer.appendInstruction(ByteCode.Instruction("jumpIfNot", 0, 0)); // the 0, 0 are placeholders.
 		/// stores the index of the jump instruction, so the index to jump to can be later modified
 		uinteger jumpInstruction = writer.lastInstructionIndex;
 		// eval the statements
 		generateByteCode(node.statement);
 		generateByteCode(node.incStatement);
 		// jump back to condition
-		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack. peekBack));
+		writer.appendInstruction(ByteCode.Instruction("jump", jumpBack, peekBack));
 		// put in the correct indexes in jump-to-exit
-		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jump", writer.lastInstructionIndex+1,
+		writer.setStackElement(jumpInstruction, ByteCode.Instruction("jumpIfNot", writer.lastInstructionIndex+2,
 				writer.lastStackElementIndex+1));
 		// done
 	}
-	
+	/// generates byte code for FunctionCallNode
+	void generateByteCode(FunctionCallNode node){
+		uinteger bundle = writer.newBundle();
+		// add args to stack
+		foreach (arg; node.arguments){
+			generateByteCode(arg);
+			writer.appendToBundle(bundle);
+		}
+		writer.appendBundle(bundle);
+		writer.appendInstruction(ByteCode.Instruction(node.isScriptDefined ? "execFuncS" : "execFuncE",
+				node.id, node.arguments.length));
+		writer.appendStack(ByteCode.Data()); // empty space for execFunc output
+	}
+	/// generates byte code for IfNode
+	void generateByteCode(IfNode node){
+		// evaluate condition
+		generateByteCode(node.condition);
+		// if its true, jump to where the if-true statement is, otherwise keep going, the else statement begins there
+		writer.appendInstruction(ByteCode.Instruction("jumpIf", 0, 0)); // 0,0 are placeholders
+		uinteger jumpToTrue = writer.lastInstructionIndex;
+		// do the else statement here
+		if (node.hasElse)
+			generateByteCode(node.elseStatement);
+		// now the jump to skip the ifTrue statement
+		writer.appendInstruction(ByteCode.Instruction("jump", 0)); // 0 is placeholder
+		uinteger jumpSkipTrue = writer.lastInstructionIndex;
+		writer.setInstruction(jumpToTrue, ByteCode.Instruction("jumpIf", writer.lastInstructionIndex+2,
+				writer.lastStackElementIndex+1 ));
+		// now the ifTrue statement
+		generateByteCode(node.statement);
+		writer.setInstruction(jumpSkipTrue, ByteCode.Instruction("jump", writer.lastInstructionIndex+2,
+				writer.lastStackElementIndex+1 ));
+	}
 }
