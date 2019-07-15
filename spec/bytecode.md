@@ -110,9 +110,9 @@ And this is how instructions are executed & how they access the stack:
 * isLesserDouble - writes 1(int) if first element(double) on stack is less than second(double)
 * isGreaterInt	- writes 1(int) if first element(int) on stack is greater than second(int)
 * isGreaterDouble - writes 1(int) if first element(double) on stack is greater than second(double)
-* not			- if element(int) on stack == 1, writes 1(int), else, 0(int)
-* and			- if 2 elements on stack (int) == 1, writes 1(int), else writes 0(int)
-* or			- if either of 2 elements on stack == 1 (int), writes 1(int), else writes 0(int)
+* notInt		- if element(int) on stack == 1, writes 1(int), else, 0(int)
+* andInt		- if 2 elements on stack (int) == 1, writes 1(int), else writes 0(int)
+* orInt			- if either of 2 elements on stack == 1 (int), writes 1(int), else writes 0(int)
 
 ### Modifying stack:
 * write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
