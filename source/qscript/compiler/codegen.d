@@ -192,4 +192,65 @@ protected:
 		generateByteCode(node.value);
 		writer.appendInstruction(ByteCode.Instruction("return"));
 	}
+
+	/// generates byte code for CodeNode
+	void generateByteCode(CodeNode node){
+		if (node.type == CodeNode.Type.FunctionCall){
+			generateByteCode(node.node!(CodeNode.Type.FunctionCall));
+		}else if (node.type == CodeNode.Type.Literal){
+			generateByteCode(node.node!(CodeNode.Type.Literal));
+		}else if (node.type == CodeNode.Type.Operator){
+			generateByteCode(node.node!(CodeNode.Type.Operator));
+		}else if (node.type == CodeNode.Type.SOperator){
+			generateByteCode(node.node!(CodeNode.Type.SOperator));
+		}else if (node.type == CodeNode.Type.ReadElement){
+			generateByteCode(node.node!(CodeNode.Type.ReadElement));
+		}else if (node.type == CodeNode.Type.Variable){
+			generateByteCode(node.node!(CodeNode.Type.Variable));
+		}else if (node.type == CodeNode.Type.Array){
+			generateByteCode(node.node!(CodeNode.Type.Array));
+		}
+	}
+	/// generates byte code for LiteralNode
+	void generateByteCode(LiteralNode node){
+		// it wont ever be Array, only double, int, or string
+		writer.appendStack(ByteCode.Data(node.literal, node.returnType));
+	}
+	/// generates byte code for OperatorNode
+	void generateByteCode(OperatorNode node){
+		// TODO
+	}
+	/// generates byte code for SOperatorNode
+	void generateByteCode(SOperatorNode node){
+		// TODO
+	}
+	/// generates byte code for ReadElement
+	void generateByteCode(ReadElement node){
+		// use `getRefRefArray`
+		uinteger bundle = writer.newBundle();
+		generateByteCode(node.readFromNode);
+		writer.appendToBundle(bundle);
+		generateByteCode(node.index);
+		writer.appendToBundle(bundle);
+		writer.appendBundle(bundle);
+		writer.appendStack(ByteCode.Data()); // space for output from `getRefRefArray`
+		writer.appendInstruction(ByteCode.Instruction("getRefRefArray", 1));
+	}
+	/// generates byte code for VariableNode
+	void generateByteCode(VariableNode node){
+		// just throw a ref of that var here. spec dictates instructions dont modify what they read, so it should be safe.
+		writer.appendStack(ByteCode.Data(node.id, true));
+	}
+	/// generates byte code for ArrayNode
+	void generateByteCode(ArrayNode node){
+		// use `makeArray` instruction
+		uinteger bundle = writer.newBundle();
+		foreach (element; node.elements){
+			generateByteCode(element);
+			writer.appendToBundle(bundle);
+		}
+		writer.appendBundle(bundle);
+		writer.appendStack(ByteCode.Data()); // to hold array output from `makeAray`
+		writer.appendInstruction(ByteCode.Instruction("makeArray", node.elements.length));
+	}
 }
