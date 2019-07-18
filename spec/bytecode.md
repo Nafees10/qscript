@@ -117,6 +117,8 @@ And this is how instructions are executed & how they access the stack:
 ### Modifying stack:
 * write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
+* deref			- writes the data being referenced by a ref. The ref is read from stack
+* getRef		- writes a ref-to-element-at index, where index=arg0(int)
 * getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
 * getRefRefArray - writes reference to `@var[index0][index1][...]` where the ref-to-array is first read from stack. Number of indexes specified in arg0(int). Indxes are read from stack.
 * _peek_		- sets peek index to arg0(int)
