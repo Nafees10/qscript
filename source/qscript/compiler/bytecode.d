@@ -364,8 +364,9 @@ public:
 
 // some misc. functions
 
+
 /// reads "words" (instruction name, and arguments) into string[] from string
-private static string[] readWords(string line){
+/*private static string[] readWords(string line){
 	// first remove whitespace from it
 	line = line.removeWhitespace('#');
 	auto words = new LinkedList!string;
@@ -387,4 +388,4 @@ private static string[] readWords(string line){
 	string[] r = words.toArray;
 	.destroy(words);
 	return r;
-}
+}*/
