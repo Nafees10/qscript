@@ -96,7 +96,11 @@ protected:
 			generateByteCode(node.val);
 			writer.appendToBundle(bundle);
 			writer.appendInstruction(ByteCode.Instruction("writeRef"));
-		}else{
+		}/*else if (node.val.returnType.isRef){
+			// make var ref of rvalue
+			generateByteCode(node.val);
+			writer.appendStack(ByteCode.Data()));
+		}*/else{
 			// put data on bundle
 			generateByteCode(node.val);
 			writer.appendToBundle(bundle);
@@ -218,23 +222,72 @@ protected:
 	}
 	/// generates byte code for OperatorNode
 	void generateByteCode(OperatorNode node){
-		// TODO
+		/// the instruction names for each operator (excluding the trailing data type)
+		string[string] OPERATOR_INSTRUCTION = [
+			"/" : "divide",
+			"*" : "multiply",
+			"+" : "add",
+			"-" : "subtract",
+			"%" : "mod",
+			"~" : "concat",
+			"<" : "isLesser",
+			">" : "isGreater",
+			"==" : "isSame",
+			"&&" : "and",
+			"||" : "or",
+			"!" : "not"
+		];
+		// get the full instruction name.
+		string instName = OPERATOR_INSTRUCTION[node.operator] ~ node.returnType.isArray ? "Array" :
+			node.returnType.type == DataType.Type.String ? "String" : node.returnType.type == DataType.Type.Integer ? 
+			"Int" : "Double";
+		// push the operands
+		uinteger bundle = writer.newBundle();
+		foreach (operand; node.operands){
+			generateByteCode(operand);
+			writer.appendToBundle(bundle);
+		}
+		writer.appendBundle(bundle);
+		writer.appendStack(ByteCode.Data()); // space for output from operator instruction
+		writer.appendInstruction(ByteCode.Instruction(instName));
+		// done
 	}
 	/// generates byte code for SOperatorNode
 	void generateByteCode(SOperatorNode node){
-		// TODO
+		// only 2 SOperators exist at this point, ref/de-ref, and `!`
+		if (node.operator == "@"){
+			// check if its being de-ref-ed
+			if (node.operand.returnType.isRef){
+				generateByteCode(node.operand);
+				writer.appendStack(ByteCode.Data());// empty for the deref-ed data
+				writer.appendInstruction(ByteCode.Instruction("deref"));
+			}else{
+				// just make it reference 
+				generateByteCode(node.operand);
+				writer.appendStack(ByteCode.Data()); // empty space for ref
+				writer.appendInstruction(ByteCode.Instruction("getRef", writer.lastStackElementIndex-1));
+			}
+		}else if (node.operator == "!"){
+			generateByteCode(node.operand);
+			writer.appendStack(ByteCode.Data());// space for not output
+			writer.appendInstruction(ByteCode.Instruction("notInt"));
+		}
 	}
 	/// generates byte code for ReadElement
 	void generateByteCode(ReadElement node){
-		// use `getRefRefArray`
+		// use `getRefRefArray` or `readChar`
 		uinteger bundle = writer.newBundle();
 		generateByteCode(node.readFromNode);
 		writer.appendToBundle(bundle);
 		generateByteCode(node.index);
 		writer.appendToBundle(bundle);
 		writer.appendBundle(bundle);
-		writer.appendStack(ByteCode.Data()); // space for output from `getRefRefArray`
-		writer.appendInstruction(ByteCode.Instruction("getRefRefArray", 1));
+		writer.appendStack(ByteCode.Data()); // space for output from `getRefRefArray` or `readChar`
+		if (node.readFromNode.returnType.arrayDimnsionCount > 0){
+			writer.appendInstruction(ByteCode.Instruction("getRefRefArray", 1));
+		}else if (node.readFromNode.returnType.type == DataType.Type.String){
+			writer.appendInstruction(ByteCode.Instruction("readChar"));
+		}
 	}
 	/// generates byte code for VariableNode
 	void generateByteCode(VariableNode node){
