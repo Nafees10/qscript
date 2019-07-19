@@ -7,6 +7,7 @@ import utils.misc;
 import utils.lists;
 
 import qscript.qscript : QData;
+import qscript.compiler.compiler : Function;
 
 import std.range;
 import std.conv : to;
@@ -23,6 +24,28 @@ package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "=="
 package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
+/// Inbuilt QScript functions (like `length(void[])`)
+package Function[] INBUILT_FUNCTIONS = [
+	/// length(@void[], int)
+	Function("length", DataType(DataType.Type.Void), [DataType(DataType.Type.Void,	1, true), DataType(DataType.Type.Integer)]),
+	/// length(void[])
+	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1)]),
+	/// length (string)
+	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+
+	/// toInt(string)
+	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+	/// toInt(double)
+	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)]),
+	/// toDouble(string)
+	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.String)]),
+	/// toDouble(int)
+	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
+	/// toString(int)
+	Function("toStr", DataType(DataType.Type.String), [DataType(DataType.Type.Integer)]),
+	/// toString(double)
+	Function("toStr", DataType(DataType.Type.String), [DataType(DataType.Type.Double)])
+];
 
 /// Used by compiler's functions to return error
 public struct CompileError{
