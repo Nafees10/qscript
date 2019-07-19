@@ -30,6 +30,9 @@ protected:
 	/// generates byte code for a FunctionNode
 	void generateByteCode(FunctionNode node){
 		writer.setCurrentFunction(node.name, node.id);
+		// make space for vars
+		for (uinteger i=0; i < node.varCount; i++)
+			writer.appendStack(ByteCode.Data());
 		generateByteCode(node.bodyBlock);
 		writer.appendFunction();
 	}
