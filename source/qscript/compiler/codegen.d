@@ -145,16 +145,84 @@ protected:
 	}
 	/// generates byte code for FunctionCallNode
 	void generateByteCode(FunctionCallNode node){
-		uinteger bundle = writer.newBundle();
-		// add args to stack
-		foreach (arg; node.arguments){
-			generateByteCode(arg);
-			writer.appendToBundle(bundle);
+		if (!node.isScriptDefined && node.isInBuilt){
+			generateInBuiltFunctionByteCode(node);
+		}else{
+			uinteger bundle = writer.newBundle();
+			// add args to stack
+			foreach (arg; node.arguments){
+				generateByteCode(arg);
+				writer.appendToBundle(bundle);
+			}
+			writer.appendBundle(bundle);
+			writer.appendInstruction(ByteCode.Instruction(node.isScriptDefined ? "execFuncS" : "execFuncE",
+					node.id, node.arguments.length));
+			writer.appendStack(ByteCode.Data()); // empty space for execFunc output
 		}
-		writer.appendBundle(bundle);
-		writer.appendInstruction(ByteCode.Instruction(node.isScriptDefined ? "execFuncS" : "execFuncE",
-				node.id, node.arguments.length));
-		writer.appendStack(ByteCode.Data()); // empty space for execFunc output
+	}
+	/// generates byte code for inbuilt QScript functions (`length(void[])` and stuff)
+	void generateInBuiltFunctionByteCode(FunctionCallNode node){
+		/// argument types of function call
+		DataType[] argTypes;
+		argTypes.length = node.arguments.length;
+		foreach (i, arg; node.arguments){
+			argTypes[i] = arg.returnType;
+		}
+		/// encoded name of function
+		string fName = encodeFunctionName(node.fName, argTypes);
+		/// length(@void[], int)
+		if (fName == encodeFunctionName("length",
+			[DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)])){
+			// use `setLen`
+			uinteger bundle = writer.newBundle();
+			generateByteCode(node.arguments[0]);
+			writer.appendToBundle(bundle);
+			generateByteCode(node.arguments[1]);
+			writer.appendToBundle(bundle);
+			writer.appendBundle(bundle);
+			writer.appendInstruction(ByteCode.Instruction("setLen"));
+		}else if (fName == encodeFunctionName("length", [DataType(DataType.Type.Void, 1)])){
+			/// length (void[])
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("getLen"));
+			writer.appendStack(ByteCode.Data()); // empty space for output from getLen
+		}else if (fName == encodeFunctionName("length", [DataType(DataType.Type.String)])){
+			/// length(string)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("strLen"));
+			writer.appendStack(ByteCode.Data()); // empty space for output from strLen
+
+		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.String)])){
+			/// toInt(string)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("strToInt"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.Double)])){
+			/// toInt(double)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("doubleToInt"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.String)])){
+			/// toDouble(string)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("strToDouble"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Integer)])){
+			/// toDouble(int)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("intToDouble"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Integer)])){
+			/// toStr(int)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("intToStr"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Double)])){
+			/// toStr(double)
+			generateByteCode(node.arguments[0]);
+			writer.appendInstruction(ByteCode.Instruction("doubleToStr"));
+			writer.appendStack(ByteCode.Data()); // empty space for output
+		}
 	}
 	/// generates byte code for IfNode
 	void generateByteCode(IfNode node){
