@@ -323,7 +323,7 @@ protected:
 			}
 		}
 		if (!functionExists){
-			foreach (i, func; preDefFunctions){
+			foreach (i, func; preDefFunctions~INBUILT_FUNCTIONS){
 				if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
 					functionExists = true;
 					node.isScriptDefined = false;
