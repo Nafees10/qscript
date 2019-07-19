@@ -96,11 +96,11 @@ protected:
 			generateByteCode(node.val);
 			writer.appendToBundle(bundle);
 			writer.appendInstruction(ByteCode.Instruction("writeRef"));
-		}/*else if (node.val.returnType.isRef){
-			// make var ref of rvalue
+		}else if (node.val.returnType.isRef){
+			// use makeRef to make this var ref to val
 			generateByteCode(node.val);
-			writer.appendStack(ByteCode.Data()));
-		}*/else{
+			writer.appendInstruction(ByteCode.Instruction("makeRef", node.var.id, writer.lastStackElementIndex));
+		}else{
 			// put data on bundle
 			generateByteCode(node.val);
 			writer.appendToBundle(bundle);
@@ -283,7 +283,7 @@ protected:
 		writer.appendToBundle(bundle);
 		writer.appendBundle(bundle);
 		writer.appendStack(ByteCode.Data()); // space for output from `getRefRefArray` or `readChar`
-		if (node.readFromNode.returnType.arrayDimnsionCount > 0){
+		if (node.readFromNode.returnType.arrayDimensionCount > 0){
 			writer.appendInstruction(ByteCode.Instruction("getRefRefArray", 1));
 		}else if (node.readFromNode.returnType.type == DataType.Type.String){
 			writer.appendInstruction(ByteCode.Instruction("readChar"));
@@ -305,5 +305,23 @@ protected:
 		writer.appendBundle(bundle);
 		writer.appendStack(ByteCode.Data()); // to hold array output from `makeAray`
 		writer.appendInstruction(ByteCode.Instruction("makeArray", node.elements.length));
+	}
+public:
+	/// constructor
+	/// 
+	/// `bCode` is the ByteCode to which the byte code is written
+	this (ByteCode bCode){
+		code = bCode;
+		writer = new ByteCodeWriter(code);
+	}
+	/// destructor
+	~this(){
+		.destroy(writer);
+	}
+	/// generates byte code for ScriptNode
+	void generateByteCode(ScriptNode node){
+		foreach (func; node.functions){
+			generateByteCode(func);
+		}
 	}
 }

@@ -117,6 +117,7 @@ And this is how instructions are executed & how they access the stack:
 ### Modifying stack:
 * write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
+* makeRef		- makes a stack element at index=arg0(int) a reference to element at index=arg1(int)
 * deref			- writes the data being referenced by a ref. The ref is read from stack
 * getRef		- writes a ref-to-element-at index, where index=arg0(int)
 * getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
