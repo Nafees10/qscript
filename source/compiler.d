@@ -19,13 +19,10 @@ import utils.misc;
 
 version(compiler){
 	void main(string[] args){
-		debug{
-			args = ["", "ast", "sample.qs"];
-		}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON");
-		}else if (!["ast"].hasElement(args[1])){
+		}else if (!["ast", "bytecode"].hasElement(args[1])){
 			writeln ("invalid CompilationType");
 		}else if (!exists(args[2])){
 			writeln ("file "~args[2]~" doesn't exist");
@@ -47,6 +44,17 @@ version(compiler){
 					}
 				}
 				writeln (json);
+			}else if (args[1] == "bytecode"){
+				string[] byteCode = byteCodeTest(script, [], errors);
+				if (errors.length > 0){
+					stderr.writeln ("There are errors:");
+					foreach (error; errors){
+						stderr.writeln("Line#",error.lineno,": ",error.msg);
+					}
+				}
+				foreach (line; byteCode){
+					writeln(line);
+				}
 			}
 		}
 	}
