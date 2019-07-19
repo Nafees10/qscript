@@ -794,6 +794,8 @@ package struct FunctionCallNode{
 	public uinteger id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
 	public bool isScriptDefined;
+	/// if the function being called in in built QScript function
+	public bool isInBuilt=false;
 	/// the arguments for this function.
 	private CodeNode[] storedArguments;
 	/// returns the values for arguments

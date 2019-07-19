@@ -327,6 +327,8 @@ protected:
 				if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
 					functionExists = true;
 					node.isScriptDefined = false;
+					if (i >= preDefFunctions.length)
+						node.isInBuilt = true;
 					node.id = i;
 					node.returnType = func.returnType;
 				}
