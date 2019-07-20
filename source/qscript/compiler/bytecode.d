@@ -72,7 +72,7 @@ public class ByteCode{
 			else if (this.type == this.Type.nill)
 				return "\tnull";
 			else
-				return literal;
+				return "\t"~literal;
 		}
 	}
 	/// used to store byte code's instruction in a more readable format
