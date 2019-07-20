@@ -116,7 +116,7 @@ public class ByteCode{
 			string argsStr = "";
 			foreach (arg; args){
 				string argBC = arg.toByteCode;
-				argsStr = argBC[1 .. argBC.length];// remove that `\t` from start
+				argsStr ~= argBC[1 .. argBC.length]~" ";// remove that `\t` from start
 			}
 			return "\t"~name~" "~argsStr;
 		}
