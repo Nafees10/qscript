@@ -117,15 +117,15 @@ And this is how instructions are executed & how they access the stack:
 ### Modifying stack:
 * write		 	- writes data (read from stack) to an index on stack. Index is arg0 (int).
 * writeRef		- writes data (read from stack) to another element whose reference is read from stack. Reference is read first, then the data.
-* makeRef		- makes a stack element at index=arg0(int) a reference to element at index=arg1(int)
+* makeRef		- makes a stack element at index=arg0(int) a reference to element at index=arg1(int). afther that, `peek-index=arg1+1`
 * deref			- writes the data being referenced by a ref. The ref is read from stack
 * getRef		- writes a ref-to-element-at index, where index=arg0(int)
 * getRefArray	- writes reference to `var[index0][index1][...]` where the var is arg0 (int). number of indexes is specified in arg1 (int). The indexes are read from stack.
 * getRefRefArray - writes reference to `@var[index0][index1][...]` where the ref-to-array is first read from stack. Number of indexes specified in arg0(int). Indxes are read from stack.
-* _peek_		- sets peek index to arg0(int)
+* peek		- sets peek index to arg0(int)
 
 ### Misc.:
-* jump		- jumps to instruction at index arg0(int). sets peek to arg1(int)
+* jump			- jumps to instruction at index arg0(int). sets peek to arg1(int)
 * jumpIf		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 1 (int)
 * jumpIfNot		- jumps to instruction at index=arg0(int), sets peek to arg1(int) **only if** element on stack == 0 (int)
 * _doIf_		- only execute the next instrcution if element on stack == 1 (int)
@@ -135,7 +135,7 @@ And this is how instructions are executed & how they access the stack:
 * setLen		- modifies length of an array. First element read is ref to array, second is new length(int).
 * getLen		- writes length of array. First element read is array.
 * readElement	- writes the element at index of an array. Array is read first, then index.
-* modifyArray	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
+* _modifyArray_	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
 Then does something like: `array[popped0][popped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
 
