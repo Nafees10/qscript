@@ -54,6 +54,8 @@ protected:
 			generateByteCode(node.node!(StatementNode.Type.For));
 		}else if (node.type == StatementNode.Type.FunctionCall){
 			generateByteCode(node.node!(StatementNode.Type.FunctionCall));
+			// skip the return value element on stack, wont be needing that
+			writer.appendInstruction(ByteCode.Instruction("peek", writer.stackElementCount));
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode(node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.While){
