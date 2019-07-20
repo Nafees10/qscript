@@ -43,6 +43,7 @@ JSONValue toJSON(FunctionNode node){
 	r["body"] = JSONValue(bodyJSON);
 	r["id"] = JSONValue(node.id);
 	r["lineno"] = JSONValue(node.lineno);
+	r["varCount"] = JSONValue(node.varCount);
 	return r;
 }
 
