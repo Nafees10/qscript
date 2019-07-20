@@ -179,7 +179,7 @@ private:
 	ByteCode code;
 	/// the current function's id to which instructions and stack elements are added to
 	uinteger funcId;
-	/// the current function's name to which instruction and stack elements are added to
+	/// the current function's name to which instruction and stack elements are added to (byte code encoded)
 	string funcName;
 	/// the stack of the current function
 	List!(ByteCode.Data) funcStack;
