@@ -13,36 +13,36 @@ These function names ( like `main/101/210/` ) are encoded using `qscript.compile
 And decoded using `qscript.compiler.misc.decodeFunctionName();`.
 ## Function Definitions:
 ```
-FunctionID
+FunctionID:
 stack:
-	[stack element#0]
-	[stack element#1]
-	[stack element#2]
-	...
+0	[stack element#0]
+1	[stack element#1]
+2	[stack element#2]
+3	...
 instructions:
-	[instruction] [argument1] [argument2] [...]
-	[instruction] [argument1] [argument2] [...]
-	...
-AnotherFunctionID
+0	[instruction] [argument1] [argument2] [...]
+1	[instruction] [argument1] [argument2] [...]
+2	...
+AnotherFunctionID:
 stack:
-	[stack element#0]
-	[stack element#1]
-	...
+0	[stack element#0]
+1	[stack element#1]
+2	...
 instructions:
-	[instruction] [argument1] [argument2] [...]
-	[instruction] [argument1] [argument2] [...]
-	...
+0	[instruction] [argument1] [argument2] [...]
+1	[instruction] [argument1] [argument2] [...]
+2	...
 ```
 
 ## Comments:
 Comments can be added in the byte code. They are written like:  
 ```
-FunctionID
+FunctionID:
 stack:
-	[stack element] # comment
+0	[stack element] # comment
 	# another comment
 instructions:
-	[instruction] [arguments] # comment
+0	[instruction] [arguments] # comment
 	# another comment
 ```
 
