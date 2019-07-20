@@ -214,8 +214,8 @@ protected:
 		}
 		// now check the statements
 		checkAST(node.bodyBlock);
-		decreaseScope();
 		node.varCount = maxVarId + 1;
+		decreaseScope();
 	}
 	/// checks if a StatementNode is valid
 	void checkAST(ref StatementNode node){
@@ -363,8 +363,7 @@ protected:
 				CodeNode value = node.getValue(varName);
 				checkAST(value);
 				// make sure that value can be assigned
-				DataType valueType = getReturnType(value);
-				if (valueType != node.type){
+				if (getReturnType(value) != node.type){
 					compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
 				}
 			}
@@ -372,8 +371,8 @@ protected:
 			addVar (varName, node.type);
 			// set it's ID
 			uinteger vId = getVarID(varName);
-			if (vId > maxVarId)
-				maxVarId = vId;
+			if (cast(integer)vId > maxVarId)
+				maxVarId = cast(integer)vId;
 			node.setVarID(varName, vId);
 		}
 	}
