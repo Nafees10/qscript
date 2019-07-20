@@ -140,30 +140,29 @@ public class ByteCode{
 	/// Note: at this point, only generating this is supported, there is no way to generate a ByteCode back from this. Only for debugging
 	public string[] tostring(){
 		List!string code = new List!string;
-		// append the function map
-		code.append("functions:");
 		/// same as this.functions, but sorted by id
 		ByteCode.Function[] sortedFuncs;
 		sortedFuncs.length = functions.length;
 		for (uinteger i=0; i < functions.length; i ++){
 			sortedFuncs[functions[i].id] = functions[i];
 		}
-		// write them to byte code
+		// write the function map to byte code
+		code.append("functions:");
 		foreach (func; sortedFuncs){
 			code.append("\t"~func.name);
 		}
 		// now start with the functions
 		foreach (func; sortedFuncs){
-			code.append([to!string(func.id),
+			code.append([to!string(func.id)~":",
 					"stack:"]);
 			// first do the stack
-			foreach (element; func.stack){
-				code.append(element.toByteCode);
+			foreach (i, element; func.stack){
+				code.append(to!string(i)~element.toByteCode);
 			}
 			// then the instructions
 			code.append("instructions:");
-			foreach (instruction; func.instructions){
-				code.append(instruction.toByteCode);
+			foreach (i, instruction; func.instructions){
+				code.append(to!string(i)~instruction.toByteCode);
 			}
 		}
 		string[] r = code.toArray;
