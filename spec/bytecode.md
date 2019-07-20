@@ -83,7 +83,7 @@ And this is how instructions are executed & how they access the stack:
 5. Repeat for the next instruction.
 
 ## Instructions:
-** TODO figure out what instructions should be removed/added/modified. Instructions that might be removed are in italics**
+**_Note_: Instructions written in italics might be removed in future versions as they are not used**
 ### Executing functions:
 * execFuncS 	- executes a script-defined function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
 * execFuncE		- executes an external function, arg0 is function id (int), arg1 is number (int) of arguments to pop from stack for the function. Writes return value to stack.
@@ -134,7 +134,7 @@ And this is how instructions are executed & how they access the stack:
 ### Arrays
 * setLen		- modifies length of an array. First element read is ref to array, second is new length(int).
 * getLen		- writes length of array. First element read is array.
-* readElement	- writes the element at index of an array. Array is read first, then index.
+* _readElement_	- writes the element at index of an array. Array is read first, then index.
 * _modifyArray_	- pops an array, and a newVal from stack. Then pops `n` nodes from stack, where n is specfied by arg0(int). 
 Then does something like: `array[popped0][popped1].. = newVal` and pushes the array
 * makeArray		- arg0(int) is count. pops `count` number of elements/nodes from stack, puts them in an array, pushes the array to stack
