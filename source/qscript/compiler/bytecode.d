@@ -339,7 +339,7 @@ public:
 			// if it needs to append bundle separately
 			bool needsToAppend = false;
 			// check if elements are already at end of stack
-			if (bundleElements.readLast == lastInstructionIndex){
+			if (this.stackElementCount == 0 || bundleElements.readLast == lastStackElementIndex){
 				// now just make sure they're in order
 				for (uinteger i=1, lastRead=bundleElements.read(0); i < bundleElements.length; i++){
 					if (bundleElements.read(i) != lastRead){
