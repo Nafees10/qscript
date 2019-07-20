@@ -58,6 +58,8 @@ protected:
 			writer.appendInstruction(ByteCode.Instruction("peek", writer.stackElementCount));
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode(node.node!(StatementNode.Type.If));
+		}else if (node.type == StatementNode.Type.VarDeclare){
+			generateByteCode(node.node!(StatementNode.Type.VarDeclare));
 		}else if (node.type == StatementNode.Type.While){
 			generateByteCode(node.node!(StatementNode.Type.While));
 		}else if (node.type == StatementNode.Type.Return){
@@ -248,6 +250,18 @@ protected:
 		generateByteCode(node.statement);
 		writer.setInstruction(jumpSkipTrue, ByteCode.Instruction("jump", writer.instructionCount+1,
 				writer.stackElementCount ));
+	}
+	/// generates byte code for VarDeclareNode - actually, just checks if a value is being assigned to it, if yes, makes var a ref to that val
+	void generateByteCode(VarDeclareNode node){
+		foreach (var; node.vars){
+			if (node.hasValue(var)){
+				generateByteCode(node.getValue(var));
+				// make the var element a ref to this
+				writer.setStackElement(node.varIDs[var], ByteCode.Data(writer.lastStackElementIndex, true));
+				// make peek skip this
+				writer.appendInstruction(ByteCode.Instruction("peek", writer.stackElementCount));
+			}
+		}
 	}
 	/// generates byte code for WhileNode
 	void generateByteCode(WhileNode node){
