@@ -93,6 +93,10 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
 				}
+				// make sure return type is not ref, thats bad, causes segfault
+				if (functionNode.returnType.isRef){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "functions cannot return references"));
+				}
 				// above functionCall moves index to fName
 				// now index is at function name
 				functionNode.name = tokens.tokens[index].token;
