@@ -341,7 +341,7 @@ public:
 			if (this.stackElementCount == 0 || bundleElements.readLast == lastStackElementIndex){
 				// now just make sure they're in order
 				for (uinteger i=1, lastRead=bundleElements.read(0); i < bundleElements.length; i++){
-					if (bundleElements.read(i) != lastRead){
+					if (bundleElements.read(i) != lastRead+1){
 						needsToAppend = true;
 						break;
 					}
