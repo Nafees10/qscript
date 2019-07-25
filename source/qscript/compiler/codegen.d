@@ -330,9 +330,9 @@ protected:
 			"!" : "not"
 		];
 		// get the full instruction name.
-		string instName = OPERATOR_INSTRUCTION[node.operator] ~ (node.returnType.isArray ? "Array" :
+		string instName = OPERATOR_INSTRUCTION[node.operator] ~ node.returnType.isArray ? "Array" :
 			node.returnType.type == DataType.Type.String ? "String" : node.returnType.type == DataType.Type.Integer ? 
-			"Int" : "Double");
+			"Int" : "Double";
 		// push the operands
 		uinteger bundle = writer.newBundle();
 		foreach (operand; node.operands){
