@@ -38,6 +38,8 @@ protected:
 		// make space for vars
 		for (uinteger i=0; i < node.varCount; i++)
 			writer.appendStack(ByteCode.Data());
+		// peek set to skip vars
+		writer.appendInstruction(ByteCode.Instruction("peek", writer.stackElementCount));
 		generateByteCode(node.bodyBlock);
 		// resolve refs, so ref-to-ref becomes ref-to-element
 		writer.resolveRefs();
@@ -185,27 +187,28 @@ protected:
 		/// encoded name of function
 		string fName = encodeFunctionName(node.fName, argTypes);
 		/// length(@void[], int)
-		if (fName == encodeFunctionName("length",
-			[DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)])){
-			// use `setLen`
-			uinteger bundle = writer.newBundle();
-			generateByteCode(node.arguments[0]);
-			writer.appendToBundle(bundle);
-			generateByteCode(node.arguments[1]);
-			writer.appendToBundle(bundle);
-			writer.appendBundle(bundle);
-			writer.appendInstruction(ByteCode.Instruction("setLen"));
-		}else if (fName == encodeFunctionName("length", [DataType(DataType.Type.Void, 1)])){
-			/// length (void[])
-			generateByteCode(node.arguments[0]);
-			writer.appendInstruction(ByteCode.Instruction("getLen"));
-			writer.appendStack(ByteCode.Data()); // empty space for output from getLen
-		}else if (fName == encodeFunctionName("length", [DataType(DataType.Type.String)])){
-			/// length(string)
-			generateByteCode(node.arguments[0]);
-			writer.appendInstruction(ByteCode.Instruction("strLen"));
-			writer.appendStack(ByteCode.Data()); // empty space for output from strLen
-
+		if (node.fName == "length"){
+			if (matchArguments([DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)],
+				argTypes)){
+				// use `setLen`
+				uinteger bundle = writer.newBundle();
+				generateByteCode(node.arguments[0]);
+				writer.appendToBundle(bundle);
+				generateByteCode(node.arguments[1]);
+				writer.appendToBundle(bundle);
+				writer.appendBundle(bundle);
+				writer.appendInstruction(ByteCode.Instruction("setLen"));
+			}else if (matchArguments([DataType(DataType.Type.Void, 1)], argTypes)){
+				// length (void[]), use getLen
+				generateByteCode(node.arguments[0]);
+				writer.appendInstruction(ByteCode.Instruction("getLen"));
+				writer.appendStack(ByteCode.Data()); // empty space for output from getLen
+			}else if (matchArguments([DataType(DataType.Type.String)], argTypes)){
+				/// length(string)
+				generateByteCode(node.arguments[0]);
+				writer.appendInstruction(ByteCode.Instruction("strLen"));
+				writer.appendStack(ByteCode.Data()); // empty space for output from strLen
+			}
 		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.String)])){
 			/// toInt(string)
 			generateByteCode(node.arguments[0]);
