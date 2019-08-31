@@ -7,6 +7,7 @@ module qscript.vm;
 import qscript.compiler.compiler;
 import qscript.compiler.bytecode;
 import qscript.qscript : QData;
+import qscript.compiler.misc : stringToQData;
 import std.conv : to;
 import utils.lists;
 import utils.misc;
@@ -46,6 +47,23 @@ struct StackBuilder{
 			r.makeRef(i, refTo);
 		}
 		return r;
+	}
+	/// prepares this StackBuilder to build stack for a specific Function, using it's `ByteCode.Data[]`
+	this(ByteCode.Data[] stack){
+		_length = stack.length;
+		/// stores list of empty elements
+		List!uinteger emptyElements = new List!uinteger;
+		foreach (i, element; stack){
+			if (element.type == ByteCode.Data.Type.Empty){
+				emptyElements.append(i);
+			}else if (element.type == ByteCode.Data.Type.Literal){
+				_literals[i] = stringToQData(element.literal);
+			}else if (element.type == ByteCode.Data.Type.Reference){
+				_refs[i] = element.refIndex;
+			}
+		}
+		_empty = emptyElements.toArray;
+		.destroy(emptyElements);
 	}
 }
 
