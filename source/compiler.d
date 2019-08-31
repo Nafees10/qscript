@@ -21,7 +21,7 @@ version(compiler){
 	void main(string[] args){
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
-			writeln ("CompilationType can be:\n* ast - output AST in JSON");
+			writeln ("CompilationType can be:\n* ast - output AST in JSON\n* bytecode - output Byte Code");
 		}else if (!["ast", "bytecode"].hasElement(args[1])){
 			writeln ("invalid CompilationType");
 		}else if (!exists(args[2])){
