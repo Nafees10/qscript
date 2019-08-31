@@ -39,6 +39,8 @@ protected:
 		for (uinteger i=0; i < node.varCount; i++)
 			writer.appendStack(ByteCode.Data());
 		generateByteCode(node.bodyBlock);
+		// resolve refs, so ref-to-ref becomes ref-to-element
+		writer.resolveRefs();
 		writer.appendFunction();
 	}
 	/// generates byte code for a BlockNode

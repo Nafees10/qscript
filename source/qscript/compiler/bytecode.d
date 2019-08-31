@@ -359,6 +359,22 @@ public:
 		bundles.remove (bundle);
 		return true;
 	}
+	/// must be called after byte code generation for a function has finished. Resolves reference-to-referene to reference-to-element;
+	/// because doing that at runtime would cost time.
+	void resolveRefs(){
+		/// Returns: index of the element being referenced
+		uinteger getRefTarget(uinteger index){
+			do{
+				index = funcStack.read(index).refIndex;
+			}while (funcStack.read(index).type == ByteCode.Data.Type.Reference);
+			return index;
+		}
+		for (uinteger i = 0, length = funcStack.length; i < length; i ++){
+			if (funcStack.read(i).type == ByteCode.Data.Type.Reference){
+				funcStack.set(i, ByteCode.Data(cast(integer)getRefTarget(i),true));
+			}
+		}
+	}
 }
 
 // some misc. functions
