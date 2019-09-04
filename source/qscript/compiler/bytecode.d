@@ -5,6 +5,7 @@ module qscript.compiler.bytecode;
 
 import qscript.compiler.misc;
 import qscript.qscript : QData;
+import qscript.compiler.misc : stringToQData;
 
 import utils.misc;
 import utils.lists;
@@ -168,6 +169,40 @@ public class ByteCode{
 		string[] r = code.toArray;
 		.destroy(code);
 		return r;
+	}
+	/// converts instructions to T[][] and QData[][]
+	/// 
+	/// Instructions are mapped to some other data (type T) for each function, and output is T[][]
+	/// Instructions arguments are put in QData[][]
+	///
+	/// The index here is the function id
+	/// 
+	/// Returns: true if all instructions were mapped correctly, false if some instruction did not match
+	bool mapInstructions(T)(T[string] instMap, ref T[][] mapped, ref QData[][][] instArgs){
+		/// maximum function id
+		uinteger maxFuncId = 0;
+		foreach (func; functions){
+			if (func.id > maxFuncId)
+				maxFuncId = func.id;
+		}
+		mapped.length = maxFuncId;
+		instArgs.length = maxFuncId;
+		// start mapping
+		foreach(func; functions){
+			mapped[func.id].length = func.instructions.length;
+			instArgs[func.id].length = func.instructions.length;
+			foreach(i, inst; func.instructions){
+				if (inst.name in instMap)
+					mapped[func.id][i] = instMap[inst.name];
+				else
+					return false;
+				instArgs[func.id][i].length = inst.args.length;
+				foreach (j, arg; inst.args){
+					instArgs[func.id][i][j] = arg.stringToQData();
+				}
+			}
+		}
+		return true;
 	}
 }
 
