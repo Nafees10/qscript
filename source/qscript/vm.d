@@ -12,26 +12,51 @@ import std.conv : to;
 import utils.lists;
 import utils.misc;
 
-// TODO write this
+/// Instruction for QVM
+alias QVMInst = void delegate(QData[]); 
+/// Function for QVM. Takes arguemnts in QData[], returns QData
+alias QVMFunction = QData delegate(QData[]);
+
 /// Class containing the VM (instructions, functions to load byte code into VM, and fucntions to execute the byte code in this VM)
 package class QVM{
 private:
-	/// stores the stacks for each script defined function
-	StaticStack[] _stacks;
 	/// stores the current stack, being used by the function being curently executed
 	StaticStack _stack;
 	/// stack of stacks (to store stack of a function when that function calls another function)
 	Stack!StaticStack _callStack;
-	/// the StackBuilder which populates new stacks
-	StackBuilder _stackMake;
-	/// to manage allocation of extra stacks (recursion is a thing, need >1 stack for each function at a time for speed improvement)
-	ExtraAlloc!StaticStack _stackMan;
+	/// the StackBuilder for each function
+	StackBuilder[] _stackMakers;
+	/// to manage allocation of extra stacks
+	ExtraAlloc!StaticStack[] _stackAlloc;
+	/// stores the instructions for each function (index being function id)
+	QVMInst*[][] _functions;
+	/// stores the arguemnts for instuctions for each function (index being function id)
+	QData[][][] _functionInstArgs;
+	/// stores the instructions for the function being currently executed
+	QVMInst*[] _instructions;
+	/// stores the arguments for instructions of function being currently executed
+	QData[][] _instArgs;
+	/// the instruction which will be executed next, null to terminate.
+	/// the pointer will be incremented by 1 before every execution
+	QVMInst* _nextInst;
+	/// Index of next instruction to execute
+	uinteger _nextInstIndex;
+	/// the return value of function
+	QData* _returnVal;
+	/// function for which a stack might be allocated soon by an ExtraAlloc
+	uinteger _expectedFuncCall;
+	/// stores external functions
+	/// function used to allocate new stacks
+	StaticStack _allocFuncStack(){
+		return _stackMakers[_expectedFuncCall].populate;
+	}
 protected:
 	// byte code instructions
 
 	/// execFuncS
 	void execFuncS(QData[] args){
-		// TODO
+		_expectedFuncCall = args[0].intVal;
+		_stack.makeRef(_stack.peek, execute(args[0].intVal, _stack.read(args[1].intVal)));
 
 	}
 	/// execFuncE
@@ -97,7 +122,7 @@ protected:
 		(*_stack.read!(false)()).arrayVal = (*a).arrayVal ~ (*b).arrayVal;
 	}
 	/// concatString
-	void concatArray(QData[] args){
+	void concatString(QData[] args){
 		QData* a = _stack.read(), b = _stack.read();
 		(*_stack.read!(false)()).strVal = (*a).strVal ~ (*b).strVal;
 	}
@@ -205,20 +230,23 @@ protected:
 
 	/// jump
 	void jump(QData[] args){
-		// TODO
+		_nextInstIndex = args[0].intVal;
+		_nextInst = _instructions[_nextInstIndex];
 		_stack.peek = args[1].intVal;
 	}
 	/// jumpIf
 	void jumpIf(QData[] args){
 		if (cast(bool)((*_stack.read()).intVal)){
-			// TODO
+			_nextInstIndex = args[0].intVal;
+			_nextInst = _instructions[_nextInstIndex];
 			_stack.peek = args[1].intVal;
 		}
 	}
 	/// jumpIfNot
 	void jumpIfNot(QData[] args){
 		if (!cast(bool)((*_stack.read()).intVal)){
-			// TODO
+			_nextInstIndex = args[0].intVal;
+			_nextInst = _instructions[_nextInstIndex];
 			_stack.peek = args[1].intVal;
 		}
 	}
@@ -228,7 +256,7 @@ protected:
 	}
 	/// return
 	void returnInst(QData[] args){
-		// TODO
+		_returnVal = _stack.read();
 	}
 
 	// arrays
@@ -251,6 +279,14 @@ protected:
 		// obsolete
 	}
 	/// makeArray
+	void makeArray(QData[] args){
+		QData r;
+		r.arrayVal.length = args[0].intVal;
+		foreach (i, val; _stack.read(args[0].intVal)){
+			r.arrayVal[0] = *val;
+		}
+		*(_stack.read!(false)) = r;
+	}
 
 	// strings
 
@@ -303,6 +339,126 @@ protected:
 		QData r;
 		r.intVal = to!integer((*_stack.read()).doubleVal);
 		*(_stack.read!(false)) = r;
+	}
+public:
+	this(){
+		_callStack = new Stack!StaticStack;
+	}
+	~this(){
+		.destroy(_callStack);
+	}
+	/// loads byte code, and prepares for execution
+	/// 
+	/// Returns: true if successfully loaded, false if not (could be instruction used doesnt exist)
+	bool loadByteCode(ByteCode bCode){
+		_functions.length = bCode.functions.length;
+		_stackMakers.length = bCode.functions.length;
+		_stackAlloc.length = bCode.functions.length;
+		// prepare the StackBuilders
+		foreach (i, func; bCode.functions){
+			_stackMakers[i] = StackBuilder(func.stack);
+		}
+		// prepare the StackAlloc(ators)
+		foreach(i, func; bCode.functions){
+			_stackAlloc[i] = new ExtraAlloc!StaticStack(4, 8, &_allocFuncStack);
+		}
+		// map functions' instructions to their function pointers
+		return bCode.mapInstructions([
+			"execFuncS" : &execFuncS,
+			"execFuncE" : &execFuncE,
+
+			"addInt" : &addInt,
+			"addDouble" : &addDouble,
+			"subtractInt" : &subtractInt,
+			"subtractDouble" : &subtractDouble,
+			"multiplyInt" : &multiplyInt,
+			"multiplyDouble" : &multiplyDouble,
+			"divideInt" : &divideInt,
+			"divideDouble" : &divideDouble,
+			"modInt" : &modInt,
+			"modDouble" : &modDouble,
+			"concatArray" : &concatArray,
+			"concatString" : &concatString,
+
+			"isSameInt" : &isSameInt,
+			"isSameDouble" : &isSameDouble,
+			"isSameString" : &isSameString,
+			"isLesserInt" : &isLesserInt,
+			"isLesserDouble" : &isLesserDouble,
+			"isGreaterInt" : &isGreaterInt,
+			"isGreaterDouble" : &isGreaterDouble,
+			"notInt" : &notInt,
+			"andInt" : &andInt,
+			"orInt" : &orInt,
+
+			"write" : &write,
+			"writeRef" : &writeRef,
+			"makeRef" : &makeRef,
+			"deref" : &deref,
+			"getRef" : &getRef,
+			"getRefArray" : &getRefArray,
+			"getRefRefArray" : &getRefRefArray,
+			"peek" : &peek,
+			
+			"jump" : &jump,
+			"jumpIf" : &jumpIf,
+			"jumpIfNot" : &jumpIfNot,
+			"doIf" : &doIf,
+			"return" : &returnInst,
+
+			"setLen" : &setLen,
+			"getLen" : &getLen,
+			"readElement" : &readElement,
+			"modifyArray" : &modifyArray,
+			"makeArray" : &makeArray,
+
+			"strLen" : &strLen,
+			"readChar" : &readChar,
+			
+			"strToInt" : &strToInt,
+			"strToDouble" : &strToDouble,
+			"intToStr" : &intToStr,
+			"intToDouble" : &intToDouble,
+			"doubleToStr" : &doubleToStr,
+			"doubleToInt" : &doubleToInt
+
+			],
+			 _functions, _functionInstArgs);
+	}
+
+	/// Executes a script defined function
+	QData* execute(uinteger funcId, QData*[] args){
+		// prepare a stack for it, assume recursion doesn't exists, thats taken care of by execFuncS
+		_stack = _stackAlloc[funcId].get();
+		// move its instructions
+		_instructions = _functions[funcId];
+		_instArgs = _functionInstArgs[funcId];
+		// set the args
+		foreach(i, arg; args){
+			_stack.makeRef(i, arg);
+		}
+		// begin
+		if (_instructions.length > 0){
+			_nextInst = _instructions[0];
+			_nextInstIndex = 0;			
+			// now for real, begin
+			while (_nextInstIndex < _instructions.length && _nextInst){
+				QVMInst* curInst = _nextInst;
+				QData[] curInstArgs = _instArgs[_nextInstIndex];
+				_nextInstIndex++;
+				_nextInst++;
+				(*curInst)(curInstArgs);
+			}
+		}
+		// get rid of the --body-- stack
+		_stackAlloc[funcId].free(_stack);
+		// restore last stack
+		try{
+			_stack = _callStack.pop();
+		}catch (Exception e){
+			.destroy(e);
+		}
+		return _returnVal;
 	}
 }
 
