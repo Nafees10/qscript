@@ -447,11 +447,9 @@ public:
 			_nextInstIndex = 0;			
 			// now for real, begin
 			while (_nextInstIndex < _instructions.length && _nextInst){
-				QVMInst* curInst = _nextInst;
-				QData[] curInstArgs = _instArgs[_nextInstIndex];
+				uinteger curInst = _nextInstIndex;
 				_nextInstIndex++;
-				_nextInst++;
-				(*curInst)(curInstArgs);
+				(*(_instructions[curInst]))(_instArgs[curInst]);
 			}
 		}
 		// get rid of the --body-- stack

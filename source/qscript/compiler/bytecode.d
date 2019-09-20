@@ -185,8 +185,8 @@ public class ByteCode{
 			if (func.id > maxFuncId)
 				maxFuncId = func.id;
 		}
-		mapped.length = maxFuncId;
-		instArgs.length = maxFuncId;
+		mapped.length = maxFuncId+1;
+		instArgs.length = mapped.length;
 		// start mapping
 		foreach(func; functions){
 			mapped[func.id].length = func.instructions.length;

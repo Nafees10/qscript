@@ -111,6 +111,9 @@ public:
 	CompileError[] compile(string[] script){
 		CompileError[] r;
 		_bytecode = compileScript(script, _extFuncs, r);
+		if (!_vm.loadByteCode(_bytecode)){
+			throw new Exception("error loading bytecode");
+		}
 		return r;
 	}
 	/// Returns: a string representation of the compiled bytecode. Empty array if no bytecode compiled present (like if there was a compilation error)
@@ -129,6 +132,7 @@ public:
 		foreach (i, arg; args){
 			ptrs[i] = &args[i];
 		}
-		return *(_vm.execute(funcId, ptrs));
+		QData* rPtr = _vm.execute(funcId, ptrs);
+		return rPtr ? *rPtr : QData();
 	}
 }
