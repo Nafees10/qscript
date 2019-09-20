@@ -89,9 +89,12 @@ public:
 	///
 	/// `externalFunctions` is the array of functions declarations that are to be made avaialable  
 	/// `externalFunctionsPtr` is the pointers to those functions
-	this(Function[] externalFunctions, QVMFunction*[] externalFunctionsPtr){
+	this(Function[] externalFunctions, QVMFunction[] externalFunctionsPtr){
 		_extFuncs = externalFunctions.dup;
-		_extFuncsPtr = externalFunctionsPtr.dup;
+		_extFuncsPtr.length = externalFunctionsPtr.length;
+		foreach(i, ptr; externalFunctionsPtr){
+			_extFuncsPtr[i] = &ptr;
+		}
 
 		_vm = new QVM(_extFuncsPtr);
 	}

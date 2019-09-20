@@ -4,102 +4,92 @@ version (demo){
 	import qscript.qscript;
 	import std.datetime.stopwatch;
 	import std.stdio;
-
-	class ScriptMan : QScript{
-	protected:
-		override bool onRuntimeError(RuntimeError error){
-			std.stdio.writeln ("# Runtime Error #");
-			std.stdio.writeln ("# Function: ", error.functionName, " Instruction: ",error.instructionIndex);
-			std.stdio.writeln ("# ", error.error);
-			std.stdio.writeln ("Enter n to return false, or just enter to return true");
-			string input = std.stdio.readln;
-			if (input == "n\n"){
-				return false;
-			}else{
-				return true;
-			}
-		}
-
-		override bool onUndefinedFunctionCall(string fName){
-			std.stdio.writeln ("# undefined Function Called #");
-			std.stdio.writeln ("# Function: ", fName);
-			std.stdio.writeln ("Enter n to return false, or just enter to return true");
-			string input = std.stdio.readln;
-			if (input == "n\n"){
-				return false;
-			}else{
-				return true;
-			}
-		}
+	/// runs the scripts using QScript
+	class ScriptExec{
 	private:
+		/// where the magic happens
+		QScript _qscript;
 		/// writeln function
-		QData writeln(QData[] args){
+		QData* writeln(QData*[] args){
 			std.stdio.writeln (args[0].strVal);
-			return QData(0);
+			return new QData(0);
 		}
 		/// write function
-		QData write(QData[] args){
+		QData* write(QData*[] args){
 			std.stdio.write (args[0].strVal);
-			return QData(0);
+			return new QData(0);
 		}
 		/// write int
-		QData writeInt(QData[] args){
+		QData* writeInt(QData*[] args){
 			std.stdio.write(args[0].intVal);
-			return QData(0);
+			return new QData(0);
 		}
 		/// write double
-		QData writeDbl(QData[] args){
+		QData* writeDbl(QData*[] args){
 			std.stdio.write(args[0].doubleVal);
-			return QData(0);
+			return new QData(0);
 		}
 		/// readln function
-		QData readln(QData[] args){
+		QData* readln(QData*[] args){
 			string s = std.stdio.readln;
 			s.length--;
-			return QData(s);
-		}
-		/// func
-		QData someFunc(QData[] args){
-			return QData([QData(1), QData(2)]);
+			return new QData(s);
 		}
 	public:
 		/// constructor
 		this (){
-			this.addFunction(Function("writeln", DataType("void"), [DataType("string")]), &writeln);
-			this.addFunction(Function("write", DataType("void"), [DataType("string")]), &write);
-			this.addFunction(Function("writeInt", DataType("void"), [DataType("int")]), &writeInt);
-			this.addFunction(Function("writeDbl", DataType("void"), [DataType("double")]), &writeDbl);
-			this.addFunction(Function("readln", DataType("string"), []), &readln);
-			this.addFunction(Function("func", DataType("void[]"), []), &someFunc);
+			_qscript = new QScript(
+				[
+					Function("writeln", DataType("void"), [DataType("string")]),
+					Function("write", DataType("void"), [DataType("string")]),
+					Function("write", DataType("void"), [DataType("int")]),
+					Function("write", DataType("void"), [DataType("double")]),
+					Function("readln", DataType("string"), [])
+				],
+				[
+					&writeln,
+					&write,
+					&writeInt,
+					&writeDbl,
+					&this.readln
+				]
+			);
+		}
+		/// compiles & returns byte code
+		string[] compileToByteCode(string[] script, ref CompileError[] errors){
+			errors = _qscript.compile(script);
+			return _qscript.byteCodeToString;
+		}
+		/// executes the first function in script
+		QData execute(QData[] args){
+			return _qscript.execute(0, args);
 		}
 	}
 
 	void main (string[] args){
+		debug{
+			args = args[0]~["sample.qs", "out.bcode"];
+		}
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
 			writeln("./demo [script] [bytecode, output, optional]");	
 		}else{
 			StopWatch sw;
-			ScriptMan scr = new ScriptMan();
+			ScriptExec scr = new ScriptExec();
 			CompileError[] errors;
-			string[] byteCode = scr.compileScript(fileToArray(args[1]), errors);
+			string[] byteCode = scr.compileToByteCode(fileToArray(args[1]), errors);
 			if (errors.length > 0){
 				writeln("Compilation errors:");
 				foreach (err; errors){
 					writeln ("line#",err.lineno, ": ",err.msg);
 				}
-			}
-			if (args.length > 2){
-				byteCode.arrayToFile(args[2]);
-			}
-			string err = scr.loadByteCode(byteCode);
-			if (err.length > 0){
-				writeln ("Error loading byte code:");
-				writeln (err);
 			}else{
+				if (args.length > 2){
+					byteCode.arrayToFile(args[2]);
+				}
 				// now execute main
 				sw.start;
-				scr.execute("main",[]);
+				scr.execute([]);
 				sw.stop;
 				writeln("execution took: ", sw.peek.total!"msecs", "msecs");
 			}
