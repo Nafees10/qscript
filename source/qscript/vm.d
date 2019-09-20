@@ -15,7 +15,7 @@ import utils.misc;
 /// Instruction for QVM
 alias QVMInst = void delegate(QData[]); 
 /// Function for QVM. Takes arguemnts in QData*[], returns QData*
-alias QVMFunction = QData delegate(QData[]);
+alias QVMFunction = QData* delegate(QData*[]);
 
 /// Class containing the VM (instructions, functions to load byte code into VM, and fucntions to execute the byte code in this VM)
 package class QVM{
@@ -63,7 +63,7 @@ protected:
 	/// execFuncE
 	void execFuncE(QData[] args){
 		// TODO
-		QData* rPtr = _extFunctions[args[0].intVal](_stack.read(args[1].intVal));
+		QData* rPtr = (*(_extFunctions[args[0].intVal]))(_stack.read(args[1].intVal));
 		_stack.makeRef(_stack.peek, rPtr);
 	}
 
