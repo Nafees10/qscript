@@ -5,6 +5,7 @@ module qscript.qscript;
 
 import utils.misc;
 import utils.lists;
+import qscript.compiler.bytecode;
 import qscript.compiler.compiler;
 import qscript.compiler.misc : encodeString;
 import qscript.vm;
@@ -72,4 +73,59 @@ alias DataType = qscript.compiler.misc.DataType;
 /// Used by compiler's functions to return error
 alias CompileError = qscript.compiler.misc.CompileError;
 
-// TODO add the QScript class
+/// QScript class. Use this to compile & execute scripts
+class QScript{
+private:
+	/// the vm, obviously
+	QVM _vm;
+	/// addresses of external functions
+	QVMFunction*[] _extFuncsPtr;
+	/// declarations of external functions
+	Function[] _extFuncs;
+	/// stores the byte code for the script
+	ByteCode _bytecode;
+public:
+	/// constructor
+	///
+	/// `externalFunctions` is the array of functions declarations that are to be made avaialable  
+	/// `externalFunctionsPtr` is the pointers to those functions
+	this(Function[] externalFunctions, QVMFunction*[] externalFunctionsPtr){
+		_extFuncs = externalFunctions.dup;
+		_extFuncsPtr = externalFunctionsPtr.dup;
+
+		_vm = new QVM(_extFuncsPtr);
+	}
+	/// destructor
+	~this(){
+		.destroy(_vm);
+		if (_bytecode){
+			.destroy(_bytecode);
+		}
+	}
+	/// loads & compiles a script
+	///
+	/// Returns: CompileError[] with length>0 if there are errors, with length=0 if no errors
+	CompileError[] compile(string[] script){
+		CompileError[] r;
+		_bytecode = compileScript(script, _extFuncs, r);
+		return r;
+	}
+	/// Returns: a string representation of the compiled bytecode. Empty array if no bytecode compiled present (like if there was a compilation error)
+	string[] byteCodeToString(){
+		if (_bytecode){
+			return _bytecode.tostring;
+		}
+		return [];
+	}
+	/// Executes a function from the script
+	/// 
+	/// Returns: what that function returns, or some random value if it didn't
+	QData execute(uinteger funcId, QData[] args){
+		QData*[] ptrs;
+		ptrs.length = args.length;
+		foreach (i, arg; args){
+			ptrs[i] = &args[i];
+		}
+		return *(_vm.execute(funcId, ptrs));
+	}
+}
