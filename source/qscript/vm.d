@@ -14,7 +14,7 @@ import utils.misc;
 
 /// Instruction for QVM
 alias QVMInst = void delegate(QData[]); 
-/// Function for QVM. Takes arguemnts in QData[], returns QData
+/// Function for QVM. Takes arguemnts in QData*[], returns QData*
 alias QVMFunction = QData delegate(QData[]);
 
 /// Class containing the VM (instructions, functions to load byte code into VM, and fucntions to execute the byte code in this VM)
@@ -46,6 +46,7 @@ private:
 	/// function for which a stack might be allocated soon by an ExtraAlloc
 	uinteger _expectedFuncCall;
 	/// stores external functions
+	QVMFunction*[] _extFunctions;
 	/// function used to allocate new stacks
 	StaticStack _allocFuncStack(){
 		return _stackMakers[_expectedFuncCall].populate;
@@ -56,12 +57,14 @@ protected:
 	/// execFuncS
 	void execFuncS(QData[] args){
 		_expectedFuncCall = args[0].intVal;
-		_stack.makeRef(_stack.peek, execute(args[0].intVal, _stack.read(args[1].intVal)));
-
+		QData* rPtr = execute(args[0].intVal, _stack.read(args[1].intVal));
+		_stack.makeRef(_stack.peek, rPtr);
 	}
 	/// execFuncE
 	void execFuncE(QData[] args){
 		// TODO
+		QData* rPtr = _extFunctions[args[0].intVal](_stack.read(args[1].intVal));
+		_stack.makeRef(_stack.peek, rPtr);
 	}
 
 	// operators
@@ -341,8 +344,9 @@ protected:
 		*(_stack.read!(false)) = r;
 	}
 public:
-	this(){
+	this(QVMFunction*[] externalFunctions){
 		_callStack = new Stack!StaticStack;
+		_extFunctions = externalFunctions.dup;
 	}
 	~this(){
 		.destroy(_callStack);
