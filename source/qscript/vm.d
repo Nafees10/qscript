@@ -29,16 +29,13 @@ private:
 	/// to manage allocation of extra stacks
 	ExtraAlloc!StaticStack[] _stackAlloc;
 	/// stores the instructions for each function (index being function id)
-	QVMInst*[][] _functions;
+	QVMInst[][] _functions;
 	/// stores the arguemnts for instuctions for each function (index being function id)
 	QData[][][] _functionInstArgs;
 	/// stores the instructions for the function being currently executed
-	QVMInst*[] _instructions;
+	QVMInst[] _instructions;
 	/// stores the arguments for instructions of function being currently executed
 	QData[][] _instArgs;
-	/// the instruction which will be executed next, null to terminate.
-	/// the pointer will be incremented by 1 before every execution
-	QVMInst* _nextInst;
 	/// Index of next instruction to execute
 	uinteger _nextInstIndex;
 	/// the return value of function
@@ -46,7 +43,7 @@ private:
 	/// function for which a stack might be allocated soon by an ExtraAlloc
 	uinteger _expectedFuncCall;
 	/// stores external functions
-	QVMFunction*[] _extFunctions;
+	QVMFunction[] _extFunctions;
 	/// function used to allocate new stacks
 	StaticStack _allocFuncStack(){
 		return _stackMakers[_expectedFuncCall].populate;
@@ -62,8 +59,8 @@ protected:
 	}
 	/// execFuncE
 	void execFuncE(QData[] args){
-		// TODO
-		QData* rPtr = (*(_extFunctions[args[0].intVal]))(_stack.read(args[1].intVal));
+		//import std.stdio; writeln(args[0].intVal);
+		QData* rPtr = _extFunctions[args[0].intVal](_stack.read(args[1].intVal));
 		_stack.makeRef(_stack.peek, rPtr);
 	}
 
@@ -234,14 +231,12 @@ protected:
 	/// jump
 	void jump(QData[] args){
 		_nextInstIndex = args[0].intVal;
-		_nextInst = _instructions[_nextInstIndex];
 		_stack.peek = args[1].intVal;
 	}
 	/// jumpIf
 	void jumpIf(QData[] args){
 		if (cast(bool)((*_stack.read()).intVal)){
 			_nextInstIndex = args[0].intVal;
-			_nextInst = _instructions[_nextInstIndex];
 			_stack.peek = args[1].intVal;
 		}
 	}
@@ -249,7 +244,6 @@ protected:
 	void jumpIfNot(QData[] args){
 		if (!cast(bool)((*_stack.read()).intVal)){
 			_nextInstIndex = args[0].intVal;
-			_nextInst = _instructions[_nextInstIndex];
 			_stack.peek = args[1].intVal;
 		}
 	}
@@ -344,7 +338,7 @@ protected:
 		*(_stack.read!(false)) = r;
 	}
 public:
-	this(QVMFunction*[] externalFunctions){
+	this(QVMFunction[] externalFunctions){
 		_callStack = new Stack!StaticStack;
 		_extFunctions = externalFunctions.dup;
 	}
@@ -443,13 +437,12 @@ public:
 		}
 		// begin
 		if (_instructions.length > 0){
-			_nextInst = _instructions[0];
-			_nextInstIndex = 0;			
+			_nextInstIndex = 0;
 			// now for real, begin
-			while (_nextInstIndex < _instructions.length && _nextInst){
+			while (_nextInstIndex < _instructions.length){
 				uinteger curInst = _nextInstIndex;
 				_nextInstIndex++;
-				(*(_instructions[curInst]))(_instArgs[curInst]);
+				_instructions[curInst](_instArgs[curInst]);
 			}
 		}
 		// get rid of the --body-- stack
@@ -553,6 +546,7 @@ public:
 	/// Returns: n number of elements from stack
 	QData*[] read(bool incPeek=true)(uinteger n){
 		QData*[] r = _stack[_peek .. _peek + n];
+		
 		static if (incPeek)
 			_peek = _peek + n;
 		return r;

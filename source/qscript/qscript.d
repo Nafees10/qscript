@@ -91,12 +91,7 @@ public:
 	/// `externalFunctionsPtr` is the pointers to those functions
 	this(Function[] externalFunctions, QVMFunction[] externalFunctionsPtr){
 		_extFuncs = externalFunctions.dup;
-		_extFuncsPtr.length = externalFunctionsPtr.length;
-		foreach(i, ptr; externalFunctionsPtr){
-			_extFuncsPtr[i] = &ptr;
-		}
-
-		_vm = new QVM(_extFuncsPtr);
+		_vm = new QVM(externalFunctionsPtr);
 	}
 	/// destructor
 	~this(){

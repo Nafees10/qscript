@@ -178,7 +178,7 @@ public class ByteCode{
 	/// The index here is the function id
 	/// 
 	/// Returns: true if all instructions were mapped correctly, false if some instruction did not match
-	bool mapInstructions(T)(T[string] instMap, ref T*[][] mapped, ref QData[][][] instArgs){
+	bool mapInstructions(T)(T[string] instMap, ref T[][] mapped, ref QData[][][] instArgs){
 		/// maximum function id
 		uinteger maxFuncId = 0;
 		foreach (func; functions){
@@ -193,7 +193,7 @@ public class ByteCode{
 			instArgs[func.id].length = func.instructions.length;
 			foreach(i, inst; func.instructions){
 				if (inst.name in instMap)
-					mapped[func.id][i] = &instMap[inst.name];
+					mapped[func.id][i] = instMap[inst.name];
 				else
 					return false;
 				instArgs[func.id][i].length = inst.args.length;
