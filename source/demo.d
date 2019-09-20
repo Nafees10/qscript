@@ -12,22 +12,22 @@ version (demo){
 		/// writeln function
 		QData* writeln(QData*[] args){
 			std.stdio.writeln (args[0].strVal);
-			return new QData(0);
+			return null;
 		}
 		/// write function
 		QData* write(QData*[] args){
 			std.stdio.write (args[0].strVal);
-			return new QData(0);
+			return null;
 		}
 		/// write int
 		QData* writeInt(QData*[] args){
 			std.stdio.write(args[0].intVal);
-			return new QData(0);
+			return null;
 		}
 		/// write double
 		QData* writeDbl(QData*[] args){
 			std.stdio.write(args[0].doubleVal);
-			return new QData(0);
+			return null;
 		}
 		/// readln function
 		QData* readln(QData*[] args){
