@@ -54,7 +54,10 @@ protected:
 	/// execFuncS
 	void execFuncS(QData[] args){
 		_expectedFuncCall = args[0].intVal;
+		// copy last stack
+		_callStack.push(_stack);
 		QData* rPtr = execute(args[0].intVal, _stack.read(args[1].intVal));
+		_stack = _callStack.pop;
 		_stack.makeRef(_stack.peek, rPtr);
 	}
 	/// execFuncE
@@ -426,7 +429,6 @@ public:
 
 	/// Executes a script defined function
 	QData* execute(uinteger funcId, QData*[] args){
-		// prepare a stack for it, assume recursion doesn't exists, thats taken care of by execFuncS
 		_stack = _stackAlloc[funcId].get();
 		// move its instructions
 		_instructions = _functions[funcId];
@@ -445,14 +447,8 @@ public:
 				_instructions[curInst](_instArgs[curInst]);
 			}
 		}
-		// get rid of the --body-- stack
+		// get rid of the stack
 		_stackAlloc[funcId].free(_stack);
-		// restore last stack
-		try{
-			_stack = _callStack.pop();
-		}catch (Exception e){
-			.destroy(e);
-		}
 		return _returnVal;
 	}
 }
@@ -521,7 +517,8 @@ public:
 	/// destructor
 	~this(){
 		foreach (ptr; _stack){
-			.destroy(*ptr);
+			if (ptr)
+				.destroy(*ptr);
 		}
 	}
 	/// creates a reference at `index` to element at `to`
