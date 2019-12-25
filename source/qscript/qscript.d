@@ -14,15 +14,17 @@ import std.conv:to;
 
 /// to store data from script at runtime
 public union QData{
-	string strVal; /// string value
+	char charVal; /// character value
+	uinteger uintVal; /// unsigned integer value
 	integer intVal; /// integer value
 	double doubleVal; /// double/float value
 	QData[] arrayVal; /// array value
+	char[] strVal;
 	/// constructor
 	/// data can be any of the type which it can store
 	this (T)(T data){
-		static if (is (T == string)){
-			strVal = data;
+		static if (is (T == string) || is (T == char[])){
+			strVal = cast(char[])data;
 		}else static if (is (T == int) || is (T == uint) || is (T == long) || is (T == ulong)){
 			intVal = data;
 		}else static if (is (T == double)){
@@ -56,7 +58,7 @@ public union QData{
 			}else if (type.type == DataType.Type.Integer){
 				return "i"~to!string(this.intVal);
 			}else if (type.type == DataType.Type.String){
-				return "s\""~encodeString(this.strVal)~'"';
+				return "s\""~encodeString(cast(string)this.strVal)~'"';
 			}else{
 				return "NULL"; /// actually an error TODO do something about it
 			}
@@ -106,7 +108,7 @@ public:
 	CompileError[] compile(string[] script){
 		CompileError[] r;
 		_bytecode = compileScript(script, _extFuncs, r);
-		if (!_vm.loadByteCode(_bytecode)){
+		if (r.length == 0 && !_vm.loadByteCode(_bytecode)){
 			throw new Exception("error loading bytecode");
 		}
 		return r;

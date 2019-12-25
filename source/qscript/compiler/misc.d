@@ -558,7 +558,7 @@ package QData tokensToQData(Token[] tokens, ref DataType type){
 			result.intVal = to!integer(tokens[0].token);
 		}else if (type.type == DataType.Type.String){
 			assert(tokens[0].token.length > 1, "invalid string");
-			result.strVal = decodeString(tokens[0].token[1 .. tokens[0].token.length - 1]);
+			result.strVal = cast(char[])decodeString(tokens[0].token[1 .. tokens[0].token.length - 1]);
 		}
 	}
 	callCount --;

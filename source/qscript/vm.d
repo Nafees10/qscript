@@ -319,7 +319,7 @@ protected:
 	/// intToStr
 	void intToStr(QData[] args){
 		QData r;
-		r.strVal = to!string((*_stack.read()).intVal);
+		r.strVal = cast(char[])to!string((*_stack.read()).intVal);
 		*(_stack.read!(false)) = r;
 	}
 	/// intToDouble
@@ -331,7 +331,7 @@ protected:
 	/// doubleToStr
 	void doubleToStr(QData[] args){
 		QData r;
-		r.strVal = to!string((*_stack.read()).doubleVal);
+		r.strVal = cast(char[])to!string((*_stack.read()).doubleVal);
 		*(_stack.read!(false)) = r;
 	}
 	/// doubleToInt
