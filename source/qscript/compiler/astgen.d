@@ -104,7 +104,7 @@ struct ASTGen{
 				// now for the argument types
 				if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
 					LinkedList!(FunctionNode.Argument) argList = new LinkedList!(FunctionNode.Argument);
-					uinteger brackEnd = tokens.tokens.bracketPos(index);
+					uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
 					bool commaExpected = false;
 					for (index ++; index < brackEnd; index ++){
 						if (commaExpected){
@@ -163,7 +163,7 @@ struct ASTGen{
 			blockNode.lineno = tokens.getTokenLine(index);
 			// make sure it's a block
 			if (tokens.tokens[index].type == Token.Type.BlockStart){
-				uinteger brackEnd = tokens.tokens.bracketPos!(true)(index);
+				uinteger brackEnd = tokens.tokens.tokenBracketPos!(true)(index);
 				LinkedList!StatementNode statements = new LinkedList!StatementNode;
 				// read statements
 				index++;
@@ -234,7 +234,7 @@ struct ASTGen{
 			// check if is function call
 			if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
-				uinteger brackEnd = tokens.tokens.bracketPos(index + 1);
+				uinteger brackEnd = tokens.tokens.tokenBracketPos(index + 1);
 				functionCallNode.fName = tokens.tokens[index].token;
 				// now for the arguments
 				index+=2;
@@ -289,7 +289,7 @@ struct ASTGen{
 					if (token.type == Token.Type.IndexBracketOpen){
 						// read the index
 						uinteger brackStartIndex = index;
-						uinteger brackEnd = tokens.tokens.bracketPos(index);
+						uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
 						index ++;
 						CodeNode indexNode = generateCodeAST();
 						// make sure it's a read-element, not a make-array
@@ -491,7 +491,7 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
-				uinteger brackEnd = tokens.tokens.bracketPos(index+1);
+				uinteger brackEnd = tokens.tokens.tokenBracketPos(index+1);
 				index += 2;
 				ifNode.condition = generateCodeAST();
 				// make sure index & brackEnd are now same
@@ -524,7 +524,7 @@ struct ASTGen{
 			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// now do the real work
-				uinteger brackEnd = tokens.tokens.bracketPos!true(index+1);
+				uinteger brackEnd = tokens.tokens.tokenBracketPos!true(index+1);
 				index += 2;
 				whileNode.condition = generateCodeAST();
 				// skip the brackEnd, if index matches it
@@ -548,7 +548,7 @@ struct ASTGen{
 			// check if is a for statement
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "for") && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				/// where the parantheses ends
-				uinteger bracketEnd = tokens.tokens.bracketPos(index+1);
+				uinteger bracketEnd = tokens.tokens.tokenBracketPos(index+1);
 				/// get the init statement
 				index = index + 2;
 				forNode.initStatement = generateStatementAST();
@@ -584,7 +584,7 @@ struct ASTGen{
 				if (tokens.tokens[index] == Token(Token.Type.Keyword, "while") &&
 					tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 					// read the condition
-					uinteger brackEnd = tokens.tokens.bracketPos(index+1);
+					uinteger brackEnd = tokens.tokens.tokenBracketPos(index+1);
 					index += 2;
 					doWhile.condition = generateCodeAST();
 					if (index != brackEnd){
@@ -659,7 +659,7 @@ struct ASTGen{
 				return r;
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
-				uinteger brackEnd = tokens.tokens.bracketPos(index);
+				uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
 				// read into ArrayNode
 				CodeNode[] elements = [];
 				index ++;

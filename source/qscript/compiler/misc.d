@@ -316,7 +316,7 @@ package Token[][] splitArray(Token[] array){
 		// skip any other brackets
 		if (array[i].type == Token.Type.BlockStart || array[i].type == Token.Type.IndexBracketOpen ||
 			array[i].type == Token.Type.ParanthesesOpen){
-			i = bracketPos!(true)(array, i);
+			i = tokenBracketPos!(true)(array, i);
 			continue;
 		}
 		// check if comma is here
@@ -589,7 +589,7 @@ package QData stringToQData(string literal){
 	// check if it's an array
 	if (literal[0] == '['){
 		// get bracket end pos
-		uinteger brackEnd = literal.bracketPos(0);
+		uinteger brackEnd = (cast(char[])literal).bracketPos(0);
 		// make sure endIndex is lastIndex
 		if (brackEnd != literal.length-1){
 			throw new Exception("invalid bracket-closing position in array");
@@ -599,7 +599,7 @@ package QData stringToQData(string literal){
 		for (uinteger i = 1, readFrom = 1; i <= brackEnd; i ++){
 			if (literal[i] == '['){
 				// skip to end
-				i = literal.bracketPos(i);
+				i = (cast(char[])literal).bracketPos(i);
 			}else if (literal[i] == '"'){
 				// skip the string
 				i = literal.strEnd(i);
@@ -786,7 +786,7 @@ package bool checkBrackets(TokenList tokens, LinkedList!CompileError errors){
 /// 
 /// It only works correctly if the brackets are in correct order, and the closing bracket is present  
 /// so, before calling this, `compiler.misc.checkBrackets` should be called
-package uinteger bracketPos(bool forward=true)(Token[] tokens, uinteger index){
+package uinteger tokenBracketPos(bool forward=true)(Token[] tokens, uinteger index){
 	Token.Type[] closingBrackets = [
 		Token.Type.BlockEnd,
 		Token.Type.IndexBracketClose,
@@ -822,43 +822,6 @@ unittest{
 	assert(tokens.bracketPos!false(5) == 1);
 	assert(tokens.bracketPos!true(3) == 4);
 	assert(tokens.bracketPos!false(4) == 3);
-}
-
-/// Returns index of closing/openinig bracket of the provided bracket  
-/// 
-/// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
-/// `s` is the string to search in
-/// `index` is the index of the opposite bracket
-/// 
-/// throws Exception if the bracket is not found
-package uinteger bracketPos(bool forward=true)(string s, uinteger index){
-	char[] closingBrackets = [']','}',')'];
-	char[] openingBrackets = ['[','{','('];
-	Stack!char brackets = new Stack!char;
-	uinteger i = index;
-	for (uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
-		if ((forward ? openingBrackets : closingBrackets).hasElement(s[i])){
-			// push it to brackets
-			brackets.push(s[i]);
-		}else if ((forward ? closingBrackets : openingBrackets).hasElement(s[i])){
-			// make sure the correct bracket was closed
-			char opposite = brackets.pop;
-			if ((forward ? openingBrackets : closingBrackets).indexOf(s[i]) !=
-				(forward ? closingBrackets : openingBrackets).indexOf(opposite)){
-				throw new Exception("incorect brackets order - first opened must be last closed");
-			}
-		}
-		if (brackets.count == 0){
-			break;
-		}
-	}
-	.destroy (brackets);
-	return i;
-}
-///
-unittest{
-	assert ("hello(asdf[asdf])".bracketPos(5) == 16);
-	assert ("hello(asdf[asdf])".bracketPos(10) == 15);
 }
 
 /// removes "extra" whitespace from a string. i.e, if there are more than 1 consecutive spaces/tabs, one is removed
