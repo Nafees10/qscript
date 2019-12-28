@@ -13,7 +13,7 @@ import std.stdio;
 import std.file;
 
 import qscript.compiler.compilertest;
-import qscript.compiler.compiler : CompileError;
+import qscript.compiler.misc : CompileError;
 
 import utils.misc;
 
