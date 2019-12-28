@@ -6,7 +6,6 @@ module qscript.compiler.codegen;
 import qscript.compiler.ast;
 import qscript.compiler.astcheck;
 import qscript.compiler.misc;
-import qscript.compiler.compiler : Function;
 
 import utils.misc;
 import utils.lists;
@@ -21,15 +20,28 @@ class CodeGen{
 private:
 	/// writer
 	NaByteCodeWriter _writer;
+	/// stores script defined functions
+	Function[] _functions;
 protected:
 	/// generates byte code for a FunctionNode
 	void generateByteCode(FunctionNode node){
 		_writer.startFunction(node.arguments.length);
+		// use push to reserve space on stack for variables
+		foreach (i; 0 .. node.varCount - node.arguments.length){
+			_writer.addInstruction(Instruction.Push, [NaData(0)]);
+		}
 		generateByteCode(node.bodyBlock);
 		// don't forget to Terminate
 		_writer.addInstruction(Instruction.Terminate);
-		// the end
 		_writer.appendFunction();
+		// add itself to _functions
+		Function itself;
+		itself.name = node.name;
+		itself.returnType = node.returnType;
+		itself.argTypes.length = node.arguments.length;
+		foreach (i, arg; node.arguments)
+			itself.argTypes[i] = arg.argType;
+		_functions[node.id] = itself;
 	}
 	/// generates byte code for a BlockNode
 	void generateByteCode(BlockNode node){
@@ -343,8 +355,13 @@ public:
 	NaFunction[] getByteCode(){
 		return _writer.getCode;
 	}
+	/// Returns: array of functions defined in script. The index is the function id (used to call function at runtime)
+	Function[] getFunctionMap(){
+		return _functions.dup;
+	}
 	/// generates byte code for ScriptNode
 	void generateByteCode(ScriptNode node){
+		_functions.length = node.functions.length;
 		foreach (func; node.functions){
 			generateByteCode(func);
 		}
