@@ -100,16 +100,19 @@ protected:
 	void generateByteCode(ForNode node){
 		generateByteCode(node.initStatement);
 		// condition
+		immutable uinteger conditionIndex = _writer.instructionCount;
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
 		immutable uinteger jumpInstIndex = _writer.instructionCount; // index of jump instruction
 		_writer.addInstruction(Instruction.JumpIf, ["0"]); //placeholder, will write jumpToIndex later
 		// loop body
 		generateByteCode(node.statement);
-		// now update the jump to jump ahead of this
-		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 		// now the increment statement
 		generateByteCode(node.incStatement);
+		// jump back
+		_writer.addInstruction(Instruction.Jump, [to!string(conditionIndex)]);
+		// now update the jump to jump ahead of this
+		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 	}
 	/// generates byte code for FunctionCallNode
 	void generateByteCode(FunctionCallNode node){
