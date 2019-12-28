@@ -308,7 +308,8 @@ protected:
 		if (node.operator == "@"){
 			// check if its being de-ref-ed
 			if (node.operand.returnType.isRef){
-				// deref
+				generateByteCode(node.operand);
+				_writer.addInstruction(Instruction.Deref);
 			}else if (node.operand.type == CodeNode.Type.Variable){
 				_writer.addInstruction(Instruction.PushRefFrom, [to!string(node.operand.node!(CodeNode.Type.Variable).id)]);
 			}else if (node.operand.type == CodeNode.Type.ReadElement){
