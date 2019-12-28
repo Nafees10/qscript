@@ -1,4 +1,5 @@
 # QScript
+**this version (0.6.9) is pre-release, only use this for testing**  
 A fast, static typed, scripting language, with a syntax similar to D Language.
 ## Setting it up
 To add QScript to your dub package or project, run this in your dub package's directory:
