@@ -458,8 +458,8 @@ protected:
 			if (!node.operand.returnType.isRef && node.operand.type != CodeNode.Type.Variable){
 				// could be that it's getting ref of ReadElement, check it that's the case
 				CodeNode subNode = node.operand;
-				while (subNode.type == CodeNode.type.ReadElement){
-					subNode = CodeNode.node!(CodeNode.Type.ReadElement);
+				while (subNode.type == CodeNode.Type.ReadElement){
+					subNode = subNode.node!(CodeNode.Type.ReadElement).readFromNode;
 				}
 				if (subNode.type != CodeNode.Type.Variable)
 					compileErrors.append(CompileError(node.lineno, "@ can only be used to get reference of variables"));
