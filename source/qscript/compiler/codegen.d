@@ -11,6 +11,7 @@ import utils.misc;
 import utils.lists;
 
 import navm.navm : Instruction, NaData;
+import navm.navm : readData;
 import navm.bytecodedefs; // needed to check how many elements instruction wants from stack
 
 import std.conv : to;
@@ -28,7 +29,7 @@ protected:
 		_writer.startFunction(node.arguments.length);
 		// use push to reserve space on stack for variables
 		foreach (i; 0 .. node.varCount - node.arguments.length){
-			_writer.addInstruction(Instruction.Push, [NaData(0)]);
+			_writer.addInstruction(Instruction.Push, ["0"]);
 		}
 		generateByteCode(node.bodyBlock);
 		// don't forget to Terminate
@@ -78,11 +79,11 @@ protected:
 		generateByteCode(node.val);
 		// if being assigned to ref, just use pushFrom + writeToRef, else, do writeTo
 		if (node.deref){
-			_writer.addInstruction(Instruction.PushFrom, [NaData(node.var.id)]); // this gets the ref
+			_writer.addInstruction(Instruction.PushFrom, [to!string(node.var.id)]); // this gets the ref
 			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
 		}else{
 			// just do pushTo 
-			_writer.addInstruction(Instruction.WriteTo, [NaData(node.var.id)]);
+			_writer.addInstruction(Instruction.WriteTo, [to!string(node.var.id)]);
 		}
 	}
 	/// generates ByteCode for DoWhileNode
@@ -93,7 +94,7 @@ protected:
 		generateByteCode(node.statement);
 		// condition
 		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.JumpIf, [NaData(startIndex)]);// jump to startIndex if condition == 1
+		_writer.addInstruction(Instruction.JumpIf, [to!string(startIndex)]);// jump to startIndex if condition == 1
 	}
 	/// generates byte code for ForNode
 	void generateByteCode(ForNode node){
@@ -102,7 +103,7 @@ protected:
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
 		immutable uinteger jumpInstIndex = _writer.instructionCount; // index of jump instruction
-		_writer.addInstruction(Instruction.JumpIf, []); //placeholder, will write jumpToIndex later
+		_writer.addInstruction(Instruction.JumpIf, ["0"]); //placeholder, will write jumpToIndex later
 		// loop body
 		generateByteCode(node.statement);
 		// now update the jump to jump ahead of this
@@ -120,7 +121,7 @@ protected:
 				generateByteCode(arg);
 			}
 			_writer.addInstruction(node.isScriptDefined ? Instruction.ExecuteFunction : Instruction.ExecuteFunctionExternal,
-				[NaData(node.id), NaData(node.arguments.length)]);
+				[to!string(node.id), to!string(node.arguments.length)]);
 		}
 	}
 	/// generates byte code for inbuilt QScript functions (`length(void[])` and stuff)
@@ -177,7 +178,7 @@ protected:
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
 		immutable uinteger skipToElseInstIndex = _writer.instructionCount; /// index of jumpIf that jumps when false
-		_writer.addInstruction(Instruction.JumpIf); // placeholder
+		_writer.addInstruction(Instruction.JumpIf, ["0"]); // placeholder
 		// now comes the if true part
 		generateByteCode(node.statement);
 		// update skipToElse jump
@@ -197,8 +198,8 @@ protected:
 			if (node.hasValue(varName))
 				generateByteCode(node.getValue(varName));
 			else
-				_writer.addInstruction(Instruction.Push, [NaData(0)]);
-			_writer.addInstruction(Instruction.WriteTo, [NaData(node.varIDs[varName])]);
+				_writer.addInstruction(Instruction.Push, ["0"]);
+			_writer.addInstruction(Instruction.WriteTo, [to!string(node.varIDs[varName])]);
 		}
 	}
 	/// generates byte code for WhileNode
@@ -206,7 +207,7 @@ protected:
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
 		immutable jumpInstIndex = _writer.instructionCount;
-		_writer.addInstruction(Instruction.JumpIf);
+		_writer.addInstruction(Instruction.JumpIf, ["0"]);
 		generateByteCode(node.statement);
 		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 	}
@@ -238,7 +239,7 @@ protected:
 	}
 	/// generates byte code for LiteralNode
 	void generateByteCode(LiteralNode node){
-		_writer.addInstruction(Instruction.Push, [NaData(node.literal)]);
+		_writer.addInstruction(Instruction.Push, [node.literal]);
 	}
 	/// generates byte code for OperatorNode
 	void generateByteCode(OperatorNode node){
@@ -309,7 +310,7 @@ protected:
 			if (node.operand.returnType.isRef){
 				// deref
 			}else if (node.operand.type == CodeNode.Type.Variable){
-				_writer.addInstruction(Instruction.PushRefFrom, [NaData(node.operand.node!(CodeNode.Type.Variable).id)]);
+				_writer.addInstruction(Instruction.PushRefFrom, [to!string(node.operand.node!(CodeNode.Type.Variable).id)]);
 			}else if (node.operand.type == CodeNode.Type.ReadElement){
 				generateByteCode(node.operand.node!(CodeNode.Type.ReadElement), true);
 			}
@@ -333,7 +334,7 @@ protected:
 	}
 	/// generates byte code for VariableNode
 	void generateByteCode(VariableNode node, bool pushRef = false){
-		_writer.addInstruction(pushRef ? Instruction.PushRefFrom : Instruction.PushFrom, [NaData(node.id)]);
+		_writer.addInstruction(pushRef ? Instruction.PushRefFrom : Instruction.PushFrom, [to!string(node.id)]);
 	}
 	/// generates byte code for ArrayNode
 	void generateByteCode(ArrayNode node){
@@ -352,7 +353,7 @@ public:
 		.destroy(_writer);
 	}
 	/// Returns: generated bytecode
-	NaFunction[] getByteCode(){
+	string[] getByteCode(){
 		return _writer.getCode;
 	}
 	/// Returns: array of functions defined in script. The index is the function id (used to call function at runtime)
@@ -368,14 +369,21 @@ public:
 	}
 }
 
+/// Used to generate byte code.
+/// 
+/// Code is really messy in here, needs improving
 private class NaByteCodeWriter{
 private:
-	/// code for each function
-	List!NaFunction _generatedCode;
+	/// instructions of all functions
+	List!(string[]) _generatedInstructions;
+	/// arguments of all functions' instructions
+	List!(string[][]) _generatedInstructionArgs;
+	/// stackLength of each function
+	List!uinteger _stackLengths;
 	/// instructions of function currently being written to
 	List!Instruction _currentInst;
 	/// arguments of instructions of functions currently being written to
-	List!(NaData[]) _currentInstArgs;
+	List!(string[]) _currentInstArgs;
 	/// number of elements used up on stack at a point
 	uinteger _currentStackUsage;
 	/// max number of elements used on on stack (reset to 0 before starting on a new function)
@@ -395,19 +403,45 @@ public:
 	}
 	/// constructor
 	this(){
-		_generatedCode = new List!NaFunction;
+		_generatedInstructions = new List!(string[]);
+		_generatedInstructionArgs = new List!(string[][]);
 		_currentInst = new List!Instruction;
-		_currentInstArgs = new List!(NaData[]);
+		_currentInstArgs = new List!(string[]);
+		_stackLengths = new List!uinteger;
 	}
 	/// destructor
 	~this(){
-		.destroy(_generatedCode);
+		.destroy(_generatedInstructions);
+		.destroy(_generatedInstructionArgs);
 		.destroy(_currentInst);
 		.destroy(_currentInstArgs);
+		.destroy(_stackLengths);
 	}
 	/// Returns: generated byte code in a NaFunction[]
-	NaFunction[] getCode(){
-		return _generatedCode.toArray;
+	string[] getCode(){
+		string[] r;
+		{
+			uinteger l = 0;
+			foreach (instArray; _generatedInstructions.toArray){
+				l += instArray.length+1;
+			}
+			r.length = l;
+		}
+		uinteger writeTo = 0;
+		foreach (i, instList; _generatedInstructions.toArray){
+			r[writeTo] = "def "~to!string(_stackLengths.read(i));
+			writeTo ++;
+			string[][] args = _generatedInstructionArgs.read(i);
+			foreach (index, inst; instList){
+				string argStr = "";
+				foreach (arg; args[index]){
+					argStr ~= ' ' ~ arg;
+				}
+				r[writeTo] = to!string(inst) ~ argStr;
+				writeTo++;
+			}
+		}
+		return r;
 	}
 	/// Call to prepare writing a function
 	void startFunction(uinteger argCount){
@@ -420,11 +454,15 @@ public:
 	}
 	/// Call when a function has been completely written to.
 	void appendFunction(){
-		NaFunction func;
-		func.instructions = _currentInst.toArray;
-		func.arguments = _currentInstArgs.toArray;
-		func.stackLength = _maxStackUsage;
-		_generatedCode.append(func);
+		string[] instructions;
+			instructions.length = _currentInst.length;
+			Instruction[] inst = _currentInst.toArray;
+			foreach (i, instruction; inst){
+				instructions[i] = '\t'~instruction.to!string;
+			}
+		_generatedInstructions.append(instructions);
+		_generatedInstructionArgs.append(_currentInstArgs.toArray);
+		_stackLengths.append(_maxStackUsage);
 		// reset
 		_currentInst.clear;
 		_currentInstArgs.clear;
@@ -442,13 +480,20 @@ public:
 	/// Adds an instruction
 	///
 	/// Returns: type of error if any, else, ErrorType.NoError
-	ErrorType addInstruction(Instruction inst, NaData[] args = []){
+	ErrorType addInstruction(Instruction inst, string[] args = []){
 		if (args.length != INSTRUCTION_ARG_COUNT[inst])
 			return ErrorType.ArgumentCountMismatch;
-		immutable uinteger popCount = instructionPopCount(inst, args);
+		NaData[] argsNaData;
+		argsNaData.length = args.length;
+		foreach (i, arg; args){
+			argsNaData[i] = readData(arg);
+		}
+		immutable uinteger popCount = instructionPopCount(inst, argsNaData);
+		immutable uinteger pushCount = INSTRUCTION_PUSH_COUNT[inst];
 		if (popCount > _currentStackUsage)
 			return ErrorType.StackElementsInsufficient;
 		_currentStackUsage -= popCount;
+		_currentStackUsage += pushCount;
 		updateStackUsage;
 		_currentInst.append(inst);
 		_currentInstArgs.append(args.dup);
@@ -460,7 +505,7 @@ public:
 	bool changeJumpArg(uinteger index, uinteger newJumpIndex){
 		if (index >= _currentInst.length || ! [Instruction.Jump, Instruction.JumpIf].hasElement(_currentInst.read(index)))
 			return false;
-		_currentInstArgs.set(index, [NaData(newJumpIndex)]);
+		_currentInstArgs.set(index, [to!string(newJumpIndex)]);
 		return true;
 	}
 }
