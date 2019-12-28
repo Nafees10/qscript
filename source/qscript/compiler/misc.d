@@ -6,9 +6,6 @@ module qscript.compiler.misc;
 import utils.misc;
 import utils.lists;
 
-import qscript.qscript : QData;
-import qscript.compiler.compiler : Function;
-
 import std.range;
 import std.conv : to;
 
@@ -19,11 +16,11 @@ package const string[] KEYWORDS = ["function", "return", "if", "else", "while", 
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "string"];
 /// An array containing another array conatining double-operand operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", "==", "=", "&&", "||"];
+package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", ">=", "<=", "==", "=", "&&", "||"];
 /// single-operand operators
 package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
-package const string[] BOOL_OPERATORS = ["<", ">", "==", "&&", "||"];
+package const string[] BOOL_OPERATORS = ["<", ">", ">=", "<=", "==", "&&", "||"];
 /// Inbuilt QScript functions (like `length(void[])`)
 package Function[] INBUILT_FUNCTIONS = [
 	/// length(@void[], int)
@@ -54,6 +51,33 @@ public struct CompileError{
 	this(uinteger lineNumber, string errorMessage){
 		lineno = lineNumber;
 		msg = errorMessage;
+	}
+}
+
+/// To store information about a function
+public struct Function{
+	/// the name of the function
+	string name;
+	/// the data type of the value returned by this function
+	DataType returnType;
+	/// stores the data type of the arguments received by this function
+	private DataType[] _argTypes;
+	/// the data type of the arguments received by this function
+	/// 
+	/// if an argType is defined as void, with array dimensions=0, it means accept any type.
+	/// if an argType is defined as void with array dimensions>0, it means array of any type of that dimensions
+	@property ref DataType[] argTypes(){
+		return _argTypes;
+	}
+	/// the data type of the arguments received by this function
+	@property ref DataType[] argTypes(DataType[] newArray){
+		return _argTypes = newArray.dup;
+	}
+	/// constructor
+	this (string functionName, DataType functionReturnType, DataType[] functionArgTypes){
+		name = functionName;
+		returnType = functionReturnType;
+		_argTypes = functionArgTypes.dup;
 	}
 }
 
@@ -517,154 +541,6 @@ bool calCallFunction(string fName, DataType[] argTypes){
 	return matchArguments(expectedArgTypes, argTypes);
 }
 
-
-
-/// converts from Token[] to QData
-/// 
-/// `tokens` is the Token[] containing the data
-/// `type` is the var in which the data type of the data will be put in
-/// 
-/// throws Exception on failure
-package QData tokensToQData(Token[] tokens, ref DataType type){
-	QData result;
-	static uinteger callCount = 0;
-	callCount ++;
-	// check if is an array
-	if (tokens.length > 1 &&
-		tokens[0].type == Token.Type.IndexBracketOpen && tokens[tokens.length-1].type == Token.Type.IndexBracketClose){
-
-		// recursion...
-		// or if is empty
-		if (tokens.length == 2){
-			// empty array
-			type = DataType(DataType.Type.Void, 1);
-			callCount --;
-			return QData([]);
-		}
-		Token[][] elements = splitArray(tokens);
-		result.arrayVal.length = elements.length;
-		foreach (i, element; elements){
-			result.arrayVal[i] = tokensToQData(element, type);
-		}
-		if (callCount == 1){
-			type = DataType(tokens);
-		}
-	}else{
-		type.fromData(tokens);
-		assert(tokens.length == 1, "non-array data must be only one token in length");
-		if (type.type == DataType.Type.Double){
-			result.doubleVal = to!double(tokens[0].token);
-		}else if (type.type == DataType.Type.Integer){
-			result.intVal = to!integer(tokens[0].token);
-		}else if (type.type == DataType.Type.String){
-			assert(tokens[0].token.length > 1, "invalid string");
-			result.strVal = decodeString(tokens[0].token[1 .. tokens[0].token.length - 1]);
-		}
-	}
-	callCount --;
-	return result;
-}
-///
-unittest{
-	import qscript.compiler.tokengen : stringToTokens;
-	Token[] tokens;
-	tokens = ["20"].stringToTokens;
-	DataType type;
-	assert (tokensToQData(tokens, type).intVal == 20);
-	assert (type == DataType("int"));
-
-	tokens = ["20.0"].stringToTokens;
-	assert (tokensToQData(tokens, type).doubleVal == 20.0);
-	assert (type == DataType("double"));
-}
-
-/// converts a literal data in bytecode format into QData
-/// 
-/// throws Exception on error
-package QData stringToQData(string literal){
-	// make sure it's at least 2 in length
-	if (literal.length < 2){
-		throw new Exception("invalid byte code literal");
-	}
-	// check if it's an array
-	if (literal[0] == '['){
-		// get bracket end pos
-		uinteger brackEnd = (cast(char[])literal).bracketPos(0);
-		// make sure endIndex is lastIndex
-		if (brackEnd != literal.length-1){
-			throw new Exception("invalid bracket-closing position in array");
-		}
-		LinkedList!QData elements = new LinkedList!QData;
-		// use recursion to make that array
-		for (uinteger i = 1, readFrom = 1; i <= brackEnd; i ++){
-			if (literal[i] == '['){
-				// skip to end
-				i = (cast(char[])literal).bracketPos(i);
-			}else if (literal[i] == '"'){
-				// skip the string
-				i = literal.strEnd(i);
-			}else if (literal[i] == ',' || i == brackEnd){
-				// read the element
-				if (readFrom < i){
-					elements.append (stringToQData(literal[readFrom .. i]));
-					readFrom = i+1;
-				}
-			}else if (literal[i] == ' ' || literal[i] == '\t'){
-				// skip this char, if at the start/end of an element, otherwise, this aint allowed
-				if (readFrom == i){
-					readFrom ++;
-				}else{
-					throw new Exception("found whitespace at unexpected position");
-				}
-			}
-		}
-		// put em all in one QData
-
-		QData r = QData(elements.toArray);
-		.destroy (elements);
-		return r;
-	}else{
-		// must be a string, double, or int
-		if (literal[0] == 's'){
-			// string
-			if (literal.length < 3){
-				throw new Exception("invalid string in byte code literal");
-			}
-			if (literal[1] != '"'){
-				throw new Exception("not a valid string");
-			}
-			// make sure strEnd == lastInd
-			if (literal.strEnd(1) != literal.length -1){
-				throw new Exception("quotation mark ended at wrong position in string");
-			}
-			// now just convert it
-			return QData(decodeString(literal[2 .. literal.length - 1]));
-		}else if (literal[0] == 'd'){
-			// double
-			return QData(to!double(literal[1 .. literal.length]));
-		}else if (literal[0] == 'i'){
-			return QData(to!integer(literal[1 .. literal.length]));
-		}else{
-			throw new Exception("invalid data type in byte code literal");
-		}
-	}
-}
-///
-unittest{
-	assert ("i1".stringToQData == QData(integer(1)));
-}
-/// converts literal data-s in byte code format into QData-s
-/// 
-/// throws Exception on error
-package QData[] stringToQData(string[] literals){
-	QData[] r;
-	r.length = literals.length;
-	foreach (i, literal; literals){
-		r[i] = literal.stringToQData();
-	}
-	return r;
-}
-
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
 	/// Specifies type of token
@@ -712,7 +588,7 @@ package struct TokenList{
 		return i;
 	}
 	/// reads tokens into a string
-	string toString(Token[] t){
+	static string toString(Token[] t){
 		char[] r;
 		// set length
 		uinteger length = 0;
