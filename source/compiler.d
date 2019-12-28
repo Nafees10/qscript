@@ -12,13 +12,17 @@ module compiler;
 import std.stdio;
 import std.file;
 
-import qscript.compiler.compilertest;
+import qscript.compiler.compiler;
 import qscript.compiler.misc : CompileError;
+import qscript.compiler.misc : Function;
 
 import utils.misc;
 
 version(compiler){
 	void main(string[] args){
+		debug{
+			args = [args[0], "bytecode", "sample"];
+		}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON\n* bytecode - output Byte Code");
@@ -36,7 +40,7 @@ version(compiler){
 			}
 			CompileError[] errors;
 			if (args[1] == "ast"){
-				string json = astJSONTest(script,[],errors);
+				string json = compileScriptAST(script,[],errors);
 				if (errors.length > 0){
 					stderr.writeln ("There are errors:");
 					foreach (error; errors){
@@ -45,7 +49,8 @@ version(compiler){
 				}
 				writeln (json);
 			}else if (args[1] == "bytecode"){
-				string[] byteCode = byteCodeTest(script, [], errors);
+				Function[] fMap;
+				string[] byteCode = compileScript(script, [], errors, fMap);
 				if (errors.length > 0){
 					stderr.writeln ("There are errors:");
 					foreach (error; errors){

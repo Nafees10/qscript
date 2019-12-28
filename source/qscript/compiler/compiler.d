@@ -24,7 +24,7 @@ import navm.navm : NaFunction;
 /// `errors` is the array to which errors will be appended
 /// 
 /// Returns: ByteCode class with the compiled byte code. or null if errors.length > 0
-public NaFunction[] compileScript(string[] script, Function[] functions, ref CompileError[] errors,
+public string[] compileScript(string[] script, Function[] functions, ref CompileError[] errors,
 ref Function[] functionMap){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length > 0)
@@ -35,11 +35,13 @@ ref Function[] functionMap){
 		return null;
 	ASTCheck check = new ASTCheck(functions);
 	errors = check.checkAST(scrNode);
+	if (errors.length > 0)
+		return null;
 	.destroy(check);
 	// time for the final thing, to byte code
 	CodeGen bCodeGen = new CodeGen();
 	bCodeGen.generateByteCode(scrNode);
-	NaFunction[] byteCode = bCodeGen.getByteCode();
+	string[] byteCode = bCodeGen.getByteCode();
 	functionMap = bCodeGen.getFunctionMap;
 	return byteCode;
 }
