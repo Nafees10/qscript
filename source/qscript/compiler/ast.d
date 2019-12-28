@@ -319,11 +319,6 @@ package struct LiteralNode{
 		literal = data;
 		returnType = dataType;
 	}
-	/// constructor, with just string
-	this (string data, DataType dataType){
-		literal = data;
-		returnType.fromString(data);
-	}
 	/// constructor using `fromTokens`
 	this (Token[] tokensLiteral){
 		fromTokens(tokensLiteral);
@@ -333,7 +328,7 @@ package struct LiteralNode{
 	/// throws Exception on error
 	void fromTokens(Token[] tokensLiteral){
 		literal = TokenList.toString(tokensLiteral);
-		returnType.fromString(literal);
+		returnType.fromData(tokensLiteral);
 	}
 }
 
