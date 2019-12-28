@@ -456,7 +456,13 @@ protected:
 			node.returnType.isRef = !node.returnType.isRef;
 			// if it's used to get a ref, it can only be used on variables, nothing else.
 			if (!node.operand.returnType.isRef && node.operand.type != CodeNode.Type.Variable){
-				compileErrors.append(CompileError(node.lineno, "@ can only be used to get reference of variables"));
+				// could be that it's getting ref of ReadElement, check it that's the case
+				CodeNode subNode = node.operand;
+				while (subNode.type == CodeNode.type.ReadElement){
+					subNode = CodeNode.node!(CodeNode.Type.ReadElement);
+				}
+				if (subNode.type != CodeNode.Type.Variable)
+					compileErrors.append(CompileError(node.lineno, "@ can only be used to get reference of variables"));
 			}
 		}else
 			compileErrors.append (CompileError(node.lineno, "invalid operator"));
