@@ -259,7 +259,7 @@ JSONValue toJSON(LiteralNode node){
 	JSONValue r;
 	r["node"] = JSONValue("LiteralNode");
 	r["type"] = JSONValue(node.returnType.toString);
-	r["value"] = JSONValue(node.toByteCode);
+	r["value"] = JSONValue(node.literal);
 
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
