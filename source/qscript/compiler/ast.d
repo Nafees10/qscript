@@ -308,17 +308,21 @@ package struct ArrayNode{
 /// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer,  
 /// but arrays (even ones without variables, only literals) are stored in ArrayNode
 package struct LiteralNode{
-	private import qscript.qscript : QData;
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// stores the data type for the literal
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// stores the literal in a QData
-	public QData literal;
+	public string literal;
 	/// constructor
-	this (QData data, DataType dataType){
+	this (string data, DataType dataType){
 		literal = data;
 		returnType = dataType;
+	}
+	/// constructor, with just string
+	this (string data, DataType dataType){
+		literal = data;
+		returnType.fromString(data);
 	}
 	/// constructor using `fromTokens`
 	this (Token[] tokensLiteral){
@@ -328,12 +332,8 @@ package struct LiteralNode{
 	/// 
 	/// throws Exception on error
 	void fromTokens(Token[] tokensLiteral){
-		// check if is empty array
-		literal = tokensToQData(tokensLiteral, returnType);
-	}
-	/// returns this literal as in a string-representation, for the bytecode
-	string toByteCode(){
-		return literal.toByteCode(returnType);
+		literal = TokenList.toString(tokensLiteral);
+		returnType.fromString(literal);
 	}
 }
 
@@ -523,7 +523,7 @@ package struct StatementNode{
 		ReturnNode returnNode;
 	}
 	/// modifies the stored node
-	@property auto ref node(T)(T newNode){
+	@property void node(T)(T newNode){
 		static if (is (T == IfNode)){
 			storedType = StatementNode.Type.If;
 			ifNode = newNode;
