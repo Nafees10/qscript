@@ -448,12 +448,16 @@ protected:
 		// now it it's `!`, only accept int, if `@`, var
 		if (node.operator == "!"){
 			if (getReturnType(node.operand) != DataType(DataType.Type.Integer)){
-				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! a non-int data type"));
+				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! on a non-int data type"));
 			}
 			node.returnType = DataType(DataType.Type.Integer);
 		}else if (node.operator == "@"){
 			node.returnType = node.operand.returnType;
 			node.returnType.isRef = !node.returnType.isRef;
+			// if it's used to get a ref, it can only be used on variables, nothing else.
+			if (!node.operand.returnType.isRef && node.operand.type != CodeNode.Type.Variable){
+				compileErrors.append(CompileError(node.lineno, "@ can only be used to get reference of variables"));
+			}
 		}else
 			compileErrors.append (CompileError(node.lineno, "invalid operator"));
 	}
