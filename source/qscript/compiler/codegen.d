@@ -207,11 +207,13 @@ protected:
 	}
 	/// generates byte code for WhileNode
 	void generateByteCode(WhileNode node){
+		immutable uinteger conditionIndex = _writer.instructionCount;
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
-		immutable jumpInstIndex = _writer.instructionCount;
+		immutable uinteger jumpInstIndex = _writer.instructionCount;
 		_writer.addInstruction(Instruction.JumpIf, ["0"]);
 		generateByteCode(node.statement);
+		_writer.addInstruction(Instruction.Jump, [conditionIndex.to!string]);
 		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 	}
 	/// generates byte code for ReturnNode
