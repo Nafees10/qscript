@@ -529,7 +529,7 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 /// argTypes is the data types of the arguments
 /// 
 /// Returns: true if it can be called, false if not, or if the fName was incorrect
-bool calCallFunction(string fName, DataType[] argTypes){
+bool canCallFunction(string fName, DataType[] argTypes){
 	// decode to get the right name & args
 	DataType[] expectedArgTypes;
 	{
