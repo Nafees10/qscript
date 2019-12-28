@@ -10,30 +10,30 @@ version (demo){
 		/// where the magic happens
 		QScript _qscript;
 		/// writeln function
-		QData* writeln(QData*[] args){
+		NaData writeln(NaData[] args){
 			std.stdio.writeln (args[0].strVal);
-			return null;
+			return NaData(0);
 		}
 		/// write function
-		QData* write(QData*[] args){
+		NaData write(NaData[] args){
 			std.stdio.write (args[0].strVal);
-			return null;
+			return NaData(0);
 		}
 		/// write int
-		QData* writeInt(QData*[] args){
+		NaData writeInt(NaData[] args){
 			std.stdio.write(args[0].intVal);
-			return null;
+			return NaData(0);
 		}
 		/// write double
-		QData* writeDbl(QData*[] args){
+		NaData writeDbl(NaData[] args){
 			std.stdio.write(args[0].doubleVal);
-			return null;
+			return NaData(0);
 		}
 		/// readln function
-		QData* readln(QData*[] args){
+		NaData readln(NaData[] args){
 			string s = std.stdio.readln;
 			s.length--;
-			return new QData(s);
+			return NaData(s);
 		}
 	public:
 		/// constructor
@@ -57,12 +57,17 @@ version (demo){
 		}
 		/// compiles & returns byte code
 		string[] compileToByteCode(string[] script, ref CompileError[] errors){
-			errors = _qscript.compile(script);
-			return _qscript.byteCodeToString;
+			string[] byteCode;
+			errors = _qscript.loadScript(script, byteCode);
+			return byteCode;
+		}
+		/// called right after all external functions have been loaded
+		void initialize(){
+			_qscript.initialize();
 		}
 		/// executes the first function in script
-		QData execute(QData[] args){
-			return _qscript.execute(0, args);
+		NaData execute(uinteger functionID, NaData[] args){
+			return _qscript.execute(functionID, args);
 		}
 	}
 
@@ -77,6 +82,7 @@ version (demo){
 			StopWatch sw;
 			ScriptExec scr = new ScriptExec();
 			CompileError[] errors;
+			scr.initialize;
 			string[] byteCode = scr.compileToByteCode(fileToArray(args[1]), errors);
 			if (errors.length > 0){
 				writeln("Compilation errors:");
@@ -89,7 +95,7 @@ version (demo){
 				}
 				// now execute main
 				sw.start;
-				scr.execute([]);
+				scr.execute(0, []);
 				sw.stop;
 				writeln("execution took: ", sw.peek.total!"msecs", "msecs");
 			}
