@@ -61,8 +61,7 @@ protected:
 		}else if (node.type == StatementNode.Type.For){
 			generateByteCode(node.node!(StatementNode.Type.For));
 		}else if (node.type == StatementNode.Type.FunctionCall){
-			generateByteCode(node.node!(StatementNode.Type.FunctionCall));
-			_writer.addInstruction(Instruction.Pop);
+			generateByteCode(node.node!(StatementNode.Type.FunctionCall), true);
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode(node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.VarDeclare){
@@ -115,9 +114,9 @@ protected:
 		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 	}
 	/// generates byte code for FunctionCallNode
-	void generateByteCode(FunctionCallNode node){
+	void generateByteCode(FunctionCallNode node, bool popReturn = false){
 		if (!node.isScriptDefined && node.isInBuilt){
-			generateInBuiltFunctionByteCode(node);
+			generateInBuiltFunctionByteCode(node, popReturn);
 		}else{
 			// push args
 			foreach (arg; node.arguments){
@@ -125,10 +124,12 @@ protected:
 			}
 			_writer.addInstruction(node.isScriptDefined ? Instruction.ExecuteFunction : Instruction.ExecuteFunctionExternal,
 				[to!string(node.id), to!string(node.arguments.length)]);
+			if (popReturn)
+				_writer.addInstruction(Instruction.Pop);
 		}
 	}
 	/// generates byte code for inbuilt QScript functions (`length(void[])` and stuff)
-	void generateInBuiltFunctionByteCode(FunctionCallNode node){
+	void generateInBuiltFunctionByteCode(FunctionCallNode node, bool popReturn = false){
 		/// argument types of function call
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
@@ -137,6 +138,8 @@ protected:
 		}
 		/// encoded name of function
 		string fName = encodeFunctionName(node.fName, argTypes);
+		/// stores if the instructions added push 1 element to stack, or zero (false)
+		bool pushesToStack = true;
 		/// length(@void[], int)
 		if (node.fName == "length"){
 			if (matchArguments([DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)],argTypes)){
@@ -144,6 +147,8 @@ protected:
 				generateByteCode(node.arguments[1]); // length comes first, coz it's popped later
 				generateByteCode(node.arguments[0]);
 				_writer.addInstruction(Instruction.ArrayLengthSet);
+				// popReturn doesn't matter, ArrayLengthSet doesn't push anything
+				pushesToStack = false;
 			}else if (matchArguments([DataType(DataType.Type.Void, 1)], argTypes) ||
 			matchArguments([DataType(DataType.Type.String)], argTypes)){
 				// get array/string length
@@ -175,6 +180,8 @@ protected:
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.DoubleToString);
 		}
+		if (pushesToStack && popReturn)
+			_writer.addInstruction(Instruction.Pop);
 	}
 	/// generates byte code for IfNode
 	void generateByteCode(IfNode node){
@@ -347,7 +354,7 @@ protected:
 		foreach (element; node.elements){
 			generateByteCode(element);
 		}
-		_writer.addInstruction(Instruction.MakeArray);
+		_writer.addInstruction(Instruction.MakeArray, [node.elements.length.to!string]);
 	}
 public:
 	/// constructor
