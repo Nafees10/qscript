@@ -149,8 +149,8 @@ protected:
 				_writer.addInstruction(Instruction.ArrayLengthSet);
 				// popReturn doesn't matter, ArrayLengthSet doesn't push anything
 				pushesToStack = false;
-			}else if (matchArguments([DataType(DataType.Type.Void, 1)], argTypes) ||
-			matchArguments([DataType(DataType.Type.String)], argTypes)){
+			}else if (matchArguments([DataType(DataType.Type.Void, 1, true)], argTypes) ||
+			matchArguments([DataType(DataType.Type.String, 0, true)], argTypes)){
 				// get array/string length
 				generateByteCode(node.arguments[0]);
 				_writer.addInstruction(Instruction.ArrayLength);

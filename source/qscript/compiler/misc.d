@@ -26,9 +26,9 @@ package Function[] INBUILT_FUNCTIONS = [
 	/// length(@void[], int)
 	Function("length", DataType(DataType.Type.Void), [DataType(DataType.Type.Void,	1, true), DataType(DataType.Type.Integer)]),
 	/// length(void[])
-	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1)]),
+	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1, true)]),
 	/// length (string)
-	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.String, 0, true)]),
 
 	/// toInt(string)
 	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
