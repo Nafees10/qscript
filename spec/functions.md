@@ -17,11 +17,11 @@ Modifies length of an existing array.
 int[] array;
 length(@array, 5); # change array's length to hold 5 elements, from index 0 to index 4
 ```
-## length ( @void[] )
+## length ( void[] )
 Returns the length of an array.  
 **Arguments:**  
 
-1. The array to get length of. Data Type: `@void[]` , reference to array of any type, of any dimensions.  
+1. The array to get length of. Data Type: `void[]` , array of any type, of any dimensions.  
 
 **Returns:**  
 The length of array in argument1. Data Type: `int` >=0  
@@ -29,17 +29,17 @@ The length of array in argument1. Data Type: `int` >=0
 ```
 int[] array;
 array = [0, 2, 4, 6];
-length (@array); # returns 4
+length (array); # returns 4
 ```
 
 ---
 
 ## Strings:
-## length ( @string )
+## length ( string )
 To get the length of a string.  
 **Arguments:**  
 
-1. The stirng to get the length of. Data Type: `string`, reference to string  
+1. The stirng to get the length of. Data Type: `string`  
 
 **Rerurns:**  
 The length of the string in argument1. Data Type: `int` >=0  
