@@ -635,28 +635,27 @@ struct ASTGen{
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
 		CodeNode generateNodeAST(){
 			Token token = tokens.tokens[index];
+			CodeNode r = CodeNode();
 			// an identifier, or literal (i.e some data) was expected
 			if (token.type == Token.Type.Identifier){
 				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 					// is a function call
-					CodeNode r = CodeNode(generateFunctionCallAST());
+					r = CodeNode(generateFunctionCallAST());
 					// check if it skipped the semicolon, because if it did, it shouldnt have, so undo it
 					if (tokens.tokens[index-1].type == Token.Type.StatementEnd){
 						index --;
 					}
-					return r;
 				}else{
 					// just a var
-					return CodeNode(generateVariableAST());
+					r = CodeNode(generateVariableAST());
 				}
 			}else if (token.type == Token.Type.Operator && SOPERATORS.hasElement(token.token)){
-				return CodeNode(generateSOperatorAST());
+				r = CodeNode(generateSOperatorAST());
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
 				index ++;
-				CodeNode r = generateCodeAST();
+				r = generateCodeAST();
 				index ++;
-				return r;
 			}else if (token.type == Token.Type.IndexBracketOpen){
 				// literal array
 				uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
@@ -672,14 +671,14 @@ struct ASTGen{
 					}
 				}
 				index = brackEnd+1;
-				return CodeNode(ArrayNode(elements));
+				r = CodeNode(ArrayNode(elements));
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
 				// literal
 				index ++;
 				try{
-					LiteralNode r = LiteralNode([token]);
-					r.lineno = tokens.getTokenLine(index);
-					return CodeNode(r);
+					LiteralNode ltNode = LiteralNode([token]);
+					ltNode.lineno = tokens.getTokenLine(index);
+					r = CodeNode(ltNode);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
@@ -688,7 +687,15 @@ struct ASTGen{
 				index ++;
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 			}
-			return CodeNode();
+			// check if theres a [] ahead of it to read it an element
+			while (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+				// skip the opening bracket `[`
+				index ++;
+				r = CodeNode(ReadElement(r, generateCodeAST()));
+				if (tokens.tokens[index].type == Token.Type.IndexBracketClose)
+					index ++; // skip the ] bracket
+			}
+			return r;
 		}
 
 	}
