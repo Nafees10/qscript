@@ -61,7 +61,7 @@ protected:
 		}else if (node.type == StatementNode.Type.For){
 			generateByteCode(node.node!(StatementNode.Type.For));
 		}else if (node.type == StatementNode.Type.FunctionCall){
-			generateByteCode(node.node!(StatementNode.Type.FunctionCall), true);
+			generateByteCode(node.node!(StatementNode.Type.FunctionCall), false, true);
 		}else if (node.type == StatementNode.Type.If){
 			generateByteCode(node.node!(StatementNode.Type.If));
 		}else if (node.type == StatementNode.Type.VarDeclare){
@@ -76,8 +76,18 @@ protected:
 	void generateByteCode(AssignmentNode node){
 		// first get the value
 		generateByteCode(node.val);
-		// if being assigned to ref, just use pushFrom + writeToRef, else, do writeTo
-		if (node.deref){
+		if (node.indexes.length > 0){
+			// use ReadElement to get the element to write to
+			for (integer i = node.indexes.length -1; i >= 0;i--){
+				generateByteCode(node.indexes[i]);
+			}
+			_writer.addInstruction(node.deref ? Instruction.PushFrom : Instruction.PushRefFrom, [to!string(node.var.id)]); // this gets the ref ot array
+			// now add readElement for each of those
+			foreach (i; 0 .. node.indexes.length){
+				_writer.addInstruction(Instruction.ArrayRefElement);
+			}
+			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
+		}else if (node.deref){
 			_writer.addInstruction(Instruction.PushFrom, [to!string(node.var.id)]); // this gets the ref
 			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
 		}else{
@@ -114,7 +124,9 @@ protected:
 		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
 	}
 	/// generates byte code for FunctionCallNode
-	void generateByteCode(FunctionCallNode node, bool popReturn = false){
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(FunctionCallNode node, bool pushRef = false, bool popReturn = false){
 		if (!node.isScriptDefined && node.isInBuilt){
 			generateInBuiltFunctionByteCode(node, popReturn);
 		}else{
@@ -149,7 +161,7 @@ protected:
 				_writer.addInstruction(Instruction.ArrayLengthSet);
 				// popReturn doesn't matter, ArrayLengthSet doesn't push anything
 				pushesToStack = false;
-			}else if (matchArguments([DataType(DataType.Type.Void, 1, true)], argTypes) ||
+			}else if (matchArguments([DataType(DataType.Type.Void, 1, false)], argTypes) ||
 			matchArguments([DataType(DataType.Type.String, 0, true)], argTypes)){
 				// get array/string length
 				generateByteCode(node.arguments[0]);
@@ -232,29 +244,33 @@ protected:
 	}
 
 	/// generates byte code for CodeNode
-	void generateByteCode(CodeNode node){
+	void generateByteCode(CodeNode node, bool pushRef = false){
 		if (node.type == CodeNode.Type.FunctionCall){
-			generateByteCode(node.node!(CodeNode.Type.FunctionCall));
+			generateByteCode(node.node!(CodeNode.Type.FunctionCall), pushRef);
 		}else if (node.type == CodeNode.Type.Literal){
-			generateByteCode(node.node!(CodeNode.Type.Literal));
+			generateByteCode(node.node!(CodeNode.Type.Literal), pushRef);
 		}else if (node.type == CodeNode.Type.Operator){
-			generateByteCode(node.node!(CodeNode.Type.Operator));
+			generateByteCode(node.node!(CodeNode.Type.Operator), pushRef);
 		}else if (node.type == CodeNode.Type.SOperator){
-			generateByteCode(node.node!(CodeNode.Type.SOperator));
+			generateByteCode(node.node!(CodeNode.Type.SOperator), pushRef);
 		}else if (node.type == CodeNode.Type.ReadElement){
-			generateByteCode(node.node!(CodeNode.Type.ReadElement));
+			generateByteCode(node.node!(CodeNode.Type.ReadElement), pushRef);
 		}else if (node.type == CodeNode.Type.Variable){
-			generateByteCode(node.node!(CodeNode.Type.Variable));
+			generateByteCode(node.node!(CodeNode.Type.Variable), pushRef);
 		}else if (node.type == CodeNode.Type.Array){
-			generateByteCode(node.node!(CodeNode.Type.Array));
+			generateByteCode(node.node!(CodeNode.Type.Array), pushRef);
 		}
 	}
 	/// generates byte code for LiteralNode
-	void generateByteCode(LiteralNode node){
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(LiteralNode node, bool pushRef = false){
 		_writer.addInstruction(Instruction.Push, [node.literal]);
 	}
 	/// generates byte code for OperatorNode
-	void generateByteCode(OperatorNode node){
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(OperatorNode node, bool pushRef = false){
 		bool isFloat = false;
 		if (node.operands[0].returnType == DataType(DataType.Type.Double) ||
 			node.operands[1].returnType == DataType(DataType.Type.Double)){
@@ -315,15 +331,16 @@ protected:
 		_writer.addInstruction(opInst);
 	}
 	/// generates byte code for SOperatorNode
-	void generateByteCode(SOperatorNode node){
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(SOperatorNode node, bool pushRef = false){
 		// only 2 SOperators exist at this point, ref/de-ref, and `!`
 		if (node.operator == "@"){
 			// check if its being de-ref-ed
 			if (node.operand.returnType.isRef){
 				generateByteCode(node.operand);
-				_writer.addInstruction(Instruction.Deref);
 			}else if (node.operand.type == CodeNode.Type.Variable){
-				_writer.addInstruction(Instruction.PushRefFrom, [to!string(node.operand.node!(CodeNode.Type.Variable).id)]);
+				generateByteCode(node.operand, true);
 			}else if (node.operand.type == CodeNode.Type.ReadElement){
 				generateByteCode(node.operand.node!(CodeNode.Type.ReadElement), true);
 			}
@@ -336,12 +353,13 @@ protected:
 	void generateByteCode(ReadElement node, bool pushRef = false){
 		generateByteCode(node.index);
 		// the array should be a ref to array, following if-else takes care of that
-		if (node.readFromNode.type == CodeNode.Type.ReadElement){
-			generateByteCode(node.readFromNode.node!(CodeNode.Type.ReadElement), pushRef);
-		}else if (node.readFromNode.type == CodeNode.Type.Variable){
-			generateByteCode(node.readFromNode.node!(CodeNode.Type.Variable), true);
+		if (node.readFromNode.type == CodeNode.Type.ReadElement || node.readFromNode.type == CodeNode.Type.Variable){
+			generateByteCode(node.readFromNode, true);
+			_writer.addInstruction(Instruction.ArrayRefElement);
+		}else{
+			generateByteCode(node.readFromNode);
+			_writer.addInstruction(Instruction.ArrayElement);
 		}
-		_writer.addInstruction(Instruction.ReadElement);
 		if (!pushRef)
 			_writer.addInstruction(Instruction.Deref);
 	}
@@ -350,7 +368,9 @@ protected:
 		_writer.addInstruction(pushRef ? Instruction.PushRefFrom : Instruction.PushFrom, [to!string(node.id)]);
 	}
 	/// generates byte code for ArrayNode
-	void generateByteCode(ArrayNode node){
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(ArrayNode node, bool pushRef = false){
 		foreach (element; node.elements){
 			generateByteCode(element);
 		}
