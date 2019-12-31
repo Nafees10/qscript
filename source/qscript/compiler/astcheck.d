@@ -359,10 +359,10 @@ protected:
 				compileErrors.append(CompileError(node.lineno, "variable "~varName~" has already been declared"));
 			}else if (node.hasValue(varName)){
 				// match values
-				CodeNode value = node.getValue(varName);
-				checkAST(value);
+				CodeNode* value = &(node.getValue(varName));
+				checkAST(*value);
 				// make sure that value can be assigned
-				if (getReturnType(value) != node.type){
+				if (getReturnType(*value) != node.type){
 					compileErrors.append(CompileError(node.lineno, "cannot assign value of different data type"));
 				}
 			}
