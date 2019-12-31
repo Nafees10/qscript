@@ -25,9 +25,9 @@ package const string[] BOOL_OPERATORS = ["<", ">", ">=", "<=", "==", "&&", "||"]
 package Function[] INBUILT_FUNCTIONS = [
 	/// length(@void[], int)
 	Function("length", DataType(DataType.Type.Void), [DataType(DataType.Type.Void,	1, true), DataType(DataType.Type.Integer)]),
-	/// length(void[])
+	/// length(@void[])
 	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1, true)]),
-	/// length (string)
+	/// length (@string)
 	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.String, 0, true)]),
 
 	/// toInt(string)
