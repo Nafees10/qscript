@@ -160,6 +160,9 @@ JSONValue toJSON(FunctionCallNode node){
 	r["node"] = JSONValue("FunctionCallNode");
 	r["name"] = JSONValue(node.fName);
 	r["type"] = JSONValue(node.returnType.toString);
+	r["isInbuilt"] = node.isInBuilt;
+	r["isScriptDefined"] = node.isScriptDefined;
+	r["id"] = node.id;
 	JSONValue[] argListJSON;
 	argListJSON.length = node.arguments.length;
 	foreach (i, arg; node.arguments){
