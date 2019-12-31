@@ -6,7 +6,7 @@
 	"authors": ["nafees"],
 	"dependencies": {
 		"utils": "~>0.3.5",
-		"navm": "~master"
+		"navm": "~>0.1.2"
 	},"configurations": [
 		{
 			"name": "default",
