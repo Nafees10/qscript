@@ -203,16 +203,16 @@ protected:
 		_writer.addInstruction(Instruction.JumpIf, ["0"]); // placeholder
 		// now comes the if true part
 		generateByteCode(node.statement);
-		// update skipToElse jump
-		_writer.changeJumpArg(skipToElseInstIndex, _writer.instructionCount);
 		if (node.hasElse){
 			// add a jump in the if-true statement to skip this (arg is placeholder)
 			immutable skipToEndInst = _writer.instructionCount;
-			_writer.addInstruction(Instruction.Jump);
+			_writer.addInstruction(Instruction.Jump, ["0"]);
+			_writer.changeJumpArg(skipToElseInstIndex, _writer.instructionCount);
 			generateByteCode(node.elseStatement);
 			// update the skipToEnd jump
 			_writer.changeJumpArg(skipToEndInst, _writer.instructionCount);
-		}
+		}else
+			_writer.changeJumpArg(skipToElseInstIndex, _writer.instructionCount);
 	}
 	/// generates byte code for VarDeclareNode - actually, just checks if a value is being assigned to it, if yes, makes var a ref to that val
 	void generateByteCode(VarDeclareNode node){
