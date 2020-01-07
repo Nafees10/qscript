@@ -54,16 +54,14 @@ version (demo){
 					&this.readln
 				]
 			);
+			// all functions are already loaded, so initialize can be called right away
+			_qscript.initialize();
 		}
 		/// compiles & returns byte code
 		string[] compileToByteCode(string[] script, ref CompileError[] errors){
 			string[] byteCode;
 			errors = _qscript.loadScript(script, byteCode);
 			return byteCode;
-		}
-		/// called right after all external functions have been loaded
-		void initialize(){
-			_qscript.initialize();
 		}
 		/// executes the first function in script
 		NaData execute(uinteger functionID, NaData[] args){
@@ -77,12 +75,11 @@ version (demo){
 		}
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
-			writeln("./demo [script] [bytecode, output, optional]");	
+			writeln("./demo [script] [bytecode, output, optional]");
 		}else{
 			StopWatch sw;
 			ScriptExec scr = new ScriptExec();
 			CompileError[] errors;
-			scr.initialize;
 			string[] byteCode = scr.compileToByteCode(fileToArray(args[1]), errors);
 			if (errors.length > 0){
 				writeln("Compilation errors:");
