@@ -361,11 +361,12 @@ package Token[][] splitArray(Token[] array){
 /// 
 /// Returns -1 if not found
 package integer strEnd(string s, uinteger i){
+	const char end = s[i] == '\'' ? '\'' : '\"';
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
 			i++;
 			continue;
-		}else if (s[i]=='"'){
+		}else if (s[i]==end){
 			break;
 		}
 	}
@@ -394,6 +395,8 @@ string decodeString(string s){
 				r ~= '\t';
 			}else if (nextChar == '\\'){
 				r ~= '\\';
+			}else if (nextChar == '\''){
+				r ~= '\'';
 			}else{
 				throw new Exception("\\"~nextChar~" is not an available character");
 			}
@@ -548,6 +551,7 @@ package struct Token{
 	/// used only in `compiler.tokengen`
 	enum Type{
 		String,/// That the token is: `"SOME STRING"`
+		Char, /// That the token is: `'C'` # Some character
 		Integer,/// That the token an int
 		Double, /// That the token is a double (floating point) value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
@@ -694,10 +698,10 @@ unittest{
 		Token(Token.Type.Comma, ","), Token(Token.Type.BlockStart,"{"), Token(Token.Type.Comma,","),
 		Token(Token.Type.IndexBracketOpen,"["),Token(Token.Type.IndexBracketClose,"]"),Token(Token.Type.BlockEnd,"}")
 	];
-	assert(tokens.bracketPos!true(1) == 5);
-	assert(tokens.bracketPos!false(5) == 1);
-	assert(tokens.bracketPos!true(3) == 4);
-	assert(tokens.bracketPos!false(4) == 3);
+	assert(tokens.tokenBracketPos!true(1) == 5);
+	assert(tokens.tokenBracketPos!false(5) == 1);
+	assert(tokens.tokenBracketPos!true(3) == 4);
+	assert(tokens.tokenBracketPos!false(4) == 3);
 }
 
 /// removes "extra" whitespace from a string. i.e, if there are more than 1 consecutive spaces/tabs, one is removed

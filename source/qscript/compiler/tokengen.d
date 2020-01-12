@@ -59,6 +59,12 @@ private Token.Type getTokenType(string token){
 		return Token.Type.Operator;
 	}else if (token[0] == '"'){
 		return Token.Type.String;
+	}else if (token[0] == '\''){
+		if (token.length < 3)
+			throw new Exception("no character provided inside ''");
+		if (decodeString(token[1 .. $-1]).length > 1)
+			throw new Exception("'' can only hold 1 character");
+		return Token.Type.Char;
 	}else if (token == ";"){
 		return Token.Type.StatementEnd;
 	}else if (token == ","){
@@ -96,6 +102,7 @@ unittest{
 	assert("while".getTokenType == Token.Type.Keyword);
 	assert("else".getTokenType == Token.Type.Keyword);
 	assert(".".getTokenType == Token.Type.MemberSelector);
+	assert("\'p\'".getTokenType == Token.Type.Char);
 }
 
 /// returns Token[] with type identified based on string[] input
@@ -154,7 +161,7 @@ private TokenList separateTokens(string[] script){
 		CharType prevType = CharType.Ident, currentType = CharType.Ident;
 		for (uinteger i = 0, readFrom = 0, lastInd = line.length-1; i < line.length; i ++){
 			// skip strings
-			if (line[i] == '"'){
+			if (line[i] == '"' || line[i] == '\''){
 				if (readFrom != i){
 					if (readFrom < i){
 						// add the previous token
