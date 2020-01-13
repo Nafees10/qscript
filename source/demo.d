@@ -40,11 +40,11 @@ version (demo){
 		this (){
 			_qscript = new QScript(
 				[
-					Function("writeln", DataType("void"), [DataType("string")]),
-					Function("write", DataType("void"), [DataType("string")]),
+					Function("writeln", DataType("void"), [DataType("char[]")]),
+					Function("write", DataType("void"), [DataType("char[]")]),
 					Function("write", DataType("void"), [DataType("int")]),
 					Function("write", DataType("void"), [DataType("double")]),
-					Function("readln", DataType("string"), [])
+					Function("readln", DataType("char[]"), [])
 				],
 				[
 					&writeln,
@@ -71,7 +71,7 @@ version (demo){
 
 	void main (string[] args){
 		debug{
-			args = args[0]~["sample.qs", "out.bcode"];
+			args = args[0]~["sample", "out.bcode"];
 		}
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
