@@ -316,6 +316,9 @@ protected:
 		case "||":
 			opInst = Instruction.Or;
 			break;
+		case "~":
+			opInst = Instruction.Concatenate;
+			break;
 		default:
 			break;
 		}
