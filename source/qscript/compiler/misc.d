@@ -87,6 +87,7 @@ public struct DataType{
 	public enum Type{
 		Void,
 		String,
+		Char,
 		Integer,
 		Double
 	}
@@ -96,7 +97,7 @@ public struct DataType{
 	uinteger arrayDimensionCount = 0;
 	/// stores if it's a reference to a type
 	bool isRef = false;
-	/// returns true if it's an array
+	/// returns: true if it's an array. Strings are arrays too (char[])
 	@property bool isArray(){
 		if (arrayDimensionCount > 0){
 			return true;
@@ -285,7 +286,7 @@ public struct DataType{
 	}
 
 	/// converts this DataType to string
-	string toString(){
+	string getStr(){
 		char[] r;
 		if (type == DataType.Type.Void){
 			r = cast(char[]) "void";
@@ -408,29 +409,8 @@ string decodeString(string s){
 	return r;
 }
 
-/// encodes a string. i.e converts characters like tab, newline, to \t, \n ...
-/// The string must not be enclosed in quotation marks
-/// 
-/// throws Exception on error
-string encodeString(string s){
-	string r;
-	foreach (c; s){
-		if (c == '\\'){
-			r ~= "\\\\";
-		}else if (c == '"'){
-			r ~= "\\\"";
-		}else if (c == '\n'){
-			r ~= "\\n";
-		}else if (c == '\t'){
-			r ~= "\\t";
-		}else{
-			r ~= c;
-		}
-	}
-	return r;
-}
-
-/// converts a function name and it's arguments to a byte code style function name
+/// Generates a string containing Function Name, along with it's argument types.
+/// Makes it easier to differentiate b/w function overloads
 /// 
 /// Arguments:
 /// `name` is the function name  
@@ -440,59 +420,14 @@ string encodeString(string s){
 string encodeFunctionName (string name, DataType[] argTypes){
 	string r = name ~ '/';
 	foreach (argType; argTypes)
-		r = r ~ argType.toByteCode~ '/';
+		r = r ~ argType.getStr~ '/';
 	return r;
 }
 /// 
 unittest{
-	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,14),DataType(DataType.Type.Void)]) == 
-			"abcd/3014/000/"
+	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,3),DataType(DataType.Type.Void)]) == 
+			"abcd/double[][][]/void/"
 		);
-}
-
-/// reads a byte code style function name into a function name and argument types
-/// 
-/// Arguments:
-/// `encodedName` is the encoded function name  
-/// `name` is the variable to put the decoded name in  
-/// `argTypes` is the array to put arguments' data types in
-/// 
-/// Returns: true if the name was in a correct format and was read correctly  
-/// false if there was an error reading it
-bool decodeFunctionName (string encodedName, ref string name, ref DataType[] argTypes){
-	// separate it from all the slashes
-	string[] parts;
-	for (uinteger i = 0, readFrom = 0; i < encodedName.length; i ++){
-		if (encodedName[i] == '/'){
-			parts ~= encodedName[readFrom .. i];
-			readFrom = i + 1;
-			if (parts[parts.length -1].length == 0)
-				return false;
-			continue;
-		}
-	}
-	if (parts.length == 0)
-		return false;
-	name = parts[0];
-	parts = parts[1 .. parts.length];
-	argTypes.length = parts.length;
-	foreach (i, part; parts){
-		if (!argTypes[i].fromByteCode(part))
-			return false;
-	}
-	return true;
-}
-///
-unittest{
-	string name;
-	DataType[] types;
-	"abcd/0014/102/203/308/".decodeFunctionName(name, types);
-	assert (name == "abcd");
-	assert (types == [DataType(DataType.Type.Void, 14),
-			DataType(DataType.Type.String, 2),
-			DataType(DataType.Type.Integer, 3),
-			DataType(DataType.Type.Double, 8)
-		]);
 }
 
 /// matches argument types with defined argument types. Used by ASTGen and compiler.d.
@@ -524,24 +459,6 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 		}
 		return true;
 	}
-}
-
-/// checks if a function can be called with a set of arguments.
-/// 
-/// fName is the byte-code style function name (see `encodeFunctionName`).  
-/// argTypes is the data types of the arguments
-/// 
-/// Returns: true if it can be called, false if not, or if the fName was incorrect
-bool canCallFunction(string fName, DataType[] argTypes){
-	// decode to get the right name & args
-	DataType[] expectedArgTypes;
-	{
-		string name;
-		if (!decodeFunctionName(fName, name, expectedArgTypes)){
-			return false; 
-		}
-	}
-	return matchArguments(expectedArgTypes, argTypes);
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
