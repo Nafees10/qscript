@@ -422,9 +422,6 @@ package struct ReadElement{
 	/// returns the data type this node will return
 	public @property DataType returnType(){
 		DataType r = (*readFromPtr).returnType;
-		if (r.arrayDimensionCount == 0 && r.type == DataType.Type.String){
-			return DataType(DataType.Type.String);
-		}
 		r.arrayDimensionCount --;
 		return r;
 	}

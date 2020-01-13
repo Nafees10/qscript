@@ -28,20 +28,20 @@ package Function[] INBUILT_FUNCTIONS = [
 	/// length(void[])
 	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1, false)]),
 	/// length (string)
-	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.String, 0, false)]),
+	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Char, 1, false)]),
 
 	/// toInt(string)
-	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.String)]),
+	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Char, 1)]),
 	/// toInt(double)
 	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)]),
 	/// toDouble(string)
-	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.String)]),
+	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Char, 1)]),
 	/// toDouble(int)
 	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
 	/// toString(int)
-	Function("toStr", DataType(DataType.Type.String), [DataType(DataType.Type.Integer)]),
+	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Integer)]),
 	/// toString(double)
-	Function("toStr", DataType(DataType.Type.String), [DataType(DataType.Type.Double)])
+	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Double)])
 ];
 
 /// Used by compiler's functions to return error
@@ -86,7 +86,6 @@ public struct DataType{
 	/// enum defining all data types
 	public enum Type{
 		Void,
-		String,
 		Char,
 		Integer,
 		Double
@@ -127,36 +126,6 @@ public struct DataType{
 	this (Token[] data){
 		fromData(data);
 	}
-	/// converts this to a byte code style data type, which is a string
-	string toByteCode(){
-		auto TYPE_CODE = [
-			DataType.Type.Void : '0',
-			DataType.Type.String : '1',
-			DataType.Type.Integer : '2',
-			DataType.Type.Double : '3'
-		];
-		return TYPE_CODE[type] ~ (isRef ? "1" : "0") ~ to!string(arrayDimensionCount);
-	}
-	/// reads DataType from a byte code style string
-	/// 
-	/// Returns: true if successful, false if the string was invalid
-	bool fromByteCode(string s){
-		auto TYPE_CODE = [
-			'0' : DataType.Type.Void,
-			'1' : DataType.Type.String,
-			'2' : DataType.Type.Integer,
-			'3' : DataType.Type.Double
-		];
-		if (s.length < 3 || !isNum(s, false) || s[0] !in TYPE_CODE || !['0','1'].hasElement(s[1]))
-			return false;
-		type = TYPE_CODE[s[0]];
-		if (s[1] == '1')
-			isRef = true;
-		else
-			isRef = false;
-		arrayDimensionCount  = to!uinteger(s[2 .. s.length]);
-		return true;
-	}
 	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
 	void fromString(string s){
 		isRef = false;
@@ -194,8 +163,8 @@ public struct DataType{
 		// now check if the type was ok or not
 		if (sType == "void"){
 			type = DataType.Type.Void;
-		}else if (sType == "string"){
-			type = DataType.Type.String;
+		}else if (sType == "char"){
+			type = DataType.Type.Char;
 		}else if (sType == "int"){
 			type = DataType.Type.Integer;
 		}else if (sType == "double"){
@@ -212,9 +181,10 @@ public struct DataType{
 	/// throws Exception on failure
 	void fromData(Token[] data){
 		/// identifies type from data
-		static DataType.Type identifyType(Token data){
+		static DataType.Type identifyType(Token data, ref uinteger arrayDimension){
 			if (data.type == Token.Type.String){
-				return DataType.Type.String;
+				arrayDimension ++;
+				return DataType.Type.Char;
 			}else if (data.type == Token.Type.Integer){
 				return DataType.Type.Integer;
 			}else if (data.type == Token.Type.Double){
@@ -280,7 +250,7 @@ public struct DataType{
 			// then it must be only one token, if is zero, then it's void
 			assert(data.length == 1, "non-array data must be only one token in length");
 			// now check the type, and set it
-			this.type = identifyType(data[0]);
+			this.type = identifyType(data[0], arrayDimensionCount);
 		}
 		callCount --;
 	}
@@ -294,8 +264,8 @@ public struct DataType{
 			r = cast(char[]) "double";
 		}else if (type == DataType.Type.Integer){
 			r = cast(char[]) "int";
-		}else if (type == DataType.Type.String){
-			r = cast(char[]) "string";
+		}else if (type == DataType.Type.Char){
+			r = cast(char[]) "char";
 		}else{
 			throw new Exception("invalid type stored: "~to!string(type));
 		}
@@ -312,20 +282,20 @@ public struct DataType{
 /// 
 unittest{
 	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
-	assert(DataType("string[]") == DataType(DataType.Type.String, 1));
+	assert(DataType("char[][]") == DataType(DataType.Type.Char, 2));
 	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
 	// unittests for `fromData`
 	import qscript.compiler.tokengen : stringToTokens;
 	DataType dType;
 	dType.fromData(["\"bla bla\""].stringToTokens);
-	assert(dType == DataType("string"));
+	assert(dType == DataType("char[]"));
 	dType.fromData(["20"].stringToTokens);
 	assert(dType == DataType("int"));
 	dType.fromData(["2.5"].stringToTokens);
 	assert(dType == DataType("double"));
 	dType.fromData(["[", "\"bla\"", ",", "\"bla\"", "]"].stringToTokens);
-	assert(dType == DataType("string[]"));
+	assert(dType == DataType("char[][]"));
 	dType.fromData(["[", "[", "25.0", ",", "2.5", "]", ",", "[", "15.0", ",", "25.0", "]", "]"].stringToTokens);
 	assert(dType == DataType("double[][]"));
 }

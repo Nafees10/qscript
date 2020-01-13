@@ -162,12 +162,12 @@ protected:
 				// popReturn doesn't matter, ArrayLengthSet doesn't push anything
 				pushesToStack = false;
 			}else if (matchArguments([DataType(DataType.Type.Void, 1, false)], argTypes) ||
-			matchArguments([DataType(DataType.Type.String, 0, true)], argTypes)){
+			matchArguments([DataType(DataType.Type.Char, 1, true)], argTypes)){
 				// get array/string length
 				generateByteCode(node.arguments[0]);
 				_writer.addInstruction(Instruction.ArrayLength);
 			}
-		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.String)])){
+		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.Char, 1)])){
 			/// toInt(string)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.StringToInt);
@@ -175,7 +175,7 @@ protected:
 			/// toInt(double)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.DoubleToInt);
-		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.String)])){
+		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Char, 1)])){
 			/// toDouble(string)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.StringToDouble);

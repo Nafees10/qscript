@@ -32,12 +32,12 @@ JSONValue toJSON(FunctionNode node){
 	argListJSON.length = node.arguments.length;
 	foreach (i, arg; node.arguments){
 		argListJSON[i]["name"] = JSONValue(arg.argName);
-		argListJSON[i]["type"] = JSONValue(arg.argType.toString);
+		argListJSON[i]["type"] = JSONValue(arg.argType.getStr);
 	}
 	JSONValue bodyJSON = node.bodyBlock.toJSON;
 	JSONValue r;
 	r["node"] = JSONValue("FunctionNode");
-	r["type"] = node.returnType.toString;
+	r["type"] = node.returnType.getStr;
 	r["name"] = node.name;
 	r["arguments"] = JSONValue(argListJSON);
 	r["body"] = JSONValue(bodyJSON);
@@ -159,7 +159,7 @@ JSONValue toJSON(FunctionCallNode node){
 	JSONValue r;
 	r["node"] = JSONValue("FunctionCallNode");
 	r["name"] = JSONValue(node.fName);
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isInbuilt"] = node.isInBuilt;
 	r["isScriptDefined"] = node.isScriptDefined;
 	r["id"] = node.id;
@@ -178,7 +178,7 @@ JSONValue toJSON(FunctionCallNode node){
 JSONValue toJSON(VarDeclareNode node){
 	JSONValue r;
 	r["node"] = JSONValue("varDeclareNode");
-	r["type"] = JSONValue(node.type.toString);
+	r["type"] = JSONValue(node.type.getStr);
 	JSONValue[] varTypeValueList;
 	varTypeValueList.length = node.vars.length;
 	foreach (i, varName; node.vars){
@@ -207,7 +207,7 @@ JSONValue toJSON(ReturnNode node){
 JSONValue toJSON(CodeNode node){
 	JSONValue r;
 	r["node"] = JSONValue("CodeNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	if (node.type == CodeNode.Type.Array){
 		r["code"] = node.node!(CodeNode.Type.Array).toJSON;
@@ -232,7 +232,7 @@ JSONValue toJSON(CodeNode node){
 JSONValue toJSON(VariableNode node){
 	JSONValue r;
 	r["node"] = JSONValue("VariableNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["name"] = JSONValue(node.varName);
 	r["id"] = JSONValue(node.id);
 
@@ -244,7 +244,7 @@ JSONValue toJSON(VariableNode node){
 JSONValue toJSON(ArrayNode node){
 	JSONValue r;
 	r["node"] = JSONValue("ArrayNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	JSONValue[] elementList;
 	elementList.length = node.elements.length;
@@ -261,7 +261,7 @@ JSONValue toJSON(ArrayNode node){
 JSONValue toJSON(LiteralNode node){
 	JSONValue r;
 	r["node"] = JSONValue("LiteralNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["value"] = JSONValue(node.literal);
 
 	r["lineno"] = JSONValue(node.lineno);
@@ -272,7 +272,7 @@ JSONValue toJSON(LiteralNode node){
 JSONValue toJSON(OperatorNode node){
 	JSONValue r;
 	r["node"] = JSONValue("OperatorNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["operator"] = JSONValue(node.operator);
 	r["operandA"] = node.operands[0].toJSON;
@@ -286,7 +286,7 @@ JSONValue toJSON(OperatorNode node){
 JSONValue toJSON(SOperatorNode node){
 	JSONValue r;
 	r["node"] = JSONValue("SOperatorNode");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["operator"] = JSONValue(node.operator);
 	r["operand"] = node.operand.toJSON;
@@ -299,7 +299,7 @@ JSONValue toJSON(SOperatorNode node){
 JSONValue toJSON(ReadElement node){
 	JSONValue r;
 	r["node"] = JSONValue("ReadElement");
-	r["type"] = JSONValue(node.returnType.toString);
+	r["type"] = JSONValue(node.returnType.getStr);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["array"] = node.readFromNode.toJSON;
 	r["index"] = node.index.toJSON;

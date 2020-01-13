@@ -153,11 +153,7 @@ private:
 			ReadElement arrayRead = node.node!(CodeNode.Type.ReadElement);
 			DataType readFromType = getReturnType(arrayRead.readFromNode);
 			if (readFromType.arrayDimensionCount == 0){
-				if (readFromType.type == DataType.Type.String){
-					return DataType(DataType.Type.String);
-				}else{
-					return DataType();
-				}
+				return DataType();
 			}
 			readFromType.arrayDimensionCount --;
 			return readFromType;
@@ -434,7 +430,7 @@ protected:
 			}
 			node.returnType = DataType(DataType.Type.Integer);
 		}else if (node.operator == "~"){
-			if (operandType != DataType(DataType.Type.String) && operandType.arrayDimensionCount == 0){
+			if (operandType.arrayDimensionCount == 0){
 				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
 			}
 			node.returnType = operandType;
@@ -477,7 +473,7 @@ protected:
 		}
 		// now make sure that the data is an array or a string
 		DataType readFromType = getReturnType (node.readFromNode);
-		if (readFromType.arrayDimensionCount == 0 && readFromType.type != DataType.Type.String){
+		if (readFromType.arrayDimensionCount == 0){
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
 		}
 		node.returnType = readFromType;
