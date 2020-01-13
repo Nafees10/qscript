@@ -498,9 +498,10 @@ protected:
 	void checkAST(ref ArrayNode node){
 		// check each element, and make sure all their types are same
 		if (node.elements.length > 0){
+			checkAST(node.elements[0]);
 			DataType type = getReturnType(node.elements[0]);
 			bool typeMatches = true;
-			for (uinteger i=0; i < node.elements.length; i ++){
+			for (uinteger i=1; i < node.elements.length; i ++){
 				checkAST (node.elements[i]);
 				if (typeMatches && node.elements[i].returnType != type){
 					compileErrors.append (CompileError(node.elements[i].lineno, "elements in array must be of same type"));
