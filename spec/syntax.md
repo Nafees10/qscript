@@ -56,7 +56,7 @@ Variables can be defined only inside functions, like:
 ```
 TYPE var0, var1, var2;
 ```
-* `TYPE` is the data type of the variables, it can be a `string`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
+* `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
@@ -81,13 +81,9 @@ And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
   
 In case you want to modify the whole array, it can be done like:
 ```
-int[] intArray;
-intArray = [0, 1, 2, 3]; # only works if elements are literals
-```
-or:
-```
-int[] intArray;
-intArray = array(0, 1, 2, 3); # elements dont necessarily need to be literals, they can be vars or result from function call
+char someChar = 'a';
+char[] someString;
+someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
 ### Reference Declaration
 QScript has references instead of pointers. Their function is the same as pointers, to point to another variable.  
@@ -116,7 +112,7 @@ and read like:
 int i;
 @int ref = @i;
 i = rand(); # assuming rand() is a function that returns int
-writeln("Value of i="toString(@ref)); # @ref returns the value of the variable it is pointing 
+writeln("Value of i="toStr(@ref)); # @ref returns the value of the variable it is pointing 
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
@@ -124,7 +120,7 @@ function void main(){
 	int i;
 	setRefTo(@i, 1024);
 	# i is now 1024
-	writeln (toString(i)); # prints 1024, assuming writeln function exists
+	writeln (toStr(i)); # prints 1024, assuming writeln function exists
 }
 function void setRefTo(@int ref, int to){
 	@ref = to;
@@ -227,13 +223,15 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `==` returns 1 (int) if two integers/floats/strings/arrays are same. 
 * `>` returns (int) if `value0` int/float is greater than `value1` int/float.
 * `<` returns 1 (int) if `value0` int/float is lesser than `value1` int/float.
+* `>=` returns (int) if `value0` int/float is greater than or equal to `value1` int/float.
+* `<=` returns 1 (int) if `value0` int/float is lesser than or equal to `value1` int/float.
 * `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
 ### Other Operators:
 * `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable a reference is pointing to when operand is reference.
   
-In QScript, you cannot write `-1` or any other negative number, so instead, use `0-1` or `0-x` where x is a int. In case you want negative float, use `0.0-x`.
+In QScript, you cannot write `-1` or any other negative number, so instead, use `0-1` or `0-x` where x is a int. In case you want negative float, use `0.0-x`. This will be fixed soon.
 
 ---
 
