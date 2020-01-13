@@ -1,7 +1,7 @@
 {
 	"name": "qscript",
 	"description": "a tiny, small, & fast scripting lang.",
-	"copyright": "Copyright © 2016, nafees",
+	"copyright": "Copyright © 2016-2020, nafees",
 	"license":"MIT",
 	"authors": ["nafees"],
 	"dependencies": {
