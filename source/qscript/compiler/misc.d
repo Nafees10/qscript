@@ -185,6 +185,8 @@ public struct DataType{
 			if (data.type == Token.Type.String){
 				arrayDimension ++;
 				return DataType.Type.Char;
+			}else if (data.type == Token.Type.Char){
+				return DataType.Type.Char;
 			}else if (data.type == Token.Type.Integer){
 				return DataType.Type.Integer;
 			}else if (data.type == Token.Type.Double){

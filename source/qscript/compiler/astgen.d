@@ -672,7 +672,8 @@ struct ASTGen{
 				}
 				index = brackEnd+1;
 				r = CodeNode(ArrayNode(elements));
-			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String){
+			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String ||
+			token.type == Token.Type.Char){
 				// literal
 				index ++;
 				try{
