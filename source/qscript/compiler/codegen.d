@@ -308,7 +308,7 @@ protected:
 			opInst = isFloat ? Instruction.IsGreaterSameDouble : Instruction.IsGreaterSameInt;
 			break;
 		case "==":
-			opInst = Instruction.IsSame;
+			opInst = node.operands[0].returnType.isArray ? Instruction.IsSameArray : Instruction.IsSame;
 			break;
 		case "&&":
 			opInst = Instruction.And;
