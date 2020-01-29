@@ -69,12 +69,36 @@ public:
 		// load bytecode
 		if (!_vm)
 			throw new Exception("this.initizlize not called before loadScript");
-		_vm.load(byteCode);
+		try{
+			_vm.load(byteCode);
+		}catch (Exception e){
+			errors ~= CompileError(0, e.msg);
+		}
 		// put function names and IDs in _functionID
 		foreach (i, func; _functionMap){
 			_functionID[func.name] = i;
 		}
 		return errors;
+	}
+	/// ditto
+	CompileError[] loadScript(string[] script){
+		string[] byteCode;
+		return this.loadScript(script, byteCode);
+	}
+	/// loads pre-compiled NaVM byte code
+	/// 
+	/// Be careful that if you load byte code using this function, you cannot use `this.functionID` or any function 
+	/// that needs a function map to be present. You will only be able to call using function IDs
+	/// 
+	/// Returns: true if sucessfully loaded, false if not
+	bool loadByteCode(string[] byteCode){
+		try{
+			_vm.load(byteCode);
+		}catch (Exception e){
+			.destroy(e);
+			return false;
+		}
+		return true;
 	}
 	/// Returns: ID of a function, -1 if it does not exist
 	integer functionID(string functionName){
@@ -88,5 +112,12 @@ public:
 	/// Returns: the return value, if function returned any, otherwise, garbage data
 	NaData execute(uinteger functionID, NaData[] args){
 		return _vm.execute(functionID, args);
+	}
+	/// ditto
+	NaData execute(string functionName, NaData[] args){
+		integer id = this.functionID(functionName);
+		if (id < 0)
+			throw new Exception("function '"~functionName~"' does not exist, or function map not present.");
+		return _vm.execute(id, args);
 	}
 }
