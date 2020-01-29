@@ -418,7 +418,7 @@ protected:
 			compileErrors.append(CompileError(node.lineno, "Both operands for operator must be of same type"));
 		}
 		// now make sure that the data type of operands is allowed with that operator
-		if (["+","-","*","/","%", "<", ">"].hasElement(node.operator)){
+		if (["+","-","*","/","%", "<", ">", ">=", "<="].hasElement(node.operator)){
 			// only double and int allowed
 			if (operandType != DataType(DataType.Type.Integer) && operandType != DataType(DataType.Type.Double)){
 				compileErrors.append (CompileError(node.lineno, "that operator can only be used on double or int"));
