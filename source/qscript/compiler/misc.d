@@ -41,7 +41,10 @@ package Function[] INBUILT_FUNCTIONS = [
 	/// toString(int)
 	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Integer)]),
 	/// toString(double)
-	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Double)])
+	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Double)]),
+
+	/// copy(void[], @void[])
+	Function("copy", DataType(DataType.Type.Void), [DataType(DataType.Type.Void, 1), DataType(DataType.Type.Void, 1, true)]),
 ];
 
 /// Used by compiler's functions to return error
@@ -402,35 +405,32 @@ unittest{
 		);
 }
 
-/// matches argument types with defined argument types. Used by ASTGen and compiler.d.
+/// matches argument types with defined argument types. Used by ASTGen
 /// 
 /// * `void` will match true against all types (arrays, and even references)
 /// * `@void` will match true against only references of any type
 /// * `@void[]` will match true against only references of any type of array
-/// * `void[]` will match true against only any type of array (even references)
+/// * `void[]` will match true against any type of array
 /// 
 /// returns: true if match successful, else, false
 bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
-	if (argTypes.length != definedTypes.length){
+	if (argTypes.length != definedTypes.length)
 		return false;
-	}else{
-		for (uinteger i = 0; i < argTypes.length; i ++){
-			if (definedTypes[i].isRef && argTypes[i].isRef != true){
+	for (uinteger i = 0; i < argTypes.length; i ++){
+		if (definedTypes[i].isRef != argTypes[i].isRef)
+			return false;
+		if (definedTypes[i].type == DataType.Type.Void || argTypes[i].type == DataType.Type.Void){
+			if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount)
 				return false;
-			}
-			// check the array dimension
-			if (definedTypes[i].arrayDimensionCount > 0 && argTypes[i].arrayDimensionCount == 0){
-				return false;
-			}
-			if (definedTypes[i].type == DataType.Type.Void){
-				// skip all checks
-				continue;
-			}else if (argTypes[i].type != definedTypes[i].type){
-				return false;
-			}
+			continue;
 		}
-		return true;
+		// check the array dimension
+		if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount)
+			return false;
+		if (argTypes[i].type != definedTypes[i].type)
+			return false;
 	}
+	return true;
 }
 
 /// Each token is stored as a `Token` with the type and the actual token
