@@ -17,6 +17,7 @@ Modifies length of an existing array.
 int[] array;
 length(@array, 5); # change array's length to hold 5 elements, from index 0 to index 4
 ```
+
 ## length ( void[] )
 Returns the length of an array.  
 **Arguments:**  
@@ -30,6 +31,27 @@ The length of array in argument1. Data Type: `int` >=0
 int[] array;
 array = [0, 2, 4, 6];
 length (array); # returns 4
+```
+
+## copy(void[], @void[])
+Copies first array onto second. Changing the elements of 
+the second array following this function call will not affect
+the original array.  
+**Arguments:**  
+
+1. The array to make copy of. Data Type: `void[]`, array of any type, **One dimensional**.  
+2. The array to copy it onto. Data Type: `void[]`, array of any type, **One dimensional**.  
+
+**Returns:**  
+`void`  
+
+**Usage:**  
+```
+int[] array = [0,1,2,3];
+int[] another = array;
+another[0] = 1; # this will also change array[0] to 1 
+copy(array, @another);
+another[1] = 2; # now, array is unaffected, only applies to another
 ```
 
 ---
@@ -48,6 +70,7 @@ The integer read from it. Data Type: `int`
 int sum;
 sum = toInt(2.7) + toInt("5"); # sum is now: 7, as in 2+5
 ```
+
 ## toDouble ( char[]/int )
 Reads a double (floating point number) from a string, or from integer.  
 **Arguments:**  
@@ -61,6 +84,7 @@ The double read from it. Data Type: `double`
 double sum;
 double = toDouble(2) + toDouble("5.7"); # sum is now: 7.7
 ```
+
 ## toStr ( int/double )
 Puts the value of an integer or double into a string.  
 **Arguments:**  
