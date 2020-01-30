@@ -97,31 +97,35 @@ protected:
 	}
 	/// generates ByteCode for DoWhileNode
 	void generateByteCode(DoWhileNode node){
+		static uinteger jumpID = 0;
+		const uinteger currentJumpID = jumpID;
+		jumpID++;
 		// get the index of where the loop starts
-		immutable uinteger startIndex = _writer.instructionCount;
+		_writer.addJumpPos("DoWhileStart"~currentJumpID.to!string);
 		// now comes loop body
 		generateByteCode(node.statement);
 		// condition
 		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.JumpIf, [to!string(startIndex)]);// jump to startIndex if condition == 1
+		_writer.addInstruction(Instruction.JumpIf, ["DoWhileStart"~currentJumpID.to!string]);
 	}
 	/// generates byte code for ForNode
 	void generateByteCode(ForNode node){
+		static uinteger jumpID = 0;
+		const uinteger currentJumpID = jumpID;
+		jumpID++;
 		generateByteCode(node.initStatement);
 		// condition
-		immutable uinteger conditionIndex = _writer.instructionCount;
+		_writer.addJumpPos("ForStart"~currentJumpID.to!string);
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
-		immutable uinteger jumpInstIndex = _writer.instructionCount; // index of jump instruction
-		_writer.addInstruction(Instruction.JumpIf, ["0"]); //placeholder, will write jumpToIndex later
+		_writer.addInstruction(Instruction.JumpIf, ["ForEnd"~currentJumpID.to!string]); //placeholder, will write jumpToIndex later
 		// loop body
 		generateByteCode(node.statement);
 		// now the increment statement
 		generateByteCode(node.incStatement);
 		// jump back
-		_writer.addInstruction(Instruction.Jump, [to!string(conditionIndex)]);
-		// now update the jump to jump ahead of this
-		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
+		_writer.addInstruction(Instruction.Jump, ["ForStart"~currentJumpID.to!string]);
+		_writer.addJumpPos("ForEnd"~currentJumpID.to!string);
 	}
 	/// generates byte code for FunctionCallNode
 	/// 
@@ -197,22 +201,18 @@ protected:
 	}
 	/// generates byte code for IfNode
 	void generateByteCode(IfNode node){
+		static uinteger jumpID = 0;
+		const uinteger currentJumpID = jumpID;
+		jumpID++;
 		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.Not);
-		immutable uinteger skipToElseInstIndex = _writer.instructionCount; /// index of jumpIf that jumps when false
-		_writer.addInstruction(Instruction.JumpIf, ["0"]); // placeholder
-		// now comes the if true part
-		generateByteCode(node.statement);
-		if (node.hasElse){
-			// add a jump in the if-true statement to skip this (arg is placeholder)
-			immutable skipToEndInst = _writer.instructionCount;
-			_writer.addInstruction(Instruction.Jump, ["0"]);
-			_writer.changeJumpArg(skipToElseInstIndex, _writer.instructionCount);
+		_writer.addInstruction(Instruction.JumpIf, ["IfTrue"~currentJumpID.to!string]);
+		if (node.hasElse)
 			generateByteCode(node.elseStatement);
-			// update the skipToEnd jump
-			_writer.changeJumpArg(skipToEndInst, _writer.instructionCount);
-		}else
-			_writer.changeJumpArg(skipToElseInstIndex, _writer.instructionCount);
+		_writer.addInstruction(Instruction.Jump, ["IfEnd"~currentJumpID.to!string]);
+		_writer.addJumpPos("IfTrue"~currentJumpID.to!string);
+		generateByteCode(node.statement);
+		_writer.addJumpPos("IfEnd"~currentJumpID.to!string);
+
 	}
 	/// generates byte code for VarDeclareNode - actually, just checks if a value is being assigned to it, if yes, makes var a ref to that val
 	void generateByteCode(VarDeclareNode node){
@@ -226,14 +226,17 @@ protected:
 	}
 	/// generates byte code for WhileNode
 	void generateByteCode(WhileNode node){
+		static uinteger jumpID = 0;
+		const uinteger currentJumpID = jumpID;
+		jumpID++;
 		immutable uinteger conditionIndex = _writer.instructionCount;
+		_writer.addJumpPos("WhileStart"~currentJumpID.to!string);
 		generateByteCode(node.condition);
 		_writer.addInstruction(Instruction.Not);
-		immutable uinteger jumpInstIndex = _writer.instructionCount;
-		_writer.addInstruction(Instruction.JumpIf, ["0"]);
+		_writer.addInstruction(Instruction.JumpIf, ["WhileEnd"~currentJumpID.to!string]);
 		generateByteCode(node.statement);
-		_writer.addInstruction(Instruction.Jump, [conditionIndex.to!string]);
-		_writer.changeJumpArg(jumpInstIndex, _writer.instructionCount);
+		_writer.addInstruction(Instruction.Jump, ["WhileStart"~currentJumpID.to!string]);
+		_writer.addJumpPos("WhileEnd"~currentJumpID.to!string);
 	}
 	/// generates byte code for ReturnNode
 	void generateByteCode(ReturnNode node){
@@ -417,7 +420,7 @@ private:
 	/// stackLength of each function
 	List!uinteger _stackLengths;
 	/// instructions of function currently being written to
-	List!Instruction _currentInst;
+	List!string _currentInst;
 	/// arguments of instructions of functions currently being written to
 	List!(string[]) _currentInstArgs;
 	/// number of elements used up on stack at a point
@@ -441,7 +444,7 @@ public:
 	this(){
 		_generatedInstructions = new List!(string[]);
 		_generatedInstructionArgs = new List!(string[][]);
-		_currentInst = new List!Instruction;
+		_currentInst = new List!string;
 		_currentInstArgs = new List!(string[]);
 		_stackLengths = new List!uinteger;
 	}
@@ -491,11 +494,11 @@ public:
 	/// Call when a function has been completely written to.
 	void appendFunction(){
 		string[] instructions;
-			instructions.length = _currentInst.length;
-			Instruction[] inst = _currentInst.toArray;
-			foreach (i, instruction; inst){
-				instructions[i] = '\t'~instruction.to!string;
-			}
+		instructions.length = _currentInst.length;
+		string[] inst = _currentInst.toArray;
+		foreach (i, instruction; inst){
+			instructions[i] = '\t'~instruction;
+		}
 		_generatedInstructions.append(instructions);
 		_generatedInstructionArgs.append(_currentInstArgs.toArray);
 		_stackLengths.append(_maxStackUsage);
@@ -522,7 +525,11 @@ public:
 		NaData[] argsNaData;
 		argsNaData.length = args.length;
 		foreach (i, arg; args){
-			argsNaData[i] = readData(arg);
+			try{
+				argsNaData[i] = readData(arg);
+			}catch (Exception e){
+				argsNaData[i] = NaData(0); // its a ugly hack, i know, but it works...
+			}
 		}
 		immutable uinteger popCount = instructionPopCount(inst, argsNaData);
 		immutable uinteger pushCount = INSTRUCTION_PUSH_COUNT[inst];
@@ -531,17 +538,13 @@ public:
 		_currentStackUsage -= popCount;
 		_currentStackUsage += pushCount;
 		updateStackUsage;
-		_currentInst.append(inst);
+		_currentInst.append(inst.to!string);
 		_currentInstArgs.append(args.dup);
 		return ErrorType.NoError;
 	}
-	/// Changes argument of jump/jumpIf instruction at an index
-	/// 
-	/// Returns: true if done, false if not, usually because the instruction there isn't a jump/jumpIf
-	bool changeJumpArg(uinteger index, uinteger newJumpIndex){
-		if (index >= _currentInst.length || ! [Instruction.Jump, Instruction.JumpIf].hasElement(_currentInst.read(index)))
-			return false;
-		_currentInstArgs.set(index, [to!string(newJumpIndex)]);
-		return true;
+	/// Adds a jump position
+	void addJumpPos(string name){
+		_currentInst.append(name~':');
+		_currentInstArgs.append(cast(string[])[]);
 	}
 }
