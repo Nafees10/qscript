@@ -220,7 +220,7 @@ protected:
 			if (node.hasValue(varName))
 				generateByteCode(node.getValue(varName));
 			else
-				_writer.addInstruction(Instruction.Push, ["0"]);
+				_writer.addInstruction(Instruction.Push, [node.type == DataType(DataType.Type.Double) ? "0.0" : "0"]);
 			_writer.addInstruction(Instruction.WriteTo, [to!string(node.varIDs[varName])]);
 		}
 	}
