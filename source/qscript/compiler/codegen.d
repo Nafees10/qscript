@@ -163,7 +163,6 @@ protected:
 				generateByteCode(node.arguments[1]); // length comes first, coz it's popped later
 				generateByteCode(node.arguments[0]);
 				_writer.addInstruction(Instruction.ArrayLengthSet);
-				// popReturn doesn't matter, ArrayLengthSet doesn't push anything
 				pushesToStack = false;
 			}else if (matchArguments([DataType(DataType.Type.Void, 1, false)], argTypes) ||
 			matchArguments([DataType(DataType.Type.Char, 1, true)], argTypes)){
@@ -195,6 +194,14 @@ protected:
 			/// toStr(double)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.DoubleToString);
+		}else if (node.fName == "copy" && matchArguments(
+			[DataType(DataType.Type.Void, 1), DataType(DataType.Type.Void, 1, true)], argTypes)){
+			// first push the argument
+			generateByteCode(node.arguments[0]);
+			_writer.addInstruction(Instruction.CopyArray, []);
+			generateByteCode(node.arguments[1]);
+			_writer.addInstruction(Instruction.WriteToRef, []);
+			pushesToStack = false;
 		}
 		if (pushesToStack && popReturn)
 			_writer.addInstruction(Instruction.Pop);
@@ -345,6 +352,7 @@ protected:
 			// check if its being de-ref-ed
 			if (node.operand.returnType.isRef){
 				generateByteCode(node.operand);
+				_writer.addInstruction(Instruction.Deref,[]);
 			}else if (node.operand.type == CodeNode.Type.Variable){
 				generateByteCode(node.operand, true);
 			}else if (node.operand.type == CodeNode.Type.ReadElement){
