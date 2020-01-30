@@ -20,9 +20,6 @@ import utils.misc;
 
 version(compiler){
 	void main(string[] args){
-		debug{
-			args = [args[0], "bytecode", "sample"];
-		}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON\n* bytecode - output Byte Code");
