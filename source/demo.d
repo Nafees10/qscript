@@ -70,12 +70,9 @@ version (demo){
 	}
 
 	void main (string[] args){
-		debug{
-			args = args[0]~["sample", "out.bcode"];
-		}
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
-			writeln("./demo [script] [bytecode, output, optional]");
+			writeln("./demo script [bytecode output]");
 		}else{
 			StopWatch sw;
 			ScriptExec scr = new ScriptExec();
