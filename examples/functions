@@ -1,0 +1,16 @@
+function void main{
+	int[] array;
+	int len = 10;
+	length(@array, len);
+	for (int i = 0; i < len; i = i + 1;)
+		array[i] = i;
+	write(array); # calls write(int[])
+	write("Hello World"); # calls write(char[])
+}
+function void write(int[] array){
+	for (int i = 0; i < length(array); i = i + 1;)
+		writeln(toStr(array[i]));
+}
+function void write(char[] str){
+	writeln(str); # just uses writeln(char[]) from demo config
+}
