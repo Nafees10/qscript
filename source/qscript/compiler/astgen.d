@@ -684,6 +684,19 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
 				}
+			}else if (token.type == Token.Type.Operator && token.token == "-"){
+				// could be a negative number, check if next one is a literal
+				Token next = tokens.tokens[index+1];
+				if (next.type == Token.Type.Double || next.type == Token.Type.Integer){
+					// make it into a single literal
+					r = CodeNode(LiteralNode('-'~next.token,
+						next.type == Token.Type.Double ? DataType(DataType.Type.Double) : DataType(DataType.Type.Integer)));
+					index += 2;
+				}else{
+					index++;
+					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
+						"can only use `-` on literals to denote negative numbers, use `0-x` on other data"));
+				}
 			}else{
 				index ++;
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
