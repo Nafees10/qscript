@@ -275,7 +275,7 @@ struct ASTGen{
 				Token token = tokens.tokens[index];
 				// check if has to terminate
 				if ([Token.Type.Comma, Token.Type.IndexBracketClose, Token.Type.BlockEnd, Token.Type.ParanthesesClose,
-					Token.Type.StatementEnd].hasElement(token.type)){
+					Token.Type.StatementEnd, Token.Type.AssignmentOperator].hasElement(token.type)){
 					break;
 				}
 				if (!separatorExpected){
@@ -311,6 +311,7 @@ struct ASTGen{
 						separatorExpected = true;
 						continue;
 					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "Unexpected token '"~token.token~'\''));
 						break;
 					}
 				}
@@ -683,19 +684,6 @@ struct ASTGen{
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
-				}
-			}else if (token.type == Token.Type.Operator && token.token == "-"){
-				// could be a negative number, check if next one is a literal
-				Token next = tokens.tokens[index+1];
-				if (next.type == Token.Type.Double || next.type == Token.Type.Integer){
-					// make it into a single literal
-					r = CodeNode(LiteralNode('-'~next.token,
-						next.type == Token.Type.Double ? DataType(DataType.Type.Double) : DataType(DataType.Type.Integer)));
-					index += 2;
-				}else{
-					index++;
-					compileErrors.append(CompileError(tokens.getTokenLine(index-1),
-						"can only use `-` on literals to denote negative numbers, use `0-x` on other data"));
 				}
 			}else{
 				index ++;

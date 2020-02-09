@@ -123,9 +123,11 @@ private TokenList separateTokens(string[] script){
 		Operator, /// any char that can be a part of a operator
 		Semicolon, /// semicolon
 		Comma, /// a comma
-		Ident /// including the ones for keywords
+		Ident, /// including the ones for keywords
+		Number, /// a number
+		None,
 	}
-	static CharType getCharType(char c, char prev = 0x00){
+	static CharType getCharType(char c, CharType prev){
 		if (c == ';'){
 			return CharType.Semicolon;
 		}
@@ -136,12 +138,15 @@ private TokenList separateTokens(string[] script){
 			return CharType.Bracket;
 		}
 		if (c == '.'){
-			if (prev == 0x00 || !(cast(string)[prev]).isNum(false)){
+			if (prev == CharType.None || prev == CharType.Number){
 				return CharType.Operator;
 			}
 			return CharType.Ident;
 		}
-		if (isAlphabet(cast(string)[c]) || isNum(cast(string)[c])){
+		if (isNum(cast(string)[c]) && (prev == CharType.Number || prev == CharType.None)){
+			return CharType.Number;
+		}
+		if (isAlphabet(cast(string)[c]) || (prev == CharType.Ident && isNum(cast(string)[c]))){
 			return CharType.Ident;
 		}
 		foreach (operator; OPERATORS~SOPERATORS){
@@ -151,14 +156,14 @@ private TokenList separateTokens(string[] script){
 				}
 			}
 		}
-		throw new Exception ("unexpected char, '"~c~'\'');
+		throw new Exception ("unexpected char, \'"~c~'\'');
 	}
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
 	uinteger tokenCount = 0;
 	foreach (lineno, line; script){
-		CharType prevType = CharType.Ident, currentType = CharType.Ident;
+		CharType prevType = CharType.None, currentType = CharType.None;
 		for (uinteger i = 0, readFrom = 0, lastInd = line.length-1; i < line.length; i ++){
 			// skip strings
 			if (line[i] == '"' || line[i] == '\''){
@@ -188,6 +193,7 @@ private TokenList separateTokens(string[] script){
 				if (readFrom < i){
 					tokens.append (line[readFrom .. i]);
 				}
+				prevType = CharType.None;
 				readFrom = i+1;
 				if (line[i] == '#'){
 					break;
@@ -196,7 +202,7 @@ private TokenList separateTokens(string[] script){
 			}
 			// add other types of tokens
 			try{
-				currentType = getCharType(line[i], i > 0 ? line[i-1] : 0x00);
+				currentType = getCharType(line[i], prevType);
 			}catch (Exception e){
 				compileErrors.append (CompileError(lineno, e.msg));
 				.destroy (e);
