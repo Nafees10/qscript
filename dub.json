@@ -5,8 +5,8 @@
 	"license":"MIT",
 	"authors": ["nafees"],
 	"dependencies": {
-		"utils": "~>0.3.5",
-		"navm": "~>0.2.2"
+		"utils": "~>0.3.6",
+		"navm": "~>0.2.3"
 	},"configurations": [
 		{
 			"name": "default",
