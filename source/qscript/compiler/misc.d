@@ -15,8 +15,8 @@ package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array
 package const string[] KEYWORDS = ["function", "return", "if", "else", "while", "for", "do", "void", "int", "char", "double"];
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "char"];
-/// An array containing another array conatining double-operand operators
-package const string[] OPERATORS = ["/", "*", "+", "-", "%", "~", "<", ">", ">=", "<=", "==", "=", "&&", "||"];
+/// An array containing double-operand operators
+package const string[] OPERATORS = [".", "/", "*", "+", "-", "%", "~", "<", ">", ">=", "<=", "==", "=", "&&", "||"];
 /// single-operand operators
 package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
