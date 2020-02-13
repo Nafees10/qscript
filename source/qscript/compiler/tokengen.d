@@ -82,7 +82,7 @@ private Token.Type getTokenType(string token){
 	}else if (token == "}"){
 		return Token.Type.BlockEnd;
 	}else{
-		throw new Exception("unidentified token type");
+		throw new Exception("unidentified token type '"~token~'\'');
 	}
 }
 ///
@@ -118,113 +118,128 @@ package Token[] stringToTokens(string[] s){
 
 /// Reads script, and separates tokens
 private TokenList separateTokens(string[] script){
-	enum CharType{
-		Bracket, /// any bracket
-		Operator, /// any char that can be a part of a operator
-		Semicolon, /// semicolon
-		Comma, /// a comma
-		Ident, /// including the ones for keywords
-		Number, /// a number
-		None,
-	}
-	static CharType getCharType(char c, CharType prev){
-		if (c == ';'){
-			return CharType.Semicolon;
-		}
-		if (c == ','){
-			return CharType.Comma;
-		}
-		if (['(','[','{','}',']',')'].hasElement(c)){
-			return CharType.Bracket;
-		}
-		if (c == '.'){
-			if (prev == CharType.None || prev == CharType.Number){
-				return CharType.Operator;
+	static bool isDifferent(char c, ref char[] token){
+		static const SEPERATORS = ['(','[','{','}',']',')', ';', ','];
+		static const WHITESPACE = [' ', '\t'];
+		static char[] lastToken = []; /// stores last complete token, used to check if `-` or `.` is to be considered operator or part of number
+		static char pendingTokenChar = 0; /// as the name says...
+		if (pendingTokenChar != 0){
+			token = [pendingTokenChar];
+			pendingTokenChar = 0;
+			if (SEPERATORS.hasElement(token[0])){
+				if (!WHITESPACE.hasElement(c))
+					pendingTokenChar = c;
+				lastToken = token.dup;
+				return true;
 			}
-			return CharType.Ident;
 		}
-		if (isNum(cast(string)[c]) && (prev == CharType.Number || prev == CharType.None)){
-			return CharType.Number;
+		if (WHITESPACE.hasElement(c)){
+			if (token.length > 0){
+				lastToken = token.dup;
+				return true;
+			}
+			return false;
 		}
-		if (isAlphabet(cast(string)[c]) || (prev == CharType.Ident && isNum(cast(string)[c]))){
-			return CharType.Ident;
+		if (SEPERATORS.hasElement(c)){
+			if (token.length == 0){
+				token = [c];
+				lastToken = token.dup;
+				return true;
+			}
+			pendingTokenChar = c;
+			lastToken = token.dup;
+			return true;
 		}
-		foreach (operator; OPERATORS~SOPERATORS){
-			foreach (opChar; operator){
-				if (c == opChar){
-					return CharType.Operator;
+		if (token.length > 0){
+			// strings
+			if (token[0] == '\"' || token[0] == '\''){
+				token = token ~ c;
+				if (c == token[0] && token[$-1] != '\\'){
+					lastToken = token.dup;
+					return true;
+				}
+			}
+			// unexpected strings get read as separate tokens
+			if ((c == '\"' || c == '\'') && token[0] != c){
+				pendingTokenChar = c;
+				lastToken = token.dup;
+				return true;
+			}
+			// space
+			if (c == ' ' || c == '\t'){
+				lastToken = token.dup;
+				return true;
+			}
+			// - is operator or part of number
+			if (token[0] == '-' && isNum([c],false) && !(lastToken.matchElements(cast(char[])IDENT_CHARS))){
+				token = token ~ c;
+				// go on
+				return false;
+			}
+			// . is memberSelector or decimal place
+			if (c == '.' && !isNum(cast(string)token, false)){
+				lastToken = token;
+				pendingTokenChar = c;
+				return true;
+			}
+			// token is operator
+			if (OPERATORS.hasElement(cast(string)token) || SOPERATORS.hasElement(cast(string)token)){
+				// see if it's still operator after adding c
+				if (OPERATORS.hasElement(cast(string)(token ~ c)) || SOPERATORS.hasElement(cast(string)(token ~ c))){
+					// go on
+					return false;
+				}else{
+					pendingTokenChar = c;
+					lastToken = token.dup;
+					return true;
 				}
 			}
 		}
-		throw new Exception ("unexpected char, \'"~c~'\'');
+		// nothing else matches, just add it to end
+		token = token ~ c;
+		return false;
 	}
 	LinkedList!string tokens = new LinkedList!string;
 	uinteger[] tokenPerLine;
 	tokenPerLine.length = script.length;
 	uinteger tokenCount = 0;
 	foreach (lineno, line; script){
-		CharType prevType = CharType.None, currentType = CharType.None;
-		for (uinteger i = 0, readFrom = 0, lastInd = line.length-1; i < line.length; i ++){
+		integer stringEndIndex = -1;
+		char[] token = [];
+		for (uinteger i = 0, lastInd = line.length-1; i < line.length; i ++){
 			// skip strings
-			if (line[i] == '"' || line[i] == '\''){
-				if (readFrom != i){
-					if (readFrom < i){
-						// add the previous token
-						tokens.append(line[readFrom .. i]);
-						readFrom = i;
-					}else{
-						compileErrors.append (CompileError(lineno, "unexpected string"));
-					}
-				}
-				integer end = line.strEnd(i);
-				if (end == -1){
+			if ((line[i] == '"' || line[i] == '\'') && i > stringEndIndex){
+				stringEndIndex = line.strEnd(i);
+				if (stringEndIndex == -1){
 					compileErrors.append(CompileError(lineno, "string not closed"));
 					break;
 				}
-				// append the string
-				tokens.append(line[readFrom .. end+1]);
-				readFrom = end+1;
-				i = end;
-				continue;
 			}
 			// break at comments
-			if (line[i] == '#' || line[i] == ' ' || line[i] == '\t'){
-				// add a token if remaining
-				if (readFrom < i){
-					tokens.append (line[readFrom .. i]);
+			if (line[i] == '#' && cast(integer)i > stringEndIndex){
+				isDifferent(' ', token);
+				// add pending token
+				if (token.length){
+					tokens.append(cast(string)token.dup);
+					token = [];
 				}
-				prevType = CharType.None;
-				readFrom = i+1;
-				if (line[i] == '#'){
-					break;
-				}
-				continue;
-			}
-			// add other types of tokens
-			try{
-				currentType = getCharType(line[i], prevType);
-			}catch (Exception e){
-				compileErrors.append (CompileError(lineno, e.msg));
-				.destroy (e);
 				break;
 			}
-			if (currentType != prevType || currentType == CharType.Bracket || currentType == CharType.Semicolon ||
-				currentType == CharType.Comma){
-				if (readFrom < i){
-					tokens.append (line[readFrom .. i]);
-					readFrom = i;
-				}
-				if (currentType == CharType.Bracket || currentType == CharType.Semicolon || currentType == CharType.Comma){
-					tokens.append (cast(string)[line[i]]);
-					readFrom = i+1;
-				}
+			// hand this line[i] to isDifferent
+			if (isDifferent(line[i], token)){
+				tokens.append(cast(string)token.dup);
+				token = [];
 			}
-			prevType = currentType;
 			// add if is at end of line
-			if (i == lastInd && readFrom <= i){
-				tokens.append (line[readFrom .. i+1]);
-			}
+			/*if (i == lastInd && token.length){
+				isDifferent(' ', token);
+				tokens.append(cast(string)token.dup);
+				token = [];
+			}*/
 		}
+		isDifferent(' ', token);
+		if (token.length)
+			tokens.append(cast(string)token.dup);
 		tokenPerLine[lineno] = tokens.count - tokenCount;
 		tokenCount += tokenPerLine[lineno];
 	}
@@ -250,6 +265,9 @@ unittest{
 	foreach (i, tok; tokens){
 		strTokens[i] = tok.token;
 	}
+	import std.stdio;
+	foreach(token; strTokens)
+		writeln(token);
 	assert (strTokens == [
 			"function", "void", "main", "{",
 			"int", "i", "=", "5", ";",
