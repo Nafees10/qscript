@@ -211,7 +211,7 @@ private TokenList separateTokens(string[] script){
 	foreach (lineno, line; script){
 		integer stringEndIndex = -1;
 		char[] token = [];
-		for (uinteger i = 0, lastInd = line.length-1; i < line.length; i ++){
+		for (uinteger i = 0; i < line.length; i ++){
 			// skip strings
 			if ((line[i] == '"' || line[i] == '\'') && i > stringEndIndex){
 				stringEndIndex = line.strEnd(i);
@@ -235,12 +235,6 @@ private TokenList separateTokens(string[] script){
 				tokens.append(cast(string)token.dup);
 				token = [];
 			}
-			// add if is at end of line
-			/*if (i == lastInd && token.length){
-				isDifferent(' ', token);
-				tokens.append(cast(string)token.dup);
-				token = [];
-			}*/
 		}
 		isDifferent(' ', token);
 		if (token.length)
@@ -262,7 +256,9 @@ unittest{
 		"\tint i = 5;",
 		"\t.5sdfdf = (!5 - 5);",
 		"\ta.b.c = @a;",
-		"\ta = 5.5;"
+		"\ta = 5.5;",
+		" a = -20+5;",
+		" a=-20+5;",
 	];
 	Token[] tokens = separateTokens(script).tokens;
 	string[] strTokens;
@@ -270,15 +266,17 @@ unittest{
 	foreach (i, tok; tokens){
 		strTokens[i] = tok.token;
 	}
-	import std.stdio;
+	/*import std.stdio;
 	foreach(token; strTokens)
-		writeln(token);
+		writeln(token);*/
 	assert (strTokens == [
 			"function", "void", "main", "{",
 			"int", "i", "=", "5", ";",
 			".", "5sdfdf", "=", "(", "!", "5", "-", "5", ")", ";",
 			"a", ".", "b", ".", "c", "=", "@", "a", ";",
-			"a", "=", "5.5", ";"
+			"a", "=", "5.5", ";",
+			"a", "=", "-20", "+", "5", ";",
+			"a", "=", "-20", "+", "5", ";",
 		]);
 }
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
