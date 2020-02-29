@@ -193,6 +193,11 @@ private TokenList separateTokens(string[] script){
 					lastToken = token.dup;
 					return true;
 				}
+			}else if (OPERATORS.hasElement(cast(string)[c]) || SOPERATORS.hasElement(cast(string)[c])){
+				// token not operator, c is operator
+				pendingTokenChar = c;
+				lastToken = token.dup;
+				return true;
 			}
 		}
 		// nothing else matches, just add it to end
