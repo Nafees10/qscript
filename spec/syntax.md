@@ -231,7 +231,7 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable a reference is pointing to when operand is reference.
   
-In QScript, you cannot write `-1` or any other negative number, so instead, use `0-1` or `0-x` where x is a int. In case you want negative float, use `0.0-x`. This will be fixed soon.
+In QScript, you cannot write `-x` to get variable's value with opposite sign. This works with literals (`-20` is valid) but with variables, you will need to write `0-x`
 
 ---
 
