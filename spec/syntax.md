@@ -229,9 +229,7 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
 ### Other Operators:
 * `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
-* `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable a reference is pointing to when operand is reference.
-  
-In QScript, you cannot write `-x` to get variable's value with opposite sign. This works with literals (`-20` is valid) but with variables, you will need to write `0-x`
+* `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
 
 ---
 
