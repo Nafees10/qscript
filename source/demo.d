@@ -1,5 +1,5 @@
 ﻿module demo;
-version (demo){
+version (qscriptdemo){
 	import utils.misc;
 	import qscript.qscript;
 	import std.datetime.stopwatch;
