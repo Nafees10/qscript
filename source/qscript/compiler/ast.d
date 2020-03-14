@@ -117,6 +117,7 @@ package struct CodeNode{
 	public enum Type{
 		FunctionCall,
 		Literal,
+		Negative,
 		Operator, // double operand operator
 		SOperator, // single operand operator
 		Variable,
@@ -129,6 +130,7 @@ package struct CodeNode{
 	private union{
 		FunctionCallNode fCall;
 		LiteralNode literal;
+		NegativeValueNode negativeVal;
 		OperatorNode operator;
 		SOperatorNode sOperator;
 		VariableNode var;
@@ -147,6 +149,9 @@ package struct CodeNode{
 		}else static if (is (T == LiteralNode)){
 			storedType = CodeNode.Type.Literal;
 			return literal = newNode;
+		}else static if (is (T == NegativeValueNode)){
+			storedType = CodeNode.Type.Negative;
+			return negativeVal = newNode;
 		}else static if (is (T == OperatorNode)){
 			storedType = CodeNode.Type.Operator;
 			return operator = newNode;
@@ -174,6 +179,8 @@ package struct CodeNode{
 			return fCall;
 		}else static if (T == CodeNode.Type.Literal){
 			return literal;
+		}else static if (T == CodeNode.Type.Negative){
+			return negativeVal;
 		}else static if (T == CodeNode.Type.Operator){
 			return operator;
 		}else static if (T == CodeNode.Type.Variable){
@@ -192,6 +199,8 @@ package struct CodeNode{
 	public @property bool isLiteral (){
 		if (storedType == CodeNode.Type.Literal)
 			return true;
+		if (storedType == CodeNode.Type.Negative)
+			return negativeVal.isLiteral;
 		if (storedType == CodeNode.Type.Array)
 			return array.isLiteral;
 		if (storedType == CodeNode.Type.Operator)
@@ -212,6 +221,8 @@ package struct CodeNode{
 			return fCall.returnType;
 		}else if (storedType == CodeNode.Type.Literal){
 			return literal.returnType;
+		}else if (storedType == CodeNode.Type.Negative){
+			return negativeVal.returnType;
 		}else if (storedType == CodeNode.Type.Operator){
 			return operator.returnType;
 		}else if (storedType == CodeNode.Type.ReadElement){
@@ -231,6 +242,8 @@ package struct CodeNode{
 			return fCall.returnType = newType;
 		}else if (storedType == CodeNode.Type.Literal){
 			return literal.returnType = newType;
+		}else if (storedType == CodeNode.Type.Negative){
+			return negativeVal.returnType = newType;
 		}else if (storedType == CodeNode.Type.Operator){
 			return operator.returnType = newType;
 		}else if (storedType == CodeNode.Type.ReadElement){
@@ -329,6 +342,40 @@ package struct LiteralNode{
 	void fromTokens(Token[] tokensLiteral){
 		literal = TokenList.toString(tokensLiteral);
 		returnType.fromData(tokensLiteral);
+	}
+}
+
+/// stores `-x`
+package struct NegativeValueNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// stores the value to make negative
+	private CodeNode* _valuePtr;
+	/// value to make negative
+	@property ref CodeNode value(){
+		return *_valuePtr;
+	}
+	/// ditto
+	@property ref CodeNode value(CodeNode newVal){
+		if (_valuePtr is null)
+			_valuePtr = new CodeNode();
+		return *_valuePtr = newVal;
+	}
+	/// return data type
+	public @property DataType returnType(){
+		return (*_valuePtr).returnType;
+	}
+	/// ditto
+	public @property DataType returnType(DataType newType){
+		return this.returnType;
+	}
+	/// Returns: true if it's value is literal, i.e fixed/constant
+	@property bool isLiteral(){
+		return (*_valuePtr).isLiteral;
+	}
+	/// constructor
+	this(CodeNode val){
+		value = val;
 	}
 }
 

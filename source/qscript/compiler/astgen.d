@@ -318,6 +318,20 @@ struct ASTGen{
 			}
 			return lastNode;
 		}
+
+		/// generates AST for `-x` where x is a codenode
+		NegativeValueNode generateNegativeNode(){
+			if (tokens.tokens[index].type != Token.Type.Operator || tokens.tokens[index].token != "-"){
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "Not a negative node"));
+				index ++;
+				return NegativeValueNode(CodeNode());
+			}
+			NegativeValueNode r;
+			index ++;
+			CodeNode val = generateCodeAST();
+			r = NegativeValueNode(val);
+			return r;
+		}
 		
 		/// generates AST for operators like +, -...
 		/// 
@@ -652,6 +666,8 @@ struct ASTGen{
 				}
 			}else if (token.type == Token.Type.Operator && SOPERATORS.hasElement(token.token)){
 				r = CodeNode(generateSOperatorAST());
+			}else if (token.type == Token.Type.Operator && token.token == "-"){
+				r = CodeNode(generateNegativeNode());
 			}else if (token.type == Token.Type.ParanthesesOpen){
 				// some code
 				index ++;

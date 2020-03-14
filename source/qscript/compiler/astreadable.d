@@ -215,6 +215,8 @@ JSONValue toJSON(CodeNode node){
 		r["code"] = node.node!(CodeNode.Type.FunctionCall).toJSON;
 	}else if (node.type == CodeNode.Type.Literal){
 		r["code"] = node.node!(CodeNode.Type.Literal).toJSON;
+	}else if (node.type == CodeNode.Type.Negative){
+		r["code"] = node.node!(CodeNode.Type.Negative).toJSON;
 	}else if (node.type == CodeNode.Type.Operator){
 		r["code"] = node.node!(CodeNode.Type.Operator).toJSON;
 	}else if (node.type == CodeNode.Type.ReadElement){
@@ -264,6 +266,16 @@ JSONValue toJSON(LiteralNode node){
 	r["type"] = JSONValue(node.returnType.getStr);
 	r["value"] = JSONValue(node.literal);
 
+	r["lineno"] = JSONValue(node.lineno);
+	return r;
+}
+
+/// Creates JSONValue for NegativeValue
+JSONValue toJSON(NegativeValueNode node){
+	JSONValue r;
+	r["node"] = JSONValue("NegativeValueNode");
+	r["type"] = JSONValue(node.returnType.getStr);
+	r["value"] = node.value.toJSON;
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }

@@ -259,6 +259,8 @@ protected:
 			generateByteCode(node.node!(CodeNode.Type.FunctionCall), pushRef);
 		}else if (node.type == CodeNode.Type.Literal){
 			generateByteCode(node.node!(CodeNode.Type.Literal), pushRef);
+		}else if (node.type == CodeNode.Type.Negative){
+			generateByteCode(node.node!(CodeNode.Type.Negative), pushRef);
 		}else if (node.type == CodeNode.Type.Operator){
 			generateByteCode(node.node!(CodeNode.Type.Operator), pushRef);
 		}else if (node.type == CodeNode.Type.SOperator){
@@ -276,6 +278,18 @@ protected:
 	/// pushRef is ignored
 	void generateByteCode(LiteralNode node, bool pushRef = false){
 		_writer.addInstruction(Instruction.Push, [node.literal]);
+	}
+	/// generates byte code for NegativeValueNode
+	/// 
+	/// pushRef is ignored
+	void generateByteCode(NegativeValueNode node, bool pushRef = false){
+		// push the value
+		generateByteCode(node.value, false);
+		// push the appropriate zero
+		_writer.addInstruction(Instruction.Push, [node.value.returnType.type == DataType.Type.Integer ? "0" : "0.0"]);
+		// now subtract
+		_writer.addInstruction(node.value.returnType.type == DataType.Type.Integer ?
+			Instruction.MathSubtractInt : Instruction.MathSubtractDouble);
 	}
 	/// generates byte code for OperatorNode
 	/// 

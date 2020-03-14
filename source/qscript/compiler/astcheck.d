@@ -394,6 +394,8 @@ protected:
 			checkAST(node.node!(CodeNode.Type.FunctionCall));
 		}else if (node.type == CodeNode.Type.Literal){
 			// nothing to check
+		}else if (node.type == CodeNode.Type.Negative){
+			checkAST(node.node!(CodeNode.Type.Negative));
 		}else if (node.type == CodeNode.Type.Operator){
 			checkAST(node.node!(CodeNode.Type.Operator));
 		}else if (node.type == CodeNode.Type.SOperator){
@@ -404,6 +406,18 @@ protected:
 			checkAST(node.node!(CodeNode.Type.Variable));
 		}else if (node.type == CodeNode.Type.Array){
 			checkAST(node.node!(CodeNode.Type.Array));
+		}
+	}
+	/// checks a NegativeValueNode
+	void checkAST(ref NegativeValueNode node){
+		// check the val
+		checkAST(node.value);
+		// make sure data type is either double or integer, nothing else works
+		if (node.value.returnType.isArray || ![DataType.Type.Integer, DataType.Type.Double].hasElement(node.returnType.type)){
+			compileErrors.append(CompileError(node.lineno, "cannot do use - operator on non-int & non-double types"));
+		}
+		if (node.value.returnType.isRef){
+			compileErrors.append(CompileError(node.lineno, "cannot use - operator on references"));
 		}
 	}
 	/// checks a OperatorNode
