@@ -175,8 +175,8 @@ And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
   
 In case you want to modify the whole array, it can be done like:
 ```
-char someChar = 'a';
-char[] someString;
+var char someChar = 'a';
+var char[] someString;
 someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
 ## Reference Declaration
@@ -215,21 +215,21 @@ Unlike functions, global variables cannot be exported in case of libraries.
 ## Using References
 References can be assigned like:
 ```
-int i;
-@int ref;
+var int i;
+var @int ref;
 ref = @i; # ref is now pointing to i, @i returns the reference to i
 ```
 and read like:
 ```
-int i;
-@int ref = @i;
+var int i;
+var @int ref = @i;
 i = rand(); # assuming rand() is a function that returns int
 writeln("Value of i="toStr(@ref)); # @ref returns the value of the variable it is pointing 
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
 function void main(){
-	int i;
+	var int i;
 	setRefTo(@i, 1024);
 	# i is now 1024
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
