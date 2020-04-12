@@ -1,20 +1,41 @@
-# QScript syntax
-## Comments
+# QScript Syntax
+
+# Comments
 Comments can be added using the `#` character. Anything following a `#` is ignored by compiler as a comment.  
 For example:  
 ```
+# a comment
 function void main(){ # This is a comment
 	# This also is a comment
 }
+
 ```
-## Functions
-### Function Definition
+
+---
+
+# Importing libraries
+Libraries can provide function and/or data types. Importing a library named `math` and `stdio` would be done like:  
+
 ```
-function TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
+import math, stdio;
+```
+Or:
+```
+import math;
+import stdio;
+```
+
+---
+
+# Functions
+## Function Definition
+```
+function FLAGS RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 	# function body
 }
 ```
-* `TYPE` is the return type of this function
+* `FLAGS` (optional) are the function properties (listed below). Multiple flags can be written for a single function.
+* `RETURN_TYPE` is the return type of this function
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
@@ -32,7 +53,13 @@ function TYPE FUNCTION_NAME(){
 	# function body
 }
 ```
-### Returning From Functions
+
+### Function Flags
+These are the list of flags and what they do:  
+* `export` - make the function available to another script when this script is loaded as a library.
+* `static` - marks the function as static i.e: The function does not: access any global variables, call any other non-static function, and does not take any references as arguments.This flag indicates to the compiler that it is safe to execute this function during compile to optimize the byte code.
+
+## Returning From Functions
 A return statement can be used to return a value from the function. The type of the return value, and the return type of the function must match.
 A return statement is written as following:
 ```
@@ -47,23 +74,90 @@ function int someFunction{
 }
 ```
 
+## `this` Function
+Each script can have 1 `this` function. It will be called before any other function in the scipt is called i.e: the `this` function can be used to initialize the script.  
+
+`this` function is defined like:
+```
+function void this(){ # it must always be void
+	# code to be executed when script is loaded
+}
+```
+
+`this` function must always be of type `void` and must not return any value.
+
+## Function Calls
+There are 2 types of functions, script-defined, and external. External are made available by "registering" them into QScript (the script cannot do this).  
+In case a script defined function has the same name as an external one, the script-defined one will be called, external one will be ignored.  
+Both types of functions can be executed like:
+```
+FUNCTION_NAME (arg0, arg1);
+```
+And a function can take more/less than 2 arguments. In case it doesnt take any arguments, it will be called like:
+```
+FUNCTION_NAME ();
+```
+
 ---
 
-## Variables
-### Variable Declaration
-QScript does not support global variables. But if needed, using external functions, or references, something similar to global variables can be achieved.  
-Variables can be defined only inside functions, like:
+# Data Types
+QScript has these basic data types:
+* `int` - a signed integer (`ptrdiff_t` in DLang is used for this)
+* `char` - a 1 byte character
+* `double` - a floating point (same as `double` in DLang)
+
+Following data types can be defined in scripts that are derived from the above basic types:
+
+## Structs
+These can be used to store multiple values of varying or same data types. They are defined like:  
 ```
-TYPE var0, var1, var2;
+struct FLAGS STRUCT_NAME{
+	DATA_TYPE1 NAME1;
+	DATA_TYPE2 NAME2;
+}
+```
+
+* `FLAGS` (optional) are the properties for this struct.
+* `STRUCT_NAME` is the name of this struct. This must be unique within the script, and must not conflict among any `import`ed data types.
+* `DATA_TYPE1` is the data type for the first value.
+* `NAME1` is the name for the first value
+
+QScript does not allow functions as members of structs, only variables can be members.
+
+An example usage of a struct would be:  
+```
+struct export Position{
+	int x, y;
+}
+function export getPosition(int x, int y){
+	var Position pos;
+	pos.x = x;
+	pos.y = y;
+	return pos;
+}
+```
+
+### Struct Flags
+A struct can have these flags:
+* `export` - makes this struct avaialable to another script when this script is loaded as a library
+
+---
+
+# Variables
+
+## Variable Declaration
+Variables can be declared like:
+```
+var TYPE var0, var1, var2;
 ```
 * `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
 ```
-int var0 = 12, var1 = 24;
+var int var0 = 12, var1 = 24;
 ```
-### Variable Assignment
+## Variable Assignment
 Variables can be assigned a value like:
 ```
 VAR = VALUE;
@@ -85,22 +179,40 @@ char someChar = 'a';
 char[] someString;
 someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
-### Reference Declaration
-QScript has references instead of pointers. Their function is the same as pointers, to point to another variable.  
+## Reference Declaration
+References can be used to "point" to another variable.
 They can be declared like:
 ```
-@TYPE ref0, ref1, ref3;
+var @TYPE ref0, ref1, ref3;
 ```
 `TYPE` can be any valid data type, for example:
 ```
-@int ptrInt;
+var @int ptrInt;
 ```
 or:
 ```
-@int[] refToIntArray; # this is a pointer to array of int
+var @int[] refToIntArray; # this is a pointer to array of int
 ```
 Array of references is currently not possible in QScript.
-### Using References
+
+## Variable Scope
+Variables and references are only available inside the "scope" they are declared in. In the code below:  
+```
+var int someGlobalVar;
+function export void main(int count){
+	var int i = 0;
+	while (i < count){
+		var int j;
+		# some other code
+		i = i + 1;
+	}
+}
+```
+Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script.  
+  
+Unlike functions, global variables cannot be exported in case of libraries.
+
+## Using References
 References can be assigned like:
 ```
 int i;
@@ -128,7 +240,7 @@ function void setRefTo(@int ref, int to){
 ```
 ---
 
-## If Statements
+# If Statements
 If statements are written like:
 ```
 if (CONDITION){
@@ -153,7 +265,7 @@ else
 # some other code, single statement
 ```
 
-### Nested If Statements
+## Nested If Statements
 If statements can also be nested inside other if statements, like:  
 ```
 if (CONDITION)
@@ -167,10 +279,10 @@ else
 
 ---
 
-## Loops
+# Loops
 QScript curently has the following types of loops:
 
-### While:
+## While:
 While loops are written like:
 ```
 while (CONDITION){
@@ -179,7 +291,7 @@ while (CONDITION){
 ```
 As long as `CONDITION` is 1 (int), `# some code in a loop` is executed. And just like if statements, while loops can also be nested
 
-### Do While:
+## Do While:
 Do while loops are writen like:
 ```
 do{
@@ -188,7 +300,7 @@ do{
 ```
 First the code is executed, then if the condition is true, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
 
-### For:
+## For:
 The for loop in QScript is a bit different from other languages, it's written like:
 ```
 for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT;){
@@ -201,7 +313,7 @@ Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and `INCREME
 
 ---
 
-## Operators
+# Operators
 One important thing to keep in mind when using operators is that they are evaluated left-to right. So instead of writing:
 ```
 if (a == 0 || a == 1){
@@ -213,13 +325,13 @@ if ((a == 0) || (a == 1)){
 }
 ```
 The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.
-### Arithmetic Operators
+## Arithmetic Operators
 * `/` operator divides two integers/floats
 * `*` operator multiplies two integeres/floats
 * `+` operator adds two integers/floats
 * `-` subtracts two integers/floats
 * `%` divides two integers/floats, returns the remainder
-### Comnparison Operators
+## Comparison Operators
 * `==` returns 1 (int) if two integers/floats/strings/arrays are same. 
 * `>` returns (int) if `value0` int/float is greater than `value1` int/float.
 * `<` returns 1 (int) if `value0` int/float is lesser than `value1` int/float.
@@ -227,20 +339,6 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `<=` returns 1 (int) if `value0` int/float is lesser than or equal to `value1` int/float.
 * `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
 * `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
-### Other Operators:
+## Other Operators:
 * `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
-
----
-
-## Function Call
-There are 2 types of functions, script-defined, and external. External are made available by "registering" them into QScript (the script cannot do this).  
-In case a script defined function has the same name as an external one, the script-defined one will be called, external one will be ignored.  
-Both types of functions can be executed like:
-```
-FUNCTION_NAME (arg0, arg1);
-```
-And a function can take more/less than 2 arguments. In case it doesnt take any arguments, it will be called like:
-```
-FUNCTION_NAME ();
-```
