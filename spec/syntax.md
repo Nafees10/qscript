@@ -99,6 +99,7 @@ QScript has these basic data types:
 * `int` - a signed integer (`ptrdiff_t` in DLang is used for this)
 * `char` - a 1 byte character
 * `double` - a floating point (same as `double` in DLang)
+* `bool` - a `true` or `false`
 
 Following data types can be defined in scripts that are derived from the above basic types:
 
@@ -123,7 +124,7 @@ An example usage of a struct would be:
 struct export Position{
 	int x, y;
 }
-export getPosition(int x, int y){
+export Position getPosition(int x, int y){
 	Position pos;
 	pos.x = x;
 	pos.y = y;
@@ -189,6 +190,8 @@ or:
 ```
 Array of references is currently not possible in QScript.
 
+By default, references are initliazed to be `null`.
+
 ## Variable Scope
 Variables and references are only available inside the "scope" they are declared in. In the code below:  
 ```
@@ -243,7 +246,7 @@ if (CONDITION){
 	# some (other?) code
 }
 ```
-The `else` part is not required. If `CONDITION` is 0 (int), then, if the else exists, it's executed, if `CONDITION` is 1 (int), then `# some code` is executed.  
+The `else` part is not required. If `CONDITION` is `false`, then, if the else exists, it's executed, if `CONDITION` is `true`, then `# some code` is executed.  
 It is not necessary that the `# some code` or the `# some (other?) code` be in a block. In case only one statement is to be executed, it can be written like:  
 ```
 if (CONDITION)
@@ -283,7 +286,7 @@ while (CONDITION){
 	# some code in a loop
 }
 ```
-As long as `CONDITION` is 1 (int), `# some code in a loop` is executed. And just like if statements, while loops can also be nested
+As long as `CONDITION` is `true`, `# some code in a loop` is executed. And just like if statements, while loops can also be nested
 
 ## Do While:
 Do while loops are writen like:
@@ -292,7 +295,7 @@ do{
     # some code in a loop
 }while (CONDITION)
 ```
-First the code is executed, then if the condition is true, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
+First the code is executed, then if the condition is `true`, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
 
 ## For:
 The for loop in QScript is a bit different from other languages, it's written like:
@@ -302,7 +305,7 @@ for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT;){
 }
 ```
 in this loop, notice that there is a semicolon after `INCREMENT_STATEMENT`, that is necessary.  
-First, the `INIT_STATEMENT` is executed, right before starting the loop. This is executed only once. Then if `CONDITION` is true, the loop body is executed, then `INCREMENT_STATEMENT` is executed, this is repeated, until condition is false.  
+First, the `INIT_STATEMENT` is executed, right before starting the loop. This is executed only once. Then if `CONDITION` is `true`, the loop body is executed, then `INCREMENT_STATEMENT` is executed, this is repeated, until condition is false.  
 Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and `INCREMENT_STATEMENT` all must be present.
 
 ---
@@ -326,13 +329,13 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `-` subtracts two integers/floats
 * `%` divides two integers/floats, returns the remainder
 ## Comparison Operators
-* `==` returns 1 (int) if two integers/floats/strings/arrays are same. 
-* `>` returns (int) if `value0` int/float is greater than `value1` int/float.
-* `<` returns 1 (int) if `value0` int/float is lesser than `value1` int/float.
-* `>=` returns (int) if `value0` int/float is greater than or equal to `value1` int/float.
-* `<=` returns 1 (int) if `value0` int/float is lesser than or equal to `value1` int/float.
-* `&&` returns 1 (int) if `value0` and `value1` are both 1 (int)
-* `||` returns 1 (int) if either of `value0` or `value1` are 1 (int), or both are 1 (int)
+* `==` returns `true` if two integers/floats/strings/arrays are same. 
+* `>` returns `true` if `value0` int/float is greater than `value1` int/float.
+* `<` returns `true` if `value0` int/float is lesser than `value1` int/float.
+* `>=` returns `true` if `value0` int/float is greater than or equal to `value1` int/float.
+* `<=` returns `true` if `value0` int/float is lesser than or equal to `value1` int/float.
+* `&&` returns `true` if `value0` and `value1` are both `true`
+* `||` returns `true` if either of `value0` or `value1` are `true`, or both are `true`
 ## Other Operators:
-* `!` not operator (works on `int`), returns `1` if operand is `0`, `0` if operand is `1`
+* `!` not operator (works on `bool`), returns `true` if operand is `false`, `false` if operand is `true`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
