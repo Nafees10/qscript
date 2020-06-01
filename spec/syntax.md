@@ -27,6 +27,28 @@ import stdio;
 
 ---
 
+# Visibility
+QScript has these visibility specifier:  
+
+* `private` - Only accessible from within script. Keep in mind that this only prevents access from other scripts, the host program can still access it.
+* `public` - Accessible by other scripts when this script is loaded as a library.
+
+By default, all declarations are `private`.
+
+These can be written right before any declaration like:  
+```
+private void somePrivateFunction(int arg){
+	# body of private function
+}
+```
+
+Visiblity specifier can apply to:  
+
+* structs
+* enums
+* functions
+* global variables
+
 # Functions
 ## Function Definition
 ```
@@ -50,7 +72,6 @@ FLAGS TYPE FUNCTION_NAME(){
 
 ### Function Flags
 These are the list of flags and what they do:  
-* `export` - make the function available to another script when this script is loaded as a library.
 * `static` - marks the function as static i.e: The function does not: access any global variables, call any other non-static function, and does not take any references as arguments.This flag indicates to the compiler that it is safe to execute this function during compile to optimize the byte code.
 
 ## Returning From Functions
@@ -106,13 +127,12 @@ Following data types can be defined in scripts that are derived from the above b
 ## Structs
 These can be used to store multiple values of varying or same data types. They are defined like:  
 ```
-struct FLAGS STRUCT_NAME{
+struct STRUCT_NAME{
 	DATA_TYPE1 NAME1;
 	DATA_TYPE2 NAME2;
 }
 ```
 
-* `FLAGS` (optional) are the properties for this struct.
 * `STRUCT_NAME` is the name of this struct. This must be unique within the script, and must not conflict among any `import`ed data types.
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
@@ -121,10 +141,10 @@ QScript does not allow functions as members of structs, only variables can be me
 
 An example usage of a struct would be:  
 ```
-struct export Position{
+public struct Position{
 	int x, y;
 }
-export Position getPosition(int x, int y){
+public Position getPosition(int x, int y){
 	Position pos;
 	pos.x = x;
 	pos.y = y;
@@ -132,9 +152,28 @@ export Position getPosition(int x, int y){
 }
 ```
 
-### Struct Flags
-A struct can have these flags:
-* `export` - makes this struct avaialable to another script when this script is loaded as a library
+## Enums
+Enums are defined like:  
+```
+enum TYPE EnumName{
+	member0,
+	member1,
+	member2
+}
+```
+
+* `TYPE` is the actual data type in which it is stored. It must be one of base data types and not derived
+* `EnumName` is the name for this enum
+
+the members are automatically assigned values. Value can be assigned manually too like:  
+```
+public enum int ErrorType{
+	FileNotFound = 0,
+	InvalidPath = 1
+}
+```
+
+An enum's member's value can be read as: `EnumName.MemberName`.
 
 ---
 
@@ -145,7 +184,7 @@ Variables can be declared like:
 ```
 TYPE var0, var1, var2;
 ```
-* `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, or an array of those types: `int[]`, or `int[][]`... .
+* `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, `bool`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
@@ -196,7 +235,7 @@ By default, references are initliazed to be `null`.
 Variables and references are only available inside the "scope" they are declared in. In the code below:  
 ```
 int someGlobalVar;
-export void main(int count){
+public void main(int count){
 	int i = 0;
 	while (i < count){
 		int j;
@@ -205,9 +244,7 @@ export void main(int count){
 	}
 }
 ```
-Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script.  
-  
-Unlike functions, global variables cannot be exported in case of libraries.
+Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script, as it is `private`.  
 
 ## Using References
 References can be assigned like:
