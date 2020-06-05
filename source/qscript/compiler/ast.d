@@ -19,6 +19,10 @@ package enum Visibility{
 package struct ScriptNode{
 	/// list of functions defined in this script
 	public FunctionNode[] functions;
+	/// structs defined in this script
+	public StructNode[] structs;
+	/// enums defined in this script
+	public EnumNode[] enums;
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
 		functions = scriptFunctions.dup;
