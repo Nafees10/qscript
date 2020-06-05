@@ -89,10 +89,12 @@ public struct Function{
 public struct DataType{
 	/// enum defining all data types
 	public enum Type{
-		Void,
-		Char,
-		Integer,
-		Double
+		Void, /// .
+		Char, /// .
+		Integer, /// .
+		Double, /// .
+		Struct, /// .
+		Enum ///.
 	}
 	/// the actual data type
 	Type type = DataType.Type.Void;
@@ -100,6 +102,37 @@ public struct DataType{
 	uinteger arrayDimensionCount = 0;
 	/// stores if it's a reference to a type
 	bool isRef = false;
+	union{
+		struct{
+			/// struct's name
+			string structName;
+			/// stores member names for struct
+			string[] structMembersName;
+			/// stores data types for struct members
+			DataType[] structMembersDataType;
+		}
+		struct{
+			/// enum Name
+			string enumName;
+			/// stores base type for enum
+			private DataType* _enumBaseTypePtr;
+			/// stores names for enum members
+			string[] enumMembersName;
+			/// Stores values for enum members, as strings
+			string[] enumMembersValue;
+ 			/// Returns: base data type for enum
+			@property ref DataType enumBaseDataType(){
+				return *_enumBaseTypePtr;
+			}
+			/// ditto
+			@property ref DataType enumBaseDataType(DataType newType){
+				if (_enumBaseTypePtr is null){
+					_enumBaseTypePtr = new DataType;
+				}
+				return *_enumBaseTypePtr = newType;
+			}
+		}
+	}
 	/// returns: true if it's an array. Strings are arrays too (char[])
 	@property bool isArray(){
 		if (arrayDimensionCount > 0){
@@ -107,7 +140,7 @@ public struct DataType{
 		}
 		return false;
 	}
-	/// constructor
+	/// constructor. Only for base types, not for enums or structs
 	/// 
 	/// dataType is the type to store
 	/// arrayDimension is the number of nested arrays
@@ -118,19 +151,21 @@ public struct DataType{
 		isRef = isReference;
 	}
 	
-	/// constructor
+	/// constructor. Only for base types
 	/// 
 	/// `sType` is the type in string form
 	this (string sType){
 		fromString(sType);
 	}
-	/// constructor
+	/// constructor. Only for base types
 	/// 
 	/// `data` is the data to infer type from
 	this (Token[] data){
 		fromData(data);
 	}
-	/// reads DataType from a string, in case of failure or bad format in string, throws Exception
+	/// reads DataType from a string, works only for base data types
+	/// 
+	/// Throws: Exception in case of failure or bad format in string
 	void fromString(string s){
 		isRef = false;
 		string sType = null;
@@ -179,7 +214,7 @@ public struct DataType{
 		arrayDimensionCount = indexCount;
 	}
 
-	/// identifies the data type from the actual data
+	/// identifies the data type from the actual data. Only works for base types
 	/// keep in mind, this won't be able to identify if the data type is a reference or not
 	/// 
 	/// throws Exception on failure
@@ -272,6 +307,18 @@ public struct DataType{
 			r = cast(char[]) "int";
 		}else if (type == DataType.Type.Char){
 			r = cast(char[]) "char";
+		}else if (type == DataType.Type.Struct){
+			r = cast(char[])("struct "~this.structName~"{ ");
+			foreach (i; 0 .. this.structMembersName.length){
+				r ~= cast(char[])(this.structMembersDataType[i].getStr~' '~this.structMembersName~"; ");
+			}
+			r[$-1] = '}';
+		}else if (type == DataType.Type.Enum){
+			r = cast(char[])("enum "~this.enumBaseDataType.getStr~this.enumName~"{ ");
+			foreach(i; 0 .. this.enumMembersName.length){
+				r ~= cast(char[])(this.enumMembersName[i]~"="~this.enumMembersValue~", ");
+			}
+			r[$-1] = '}';
 		}else{
 			throw new Exception("invalid type stored: "~to!string(type));
 		}
