@@ -52,7 +52,7 @@ Visiblity specifier can apply to:
 # Functions
 ## Function Definition
 ```
-RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
+function RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 	# function body
 }
 ```
@@ -64,7 +64,7 @@ RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
   
 A function without any arguments would be defined like:
 ```
-TYPE FUNCTION_NAME(){
+function TYPE FUNCTION_NAME(){
 	# function body
 }
 ```
@@ -78,7 +78,7 @@ return RETURN_VALUE;
 where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, 
 writeln will not be called.
 ```
-int someFunction(){
+function int someFunction(){
 	return 0;
 	writeln("this won't be written"); # because return terminates the execution
 }
@@ -89,7 +89,7 @@ Each script can have 1 `this` function. It will be called before any other funct
 
 `this` function is defined like:
 ```
-this(){
+function this(){
 	# code to be executed when script is loaded
 }
 ```
@@ -177,14 +177,14 @@ An enum's member's value can be read as: `EnumName.MemberName`.
 ## Variable Declaration
 Variables can be declared like:
 ```
-TYPE var0, var1, var2;
+var TYPE var0, var1, var2;
 ```
 * `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, `bool`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
 ```
-int var0 = 12, var1 = 24;
+var int var0 = 12, var1 = 24;
 ```
 ## Variable Assignment
 Variables can be assigned a value like:
@@ -204,23 +204,23 @@ And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
   
 In case you want to modify the whole array, it can be done like:
 ```
-char someChar = 'a';
-char[] someString;
+var char someChar = 'a';
+var char[] someString;
 someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
 ## Reference Declaration
 References can be used to "point" to another variable.
 They can be declared like:
 ```
-@TYPE ref0, ref1, ref3;
+var @TYPE ref0, ref1, ref3;
 ```
 `TYPE` can be any valid data type, for example:
 ```
-@int ptrInt;
+var @int ptrInt;
 ```
 or:
 ```
-@int[] refToIntArray; # this is a pointer to array of int
+var @int[] refToIntArray; # this is a pointer to array of int
 ```
 Array of references is currently not possible in QScript.
 
@@ -229,11 +229,11 @@ By default, references are initliazed to be `null`.
 ## Variable Scope
 Variables and references are only available inside the "scope" they are declared in. In the code below:  
 ```
-int someGlobalVar;
+var int someGlobalVar;
 public void main(int count){
-	int i = 0;
+	var int i = 0;
 	while (i < count){
-		int j;
+		var int j;
 		# some other code
 		i = i + 1;
 	}
@@ -244,21 +244,21 @@ Varible `i` and `count` are accessible throughout the function. Variable `j` is 
 ## Using References
 References can be assigned like:
 ```
-int i;
-@int ref;
+var int i;
+var @int ref;
 ref = @i; # ref is now pointing to i, @i returns the reference to i
 ```
 and read like:
 ```
-int i;
-@int ref = @i;
+var int i;
+var @int ref = @i;
 i = rand(); # assuming rand() is a function that returns int
 writeln("Value of i="toStr(@ref)); # @ref returns the value of the variable it is pointing 
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
 void main(){
-	int i;
+	var int i;
 	setRefTo(@i, 1024);
 	# i is now 1024
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
