@@ -51,6 +51,7 @@ package Function[] INBUILT_FUNCTIONS = [
 public struct CompileError{
 	string msg; /// The error stored in a string
 	uinteger lineno; /// The line number on which the error is
+	/// constructor
 	this(uinteger lineNumber, string errorMessage){
 		lineno = lineNumber;
 		msg = errorMessage;
@@ -69,11 +70,11 @@ public struct Function{
 	/// 
 	/// if an argType is defined as void, with array dimensions=0, it means accept any type.
 	/// if an argType is defined as void with array dimensions>0, it means array of any type of that dimensions
-	@property ref DataType[] argTypes(){
+	@property ref DataType[] argTypes() return{
 		return _argTypes;
 	}
 	/// the data type of the arguments received by this function
-	@property ref DataType[] argTypes(DataType[] newArray){
+	@property ref DataType[] argTypes(DataType[] newArray) return{
 		return _argTypes = newArray.dup;
 	}
 	/// constructor

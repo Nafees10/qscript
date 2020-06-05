@@ -52,6 +52,24 @@ package struct FunctionNode{
 		arguments = funcArgs.dup;
 		returnType = returnType;
 	}
+	/// Returns: the data types for arguments
+	@property DataType[] argumentTypes(){
+		DataType[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argType;
+		}
+		return r;
+	}
+	/// Returns: the names for arguments
+	@property string[] argumentNames(){
+		string[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argName;
+		}
+		return r;
+	}
 }
 
 /// a node representing a "set-of-statements" AKA a "block"
@@ -77,38 +95,38 @@ package struct BlockNode{
 package struct CodeNode{
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	@property uinteger lineno(){
-		if (storedType == Type.FunctionCall){
+		if (_type == Type.FunctionCall){
 			return fCall.lineno;
-		}else if (storedType == Type.Literal){
+		}else if (_type == Type.Literal){
 			return literal.lineno;
-		}else if (storedType == Type.Operator){
+		}else if (_type == Type.Operator){
 			return operator.lineno;
-		}else if (storedType == Type.Variable){
+		}else if (_type == Type.Variable){
 			return var.lineno;
-		}else if (storedType == Type.ReadElement){
+		}else if (_type == Type.ReadElement){
 			return arrayRead.lineno;
-		}else if (storedType == Type.Array){
+		}else if (_type == Type.Array){
 			return array.lineno;
-		}else if (storedType == Type.SOperator){
+		}else if (_type == Type.SOperator){
 			return sOperator.lineno;
 		}
 		return 0;
 	}
 	/// ditto
 	@property uinteger lineno(uinteger newLineno){
-		if (storedType == Type.FunctionCall){
+		if (_type == Type.FunctionCall){
 			return fCall.lineno = newLineno;
-		}else if (storedType == Type.Literal){
+		}else if (_type == Type.Literal){
 			return literal.lineno = newLineno;
-		}else if (storedType == Type.Operator){
+		}else if (_type == Type.Operator){
 			return operator.lineno = newLineno;
-		}else if (storedType == Type.Variable){
+		}else if (_type == Type.Variable){
 			return var.lineno = newLineno;
-		}else if (storedType == Type.ReadElement){
+		}else if (_type == Type.ReadElement){
 			return arrayRead.lineno = newLineno;
-		}else if (storedType == Type.Array){
+		}else if (_type == Type.Array){
 			return array.lineno = newLineno;
-		}else if (storedType == Type.SOperator){
+		}else if (_type == Type.SOperator){
 			return sOperator.lineno = newLineno;
 		}
 		return 0;
@@ -125,7 +143,7 @@ package struct CodeNode{
 		Array
 	}
 	/// the stored type
-	private Type storedType;
+	private Type _type;
 	/// union storing all possible nodes
 	private union{
 		FunctionCallNode fCall;
@@ -139,40 +157,40 @@ package struct CodeNode{
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
-		return storedType;
+		return _type;
 	}
 	/// sets the stored node
 	@property auto ref node (T)(T newNode){
 		static if (is (T == FunctionCallNode)){
-			storedType = CodeNode.Type.FunctionCall;
+			_type = CodeNode.Type.FunctionCall;
 			return fCall = newNode;
 		}else static if (is (T == LiteralNode)){
-			storedType = CodeNode.Type.Literal;
+			_type = CodeNode.Type.Literal;
 			return literal = newNode;
 		}else static if (is (T == NegativeValueNode)){
-			storedType = CodeNode.Type.Negative;
+			_type = CodeNode.Type.Negative;
 			return negativeVal = newNode;
 		}else static if (is (T == OperatorNode)){
-			storedType = CodeNode.Type.Operator;
+			_type = CodeNode.Type.Operator;
 			return operator = newNode;
 		}else static if (is (T == VariableNode)){
-			storedType = CodeNode.Type.Variable;
+			_type = CodeNode.Type.Variable;
 			return var = newNode;
 		}else static if (is (T == ReadElement)){
-			storedType = CodeNode.Type.ReadElement;
+			_type = CodeNode.Type.ReadElement;
 			return arrayRead = newNode;
 		}else static if(is (T == ArrayNode)){
-			storedType = CodeNode.Type.Array;
+			_type = CodeNode.Type.Array;
 			return array = newNode;
 		}else static if (is (T == SOperatorNode)){
-			storedType = CodeNode.Type.SOperator;
+			_type = CodeNode.Type.SOperator;
 			return sOperator = newNode;
 		}
 	}
 	/// returns the stored type
 	@property auto ref node(CodeNode.Type T)(){
 		// make sure it's the correct type
-		if (T != storedType){
+		if (T != _type){
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
 		static if (T == CodeNode.Type.FunctionCall){
@@ -197,60 +215,60 @@ package struct CodeNode{
 	}
 	/// Returns: true if the stored data is literal
 	public @property bool isLiteral (){
-		if (storedType == CodeNode.Type.Literal)
+		if (_type == CodeNode.Type.Literal)
 			return true;
-		if (storedType == CodeNode.Type.Negative)
+		if (_type == CodeNode.Type.Negative)
 			return negativeVal.isLiteral;
-		if (storedType == CodeNode.Type.Array)
+		if (_type == CodeNode.Type.Array)
 			return array.isLiteral;
-		if (storedType == CodeNode.Type.Operator)
+		if (_type == CodeNode.Type.Operator)
 			return operator.isLiteral;
-		if (storedType == CodeNode.Type.ReadElement)
+		if (_type == CodeNode.Type.ReadElement)
 			return arrayRead.isLiteral;
-		if (storedType == CodeNode.Type.SOperator)
+		if (_type == CodeNode.Type.SOperator)
 			return sOperator.isLiteral;
-		if (storedType == CodeNode.Type.Variable)
+		if (_type == CodeNode.Type.Variable)
 			return var.isLiteral;
 		return false;
 	}
 	/// the return type, only available after ASTCheck has checked it
 	@property DataType returnType (){
-		if (storedType == CodeNode.Type.Array){
+		if (_type == CodeNode.Type.Array){
 			return array.returnType;
-		}else if (storedType == CodeNode.Type.FunctionCall){
+		}else if (_type == CodeNode.Type.FunctionCall){
 			return fCall.returnType;
-		}else if (storedType == CodeNode.Type.Literal){
+		}else if (_type == CodeNode.Type.Literal){
 			return literal.returnType;
-		}else if (storedType == CodeNode.Type.Negative){
+		}else if (_type == CodeNode.Type.Negative){
 			return negativeVal.returnType;
-		}else if (storedType == CodeNode.Type.Operator){
+		}else if (_type == CodeNode.Type.Operator){
 			return operator.returnType;
-		}else if (storedType == CodeNode.Type.ReadElement){
+		}else if (_type == CodeNode.Type.ReadElement){
 			return arrayRead.returnType;
-		}else if (storedType == CodeNode.Type.SOperator){
+		}else if (_type == CodeNode.Type.SOperator){
 			return sOperator.returnType;
-		}else if (storedType == CodeNode.Type.Variable){
+		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType;
 		}
 		return DataType();
 	}
 	/// ditto
 	@property DataType returnType (DataType newType){
-		if (storedType == CodeNode.Type.Array){
+		if (_type == CodeNode.Type.Array){
 			return array.returnType = newType;
-		}else if (storedType == CodeNode.Type.FunctionCall){
+		}else if (_type == CodeNode.Type.FunctionCall){
 			return fCall.returnType = newType;
-		}else if (storedType == CodeNode.Type.Literal){
+		}else if (_type == CodeNode.Type.Literal){
 			return literal.returnType = newType;
-		}else if (storedType == CodeNode.Type.Negative){
+		}else if (_type == CodeNode.Type.Negative){
 			return negativeVal.returnType = newType;
-		}else if (storedType == CodeNode.Type.Operator){
+		}else if (_type == CodeNode.Type.Operator){
 			return operator.returnType = newType;
-		}else if (storedType == CodeNode.Type.ReadElement){
+		}else if (_type == CodeNode.Type.ReadElement){
 			return arrayRead.returnType = newType;
-		}else if (storedType == CodeNode.Type.SOperator){
+		}else if (_type == CodeNode.Type.SOperator){
 			return sOperator.returnType = newType;
-		}else if (storedType == CodeNode.Type.Variable){
+		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType = newType;
 		}
 		return DataType();
@@ -271,7 +289,7 @@ package struct VariableNode{
 	public uinteger id;
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
-	/// true if its return value is static, i.e, will always return same value when executed
+	/// true if its return value is static, i.e, will always return same value when evaluated
 	/// 
 	/// determined by ASTCheck
 	/// 
@@ -503,52 +521,52 @@ package struct StatementNode{
 	}
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	public @property uinteger lineno(){
-		if (storedType == Type.If){
+		if (_type == Type.If){
 			return ifNode.lineno;
-		}else if (storedType == Type.While){
+		}else if (_type == Type.While){
 			return whileNode.lineno;
-		}else if (storedType == Type.For){
+		}else if (_type == Type.For){
 			return forNode.lineno;
-		}else if (storedType == Type.DoWhile){
+		}else if (_type == Type.DoWhile){
 			return doWhile.lineno;
-		}else if (storedType == Type.Block){
+		}else if (_type == Type.Block){
 			return blockNode.lineno;
-		}else if (storedType == Type.Assignment){
+		}else if (_type == Type.Assignment){
 			return assignNode.lineno;
-		}else if (storedType == Type.FunctionCall){
+		}else if (_type == Type.FunctionCall){
 			return functionCallNode.lineno;
-		}else if (storedType == Type.VarDeclare){
+		}else if (_type == Type.VarDeclare){
 			return varDeclareNode.lineno;
-		}else if (storedType == Type.Return){
+		}else if (_type == Type.Return){
 			return returnNode.lineno;
 		}
 		return 0;
 	}
 	/// ditto
 	public @property uinteger lineno(uinteger newLineno){
-		if (storedType == Type.If){
+		if (_type == Type.If){
 			return ifNode.lineno = newLineno;
-		}else if (storedType == Type.While){
+		}else if (_type == Type.While){
 			return whileNode.lineno = newLineno;
-		}else if (storedType == Type.For){
+		}else if (_type == Type.For){
 			return forNode.lineno = newLineno;
-		}else if (storedType == Type.DoWhile){
+		}else if (_type == Type.DoWhile){
 			return doWhile.lineno = newLineno;
-		}else if (storedType == Type.Block){
+		}else if (_type == Type.Block){
 			return blockNode.lineno = newLineno;
-		}else if (storedType == Type.Assignment){
+		}else if (_type == Type.Assignment){
 			return assignNode.lineno = newLineno;
-		}else if (storedType == Type.FunctionCall){
+		}else if (_type == Type.FunctionCall){
 			return functionCallNode.lineno = newLineno;
-		}else if (storedType == Type.VarDeclare){
+		}else if (_type == Type.VarDeclare){
 			return varDeclareNode.lineno = newLineno;
-		}else if (storedType == Type.Return){
+		}else if (_type == Type.Return){
 			return returnNode.lineno = newLineno;
 		}
 		return 0;
 	}
 	/// type of this statement
-	private Type storedType;
+	private Type _type;
 	/// the stored node, is in this union
 	private union{
 		IfNode ifNode;
@@ -564,31 +582,31 @@ package struct StatementNode{
 	/// modifies the stored node
 	@property void node(T)(T newNode){
 		static if (is (T == IfNode)){
-			storedType = StatementNode.Type.If;
+			_type = StatementNode.Type.If;
 			ifNode = newNode;
 		}else static if (is (T == WhileNode)){
-			storedType = StatementNode.Type.While;
+			_type = StatementNode.Type.While;
 			whileNode = newNode;
 		}else static if (is (T == ForNode)){
-			storedType = StatementNode.Type.For;
+			_type = StatementNode.Type.For;
 			forNode = newNode;
 		}else static if (is (T == DoWhileNode)){
-			storedType = StatementNode.Type.DoWhile;
+			_type = StatementNode.Type.DoWhile;
 			doWhile = newNode;
 		}else static if (is (T == BlockNode)){
-			storedType = StatementNode.Type.Block;
+			_type = StatementNode.Type.Block;
 			blockNode = newNode;
 		}else static if (is (T == FunctionCallNode)){
-			storedType = StatementNode.Type.FunctionCall;
+			_type = StatementNode.Type.FunctionCall;
 			functionCallNode = newNode;
 		}else static if (is (T == VarDeclareNode)){
-			storedType = StatementNode.Type.VarDeclare;
+			_type = StatementNode.Type.VarDeclare;
 			varDeclareNode = newNode;
 		}else static if (is (T == AssignmentNode)){
-			storedType = StatementNode.Type.Assignment;
+			_type = StatementNode.Type.Assignment;
 			assignNode = newNode;
 		}else static if (is (T == ReturnNode)){
-			storedType = Type.Return;
+			_type = Type.Return;
 			returnNode = newNode;
 		}else{
 			throw new Exception("attempting to assign invalid node type to StatementNode.node");
@@ -597,7 +615,7 @@ package struct StatementNode{
 	/// returns the stored type
 	@property auto ref node(StatementNode.Type T)(){
 		// make sure type is correct
-		if (T != storedType){
+		if (T != _type){
 			throw new Exception("stored type does not match with type being retrieved");
 		}
 		static if (T == StatementNode.Type.If){
@@ -624,7 +642,7 @@ package struct StatementNode{
 	}
 	/// returns the type of the stored node
 	@property StatementNode.Type type(){
-		return storedType;
+		return _type;
 	}
 	/// constructor
 	this (T)(T newNode){
@@ -836,14 +854,14 @@ package struct FunctionCallNode{
 	/// if the function being called in in built QScript function
 	public bool isInBuilt=false;
 	/// the arguments for this function.
-	private CodeNode[] storedArguments;
+	private CodeNode[] _arguments;
 	/// returns the values for arguments
-	@property ref CodeNode[] arguments(){
-		return storedArguments;
+	@property ref CodeNode[] arguments() return{
+		return _arguments;
 	}
 	/// sets value for storedArguments
-	@property ref CodeNode[] arguments(CodeNode[] newArgs){
-		return storedArguments = newArgs.dup;
+	@property ref CodeNode[] arguments(CodeNode[] newArgs) return{
+		return _arguments = newArgs.dup;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
