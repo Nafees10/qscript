@@ -160,7 +160,7 @@ enum TYPE EnumName{
 * `TYPE` is the actual data type in which it is stored. It must be one of base data types and not derived
 * `EnumName` is the name for this enum
 
-the members are automatically assigned values. Value can be assigned manually too like:  
+the members are automatically assigned values, **only** if they are of type int. Value can be assigned manually too like:  
 ```
 public enum int ErrorType{
 	FileNotFound = 0,
