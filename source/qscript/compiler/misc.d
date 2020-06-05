@@ -314,7 +314,7 @@ public struct DataType{
 			}
 			r[$-1] = '}';
 		}else if (type == DataType.Type.Enum){
-			r = cast(char[])("enum "~this.enumBaseDataType.getStr~this.enumName~"{ ");
+			r = cast(char[])("enum "~this.enumBaseDataType.getStr~' '~this.enumName~"{ ");
 			foreach(i; 0 .. this.enumMembersName.length){
 				r ~= cast(char[])(this.enumMembersName[i]~"="~this.enumMembersValue~", ");
 			}
