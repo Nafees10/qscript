@@ -52,11 +52,10 @@ Visiblity specifier can apply to:
 # Functions
 ## Function Definition
 ```
-FLAGS RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
+RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
 	# function body
 }
 ```
-* `FLAGS` (optional) are the function properties (listed below). Multiple flags can be written for a single function.
 * `RETURN_TYPE` is the return type of this function
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
@@ -65,14 +64,10 @@ FLAGS RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
   
 A function without any arguments would be defined like:
 ```
-FLAGS TYPE FUNCTION_NAME(){
+TYPE FUNCTION_NAME(){
 	# function body
 }
 ```
-
-### Function Flags
-These are the list of flags and what they do:  
-* `static` - marks the function as static i.e: The function does not: access any global variables, call any other non-static function, and does not take any references as arguments.This flag indicates to the compiler that it is safe to execute this function during compile to optimize the byte code.
 
 ## Returning From Functions
 A return statement can be used to return a value from the function. The type of the return value, and the return type of the function must match.
