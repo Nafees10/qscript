@@ -7,6 +7,7 @@ import utils.misc;
 import utils.lists;
 
 import std.range;
+import std.traits;
 import std.conv : to;
 
 /// An array containing all chars that an identifier can contain
@@ -24,22 +25,22 @@ package const string[] BOOL_OPERATORS = ["<", ">", ">=", "<=", "==", "&&", "||"]
 /// Inbuilt QScript functions (like `length(void[])`)
 package Function[] INBUILT_FUNCTIONS = [
 	/// length(@void[], int)
-	Function("length", DataType(DataType.Type.Void), [DataType(DataType.Type.Void,	1, true), DataType(DataType.Type.Integer)]),
+	Function("length", DataType(DataType.Type.Void), [DataType(DataType.Type.Void,	1, true), DataType(DataType.Type.Int)]),
 	/// length(void[])
-	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Void, 1, false)]),
+	Function("length", DataType(DataType.Type.Int), [DataType(DataType.Type.Void, 1, false)]),
 	/// length (string)
-	Function("length", DataType(DataType.Type.Integer), [DataType(DataType.Type.Char, 1, false)]),
+	Function("length", DataType(DataType.Type.Int), [DataType(DataType.Type.Char, 1, false)]),
 
 	/// toInt(string)
-	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Char, 1)]),
+	Function("toInt", DataType(DataType.Type.Int), [DataType(DataType.Type.Char, 1)]),
 	/// toInt(double)
-	Function("toInt", DataType(DataType.Type.Integer), [DataType(DataType.Type.Double)]),
+	Function("toInt", DataType(DataType.Type.Int), [DataType(DataType.Type.Double)]),
 	/// toDouble(string)
 	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Char, 1)]),
 	/// toDouble(int)
-	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Integer)]),
+	Function("toDouble", DataType(DataType.Type.Double), [DataType(DataType.Type.Int)]),
 	/// toString(int)
-	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Integer)]),
+	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Int)]),
 	/// toString(double)
 	Function("toStr", DataType(DataType.Type.Char, 1), [DataType(DataType.Type.Double)]),
 
@@ -91,10 +92,9 @@ public struct DataType{
 	public enum Type{
 		Void, /// .
 		Char, /// .
-		Integer, /// .
+		Int, /// .
 		Double, /// .
-		Struct, /// .
-		Enum ///.
+		Custom, /// some other type
 	}
 	/// the actual data type
 	Type type = DataType.Type.Void;
@@ -102,36 +102,24 @@ public struct DataType{
 	uinteger arrayDimensionCount = 0;
 	/// stores if it's a reference to a type
 	bool isRef = false;
-	union{
-		struct{
-			/// struct's name
-			string structName;
-			/// stores member names for struct
-			string[] structMembersName;
-			/// stores data types for struct members
-			DataType[] structMembersDataType;
-		}
-		struct{
-			/// enum Name
-			string enumName;
-			/// stores base type for enum
-			private DataType* _enumBaseTypePtr;
-			/// stores names for enum members
-			string[] enumMembersName;
-			/// Stores values for enum members, as strings
-			string[] enumMembersValue;
- 			/// Returns: base data type for enum
-			@property ref DataType enumBaseDataType(){
-				return *_enumBaseTypePtr;
-			}
-			/// ditto
-			@property ref DataType enumBaseDataType(DataType newType){
-				if (_enumBaseTypePtr is null){
-					_enumBaseTypePtr = new DataType;
-				}
-				return *_enumBaseTypePtr = newType;
+	/// stores the type name in case of Type.Custom
+	private string _name;
+	/// Returns: name of base type. Works with Type.Custom too
+	@property string name(){
+		if (this.type == Type.Custom)
+			return _name;
+		return this.type.to!string;
+	}
+	/// ditto
+	@property string name(string newName){
+		foreach (curType; EnumMembers!Type){
+			if (curType != Type.Custom && curType.to!string.lowercase == newName){
+				this.type = curType;
+				return newName;
 			}
 		}
+		this.type = Type.Custom;
+		return this._name = newName;
 	}
 	/// returns: true if it's an array. Strings are arrays too (char[])
 	@property bool isArray(){
@@ -140,7 +128,7 @@ public struct DataType{
 		}
 		return false;
 	}
-	/// constructor. Only for base types, not for enums or structs
+	/// constructor.
 	/// 
 	/// dataType is the type to store
 	/// arrayDimension is the number of nested arrays
@@ -150,14 +138,24 @@ public struct DataType{
 		arrayDimensionCount = arrayDimension;
 		isRef = isReference;
 	}
+	/// constructor.
+	/// 
+	/// dataType is the name of type to store
+	/// arrayDimension is the number of nested arrays
+	/// isRef is whether the type is a reference to the actual type
+	this (string dataType, uinteger arrayDimension = 0, bool isReference = false){
+		this.name = dataType;
+		arrayDimensionCount = arrayDimension;
+		isRef = isReference;
+	}
 	
-	/// constructor. Only for base types
+	/// constructor.
 	/// 
 	/// `sType` is the type in string form
 	this (string sType){
 		fromString(sType);
 	}
-	/// constructor. Only for base types
+	/// constructor.
 	/// 
 	/// `data` is the data to infer type from
 	this (Token[] data){
@@ -173,8 +171,7 @@ public struct DataType{
 		// check if it's a ref
 		if (s.length > 0 && s[0] == '@'){
 			isRef = true;
-			s = s.dup;
-			s = s[1 .. s.length];
+			s = s[1 .. s.length].dup;
 		}
 		// read the type
 		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
@@ -199,18 +196,7 @@ public struct DataType{
 				throw new Exception("invalid data type");
 			}
 		}
-		// now check if the type was ok or not
-		if (sType == "void"){
-			type = DataType.Type.Void;
-		}else if (sType == "char"){
-			type = DataType.Type.Char;
-		}else if (sType == "int"){
-			type = DataType.Type.Integer;
-		}else if (sType == "double"){
-			type = DataType.Type.Double;
-		}else{
-			throw new Exception("invalid data type");
-		}
+		this.name = sType;
 		arrayDimensionCount = indexCount;
 	}
 
@@ -227,7 +213,7 @@ public struct DataType{
 			}else if (data.type == Token.Type.Char){
 				return DataType.Type.Char;
 			}else if (data.type == Token.Type.Integer){
-				return DataType.Type.Integer;
+				return DataType.Type.Int;
 			}else if (data.type == Token.Type.Double){
 				return DataType.Type.Double;
 			}else{
@@ -296,45 +282,14 @@ public struct DataType{
 		callCount --;
 	}
 
-	/// converts this DataType to string
-	string getStr(){
-		char[] r;
-		if (type == DataType.Type.Void){
-			r = cast(char[]) "void";
-		}else if (type == DataType.Type.Double){
-			r = cast(char[]) "double";
-		}else if (type == DataType.Type.Integer){
-			r = cast(char[]) "int";
-		}else if (type == DataType.Type.Char){
-			r = cast(char[]) "char";
-		}else if (type == DataType.Type.Struct){
-			r = cast(char[])("struct "~this.structName~"{ ");
-			foreach (i; 0 .. this.structMembersName.length){
-				r ~= cast(char[])(this.structMembersDataType[i].getStr~' '~this.structMembersName~"; ");
-			}
-			r[$-1] = '}';
-		}else if (type == DataType.Type.Enum){
-			r = cast(char[])("enum "~this.enumBaseDataType.getStr~' '~this.enumName~"{ ");
-			foreach(i; 0 .. this.enumMembersName.length){
-				r ~= cast(char[])(this.enumMembersName[i]~"="~this.enumMembersValue~", ");
-			}
-			r[$-1] = '}';
-		}else{
-			throw new Exception("invalid type stored: "~to!string(type));
-		}
-		if (arrayDimensionCount > 0){
-			uinteger i = r.length;
-			r.length += arrayDimensionCount * 2;
-			for (; i < r.length; i += 2){
-				r[i .. i+2] = "[]";
-			}
-		}
-		return cast(string) (isRef ? '@'~r : r);
+	/// converts this DataType to string. Deprecated, use DataType.Name
+	deprecated string getStr(){
+		return this.name;
 	}
 }
 /// 
 unittest{
-	assert(DataType("int") == DataType(DataType.Type.Integer, 0));
+	assert(DataType("int") == DataType(DataType.Type.Int, 0));
 	assert(DataType("char[][]") == DataType(DataType.Type.Char, 2));
 	assert(DataType("double[][]") == DataType(DataType.Type.Double, 2));
 	assert(DataType("void") == DataType(DataType.Type.Void, 0));
