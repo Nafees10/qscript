@@ -9,6 +9,12 @@ import qscript.compiler.misc;
 
 import std.conv : to;
 
+/// Visibility Specifiers
+package enum Visibility{
+	Public,
+	Private
+}
+
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
@@ -33,6 +39,8 @@ package struct FunctionNode{
 	}
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
 	/// stores arguments with their data type
 	public FunctionNode.Argument[] arguments;
 	/// the name of the function
@@ -69,6 +77,96 @@ package struct FunctionNode{
 			r[i] = arg.argName;
 		}
 		return r;
+	}
+}
+
+/// To store a struct definition
+package struct StructNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// the name of this struct
+	public string name;
+	/// name of members of this struct
+	public string[] membersName;
+	/// data types of members of this struct
+	public DataType[] membersDataType;
+}
+
+/// To store a enum definition
+package struct EnumNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// stores name of this enum
+	public string name;
+	/// stores base type of this enum
+	public DataType baseDataType;
+	/// stores members names
+	public string[] membersName;
+	/// stores member's values (automatically populated by astcheck if baseDataType is int)
+	public string membersValues;
+}
+
+/// to store var declaration
+package struct VarDeclareNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// the data typre of defined vars
+	public DataType type;
+	/// stores names of vars declared
+	private string[] varNames;
+	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
+	private uinteger[string] _varIDs;
+	/// stores vars' assigned values, with key=varName
+	private CodeNode[string] varValues;
+	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
+	public @property string[] vars(){
+		return varNames.dup;
+	}
+	/// returns: array containig ID's of variables in assoc_array
+	public @property uinteger[string] varIDs(){
+		return _varIDs.dup;
+	}
+	/// Returns: assigned value for a var
+	/// 
+	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
+	public ref CodeNode getValue(string varName){
+		if (varName in varValues){
+			return varValues[varName];
+		}
+		throw new Exception ("variable "~varName~" does not exist in array");
+	}
+	/// Returns: true if a variable has a value assigned to it
+	public bool hasValue(string varName){
+		if (varName in varValues)
+			return true;
+		return false;
+	}
+	/// adds a variable to the list
+	public void addVar(string varName){
+		varNames = varNames ~ varName;
+	}
+	/// adds a variable to the list, along with it's assigned value
+	public void addVar(string varName, CodeNode value){
+		varValues[varName] = value;
+		varNames = varNames ~ varName;
+	}
+	/// sets a stored var's assigned value
+	public void setVarValue(string varName, CodeNode value){
+		varValues[varName] = value;
+	}
+	/// sets a stored var's ID
+	public void setVarID(string varName, uinteger id){
+		_varIDs[varName] = id;
+	}
+	/// constructor
+	this (string[] vars){
+		varNames = vars.dup;
 	}
 }
 
@@ -870,64 +968,6 @@ package struct FunctionCallNode{
 		fName = functionName;
 		arguments = functionArguments;
 		returnType = DataType(DataType.Type.Void);
-	}
-}
-
-/// to store var declaration
-package struct VarDeclareNode{
-	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
-	/// the data typre of defined vars
-	public DataType type;
-	/// stores names of vars declared
-	private string[] varNames;
-	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
-	private uinteger[string] _varIDs;
-	/// stores vars' assigned values, with key=varName
-	private CodeNode[string] varValues;
-	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
-	public @property string[] vars(){
-		return varNames.dup;
-	}
-	/// returns: array containig ID's of variables in assoc_array
-	public @property uinteger[string] varIDs(){
-		return _varIDs.dup;
-	}
-	/// Returns: assigned value for a var
-	/// 
-	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
-	public ref CodeNode getValue(string varName){
-		if (varName in varValues){
-			return varValues[varName];
-		}
-		throw new Exception ("variable "~varName~" does not exist in array");
-	}
-	/// Returns: true if a variable has a value assigned to it
-	public bool hasValue(string varName){
-		if (varName in varValues)
-			return true;
-		return false;
-	}
-	/// adds a variable to the list
-	public void addVar(string varName){
-		varNames = varNames ~ varName;
-	}
-	/// adds a variable to the list, along with it's assigned value
-	public void addVar(string varName, CodeNode value){
-		varValues[varName] = value;
-		varNames = varNames ~ varName;
-	}
-	/// sets a stored var's assigned value
-	public void setVarValue(string varName, CodeNode value){
-		varValues[varName] = value;
-	}
-	/// sets a stored var's ID
-	public void setVarID(string varName, uinteger id){
-		_varIDs[varName] = id;
-	}
-	/// constructor
-	this (string[] vars){
-		varNames = vars.dup;
 	}
 }
 
