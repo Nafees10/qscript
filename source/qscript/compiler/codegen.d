@@ -158,7 +158,7 @@ protected:
 		bool pushesToStack = true;
 		/// length(@void[], int)
 		if (node.fName == "length"){
-			if (matchArguments([DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)],argTypes)){
+			if (matchArguments([DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Int)],argTypes)){
 				// set array length
 				generateByteCode(node.arguments[1]); // length comes first, coz it's popped later
 				generateByteCode(node.arguments[0]);
@@ -182,11 +182,11 @@ protected:
 			/// toDouble(string)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.StringToDouble);
-		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Integer)])){
+		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Int)])){
 			/// toDouble(int)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.IntToDouble);
-		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Integer)])){
+		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Int)])){
 			/// toStr(int)
 			generateByteCode(node.arguments[0]);
 			_writer.addInstruction(Instruction.IntToString);
@@ -286,9 +286,9 @@ protected:
 		// push the value
 		generateByteCode(node.value, false);
 		// push the appropriate zero
-		_writer.addInstruction(Instruction.Push, [node.value.returnType.type == DataType.Type.Integer ? "0" : "0.0"]);
+		_writer.addInstruction(Instruction.Push, [node.value.returnType.type == DataType.Type.Int ? "0" : "0.0"]);
 		// now subtract
-		_writer.addInstruction(node.value.returnType.type == DataType.Type.Integer ?
+		_writer.addInstruction(node.value.returnType.type == DataType.Type.Int ?
 			Instruction.MathSubtractInt : Instruction.MathSubtractDouble);
 	}
 	/// generates byte code for OperatorNode

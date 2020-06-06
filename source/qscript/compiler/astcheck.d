@@ -138,7 +138,7 @@ private:
 		}else if (node.type == CodeNode.Type.Operator){
 			OperatorNode opNode = node.node!(CodeNode.Type.Operator);
 			if (BOOL_OPERATORS.hasElement(opNode.operator))
-				return DataType(DataType.Type.Integer);
+				return DataType(DataType.Type.Int);
 			return opNode.operands[0].returnType;
 		}else if (node.type == CodeNode.Type.SOperator){
 			SOperatorNode opNode = node.node!(CodeNode.Type.SOperator);
@@ -413,7 +413,7 @@ protected:
 		// check the val
 		checkAST(node.value);
 		// make sure data type is either double or integer, nothing else works
-		if (node.value.returnType.isArray || ![DataType.Type.Integer, DataType.Type.Double].hasElement(node.returnType.type)){
+		if (node.value.returnType.isArray || ![DataType.Type.Int, DataType.Type.Double].hasElement(node.returnType.type)){
 			compileErrors.append(CompileError(node.lineno, "cannot do use - operator on non-int & non-double types"));
 		}
 		if (node.value.returnType.isRef){
@@ -434,15 +434,15 @@ protected:
 		// now make sure that the data type of operands is allowed with that operator
 		if (["+","-","*","/","%", "<", ">", ">=", "<="].hasElement(node.operator)){
 			// only double and int allowed
-			if (operandType != DataType(DataType.Type.Integer) && operandType != DataType(DataType.Type.Double)){
+			if (operandType != DataType(DataType.Type.Int) && operandType != DataType(DataType.Type.Double)){
 				compileErrors.append (CompileError(node.lineno, "that operator can only be used on double or int"));
 			}
 			node.returnType = operandType;
 		}else if (["&&", "||"].hasElement(node.operator)){
-			if (operandType != DataType(DataType.Type.Integer)){
+			if (operandType != DataType(DataType.Type.Int)){
 				compileErrors.append (CompileError(node.lineno, "that operator can only be used on int"));
 			}
-			node.returnType = DataType(DataType.Type.Integer);
+			node.returnType = DataType(DataType.Type.Int);
 		}else if (node.operator == "~"){
 			if (operandType.arrayDimensionCount == 0){
 				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
@@ -456,10 +456,10 @@ protected:
 		checkAST(node.operand);
 		// now it it's `!`, only accept int, if `@`, var
 		if (node.operator == "!"){
-			if (getReturnType(node.operand) != DataType(DataType.Type.Integer)){
+			if (getReturnType(node.operand) != DataType(DataType.Type.Int)){
 				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! on a non-int data type"));
 			}
-			node.returnType = DataType(DataType.Type.Integer);
+			node.returnType = DataType(DataType.Type.Int);
 		}else if (node.operator == "@"){
 			node.returnType = node.operand.returnType;
 			node.returnType.isRef = !node.returnType.isRef;
@@ -482,7 +482,7 @@ protected:
 		checkAST (node.readFromNode);
 		checkAST (node.index);
 		// index must return int
-		if (getReturnType(node.index) != DataType(DataType.Type.Integer)){
+		if (getReturnType(node.index) != DataType(DataType.Type.Int)){
 			compileErrors.append (CompileError(node.index.lineno, "index must return integer"));
 		}
 		// now make sure that the data is an array or a string
