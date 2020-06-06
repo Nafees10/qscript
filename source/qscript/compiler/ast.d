@@ -23,6 +23,8 @@ package struct ScriptNode{
 	public StructNode[] structs;
 	/// enums defined in this script
 	public EnumNode[] enums;
+	/// stores what this script imports
+	public string[] imports;
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
 		functions = scriptFunctions.dup;
