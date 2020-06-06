@@ -26,24 +26,55 @@ struct ASTGen{
 		tokens.tokens = tokens.tokens.dup;
 		tokens.tokenPerLine = tokens.tokenPerLine.dup;
 		ScriptNode scriptNode;
-		LinkedList!FunctionNode functions = new LinkedList!FunctionNode;
 		compileErrors = new LinkedList!CompileError;
 		// go through the script, compile function nodes, link them to this node
 		index = 0;
 		for (uinteger lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
+			// look for visibility specifier, or default to private
+			Visibility vis = Visibility.Private;
+			if (tokens.tokens[index].type == Token.Type.Keyword && VISIBILITY_SPECIFIERS.hasElement(tokens.tokens[index].token)){
+				vis = strToVisibility(tokens.tokens[index].token);
+				index ++;
+			}
 			// look for TokenType.Keyword where token.token == "function"
-			if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "function"){
+			if (tokens.tokens[index].type == Token.Type.Keyword){
 				uinteger errorCount = compileErrors.count;
-				FunctionNode functionNode = generateFunctionAST();
-				index --;
-				// check if error free
-				if (compileErrors.count == errorCount){
-					functions.append(functionNode);
+				if (tokens.tokens[index].token == "import"){
+					string[] imports = readImports();
+					scriptNode.imports ~= imports;
+					index --; // don't wanna skip the semicolon, for (..; index ++) does that
+				}else if (tokens.tokens[index].token == "function"){
+					FunctionNode functionNode = generateFunctionAST();
+					functionNode.visibility = vis;
+					index --;
+					// check if error free
+					if (compileErrors.count == errorCount){
+						scriptNode.functions ~= functionNode;
+					}
+				}else if (tokens.tokens[index].token == "struct"){
+					StructNode structNode = generateStructAST();
+					structNode.visibility = vis;
+					index --;
+					if (compileErrors.count == errorCount){
+						scriptNode.structs ~= structNode;
+					}
+				}else if (tokens.tokens[index].token == "enum"){
+					EnumNode enumNode = generateEnumAST();
+					enumNode.visibility = vis;
+					index --;
+					if (compileErrors.count == errorCount){
+						scriptNode.enums ~= enumNode;
+					}
+				}else if (tokens.tokens[index].token == "var"){
+					VarDeclareNode varDecNode = generateVarDeclareAST();
+					varDecNode.visibility = vis;
+					index --;
+					if (compileErrors.count == errorCount){
+						scriptNode.variables ~= varDecNode;
+					}
 				}
 			}
 		}
-		scriptNode = ScriptNode(functions.toArray);
-		.destroy(functions);
 		errors = compileErrors.toArray;
 		.destroy(compileErrors);
 		return scriptNode;
@@ -55,6 +86,30 @@ struct ASTGen{
 		uinteger index;
 		/// stores all compilation errors
 		LinkedList!CompileError compileErrors;
+		/// Reads a single import statement.
+		/// 
+		/// Returns: the imported libraries' names
+		string[] readImports(){
+			string[] r;
+			if (tokens.tokens[index] != Token(Token.Type.Keyword, "import")){
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an import statement"));
+				return [];
+			}
+			index ++; // skip the import
+			while (tokens.tokens[index].type != Token.Type.StatementEnd){
+				if (tokens.tokens[index].type == Token.Type.Comma)
+					continue;
+				if (tokens.tokens[index].type == Token.Type.Identifier){
+					r ~= tokens.tokens[index].token;
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "identifier expected as library name"));
+				}
+				index ++;
+			}
+			index ++; // skip the semicolon
+
+			return r;
+		}
 		/// reads a type from TokensList
 		/// 
 		/// returns type in DataType struct, changes `index` to token after last token of type
@@ -76,6 +131,22 @@ struct ASTGen{
 			}
 			string sType = tokens.toString(tokens.tokens[startIndex .. index]);
 			return DataType(sType);
+		}
+		/// generates AST for a struct definition
+		/// 
+		/// changes `index` to next token after struct definition
+		StructNode generateStructAST(){
+			StructNode structNode;
+
+			return structNode;
+		}
+		/// generates AST for a enum definition
+		/// 
+		/// changes `index` to next token after enum definition
+		EnumNode generateEnumAST(){
+			EnumNode enumNode;
+
+			return enumNode;
 		}
 		/// generates AST for a function definition 
 		/// 

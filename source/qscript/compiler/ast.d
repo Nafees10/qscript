@@ -9,12 +9,6 @@ import qscript.compiler.misc;
 
 import std.conv : to;
 
-/// Visibility Specifiers
-package enum Visibility{
-	Public,
-	Private
-}
-
 /// a node representing the script
 package struct ScriptNode{
 	/// list of functions defined in this script
@@ -23,6 +17,8 @@ package struct ScriptNode{
 	public StructNode[] structs;
 	/// enums defined in this script
 	public EnumNode[] enums;
+	/// global variables defined in this script
+	public VarDeclareNode[] variables;
 	/// stores what this script imports
 	public string[] imports;
 	/// constructor

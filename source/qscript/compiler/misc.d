@@ -13,7 +13,20 @@ import std.conv : to;
 /// An array containing all chars that an identifier can contain
 package const char[] IDENT_CHARS = iota('a', 'z'+1).array~iota('A', 'Z'+1).array~iota('0', '9'+1).array~[cast(int)'_'];
 /// An array containing all keywords
-package const string[] KEYWORDS = ["function", "return", "if", "else", "while", "for", "do", "void", "int", "char", "double"];
+package const string[] KEYWORDS = [
+	"import",
+	"function",
+	"struct",
+	"enum",
+	"return",
+	"if",
+	"else",
+	"while",
+	"for",
+	"do",
+] ~ DATA_TYPES ~ VISIBILITY_SPECIFIERS;
+/// Visibility Specifier keywords
+package const string[] VISIBILITY_SPECIFIERS = ["public", "private"];
 /// data types
 package const string[] DATA_TYPES = ["void", "int", "double", "char"];
 /// An array containing double-operand operators
@@ -57,6 +70,23 @@ public struct CompileError{
 		lineno = lineNumber;
 		msg = errorMessage;
 	}
+}
+
+/// Visibility Specifiers
+package enum Visibility{
+	Public,
+	Private
+}
+
+/// Returns: Visibilty from a string
+/// 
+/// Throws: Exception if invalid input provided
+package Visibility strToVisibility(string s){
+	foreach (curVisibility; EnumMembers!Visibility){
+		if (curVisibility.to!string.lowercase == s)
+			return curVisibility;
+	}
+	throw new Exception(s~" is not a visibility option");
 }
 
 /// To store information about a function
