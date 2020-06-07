@@ -147,12 +147,11 @@ struct ASTGen{
 					if (tokens.tokens[index].type == Token.Type.BlockStart){
 						// now start reading it all as VarDeclareNodes
 						index ++;
-						VarDeclareNode[] varDeclares;
 						while (tokens.tokens[index].type != Token.Type.BlockEnd){
-							varDeclares ~= generateVarDeclareAST();
+							VarDeclareNode vars = generateVarDeclareAST();
 							// make sure no members were assignned values, thats not allowed
-							foreach (memberName; varDeclares[$-1].vars){
-								if (varDeclares[$-1].hasValue(memberName)){
+							foreach (memberName; vars.vars){
+								if (vars.hasValue(memberName)){
 									compileErrors.append(CompileError(tokens.getTokenLine(index),
 										"cannot assign value to members in struct definition"));
 								}
@@ -162,12 +161,16 @@ struct ASTGen{
 										"member '"~memberName~"' is declared multiple times in struct"));
 								}else{
 									structNode.membersName ~= memberName;
-									structNode.membersDataType ~= varDeclares[$-1].type;
+									structNode.membersDataType ~= vars.type;
 								}
 							}
-							structNode.containsRef = structNode.containsRef || varDeclares[$-1].type.isRef;
+							structNode.containsRef = structNode.containsRef || vars.type.isRef;
 						}
 						index ++; // skip the }
+						// now check if struct has any members
+						if (structNode.membersName.length == 0){
+							compileErrors.append(CompileError(tokens.getTokenLine(index), "struct has no members"));
+						}
 						// if there is a semicolon, skip it
 						if (tokens.tokens[index].type == Token.Type.StatementEnd)
 							index ++;
@@ -188,7 +191,54 @@ struct ASTGen{
 		/// changes `index` to next token after enum definition
 		EnumNode generateEnumAST(){
 			EnumNode enumNode;
-
+			if (tokens.tokens[index] == Token(Token.Type.Keyword, "enum")){
+				index ++;
+				try{
+					enumNode.baseDataType = readType();
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy (e);
+				}
+				// make sure it's a base type
+				if (enumNode.baseDataType.isArray() || enumNode.baseDataType.type == DataType.Type.Void ||
+				enumNode.baseDataType.type == DataType.Type.Custom){
+					compileErrors.append(CompileError(tokens.getTokenLine(index),
+						"derived data types and arrays cannot be base type for enums"));
+				}
+				if (tokens.tokens[index].type == Token.Type.Identifier){
+					enumNode.name = tokens.tokens[index].token;
+					index ++;
+					if (tokens.tokens[index].type == Token.Type.BlockStart){
+						index ++;
+						// now start reading members
+						while (tokens.tokens[index].type != Token.Type.BlockEnd){
+							if (tokens.tokens[index].type == Token.Type.Identifier){
+								enumNode.membersName ~= tokens.tokens[index].token;
+								// check if value explicitly provided
+								index ++;
+								if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
+									index ++;
+									enumNode.membersValue ~= generateLiteralAST();
+								}
+								// expect a } or a comma
+								if (tokens.tokens[index].type != Token.Type.BlockEnd && tokens.tokens[index].type != Token.Type.Comma){
+									compileErrors.append(CompileError(tokens.getTokenLine(index),"enum members must be separated using comma"));
+								}
+							}else{
+								compileErrors.append(CompileError(tokens.getTokenLine(index), "enum member name expected"));
+							}
+						}
+						index ++; // skip the }
+						// skip the optional semicolon
+						if (tokens.tokens[index].type == Token.Type.StatementEnd)
+							index ++;
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid enum definition, '{' expected"));
+					}
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "enum name expected"));
+				}
+			}
 			return enumNode;
 		}
 		/// generates AST for a function definition 
@@ -832,6 +882,22 @@ struct ASTGen{
 			}
 			return r;
 		}
-
+		/// generates LiteralNode
+		LiteralNode generateLiteralAST(){
+			LiteralNode r;
+			if ([Token.Type.Double,Token.Type.Integer,Token.Type.String,Token.Type.Char].hasElement(tokens.tokens[index].type)){
+				try{
+					r = LiteralNode([tokens.tokens[index]]);
+					r.lineno = tokens.getTokenLine(index);
+				}catch (Exception e){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
+					.destroy(e);
+				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "literal expected"));
+			}
+			index ++;
+			return r;
+		}
 	}
 }
