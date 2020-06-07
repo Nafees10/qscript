@@ -137,7 +137,50 @@ struct ASTGen{
 		/// changes `index` to next token after struct definition
 		StructNode generateStructAST(){
 			StructNode structNode;
-
+			if (tokens.tokens[index] == Token(Token.Type.Keyword, "struct")){
+				// read the name
+				index ++;
+				if (tokens.tokens[index].type == Token.Type.Identifier){
+					structNode.name = tokens.tokens[index].token;
+					// now check the { and read members
+					index ++;
+					if (tokens.tokens[index].type == Token.Type.BlockStart){
+						// now start reading it all as VarDeclareNodes
+						index ++;
+						VarDeclareNode[] varDeclares;
+						while (tokens.tokens[index].type != Token.Type.BlockEnd){
+							varDeclares ~= generateVarDeclareAST();
+							// make sure no members were assignned values, thats not allowed
+							foreach (memberName; varDeclares[$-1].vars){
+								if (varDeclares[$-1].hasValue(memberName)){
+									compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"cannot assign value to members in struct definition"));
+								}
+								// make sure same member name isn't used >1 times
+								if (structNode.membersName.hasElement(memberName)){
+									compileErrors.append(CompileError(tokens.getTokenLine(index),
+										"member '"~memberName~"' is declared multiple times in struct"));
+								}else{
+									structNode.membersName ~= memberName;
+									structNode.membersDataType ~= varDeclares[$-1].type;
+								}
+							}
+							structNode.containsRef = structNode.containsRef || varDeclares[$-1].type.isRef;
+						}
+						index ++; // skip the }
+						// if there is a semicolon, skip it
+						if (tokens.tokens[index].type == Token.Type.StatementEnd)
+							index ++;
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid struct definition, '{' expected"));
+					}
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "struct name expected"));
+				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not a struct definition"));
+				index ++;
+			}
 			return structNode;
 		}
 		/// generates AST for a enum definition
@@ -216,6 +259,9 @@ struct ASTGen{
 				if (tokens.tokens[index].type == Token.Type.BlockStart){
 					// no args, just body
 					functionNode.bodyBlock = generateBlockAST();
+					// if there was a semicolon after function definition, skip that too
+					if (tokens.tokens[index].type == Token.Type.StatementEnd)
+						index ++;
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function has no body"));
 				}
@@ -520,8 +566,8 @@ struct ASTGen{
 			VarDeclareNode varDeclare;
 			varDeclare.lineno = tokens.getTokenLine(index);
 			// make sure it's a var declaration, and the vars are enclosed in parantheses
-			if ((tokens.tokens[index].token == "@" && DATA_TYPES.hasElement(tokens.tokens[index+1].token)) ||
-				DATA_TYPES.hasElement(tokens.tokens[index].token)){
+			if (tokens.tokens[index] == Token(Token.Type.Keyword, "var")){
+				index ++;
 				// read the type
 				try{
 					varDeclare.type = readType();
