@@ -123,8 +123,8 @@ Following data types can be defined in scripts that are derived from the above b
 These can be used to store multiple values of varying or same data types. They are defined like:  
 ```
 struct STRUCT_NAME{
-	DATA_TYPE1 NAME1;
-	DATA_TYPE2 NAME2;
+	var DATA_TYPE1 NAME1;
+	var DATA_TYPE2 NAME2;
 }
 ```
 
@@ -132,12 +132,12 @@ struct STRUCT_NAME{
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
 
-QScript does not allow functions as members of structs, only variables can be members.
+QScript does not _yet_ allow functions as members of structs, only variables can be members.
 
 An example usage of a struct would be:  
 ```
 public struct Position{
-	int x, y;
+	var int x, y;
 }
 public Position getPosition(int x, int y){
 	Position pos;
