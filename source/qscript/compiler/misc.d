@@ -18,6 +18,7 @@ package const string[] KEYWORDS = [
 	"function",
 	"struct",
 	"enum",
+	"var",
 	"return",
 	"if",
 	"else",
