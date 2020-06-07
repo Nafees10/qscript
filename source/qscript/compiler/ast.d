@@ -111,7 +111,7 @@ package struct EnumNode{
 	/// stores members names
 	public string[] membersName;
 	/// stores member's values (automatically populated by astcheck if baseDataType is int)
-	public string membersValues;
+	public LiteralNode[] membersValue;
 }
 
 /// to store var declaration
