@@ -211,6 +211,8 @@ package struct CodeNode{
 			return array.lineno;
 		}else if (_type == Type.SOperator){
 			return sOperator.lineno;
+		}else if (_type == Type.MemberSelector){
+			return memberSelector.lineno;
 		}
 		return 0;
 	}
@@ -230,6 +232,8 @@ package struct CodeNode{
 			return array.lineno = newLineno;
 		}else if (_type == Type.SOperator){
 			return sOperator.lineno = newLineno;
+		}else if (_type == Type.MemberSelector){
+			return memberSelector.lineno = newLineno;
 		}
 		return 0;
 	}
@@ -242,7 +246,8 @@ package struct CodeNode{
 		SOperator, // single operand operator
 		Variable,
 		ReadElement,
-		Array
+		Array,
+		MemberSelector
 	}
 	/// the stored type
 	private Type _type;
@@ -256,6 +261,7 @@ package struct CodeNode{
 		VariableNode var;
 		ReadElement arrayRead;
 		ArrayNode array;
+		MemberSelectorNode memberSelector;
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
@@ -287,6 +293,9 @@ package struct CodeNode{
 		}else static if (is (T == SOperatorNode)){
 			_type = CodeNode.Type.SOperator;
 			return sOperator = newNode;
+		}else static if (is (T == MemberSelectorNode)){
+			_type = CodeNode.Type.MemberSelector;
+			return memberSelector = newNode;
 		}
 	}
 	/// returns the stored type
@@ -311,6 +320,8 @@ package struct CodeNode{
 			return array;
 		}else static if (T == CodeNode.Type.SOperator){
 			return sOperator;
+		}else static if (T == CodeNode.Type.MemberSelector){
+			return memberSelector;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
@@ -331,6 +342,8 @@ package struct CodeNode{
 			return sOperator.isLiteral;
 		if (_type == CodeNode.Type.Variable)
 			return var.isLiteral;
+		if (_type == CodeNode.Type.MemberSelector)
+			return memberSelector.isLiteral;
 		return false;
 	}
 	/// the return type, only available after ASTCheck has checked it
@@ -351,6 +364,8 @@ package struct CodeNode{
 			return sOperator.returnType;
 		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType;
+		}else if (_type == CodeNode.Type.MemberSelector){
+			return memberSelector.returnType;
 		}
 		return DataType();
 	}
@@ -372,12 +387,38 @@ package struct CodeNode{
 			return sOperator.returnType = newType;
 		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType = newType;
+		}else if (_type == CodeNode.Type.MemberSelector){
+			return memberSelector.returnType = newType;
 		}
 		return DataType();
 	}
 	/// constructor
 	this (T)(T newNode){
 		node = newNode;
+	}
+}
+
+/// to store a member selection (someStructOrEnum.memberName)
+package struct MemberSelectorNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// the parent node (to select member from)
+	private CodeNode* _parentPtr;
+	/// name of member
+	public string memberName;
+	/// Return type. Only valid after ASTCheck
+	public DataType returnType;
+	/// stores if value is static
+	public bool isLiteral = false;
+	/// Returns: the parent node
+	@property CodeNode parent(){
+		return *_parentPtr;
+	}
+	/// ditto
+	@property CodeNode paernt(CodeNode newParent){
+		if (!_parentPtr)
+			_parentPtr = new CodeNode;
+		return *_parentPtr = newParent;
 	}
 }
 
