@@ -94,6 +94,8 @@ package struct StructNode{
 	public string[] membersName;
 	/// data types of members of this struct
 	public DataType[] membersDataType;
+	/// stores if the struct contains any members whose data type is a reference
+	public bool containsRef = false;
 }
 
 /// To store a enum definition
