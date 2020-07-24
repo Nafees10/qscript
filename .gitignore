@@ -1,7 +1,6 @@
 .dub/
 .vscode/
 ast
-compiler
 demo
 dub_platform*
 dub.selections.json
