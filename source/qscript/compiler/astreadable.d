@@ -225,6 +225,8 @@ JSONValue toJSON(CodeNode node){
 		r["code"] = node.node!(CodeNode.Type.SOperator).toJSON;
 	}else if (node.type == CodeNode.Type.Variable){
 		r["code"] = node.node!(CodeNode.Type.Variable).toJSON;
+	}else if (node.type == CodeNode.Type.MemberSelector){
+		r["code"] = node.node!(CodeNode.Type.MemberSelector).toJSON;
 	}
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
@@ -277,6 +279,17 @@ JSONValue toJSON(NegativeValueNode node){
 	r["type"] = JSONValue(node.returnType.name);
 	r["value"] = node.value.toJSON;
 	r["lineno"] = JSONValue(node.lineno);
+	return r;
+}
+
+/// Creates JSONValue for MemberSelectorNode
+JSONValue toJSON(MemberSelectorNode node){
+	JSONValue r;
+	r["node"] = JSONValue("MemberSelectorNode");
+	r["type"] = JSONValue(node.returnType.name);
+	r["lineno"] = JSONValue(node.lineno);
+	r["parent"] = node.parent.toJSON;
+	r["member"] = JSONValue(node.memberName);
 	return r;
 }
 
