@@ -429,7 +429,7 @@ string decodeString(string s){
 string encodeFunctionName (string name, DataType[] argTypes){
 	string r = name ~ '/';
 	foreach (argType; argTypes)
-		r = r ~ argType.getStr~ '/';
+		r = r ~ argType.name~ '/';
 	return r;
 }
 /// 
