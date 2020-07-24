@@ -420,6 +420,12 @@ package struct MemberSelectorNode{
 			_parentPtr = new CodeNode;
 		return *_parentPtr = newParent;
 	}
+	/// Constructor
+	this(CodeNode parent, string member, uinteger lineno){
+		this.paernt = parent;
+		this.memberName = member;
+		this.lineno = lineno;
+	}
 }
 
 /// stores a variable
