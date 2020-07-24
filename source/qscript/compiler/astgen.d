@@ -38,7 +38,7 @@ struct ASTGen{
 			}
 			// look for TokenType.Keyword where token.token == "function"
 			if (tokens.tokens[index].type == Token.Type.Keyword){
-				uinteger errorCount = compileErrors.count;
+				immutable uinteger errorCount = compileErrors.count;
 				if (tokens.tokens[index].token == "import"){
 					string[] imports = readImports();
 					scriptNode.imports ~= imports;
@@ -375,18 +375,16 @@ struct ASTGen{
 				}else if (tokens.tokens[index].token == "return"){
 					// return statement
 					return StatementNode(generateReturnAST());
+				}else if (tokens.tokens[index].token == "var"){
+					// var declare
+					return StatementNode(generateVarDeclareAST());
 				}
-			}else if (tokens.tokens[index].type == Token.Type.DataType || 
-				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.DataType)){
-				// var declare
-				return StatementNode(generateVarDeclareAST());
 			}else if (tokens.tokens[index].type == Token.Type.Identifier &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// is a function call
 				return StatementNode(generateFunctionCallAST());
-			}else if (tokens.tokens[index].type == Token.Type.Identifier || 
-				(tokens.tokens[index].token == "@" && tokens.tokens[index+1].type == Token.Type.Identifier)){
-				// assignment
+			}else{
+				// now if it's not a assignment statement, idk what it is
 				return StatementNode(generateAssignmentAST());
 			}
 			compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid statement"));
@@ -815,6 +813,8 @@ struct ASTGen{
 		/// 6. A literal array (`[x, y, z]`)
 		/// 
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
+		/// 
+		/// set `skipPost` to true in case you do not want it to read into `[...]` or `.` after the Node
 		CodeNode generateNodeAST(){
 			Token token = tokens.tokens[index];
 			CodeNode r = CodeNode();
@@ -872,14 +872,29 @@ struct ASTGen{
 				index ++;
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
 			}
-			// check if theres a [] ahead of it to read it an element
-			while (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
-				// skip the opening bracket `[`
-				index ++;
-				r = CodeNode(ReadElement(r, generateCodeAST()));
-				if (tokens.tokens[index].type == Token.Type.IndexBracketClose)
-					index ++; // skip the ] bracket
+			// check if theres a [] or MemberSelector ahead of it to read it an element
+			while (tokens.tokens[index].type == Token.Type.IndexBracketOpen ||
+			tokens.tokens[index].type == Token.Type.MemberSelector){
+				if (tokens.tokens[index].type == Token.Type.IndexBracketOpen){
+					// skip the opening bracket `[`
+					index ++;
+					r = CodeNode(ReadElement(r, generateCodeAST()));
+					if (tokens.tokens[index].type == Token.Type.IndexBracketClose)
+						index ++; // skip the ] bracket
+				}else if (tokens.tokens[index].type == Token.Type.MemberSelector){
+					// read just the member name
+					immutable uinteger lineno = tokens.getTokenLine(index);
+					index ++;
+					if (tokens.tokens[index].type != Token.Type.Identifier){
+						compileErrors.append(CompileError(tokens.getTokenLine(index),
+								"Expected identifier after member selector operator"));
+					}else{
+						r = CodeNode(MemberSelectorNode(r, tokens.tokens[index].token, lineno));
+						index ++;
+					}
+				}
 			}
+			
 			return r;
 		}
 		/// generates LiteralNode
