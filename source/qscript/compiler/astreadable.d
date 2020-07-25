@@ -15,14 +15,24 @@ import std.json;
 
 /// Creates JSONValue for ScriptNode
 JSONValue toJSON(ScriptNode node){
-	JSONValue[] functionsJSON;
-	functionsJSON.length = node.functions.length;
+	JSONValue[] arrayJSON;
+	arrayJSON.length = node.functions.length;
 	foreach (i, fNode; node.functions){
-		functionsJSON[i] = fNode.toJSON;
+		arrayJSON[i] = fNode.toJSON;
 	}
 	JSONValue r;
 	r["node"] = JSONValue("ScriptNode");
-	r["functions"] = JSONValue(functionsJSON);
+	r["functions"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.enums.length;
+	foreach (i, enumNode; node.enums){
+		arrayJSON[i] = enumNode.toJSON;
+	}
+	r["enums"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.structs.length;
+	foreach (i, structNode; node.structs){
+		arrayJSON[i] = structNode.toJSON;
+	}
+	r["structs"] = JSONValue(arrayJSON);
 	return r;
 }
 
@@ -44,6 +54,49 @@ JSONValue toJSON(FunctionNode node){
 	r["id"] = JSONValue(node.id);
 	r["lineno"] = JSONValue(node.lineno);
 	r["varCount"] = JSONValue(node.varCount);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	return r;
+}
+
+/// Creates JSONValue for StructNode
+JSONValue toJSON(StructNode node){
+	JSONValue r;
+	r["node"] = JSONValue("ScriptNode");
+	r["lineno"] = JSONValue(node.lineno);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["name"] = JSONValue(node.name);
+	JSONValue[] members;
+	members.length = node.membersName.length;
+	foreach (i; 0 .. node.membersName.length){
+		members[i]["name"] = node.membersName[i];
+		members[i]["type"] = node.membersDataType[i].name;
+	}
+	r["members"] = JSONValue(members);
+	r["containsRef"] = JSONValue(node.containsRef.to!string);
+	return r;
+}
+
+/// Creates JSONValue for EnumNode
+JSONValue toJSON(EnumNode node){
+	JSONValue r;
+	r["node"] = JSONValue("EnumNode");
+	r["lineno"] = JSONValue(node.lineno);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["name"] = JSONValue(node.name);
+	r["baseDataType"] = JSONValue(node.baseDataType.name);
+	JSONValue[] members;
+	members.length = node.membersName.length;
+	if (node.membersValue.length){
+		foreach (i; 0 .. node.membersName.length){
+			members[i]["name"] = JSONValue(node.membersName[i]);
+			members[i]["value"] = node.membersValue[i].toJSON;
+		}
+	}else{
+		foreach (i, name; node.membersName){
+			members[i] = JSONValue(name);
+		}
+	}
+	r["members"] = JSONValue(members);
 	return r;
 }
 
@@ -178,6 +231,7 @@ JSONValue toJSON(FunctionCallNode node){
 JSONValue toJSON(VarDeclareNode node){
 	JSONValue r;
 	r["node"] = JSONValue("varDeclareNode");
+	r["visibility"] = JSONValue(node.visibility.to!string);
 	r["type"] = JSONValue(node.type.name);
 	JSONValue[] varTypeValueList;
 	varTypeValueList.length = node.vars.length;
