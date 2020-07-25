@@ -75,25 +75,13 @@ protected:
 	/// generates byte code for AssignmentNode
 	void generateByteCode(AssignmentNode node){
 		// first get the value
-		generateByteCode(node.val);
-		if (node.indexes.length > 0){
-			// use ReadElement to get the element to write to
-			for (integer i = node.indexes.length -1; i >= 0;i--){
-				generateByteCode(node.indexes[i]);
-			}
-			_writer.addInstruction(node.deref ? Instruction.PushFrom : Instruction.PushRefFrom, [to!string(node.var.id)]); // this gets the ref ot array
-			// now add readElement for each of those
-			foreach (i; 0 .. node.indexes.length){
-				_writer.addInstruction(Instruction.ArrayRefElement);
-			}
-			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
-		}else if (node.deref){
-			_writer.addInstruction(Instruction.PushFrom, [to!string(node.var.id)]); // this gets the ref
-			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
+		generateByteCode(node.rvalue);
+		if (node.deref){
+			generateByteCode(node.lvalue);
 		}else{
-			// just do pushTo 
-			_writer.addInstruction(Instruction.WriteTo, [to!string(node.var.id)]);
+			generateByteCode(node.lvalue, true);
 		}
+		_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
 	}
 	/// generates ByteCode for DoWhileNode
 	void generateByteCode(DoWhileNode node){

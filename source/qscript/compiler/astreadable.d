@@ -145,17 +145,10 @@ JSONValue toJSON(StatementNode node){
 JSONValue toJSON(AssignmentNode node){
 	JSONValue r;
 	r["node"] = JSONValue("AssignmentNode");
-	r["lvalueIsRef"] = JSONValue(node.deref ? "true" : "false");
-	r["var"] = node.var.toJSON;
-	JSONValue[] indexes;
-	indexes.length = node.indexes.length;
-	foreach (i, index; node.indexes){
-		indexes[i] = index.toJSON;
-	}
-	r["indexes"] = JSONValue(indexes);
-	r["val"] = node.val.toJSON;
-
 	r["lineno"] = JSONValue(node.lineno);
+	r["deref"] = JSONValue(node.deref.to!string);
+	r["lvalue"] = node.lvalue.toJSON;
+	r["rvalue"] = node.rvalue.toJSON;
 	return r;
 }
 

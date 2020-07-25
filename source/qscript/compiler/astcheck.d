@@ -237,29 +237,22 @@ protected:
 	/// checks a AssignmentNode
 	void checkAST(ref AssignmentNode node){
 		// make sure var exists, checkAST(VariableNode) does that
-		checkAST(node.var);
-		checkAST(node.val);
-		// now check the CodeNode's for indexes
-		for (uinteger i=0; i < node.indexes.length; i++){
-			checkAST(node.indexes[i]);
-		}
-		DataType varType = getVarType (node.var.varName);
-		// check if the indexes provided for the var are possible, i.e if the var declaration has >= those indexes
-		if (varType.arrayDimensionCount < node.indexes.length){
-			compileErrors.append(CompileError(node.var.lineno, "array's dimension count in assignment differes from declaration"));
+		checkAST(node.lvalue);
+		checkAST(node.rvalue);
+		const DataType lType = node.lvalue.returnType, rType = node.rvalue.returnType;
+		// allow only de-ref-ing references
+		if (!node.deref && lType.isRef){
+			compileErrors.append(CompileError(node.lvalue.lineno, "can only deref (@) a reference"));
 		}else{
-			// check if the data type of the value and var (considering the indexes used) match
-			DataType expectedType = varType;
-			expectedType.arrayDimensionCount -= node.indexes.length;
-			// check with deref (if has to deref the var)
+			// go on, do some more tests
 			if (node.deref){
-				expectedType.isRef = false;
-				if (!varType.isRef){
-					compileErrors.append (CompileError(node.val.lineno, "can only deref (@) a reference"));
+				if (lType.isRef == rType.isRef){
+					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
-			}
-			if (getReturnType(node.val) != expectedType){
-				compileErrors.append(CompileError(node.val.lineno, "cannot assign value with different data type to variable"));
+			}else{
+				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type != rType.type){
+					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
+				}
 			}
 		}
 	}

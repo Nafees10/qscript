@@ -806,16 +806,13 @@ package struct AssignmentNode{
 	/// stores whether the assignment is to a variable (false) or if it has to dereference first (true)
 	public bool deref = false;
 	/// the variable to assign to
-	public VariableNode var;
-	/// stores the how "deeper" dimension of the array the value has to be assigned to
-	public CodeNode[] indexes;
+	public CodeNode lvalue;
 	/// the value to assign
-	public CodeNode val;
+	public CodeNode rvalue;
 	/// constructor
-	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value, bool deref = false){
-		var = variable;
-		indexes = varIndexes.dup;
-		val = value;
+	this (CodeNode lv, CodeNode rv, bool deref = false){
+		lvalue = lv;
+		rvalue = rv;
 		this.deref = deref;
 	}
 }

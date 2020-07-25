@@ -566,45 +566,25 @@ struct ASTGen{
 				assignment.deref = true;
 				index++;
 			}
-			CodeNode varCodeNode = generateCodeAST();
-			VariableNode var;
-			CodeNode[] indexes;
-			if (varCodeNode.type == CodeNode.Type.ReadElement){
-				LinkedList!CodeNode indexesList = new LinkedList!CodeNode;
-				ReadElement indexRead;
-				while (varCodeNode.type == CodeNode.Type.ReadElement){
-					indexRead = varCodeNode.node!(CodeNode.Type.ReadElement);
-					indexesList.append(indexRead.index);
-					varCodeNode = indexRead.readFromNode;
-				}
-				indexes = indexesList.toArray.reverseArray;
-			}
-			// make sure it's a var
-			if (varCodeNode.type != CodeNode.Type.Variable){
-				compileErrors.append (CompileError(tokens.getTokenLine(index),
-						"can only assign to variables or deref-ed (@) references"));
-			}else{
-				var = varCodeNode.node!(CodeNode.Type.Variable);
-				// now at index, the token should be a `=` operator
-				if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
-					// everything's ok till the `=` operator
-					index++;
-					CodeNode val = generateCodeAST();
-					assignment.var = var;
-					assignment.indexes = indexes;
-					assignment.val = val;
-					// make sure it's followed by a semicolon
-					if (tokens.tokens[index].type != Token.Type.StatementEnd){
-						compileErrors.append(CompileError(tokens.getTokenLine(index),
-								"assingment statement not followed by semicolon"));
-					}else{
-						// skip the semicolon too
-						index++;
-					}
+			CodeNode lvalue = generateCodeAST();
+			// now at index, the token should be a `=` operator
+			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
+				// everything's ok till the `=` operator
+				index++;
+				CodeNode rvalue = generateCodeAST();
+				assignment.lvalue = lvalue;
+				assignment.rvalue = rvalue;
+				// make sure it's followed by a semicolon
+				if (tokens.tokens[index].type != Token.Type.StatementEnd){
+					compileErrors.append(CompileError(tokens.getTokenLine(index),
+							"assingment statement not followed by semicolon"));
 				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
-					index ++;
+					// skip the semicolon too
+					index++;
 				}
+			}else{
+				compileErrors.append(CompileError(tokens.getTokenLine(index), "not an assignment statement"));
+				index ++;
 			}
 			return assignment;
 		}
