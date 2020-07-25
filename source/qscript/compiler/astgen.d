@@ -310,7 +310,7 @@ struct ASTGen{
 					// no args, just body
 					functionNode.bodyBlock = generateBlockAST();
 					// if there was a semicolon after function definition, skip that too
-					if (tokens.tokens[index].type == Token.Type.StatementEnd)
+					if (index +1 < tokens.tokens.length && tokens.tokens[index].type == Token.Type.StatementEnd)
 						index ++;
 				}else{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), "function has no body"));
