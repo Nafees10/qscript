@@ -124,7 +124,11 @@ public struct DataType{
 		Void, /// .
 		Char, /// .
 		Int, /// .
+		Uint, /// .
 		Double, /// .
+		Bool, /// .
+		Byte, /// signed 8 bit int
+		Ubyte, /// unsigned 8 bit int
 		Custom, /// some other type
 	}
 	/// the actual data type
