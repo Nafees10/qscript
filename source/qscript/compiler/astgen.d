@@ -147,7 +147,7 @@ struct ASTGen{
 					if (tokens.tokens[index].type == Token.Type.BlockStart){
 						// now start reading it all as VarDeclareNodes
 						index ++;
-						while (tokens.tokens[index].type != Token.Type.BlockEnd){
+						while (index + 1 < tokens.tokens.length && tokens.tokens[index].type != Token.Type.BlockEnd){
 							VarDeclareNode vars = generateVarDeclareAST();
 							// make sure no members were assignned values, thats not allowed
 							foreach (memberName; vars.vars){
@@ -172,7 +172,7 @@ struct ASTGen{
 							compileErrors.append(CompileError(tokens.getTokenLine(index), "struct has no members"));
 						}
 						// if there is a semicolon, skip it
-						if (tokens.tokens[index].type == Token.Type.StatementEnd)
+						if (index + 1 < tokens.tokens.length && tokens.tokens[index].type == Token.Type.StatementEnd)
 							index ++;
 					}else{
 						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid struct definition, '{' expected"));
@@ -208,7 +208,7 @@ struct ASTGen{
 				if (tokens.tokens[index].type == Token.Type.Identifier){
 					enumNode.name = tokens.tokens[index].token;
 					index ++;
-					if (tokens.tokens[index].type == Token.Type.BlockStart){
+					if (index + 1 < tokens.tokens.length && tokens.tokens[index].type == Token.Type.BlockStart){
 						index ++;
 						// now start reading members
 						while (tokens.tokens[index].type != Token.Type.BlockEnd){
@@ -230,7 +230,7 @@ struct ASTGen{
 						}
 						index ++; // skip the }
 						// skip the optional semicolon
-						if (tokens.tokens[index].type == Token.Type.StatementEnd)
+						if (index + 1 < tokens.tokens.length && tokens.tokens[index].type == Token.Type.StatementEnd)
 							index ++;
 					}else{
 						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid enum definition, '{' expected"));
