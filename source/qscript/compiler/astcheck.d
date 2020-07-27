@@ -250,7 +250,8 @@ protected:
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
 			}else{
-				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type != rType.type){
+				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type != rType.type ||
+				lType.isRef != rType.isRef){
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
 			}
