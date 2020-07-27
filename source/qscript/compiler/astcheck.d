@@ -241,7 +241,7 @@ protected:
 		checkAST(node.rvalue);
 		const DataType lType = node.lvalue.returnType, rType = node.rvalue.returnType;
 		// allow only de-ref-ing references
-		if (!node.deref && lType.isRef){
+		if (node.deref && !lType.isRef){
 			compileErrors.append(CompileError(node.lvalue.lineno, "can only deref (@) a reference"));
 		}else{
 			// go on, do some more tests
