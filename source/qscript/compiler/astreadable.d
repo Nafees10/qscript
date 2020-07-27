@@ -68,8 +68,8 @@ JSONValue toJSON(StructNode node){
 	JSONValue[] members;
 	members.length = node.membersName.length;
 	foreach (i; 0 .. node.membersName.length){
-		members[i]["name"] = node.membersName[i];
-		members[i]["type"] = node.membersDataType[i].name;
+		members[i]["name"] = JSONValue(node.membersName[i]);
+		members[i]["type"] = JSONValue(node.membersDataType[i].name);
 	}
 	r["members"] = JSONValue(members);
 	r["containsRef"] = JSONValue(node.containsRef.to!string);
