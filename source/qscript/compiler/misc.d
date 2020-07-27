@@ -138,6 +138,8 @@ public struct DataType{
 	/// Returns: this data type in human readable string.
 	@property string name(){
 		char[] r = cast(char[])(this.type == Type.Custom ? _name.dup : this.type.to!string.lowercase);
+		if (this.isRef)
+			r = '@' ~ r;
 		uinteger i = r.length;
 		if (this.isArray){
 			r.length += this.arrayDimensionCount * 2;
