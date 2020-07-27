@@ -344,6 +344,7 @@ unittest{
 	assert(dType == DataType("double[][]"));
 	// unittests for `.name()`
 	assert(DataType("potatoType[][]").name == "potatoType[][]");
+	assert(DataType("double[]").name == "double[]");
 }
 
 /// splits an array in tokens format to it's elements
