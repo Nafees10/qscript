@@ -29,7 +29,7 @@ The code is thoroughly documented. Separate documentation can be found [here](ht
 
 To be able to run basic scripts, you can build the demo using:  
 
-`dub build -c=demo -b=release`  
+`dub build -c=qsDemo -b=release`  
 
 This will create an executable named `demo` in the directory. To run a script through it, do:  
 
