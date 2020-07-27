@@ -97,12 +97,10 @@ struct ASTGen{
 			}
 			index ++; // skip the import
 			while (tokens.tokens[index].type != Token.Type.StatementEnd){
-				if (tokens.tokens[index].type == Token.Type.Comma)
-					continue;
 				if (tokens.tokens[index].type == Token.Type.Identifier){
 					r ~= tokens.tokens[index].token;
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "identifier expected as library name"));
+				}else if (tokens.tokens[index].type != Token.Type.Comma){
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid import statement"));
 				}
 				index ++;
 			}
