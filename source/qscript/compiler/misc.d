@@ -29,7 +29,7 @@ package const string[] KEYWORDS = [
 /// Visibility Specifier keywords
 package const string[] VISIBILITY_SPECIFIERS = ["public", "private"];
 /// data types
-package const string[] DATA_TYPES = ["void", "int", "double", "char"];
+package const string[] DATA_TYPES = ["void", "int", "uint", "double", "char", "bool", "byte", "ubyte"];
 /// An array containing double-operand operators
 package const string[] OPERATORS = [".", "/", "*", "+", "-", "%", "~", "<", ">", ">=", "<=", "==", "=", "&&", "||"];
 /// single-operand operators
@@ -119,7 +119,7 @@ public struct Function{
 
 /// used to store data types for data at compile time
 public struct DataType{
-	/// enum defining all data types
+	/// enum defining all data types. These are all lowercase of what they're written here
 	public enum Type{
 		Void, /// .
 		Char, /// .
@@ -135,22 +135,22 @@ public struct DataType{
 	bool isRef = false;
 	/// stores the type name in case of Type.Custom
 	private string _name;
-	/// Returns: name of base type. Works with Type.Custom too
+	/// Returns: this data type in human readable string.
 	@property string name(){
-		if (this.type == Type.Custom)
-			return _name;
-		return this.type.to!string;
-	}
-	/// ditto
-	@property string name(string newName){
-		foreach (curType; EnumMembers!Type){
-			if (curType != Type.Custom && curType.to!string.lowercase == newName){
-				this.type = curType;
-				return newName;
+		char[] r = cast(char[])(this.type == Type.Custom ? _name.dup : this.type.to!string.lowercase);
+		uinteger i = r.length;
+		if (this.isArray){
+			r.length += this.arrayDimensionCount * 2;
+			for (; i < r.length; i += 2){
+				r[i .. i + 2] = "[]";
 			}
 		}
-		this.type = Type.Custom;
-		return this._name = newName;
+		return cast(string)r;
+	}
+	/// Just calls fromString()
+	@property string name(string newName){
+		this.fromString(newName);
+		return newName;
 	}
 	/// returns: true if it's an array. Strings are arrays too (char[])
 	@property bool isArray(){
@@ -192,7 +192,7 @@ public struct DataType{
 	this (Token[] data){
 		fromData(data);
 	}
-	/// reads DataType from a string, works only for base data types
+	/// reads DataType from a string, works for base types and custom types
 	/// 
 	/// Throws: Exception in case of failure or bad format in string
 	void fromString(string s){
@@ -227,7 +227,17 @@ public struct DataType{
 				throw new Exception("invalid data type");
 			}
 		}
-		this.name = sType;
+		bool isCustom = true;
+		foreach (curType; EnumMembers!Type){
+			if (curType != Type.Custom && curType.to!string.lowercase == sType){
+				this.type = curType;
+				isCustom = false;
+			}
+		}
+		if (isCustom){
+			this.type = Type.Custom;
+			this._name = sType;
+		}
 		arrayDimensionCount = indexCount;
 	}
 
@@ -312,11 +322,6 @@ public struct DataType{
 		}
 		callCount --;
 	}
-
-	/// converts this DataType to string. Deprecated, use DataType.Name
-	deprecated string getStr(){
-		return this.name;
-	}
 }
 /// 
 unittest{
@@ -337,6 +342,8 @@ unittest{
 	assert(dType == DataType("char[][]"));
 	dType.fromData(["[", "[", "25.0", ",", "2.5", "]", ",", "[", "15.0", ",", "25.0", "]", "]"].stringToTokens);
 	assert(dType == DataType("double[][]"));
+	// unittests for `.name()`
+	assert(DataType("potatoType[][]").name == "potatoType[][]");
 }
 
 /// splits an array in tokens format to it's elements
