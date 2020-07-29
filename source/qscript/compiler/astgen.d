@@ -162,7 +162,6 @@ struct ASTGen{
 									structNode.membersDataType ~= vars.type;
 								}
 							}
-							structNode.containsRef = structNode.containsRef || vars.type.isRef;
 						}
 						index ++; // skip the }
 						// now check if struct has any members
