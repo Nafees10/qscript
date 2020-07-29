@@ -241,7 +241,8 @@ JSONValue toJSON(VarDeclareNode node){
 	foreach (i, varName; node.vars){
 		JSONValue var;
 		var["name"] = JSONValue(varName);
-		var["id"] = JSONValue(node.varIDs[varName]);
+		if (varName in node.varIDs)
+			var["id"] = JSONValue(node.varIDs[varName]);
 		if (node.hasValue(varName))
 			var["value"] = node.getValue(varName).toJSON;
 		varTypeValueList[i] = var;
