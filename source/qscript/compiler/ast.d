@@ -88,14 +88,44 @@ package struct StructNode{
 	public uinteger lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
+	/// the actual struct
+	private Library.Struct _struct;
 	/// the name of this struct
-	public string name;
+	public @property string name(){
+		return _struct.name;
+	}
+	/// ditto
+	public @property string name(string newName){
+		return _struct.name = newName;
+	}
 	/// name of members of this struct
-	public string[] membersName;
+	public @property ref string[] membersName() return {
+		return _struct.membersName;
+	}
+	/// ditto
+	public @property ref string[] membersName(string[] newMembersName) return {
+		return _struct.membersName = newMembersName;
+	}
 	/// data types of members of this struct
-	public DataType[] membersDataType;
-	/// stores if the struct contains any members whose data type is a reference
-	public bool containsRef = false;
+	public @property ref DataType[] membersDataType() return{
+		return _struct.membersDataType;
+	}
+	/// ditto
+	public @property ref DataType[] membersDataType(DataType[] newMembersDataType) return{
+		return _struct.membersDataType = newMembersDataType;
+	}
+	/// Returns: true if this struct contains a reference
+	public @property bool containsRef(){
+		foreach (type; _struct.membersDataType){
+			if (type.isRef)
+				return true;
+		}
+		return false;
+	}
+	/// Returns: Library.Struct representing this
+	public @property Library.Struct toStruct(){
+		return _struct;
+	}
 }
 
 /// To store a enum definition
@@ -112,6 +142,18 @@ package struct EnumNode{
 	public string[] membersName;
 	/// stores member's values (automatically populated by astcheck if baseDataType is int)
 	public LiteralNode[] membersValue;
+	/// returns: misc.Enum representing this enum
+	public Library.Enum toEnum(){
+		Library.Enum r;
+		r.name = this.name;
+		r.type = this.baseDataType;
+		r.membersName = this.membersName.dup;
+		r.membersValue.length = this.membersValue.length;
+		foreach (i, val; this.membersValue){
+			r.membersValue[i] = val.literal;
+		}
+		return r;
+	}
 }
 
 /// to store var declaration
