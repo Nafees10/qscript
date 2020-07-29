@@ -33,6 +33,11 @@ JSONValue toJSON(ScriptNode node){
 		arrayJSON[i] = structNode.toJSON;
 	}
 	r["structs"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.variables.length;
+	foreach (i, var; node.variables){
+		arrayJSON[i] = var.toJSON;
+	}
+	r["variables"] = JSONValue(arrayJSON.dup);
 	arrayJSON.length = node.imports.length;
 	foreach (i, importName; node.imports){
 		arrayJSON[i] = JSONValue(importName);
