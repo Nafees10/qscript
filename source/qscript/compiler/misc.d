@@ -117,6 +117,47 @@ public struct Function{
 	}
 }
 
+/// To store information about a library
+public struct Library{
+	/// To store information about a struct
+	public struct Struct{
+		/// the name of this struct
+		public string name;
+		/// name of members of this struct
+		public string[] membersName;
+		/// data types of members of this struct
+		public DataType[] membersDataType;
+	}
+	/// To store information about a enum
+	public struct Enum{
+		/// name of the enum
+		public string name;
+		/// base data type of enum
+		public DataType type;
+		/// members names
+		public string[] membersName;
+		/// members values
+		public string[] membersValue;
+	}
+	/// To store information about a global variable
+	public struct GlobalVar{
+		/// name of var
+		public string name;
+		/// data type
+		public DataType type;
+	}
+	/// name of library
+	string name;
+	/// functions exported by library. The index is function ID.
+	Function[] functions;
+	/// global variables exported by this library. index is ID
+	Library.GlobalVar[] vars;
+	/// structs exported by library
+	Library.Struct[] structs;
+	/// Enums exported by library
+	Library.Enum[] enums;
+}
+
 /// used to store data types for data at compile time
 public struct DataType{
 	/// enum defining all data types. These are all lowercase of what they're written here
