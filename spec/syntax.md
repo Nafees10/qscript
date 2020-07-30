@@ -113,9 +113,12 @@ FUNCTION_NAME ();
 # Data Types
 QScript has these basic data types:
 * `int` - a signed integer (`ptrdiff_t` in DLang is used for this)
-* `char` - a 1 byte character
+* `uint` - an unsigned integer (`size_t` in DLang)
 * `double` - a floating point (same as `double` in DLang)
-* `bool` - a `true` or `false`
+* `char` - a 1 byte character
+* `bool` - a `true` (non-zero int) or `false` (int, 0)
+* `byte` - signed 1 byte integer
+* `ubyte` - unsigned 1 byte integer
 
 Following data types can be defined in scripts that are derived from the above basic types:
 
