@@ -1033,14 +1033,14 @@ package struct ForNode{
 package struct FunctionCallNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
+	/// the id of the library this function is from. Only valid if `!isScriptDefined`
+	public uinteger libraryId;
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
 	public uinteger id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
 	public bool isScriptDefined;
-	/// if the function being called in in built QScript function
-	public bool isInBuilt=false;
 	/// the arguments for this function.
 	private CodeNode[] _arguments;
 	/// returns the values for arguments
