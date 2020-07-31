@@ -25,6 +25,9 @@ package const string[] KEYWORDS = [
 	"while",
 	"for",
 	"do",
+	"null",
+	"true",
+	"false"
 ] ~ DATA_TYPES ~ VISIBILITY_SPECIFIERS;
 /// Visibility Specifier keywords
 package const string[] VISIBILITY_SPECIFIERS = ["public", "private"];
