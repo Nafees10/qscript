@@ -478,6 +478,14 @@ package struct VariableNode{
 	public string varName;
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
 	public uinteger id;
+	/// the library ID where this is defined
+	public uinteger libraryId = 0;
+	/// stores if this is a global variable. Only valid valid after ASTCheck has been called on this.
+	public bool isGlobal = false;
+	/// if the variable is script defined (global or not), assigned after checkAST has been called on this
+	public deprecated @property bool isScriptDefined(){
+		return libraryId == 0;
+	}
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// true if its return value is static, i.e, will always return same value when evaluated
@@ -491,6 +499,8 @@ package struct VariableNode{
 		varName = name;
 		isLiteral = false;
 		returnType = DataType(DataType.Type.Void);
+		libraryId = 0;
+		isGlobal = false;
 	}
 }
 
@@ -1033,14 +1043,16 @@ package struct ForNode{
 package struct FunctionCallNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
-	/// the id of the library this function is from. Only valid if `!isScriptDefined`
-	public uinteger libraryId;
+	/// the id of the library this function is from.
+	public uinteger libraryId = 0;
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
 	public uinteger id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
-	public bool isScriptDefined;
+	public deprecated @property bool isScriptDefined(){
+		return libraryId == 0;
+	}
 	/// the arguments for this function.
 	private CodeNode[] _arguments;
 	/// returns the values for arguments
@@ -1058,6 +1070,7 @@ package struct FunctionCallNode{
 		fName = functionName;
 		arguments = functionArguments;
 		returnType = DataType(DataType.Type.Void);
+		libraryId = 0;
 	}
 }
 
