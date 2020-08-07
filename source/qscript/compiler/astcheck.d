@@ -115,7 +115,7 @@ private:
 	/// this function should be called right after checking in a sub-BlockNode or anything like that is finished  
 	/// it will put the vars declared inside that scope go out of scope
 	void decreaseScope(){
-		if (scopeDepth > 0){}
+		if (scopeDepth > 0){
 			foreach (key; varScope.keys){
 				if (varScope[key] == scopeDepth){
 					varScope.remove(key);
