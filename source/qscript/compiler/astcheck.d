@@ -15,6 +15,8 @@ class ASTCheck{
 private:
 	/// stores the libraries available. Index is the library ID. Index=0 is this script
 	Library[] _libraries;
+	/// stores private functions
+	Function[] _privateFunctions;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
 	/// stores data types of variables in currently-being-checked-FunctionNode
@@ -33,7 +35,7 @@ private:
 	/// 
 	/// Returns: false if it was already registered or global variable with same name exists,  
 	/// true if it was successful
-	bool addVar(string name, DataType type){
+	bool addVar(string name, DataType type, bool isPublic = false){
 		if (name in varTypes){
 			return false;
 		}
@@ -43,7 +45,7 @@ private:
 					return false;
 			}
 		}
-		if (scopeDepth == 0)
+		if (scopeDepth == 0 && isPublic)
 			_libraries[0].vars ~= Library.GlobalVar(name, type);
 		else
 			varTypes[name] = type;
@@ -60,21 +62,27 @@ private:
 	/// Returns: the data type of a variable  
 	/// or if var does not exist, returns `DataType()`
 	DataType getVarType(string name){
-		// first check global vars, and exported global vars from other libraries
+		if (name in varTypes){
+			return varTypes[name];
+		}
 		foreach (library; _libraries){
 			foreach (globVar; library.vars){
 				if (globVar.name == name)
 					return globVar.type;
 			}
 		}
-		if (name in varTypes){
-			return varTypes[name];
-		}
 		return DataType();
 	}
-	/// Returns: the ID for a variable. libraryId is only valid if isGlobal == true 
-	/// or -1 if it does not exist
+	/// Returns: the ID for a variable. or -1 if it does not exist  
+	/// libraryId is only valid if isGlobal == true 
 	integer getVarID(string name, ref bool isGlobal, ref uinteger libraryId){
+		libraryId = 0;
+		foreach (id, varName; varIDs){
+			if (name == varName){
+				isGlobal = varScope[name] == 0 ? true : false;
+				return id;
+			}
+		}
 		foreach (libId, library; _libraries){
 			foreach (i, globVar; library.vars){
 				if (globVar.name == name){
@@ -84,13 +92,11 @@ private:
 				}
 			}
 		}
-		foreach (id, varName; varIDs){
-			if (name == varName){
-				isGlobal = false;
-				return id;
-			}
-		}
 		return -1;
+	}
+	/// ditto
+	integer getVarID(string name){
+		
 	}
 	/// Returns: true if a var is available in current scope
 	bool varExists(string name){
@@ -137,7 +143,7 @@ private:
 	/// Returns: return type of a function, works for both script-defined and predefined functions  
 	/// or if the function does not exist, it'll return `DataType()`
 	DataType getFunctionType(string name, DataType[] argTypes){
-		foreach (func; scriptDefFunctions){
+		foreach (func; _privateFunctions){
 			if (func.name == name && func.argTypes == argTypes){
 				return func.returnType;
 			}
@@ -211,7 +217,6 @@ private:
 		/// stores the functions in byte code style, coz that way, its easier to check if same function with same
 		/// arg types has been used more than once
 		string[] byteCodefunctionNames;
-		scriptDefFunctions.length = node.functions.length;
 		byteCodefunctionNames.length = node.functions.length;
 		foreach (i, func; node.functions){
 			// read arg types into a single array
@@ -220,9 +225,9 @@ private:
 			foreach (index, arg; func.arguments)
 				argTypes[index] = arg.argType;
 			if (func.visibility == Visibility.Private)
-				scriptDefFunctions[i] = Function(func.name, func.returnType, argTypes);
+				_privateFunctions ~= Function(func.name, func.returnType, argTypes);
 			else
-				_libraries.functions ~= Function(func.name, func.returnType, argTypes);
+				_libraries[0].functions ~= Function(func.name, func.returnType, argTypes);
 			// check if it was previously declared as a private function
 			byteCodefunctionNames[i] = encodeFunctionName(func.name, argTypes);
 			if (byteCodefunctionNames[0 .. i].hasElement(byteCodefunctionNames[i])){
@@ -230,12 +235,10 @@ private:
 						"functions with same name must have different argument types"));
 			}
 			/// check if it was previously declared as a public function
-			foreach (lib; _libraries[1 .. $]){
-				foreach (libFunc; lib.functions){
-					if (func.name == libFunc.name && argTypes == libFunc.argTypes)
-						compileErrors.append (CompileError(func.lineno,
-							"functions with same name must have different argument types"));
-				}
+			foreach (libFunc; _libraries[0].functions){
+				if (func.name == libFunc.name && argTypes == libFunc.argTypes)
+					compileErrors.append (CompileError(func.lineno,
+						"functions with same name must have different argument types"));
 			}
 		}
 	}
@@ -347,23 +350,23 @@ protected:
 		}
 		// now make sure that that function exists, and the arg types match
 		bool functionExists = false;
-		foreach (i, func; scriptDefFunctions){
+		foreach (i, func; _privateFunctions){
 			if (func.name == node.fName && func.argTypes == argTypes){
 				functionExists = true;
-				node.isScriptDefined = true;
+				node.libraryId = 0;
 				node.id = i;
 				node.returnType = func.returnType;
 			}
 		}
 		if (!functionExists){
-			foreach (i, func; preDefFunctions~INBUILT_FUNCTIONS){
-				if (func.name == node.fName && matchArguments(func.argTypes, argTypes)){
-					functionExists = true;
-					node.isScriptDefined = false;
-					if (i >= preDefFunctions.length)
-						node.isInBuilt = true;
-					node.id = i;
-					node.returnType = func.returnType;
+			foreach (libId, library; _libraries){
+				foreach (i, func; library.functions){
+					if (func.name == node.fName && func.argTypes == argTypes){
+						functionExists = true;
+						node.libraryId = libId;
+						node.id = i;
+						node.returnType = func.returnType;
+					}
 				}
 			}
 		}
