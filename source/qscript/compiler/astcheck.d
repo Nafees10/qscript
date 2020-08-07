@@ -13,10 +13,8 @@ import utils.lists;
 /// One instance of this class can be used to check for errors in a script's AST.
 class ASTCheck{
 private:
-	/// stores the pre defined functions' names, arg types, and return types
-	Function[] preDefFunctions;
-	/// stores the script defined functions' names, arg types, and return types
-	Function[] scriptDefFunctions;
+	/// stores the libraries available. Index is the library ID. Index=0 is this script
+	Library[] _libraries;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
 	/// stores data types of variables in currently-being-checked-FunctionNode
@@ -30,15 +28,25 @@ private:
 	/// the largest variable id in currectly being-checked function
 	integer maxVarId;
 	/// stores current scope-depth
-	uinteger scopeDepth;
+	uinteger scopeDepth = 0;
 	/// registers a new var in current scope
 	/// 
-	/// Returns: false if it was already registered, true if it was successful
+	/// Returns: false if it was already registered or global variable with same name exists,  
+	/// true if it was successful
 	bool addVar(string name, DataType type){
 		if (name in varTypes){
 			return false;
 		}
-		varTypes[name] = type;
+		foreach (library; _libraries){
+			foreach (globVar; library.vars){
+				if (globVar.name == name)
+					return false;
+			}
+		}
+		if (scopeDepth == 0)
+			_libraries[0].vars ~= Library.GlobalVar(name, type);
+		else
+			varTypes[name] = type;
 		varScope[name] = scopeDepth;
 
 		uinteger i;
@@ -52,16 +60,33 @@ private:
 	/// Returns: the data type of a variable  
 	/// or if var does not exist, returns `DataType()`
 	DataType getVarType(string name){
+		// first check global vars, and exported global vars from other libraries
+		foreach (library; _libraries){
+			foreach (globVar; library.vars){
+				if (globVar.name == name)
+					return globVar.type;
+			}
+		}
 		if (name in varTypes){
 			return varTypes[name];
 		}
 		return DataType();
 	}
-	/// Returns: the ID for a variable  
+	/// Returns: the ID for a variable. libraryId is only valid if isGlobal == true 
 	/// or -1 if it does not exist
-	integer getVarID(string name){
+	integer getVarID(string name, ref bool isGlobal, ref uinteger libraryId){
+		foreach (libId, library; _libraries){
+			foreach (i, globVar; library.vars){
+				if (globVar.name == name){
+					isGlobal = true;
+					libraryId = libId;
+					return i;
+				}
+			}
+		}
 		foreach (id, varName; varIDs){
 			if (name == varName){
+				isGlobal = false;
 				return id;
 			}
 		}
@@ -69,6 +94,12 @@ private:
 	}
 	/// Returns: true if a var is available in current scope
 	bool varExists(string name){
+		foreach (lib; _libraries){
+			foreach (var; lib.vars){
+				if (var.name == name)
+					return true;
+			}
+		}
 		if (name in varTypes)
 			return true;
 		return false;
@@ -84,21 +115,22 @@ private:
 	/// this function should be called right after checking in a sub-BlockNode or anything like that is finished  
 	/// it will put the vars declared inside that scope go out of scope
 	void decreaseScope(){
-		foreach (key; varScope.keys){
-			if (varScope[key] == scopeDepth){
-				varScope.remove(key);
-				// remove from varDataTypes too!
-				varTypes.remove(key);
-				// remove it from varIDs too
-				foreach (id; varIDs.keys){
-					if (varIDs[id] == key){
-						varIDs.remove (id);
-						break;
+		if (scopeDepth > 0){}
+			foreach (key; varScope.keys){
+				if (varScope[key] == scopeDepth){
+					varScope.remove(key);
+					// remove from varDataTypes too!
+					if (key in varTypes)
+						varTypes.remove(key);
+					// remove it from varIDs too
+					foreach (id; varIDs.keys){
+						if (varIDs[id] == key){
+							varIDs.remove (id);
+							break;
+						}
 					}
 				}
 			}
-		}
-		if (scopeDepth > 0){
 			scopeDepth --;
 		}
 	}
@@ -110,9 +142,10 @@ private:
 				return func.returnType;
 			}
 		}
-		foreach (func; preDefFunctions){
-			if (func.name == name && func.argTypes == argTypes){
-				return func.returnType;
+		foreach (lib; _libraries){
+			foreach (func; lib.functions){
+				if (func.name == name && func.argTypes == argTypes)
+					return func.returnType;
 			}
 		}
 		return DataType();
@@ -171,7 +204,7 @@ private:
 		}
 		return DataType(DataType.Type.Void);
 	}
-	/// reads all FunctionNode from ScriptNode and writes them into `scriptDefFunctions`
+	/// reads all FunctionNode from ScriptNode and writes them into `scriptDefFunctions` & `_libraries[0].functions`
 	/// 
 	/// any error is appended to compileErrors
 	void readFunctions(ScriptNode node){
@@ -186,12 +219,23 @@ private:
 			argTypes.length = func.arguments.length;
 			foreach (index, arg; func.arguments)
 				argTypes[index] = arg.argType;
-			scriptDefFunctions[i] = Function(func.name, func.returnType, argTypes);
+			if (func.visibility == Visibility.Private)
+				scriptDefFunctions[i] = Function(func.name, func.returnType, argTypes);
+			else
+				_libraries.functions ~= Function(func.name, func.returnType, argTypes);
+			// check if it was previously declared as a private function
 			byteCodefunctionNames[i] = encodeFunctionName(func.name, argTypes);
 			if (byteCodefunctionNames[0 .. i].hasElement(byteCodefunctionNames[i])){
 				compileErrors.append (CompileError(func.lineno,
-						"functions with same name must have different argument types"
-					));
+						"functions with same name must have different argument types"));
+			}
+			/// check if it was previously declared as a public function
+			foreach (lib; _libraries[1 .. $]){
+				foreach (libFunc; lib.functions){
+					if (func.name == libFunc.name && argTypes == libFunc.argTypes)
+						compileErrors.append (CompileError(func.lineno,
+							"functions with same name must have different argument types"));
+				}
 			}
 		}
 	}
