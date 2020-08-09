@@ -63,7 +63,6 @@ JSONValue toJSON(FunctionNode node){
 	r["body"] = JSONValue(bodyJSON);
 	r["id"] = JSONValue(node.id);
 	r["lineno"] = JSONValue(node.lineno);
-	r["varCount"] = JSONValue(node.varCount);
 	r["visibility"] = JSONValue(node.visibility.to!string);
 	return r;
 }
@@ -216,8 +215,7 @@ JSONValue toJSON(FunctionCallNode node){
 	r["node"] = JSONValue("FunctionCallNode");
 	r["name"] = JSONValue(node.fName);
 	r["type"] = JSONValue(node.returnType.name);
-	r["isInbuilt"] = node.isInBuilt;
-	r["isScriptDefined"] = node.isScriptDefined;
+	r["libraryId"] = JSONValue(node.libraryId);
 	r["id"] = node.id;
 	JSONValue[] argListJSON;
 	argListJSON.length = node.arguments.length;
@@ -297,7 +295,8 @@ JSONValue toJSON(VariableNode node){
 	r["type"] = JSONValue(node.returnType.name);
 	r["name"] = JSONValue(node.varName);
 	r["id"] = JSONValue(node.id);
-
+	r["libraryId"] = JSONValue(node.libraryId);
+	r["isGlobal"] = JSONValue(node.isGlobal);
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
