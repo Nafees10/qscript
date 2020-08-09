@@ -45,6 +45,15 @@ package struct FunctionNode{
 	public Visibility visibility = Visibility.Private;
 	/// stores arguments with their data type
 	public FunctionNode.Argument[] arguments;
+	/// returns: data types of arguments
+	public @property DataType[] argTypes(){
+		DataType[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argType;
+		}
+		return r;
+	}
 	/// the name of the function
 	public string name;
 	/// body block of this function
@@ -53,8 +62,6 @@ package struct FunctionNode{
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// the id of this function, assigned after checkAST has been called on this
 	public uinteger id;
-	/// the maximum number of variables available in this function at a time (max var id + 1). assinged after checkAST
-	public uinteger varCount;
 	/// constructor
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
@@ -479,12 +486,12 @@ package struct VariableNode{
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
 	public uinteger id;
 	/// the library ID where this is defined
-	public uinteger libraryId = 0;
+	public integer libraryId = -1;
 	/// stores if this is a global variable. Only valid valid after ASTCheck has been called on this.
 	public bool isGlobal = false;
 	/// if the variable is script defined (global or not), assigned after checkAST has been called on this
 	public deprecated @property bool isScriptDefined(){
-		return libraryId == 0;
+		return libraryId == -1;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
@@ -499,7 +506,7 @@ package struct VariableNode{
 		varName = name;
 		isLiteral = false;
 		returnType = DataType(DataType.Type.Void);
-		libraryId = 0;
+		libraryId = -1;
 		isGlobal = false;
 	}
 }
@@ -1044,14 +1051,14 @@ package struct FunctionCallNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// the id of the library this function is from.
-	public uinteger libraryId = 0;
+	public integer libraryId = -1;
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
 	public uinteger id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
 	public deprecated @property bool isScriptDefined(){
-		return libraryId == 0;
+		return libraryId == -1;
 	}
 	/// the arguments for this function.
 	private CodeNode[] _arguments;
@@ -1070,7 +1077,7 @@ package struct FunctionCallNode{
 		fName = functionName;
 		arguments = functionArguments;
 		returnType = DataType(DataType.Type.Void);
-		libraryId = 0;
+		libraryId = -1;
 	}
 }
 
