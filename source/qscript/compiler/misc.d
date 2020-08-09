@@ -143,7 +143,7 @@ public struct Library{
 		public string[] membersValue;
 	}
 	/// To store information about a global variable
-	public struct GlobalVar{
+	public struct Variable{
 		/// name of var
 		public string name;
 		/// data type
@@ -154,11 +154,19 @@ public struct Library{
 	/// functions exported by library. The index is function ID.
 	Function[] functions;
 	/// global variables exported by this library. index is ID
-	Library.GlobalVar[] vars;
+	Library.Variable[] vars;
 	/// structs exported by library
 	Library.Struct[] structs;
 	/// Enums exported by library
 	Library.Enum[] enums;
+	/// clears this
+	void clear(){
+		functions = [];
+		vars = [];
+		structs = [];
+		enums = [];
+		name = "";
+	}
 }
 
 /// used to store data types for data at compile time
