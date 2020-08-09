@@ -50,11 +50,11 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 
 ## TODO For Upcoming Versions
 
-1. add `cast(Type)`
-1. unsigned integers
+1. Structs & Enums - Added in upcoming version v0.8.0
+1. new data types: uint, byte, ubyte - Added in upcoming version v0.8.0
+1. Scripts as libraries for other scripts - Added in upcoming version v0.8.0
+1. add `cast(Type)` - Coming in v0.8.0
 1. bitshift operators
-1. Structs
-1. Be able to load multiple scripts, to make it easier to separete scripts across files. Something similar to D's `import`
 
 ---
 
