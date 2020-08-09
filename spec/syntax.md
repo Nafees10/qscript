@@ -30,7 +30,7 @@ import stdio;
 # Visibility
 QScript has these visibility specifier:  
 
-* `private` - Only accessible from within script. Keep in mind that this only prevents access from other scripts, the host program can still access it.
+* `private` - Only accessible from within script.
 * `public` - Accessible by other scripts when this script is loaded as a library.
 
 By default, all declarations are `private`.
@@ -39,6 +39,9 @@ These can be written right before any declaration like:
 ```
 private void somePrivateFunction(int arg){
 	# body of private function
+}
+public struct SomeStruct{
+	var int someInt, someOtherInt;
 }
 ```
 
@@ -92,14 +95,12 @@ Each script can have 1 `this` function. It will be called before any other funct
 function this(){
 	# code to be executed when script is loaded
 }
+var int someGlobalVar = 5; # global variables are initialized before calling this()
 ```
-
 `this` function must not return any value.
 
 ## Function Calls
-There are 2 types of functions, script-defined, and external. External are made available by "registering" them into QScript (the script cannot do this).  
-In case a script defined function has the same name as an external one, the script-defined one will be called, external one will be ignored.  
-Both types of functions can be executed like:
+Function calls can be made liks this:
 ```
 FUNCTION_NAME (arg0, arg1);
 ```
@@ -107,6 +108,9 @@ And a function can take more/less than 2 arguments. In case it doesnt take any a
 ```
 FUNCTION_NAME ();
 ```
+
+In case a function with same argument types and same name is declared in a library and the script, the one 
+declared in the script will be called.
 
 ---
 
@@ -270,6 +274,16 @@ void setRefTo(@int ref, int to){
 	@ref = to;
 }
 ```
+
+---
+
+# Shadowing
+In case a function call, variable, enum, or struct matches the one made public by a library, and one declared
+in the script, the one declared will be preferred.  
+  
+In case of variables where the same variable name is used in a outer scope, this will result in an error. The 
+rule stated above applies only to conflicts between script and libraries.
+
 ---
 
 # If Statements
