@@ -49,6 +49,8 @@ private Token.Type getTokenType(string token){
 		return Token.Type.Integer;
 	}else if (isDouble(token)){
 		return Token.Type.Double;
+	}else if (token == "true" || token == "false"){
+		return Token.Type.Bool;
 	}else if (DATA_TYPES.hasElement(token)){
 		return Token.Type.DataType;
 	}else if (isKeyword(token)){
@@ -103,6 +105,9 @@ unittest{
 	assert("else".getTokenType == Token.Type.Keyword);
 	assert(".".getTokenType == Token.Type.MemberSelector);
 	assert("\'p\'".getTokenType == Token.Type.Char);
+	assert("null".getTokenType == Token.Type.Keyword);
+	assert("true".getTokenType == Token.Type.Bool);
+	assert("false".getTokenType == Token.Type.Bool);
 }
 
 /// returns Token[] with type identified based on string[] input

@@ -305,7 +305,8 @@ public struct DataType{
 	/// throws Exception on failure
 	void fromData(Token[] data){
 		/// identifies type from data
-		static DataType.Type identifyType(Token data, ref uinteger arrayDimension){
+		static DataType.Type identifyType(Token data, ref uinteger arrayDimension, ref bool isRef){
+			isRef = false;
 			if (data.type == Token.Type.String){
 				arrayDimension ++;
 				return DataType.Type.Char;
@@ -315,6 +316,11 @@ public struct DataType{
 				return DataType.Type.Int;
 			}else if (data.type == Token.Type.Double){
 				return DataType.Type.Double;
+			}else if (data.type == Token.Type.Bool){
+				return DataType.Type.Bool;
+			}else if (data.type == Token.Type.Keyword && data.token == "null"){
+				isRef = true;
+				return DataType.Type.Void;
 			}else{
 				throw new Exception("failed to read data type");
 			}
@@ -376,7 +382,7 @@ public struct DataType{
 			// then it must be only one token, if is zero, then it's void
 			assert(data.length == 1, "non-array data must be only one token in length");
 			// now check the type, and set it
-			this.type = identifyType(data[0], arrayDimensionCount);
+			this.type = identifyType(data[0], arrayDimensionCount, isRef);
 		}
 		callCount --;
 	}
@@ -403,6 +409,7 @@ unittest{
 	// unittests for `.name()`
 	assert(DataType("potatoType[][]").name == "potatoType[][]");
 	assert(DataType("double[]").name == "double[]");
+	
 }
 
 /// splits an array in tokens format to it's elements
@@ -541,8 +548,9 @@ package struct Token{
 	enum Type{
 		String,/// That the token is: `"SOME STRING"`
 		Char, /// That the token is: `'C'` # Some character
-		Integer,/// That the token an int
+		Integer,/// That the token an int (or uint, or ubyte)
 		Double, /// That the token is a double (floating point) value
+		Bool, /// a true or false value
 		Identifier,/// That the token is an identifier. i.e token is a variable name or a function name.  For a token to be marked as Identifier, it doesn't need to be defined in `new()`
 		DataType, /// the  token is a data type
 		MemberSelector, /// a member selector operator

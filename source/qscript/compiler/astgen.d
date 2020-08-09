@@ -834,7 +834,7 @@ struct ASTGen{
 				index = brackEnd+1;
 				r = CodeNode(ArrayNode(elements));
 			}else if (token.type == Token.Type.Double || token.type == Token.Type.Integer || token.type == Token.Type.String ||
-			token.type == Token.Type.Char){
+			token.type == Token.Type.Char || token.type == Token.Type.Bool){
 				// literal
 				index ++;
 				try{
@@ -845,6 +845,9 @@ struct ASTGen{
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
 				}
+			}else if (token.type == Token.Type.Keyword && token.token == "null"){
+				r = CodeNode(LiteralNode(token.token,DataType(DataType.Type.Void, 0, true)));
+				index ++;
 			}else{
 				index ++;
 				compileErrors.append(CompileError(tokens.getTokenLine(index), "unexpected token"));
