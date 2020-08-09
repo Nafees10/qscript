@@ -15,7 +15,7 @@ import navm.navm : readData;
 import navm.bytecodedefs; // needed to check how many elements instruction wants from stack
 
 import std.conv : to;
-
+/*
 /// Contains functions to generate ByteCode from AST nodes
 class CodeGen{
 private:
@@ -557,4 +557,4 @@ public:
 		_currentInst.append(name~':');
 		_currentInstArgs.append(cast(string[])[]);
 	}
-}
+}*/

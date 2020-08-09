@@ -64,7 +64,7 @@ public:
 	CompileError[] loadScript(string[] script, ref string[] byteCode){
 		_vm = new NaVM(_externFunctionPtr);
 		CompileError[] errors;
-		byteCode = compileScript(script, _externFunctionMap, errors, _functionMap);
+		//byteCode = compileScript(script, _externFunctionMap, errors, _functionMap);
 		// load bytecode
 		if (!_vm)
 			throw new Exception("this.initizlize not called before loadScript");

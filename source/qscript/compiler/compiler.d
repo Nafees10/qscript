@@ -24,7 +24,7 @@ import navm.navm : NaFunction;
 /// `errors` is the array to which errors will be appended
 /// 
 /// Returns: ByteCode class with the compiled byte code. or null if errors.length > 0
-public string[] compileScript(string[] script, Function[] functions, ref CompileError[] errors,
+public string[] compileScript(string[] script, Library[] libraries, ref CompileError[] errors,
 ref Function[] functionMap){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length > 0)
@@ -33,29 +33,30 @@ ref Function[] functionMap){
 	ScriptNode scrNode = astMake.generateScriptAST(tokens, errors);
 	if (errors.length > 0)
 		return null;
-	ASTCheck check = new ASTCheck(functions);
+	ASTCheck check = new ASTCheck(libraries);
 	errors = check.checkAST(scrNode);
 	if (errors.length > 0)
 		return null;
 	.destroy(check);
 	// time for the final thing, to byte code
-	CodeGen bCodeGen = new CodeGen();
+	/*CodeGen bCodeGen = new CodeGen();
 	bCodeGen.generateByteCode(scrNode);
 	string[] byteCode = bCodeGen.getByteCode();
-	functionMap = bCodeGen.getFunctionMap;
-	return byteCode;
+	functionMap = bCodeGen.getFunctionMap;*/
+	//return byteCode;
+	return [];
 }
 
 /// Generates an AST for a script, uses ASTCheck.checkAST on it.
 /// 
 /// Returns: the final AST in readable JSON.
-public string compileScriptAST(string[] script, Function[] functions, ref CompileError[] errors){
+public string compileScriptAST(string[] script, Library[] libraries, ref CompileError[] errors){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length == 0){
 		ASTGen astMake;
 		ScriptNode scrNode = astMake.generateScriptAST(tokens, errors);
 		if (errors.length == 0){
-			ASTCheck check = new ASTCheck(functions);
+			ASTCheck check = new ASTCheck(libraries);
 			errors = check.checkAST(scrNode);
 			.destroy(check);
 			JSONValue jsonAST = scrNode.toJSON;
