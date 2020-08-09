@@ -9,152 +9,141 @@ import qscript.compiler.ast;
 import utils.misc;
 import utils.lists;
 
+import std.conv : to;
+
 /// Contains functions to check ASTs for errors  
 /// One instance of this class can be used to check for errors in a script's AST.
 class ASTCheck{
 private:
-	/// stores the libraries available. Index is the library ID. Index=0 is this script
+	/// stores the libraries available. Index is the library ID.
 	Library[] _libraries;
-	/// stores private functions
-	Function[] _privateFunctions;
+	/// stores all declarations of this script, public and private
+	Library _this;
+	/// stores this script's public declarations, this is what is exported at end
+	Library _exports;
+	/// stores number of variables in a scope. The 1st item is global variables, then come function-local ones
+	Stack!uinteger _scopeVarCount;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
-	/// stores data types of variables in currently-being-checked-FunctionNode
-	DataType[string] varTypes;
-	/// stores the IDs (as index) for vars
-	string[uinteger] varIDs;
-	/// stores the scope-depth of each var in currently-being-checked-FunctionNode which is currently in scope
-	uinteger[string] varScope;
 	/// stores expected return type of currently-being-checked function
 	DataType functionReturnType;
-	/// the largest variable id in currectly being-checked function
-	integer maxVarId;
-	/// stores current scope-depth
-	uinteger scopeDepth = 0;
-	/// registers a new var in current scope
+	/// registers a new  var in current scope
 	/// 
 	/// Returns: false if it was already registered or global variable with same name exists,  
 	/// true if it was successful
-	bool addVar(string name, DataType type, bool isPublic = false){
-		if (name in varTypes){
-			return false;
+	bool addVar(string name, DataType type, bool isGlobal = false){
+		foreach (var; _this.vars){
+			if (var.name == name)
+				return false;
 		}
-		foreach (library; _libraries){
-			foreach (globVar; library.vars){
-				if (globVar.name == name)
-					return false;
-			}
-		}
-		if (scopeDepth == 0 && isPublic)
-			_libraries[0].vars ~= Library.GlobalVar(name, type);
-		else
-			varTypes[name] = type;
-		varScope[name] = scopeDepth;
-
-		uinteger i;
-		for (i = 0; ; i ++){
-			if (i !in varIDs)
-				break;
-		}
-		varIDs[i] = name;
+		if (isGlobal && _scopeVarCount.count == 1)
+			_exports.vars ~= Library.Variable(name, type);
+		_this.vars ~= Library.Variable(name, type);
+		_scopeVarCount.push(_scopeVarCount.pop + 1);
 		return true;
 	}
-	/// Returns: the data type of a variable  
-	/// or if var does not exist, returns `DataType()`
-	DataType getVarType(string name){
-		if (name in varTypes){
-			return varTypes[name];
-		}
-		foreach (library; _libraries){
-			foreach (globVar; library.vars){
-				if (globVar.name == name)
-					return globVar.type;
-			}
-		}
-		return DataType();
-	}
-	/// Returns: the ID for a variable. or -1 if it does not exist  
-	/// libraryId is only valid if isGlobal == true 
-	integer getVarID(string name, ref bool isGlobal, ref uinteger libraryId){
-		libraryId = 0;
-		foreach (id, varName; varIDs){
-			if (name == varName){
-				isGlobal = varScope[name] == 0 ? true : false;
-				return id;
+	/// Returns: true if a var exists. False if not.
+	/// also sets the variable data type to `type` and id to `id`, and library id to `libraryId`, and 
+	/// if it is global, sets `isGlobal` to `true`
+	bool getVar(string name, ref DataType type, ref uinteger id, ref integer libraryId, ref bool isGlobal){
+		foreach (i, var; _this.vars){
+			if (var.name == name){
+				type = var.type;
+				id = i;
+				isGlobal = false;
+				libraryId = -1;
+				return true;
 			}
 		}
 		foreach (libId, library; _libraries){
-			foreach (i, globVar; library.vars){
-				if (globVar.name == name){
+			foreach (i, var; library.vars){
+				if (var.name == name){
+					type = var.type;
+					id = i;
 					isGlobal = true;
 					libraryId = libId;
-					return i;
+					return true;
 				}
 			}
 		}
-		return -1;
-	}
-	/// ditto
-	integer getVarID(string name){
-		
-	}
-	/// Returns: true if a var is available in current scope
-	bool varExists(string name){
-		foreach (lib; _libraries){
-			foreach (var; lib.vars){
-				if (var.name == name)
-					return true;
-			}
-		}
-		if (name in varTypes)
-			return true;
 		return false;
+	}
+	/// Returns: variable ID for a variable with a name. Only use when you know the variable is local
+	uinteger getVarID(string name){
+		DataType type;
+		uinteger id;
+		integer libraryId;
+		bool isGlobal;
+		getVar(name, type, id, libraryId, isGlobal);
+		return id;
+	}
+	/// Returns: true if a variable with a name is found
+	bool varExists(string name){
+		DataType type;
+		uinteger id;
+		integer libraryId;
+		bool isGlobal;
+		return getVar(name, type, id, libraryId, isGlobal);
 	}
 	/// increases the scope-depth
 	/// 
 	/// this function should be called before any AST-checking in a sub-BlockNode or anything like that is started
 	void increaseScope(){
-		scopeDepth ++;
+		_scopeVarCount.push(0);
 	}
 	/// decreases the scope-depth
 	/// 
 	/// this function should be called right after checking in a sub-BlockNode or anything like that is finished  
 	/// it will put the vars declared inside that scope go out of scope
 	void decreaseScope(){
-		if (scopeDepth > 0){
-			foreach (key; varScope.keys){
-				if (varScope[key] == scopeDepth){
-					varScope.remove(key);
-					// remove from varDataTypes too!
-					if (key in varTypes)
-						varTypes.remove(key);
-					// remove it from varIDs too
-					foreach (id; varIDs.keys){
-						if (varIDs[id] == key){
-							varIDs.remove (id);
-							break;
-						}
-					}
-				}
-			}
-			scopeDepth --;
+		if (_scopeVarCount.count > 1){
+			_this.vars.length -= _scopeVarCount.pop;
 		}
 	}
-	/// Returns: return type of a function, works for both script-defined and predefined functions  
-	/// or if the function does not exist, it'll return `DataType()`
-	DataType getFunctionType(string name, DataType[] argTypes){
-		foreach (func; _privateFunctions){
+	/// Returns: true if a function exists, false if not. Sets function return type to `type`,
+	/// id to `id`, and library id to `libraryId`
+	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref uinteger id,
+		ref integer libraryId){
+		foreach (i, func; _this.functions){
 			if (func.name == name && func.argTypes == argTypes){
-				return func.returnType;
+				type = func.returnType;
+				id = i;
+				libraryId = -1;
+				return true;
 			}
 		}
-		foreach (lib; _libraries){
-			foreach (func; lib.functions){
-				if (func.name == name && func.argTypes == argTypes)
-					return func.returnType;
+		foreach (libId, lib; _libraries){
+			foreach (i, func; lib.functions){
+				if (func.name == name && func.argTypes == argTypes){
+					type = func.returnType;
+					id = i;
+					libraryId  =libId;
+					return true;
+				}
 			}
 		}
-		return DataType();
+		return false;
+	}
+	/// reads all FunctionNode from ScriptNode and writes them into `scriptDefFunctions` & `_libraries[0].functions`
+	/// 
+	/// any error is appended to compileErrors
+	void readFunctions(ScriptNode node){
+		/// first check for conflicts
+		foreach (funcId; 1 .. node.functions.length){
+			FunctionNode funcA = node.functions[funcId];
+			foreach (i; 0 .. funcId){
+				FunctionNode funcB = node.functions[i];
+				if (funcA.name == funcB.name && funcA.argTypes == funcB.argTypes)
+					compileErrors.append(CompileError(funcB.lineno,
+						"functionns with same name must have different argument types"));
+			}
+		}
+		// first do public functions, so exported ID's and local IDs match
+		foreach (i, func; node.functions){
+			if (func.visibility == Visibility.Public)
+				_exports.functions ~= Function(func.name, func.returnType, func.argTypes);
+			_this.functions ~= Function(func.name, func.returnType, func.argTypes);
+		}
 	}
 	/// Returns: return type for a CodeNode
 	/// 
@@ -170,8 +159,8 @@ private:
 			foreach (i, arg; fCall.arguments){
 				argTypes[i] = getReturnType(arg);
 			}
-			node.returnType = getFunctionType(fCall.fName, argTypes);
-			return node.returnType;
+			getFunction(fCall.fName, argTypes, fCall.returnType, fCall.id, fCall.libraryId);
+			return fCall.returnType;
 		}else if (node.type == CodeNode.Type.Literal){
 			return node.node!(CodeNode.Type.Literal).returnType;
 		}else if (node.type == CodeNode.Type.Operator){
@@ -198,7 +187,8 @@ private:
 			return readFromType;
 		}else if (node.type == CodeNode.Type.Variable){
 			VariableNode varNode = node.node!(CodeNode.Type.Variable);
-			return getVarType(varNode.varName);
+			getVar(varNode.varName, varNode.returnType, varNode.id, varNode.libraryId, varNode.isGlobal);
+			return varNode.returnType;
 		}else if (node.type == CodeNode.Type.Array){
 			ArrayNode arNode = node.node!(CodeNode.Type.Array);
 			if (arNode.elements.length == 0){
@@ -207,45 +197,14 @@ private:
 			DataType r = getReturnType(arNode.elements[0]);
 			r.arrayDimensionCount ++;
 			return r;
+		}else if (node.type == CodeNode.Type.MemberSelector){
+			// TODO: implement getReturnType for MemberSelectorNode
 		}
 		return DataType(DataType.Type.Void);
-	}
-	/// reads all FunctionNode from ScriptNode and writes them into `scriptDefFunctions` & `_libraries[0].functions`
-	/// 
-	/// any error is appended to compileErrors
-	void readFunctions(ScriptNode node){
-		/// stores the functions in byte code style, coz that way, its easier to check if same function with same
-		/// arg types has been used more than once
-		string[] byteCodefunctionNames;
-		byteCodefunctionNames.length = node.functions.length;
-		foreach (i, func; node.functions){
-			// read arg types into a single array
-			DataType[] argTypes;
-			argTypes.length = func.arguments.length;
-			foreach (index, arg; func.arguments)
-				argTypes[index] = arg.argType;
-			if (func.visibility == Visibility.Private)
-				_privateFunctions ~= Function(func.name, func.returnType, argTypes);
-			else
-				_libraries[0].functions ~= Function(func.name, func.returnType, argTypes);
-			// check if it was previously declared as a private function
-			byteCodefunctionNames[i] = encodeFunctionName(func.name, argTypes);
-			if (byteCodefunctionNames[0 .. i].hasElement(byteCodefunctionNames[i])){
-				compileErrors.append (CompileError(func.lineno,
-						"functions with same name must have different argument types"));
-			}
-			/// check if it was previously declared as a public function
-			foreach (libFunc; _libraries[0].functions){
-				if (func.name == libFunc.name && argTypes == libFunc.argTypes)
-					compileErrors.append (CompileError(func.lineno,
-						"functions with same name must have different argument types"));
-			}
-		}
 	}
 protected:
 	/// checks if a FunctionNode is valid
 	void checkAST(ref FunctionNode node){
-		maxVarId = (cast(integer)node.arguments.length) - 1;
 		increaseScope();
 		functionReturnType = node.returnType;
 		// add the arg's to the var scope. make sure one arg name is not used more than once
@@ -256,7 +215,6 @@ protected:
 		}
 		// now check the statements
 		checkAST(node.bodyBlock);
-		node.varCount = maxVarId + 1;
 		decreaseScope();
 	}
 	/// checks if a StatementNode is valid
@@ -348,32 +306,9 @@ protected:
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
 		}
-		// now make sure that that function exists, and the arg types match
-		bool functionExists = false;
-		foreach (i, func; _privateFunctions){
-			if (func.name == node.fName && func.argTypes == argTypes){
-				functionExists = true;
-				node.libraryId = 0;
-				node.id = i;
-				node.returnType = func.returnType;
-			}
-		}
-		if (!functionExists){
-			foreach (libId, library; _libraries){
-				foreach (i, func; library.functions){
-					if (func.name == node.fName && func.argTypes == argTypes){
-						functionExists = true;
-						node.libraryId = libId;
-						node.id = i;
-						node.returnType = func.returnType;
-					}
-				}
-			}
-		}
-		if (!functionExists){
+		if (!getFunction(node.fName, argTypes, node.returnType, node.id, node.libraryId))
 			compileErrors.append(CompileError(node.lineno,
 					"function "~node.fName~" does not exist or cannot be called with these arguments"));
-		}
 	}
 	/// checks an IfNode
 	void checkAST(ref IfNode node){
@@ -407,8 +342,6 @@ protected:
 			addVar (varName, node.type);
 			// set it's ID
 			uinteger vId = getVarID(varName);
-			if (cast(integer)vId > maxVarId)
-				maxVarId = cast(integer)vId;
 			node.setVarID(varName, vId);
 		}
 	}
@@ -447,6 +380,8 @@ protected:
 			checkAST(node.node!(CodeNode.Type.Variable));
 		}else if (node.type == CodeNode.Type.Array){
 			checkAST(node.node!(CodeNode.Type.Array));
+		}else if (node.type == CodeNode.Type.MemberSelector){
+			checkAST(node.node!(CodeNode.Type.MemberSelector));
 		}
 	}
 	/// checks a NegativeValueNode
@@ -475,18 +410,20 @@ protected:
 		// now make sure that the data type of operands is allowed with that operator
 		if (["+","-","*","/","%", "<", ">", ">=", "<="].hasElement(node.operator)){
 			// only double and int allowed
-			if (operandType != DataType(DataType.Type.Int) && operandType != DataType(DataType.Type.Double)){
-				compileErrors.append (CompileError(node.lineno, "that operator can only be used on double or int"));
+			if (operandType.isArray || operandType.isRef || 
+				![DataType.Type.Byte, DataType.Type.Double, DataType.Type.Int,
+				DataType.Type.Ubyte, DataType.Type.Uint].hasElement(operandType.type)){
+				compileErrors.append (CompileError(node.lineno, "invalid data type for operand"));
 			}
 			node.returnType = operandType;
 		}else if (["&&", "||"].hasElement(node.operator)){
-			if (operandType != DataType(DataType.Type.Int)){
-				compileErrors.append (CompileError(node.lineno, "that operator can only be used on int"));
+			if (operandType != DataType(DataType.Type.Bool)){
+				compileErrors.append (CompileError(node.lineno, "that operator can only be used on bool"));
 			}
-			node.returnType = DataType(DataType.Type.Int);
+			node.returnType = DataType(DataType.Type.Bool);
 		}else if (node.operator == "~"){
 			if (operandType.arrayDimensionCount == 0){
-				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on strings and arrays"));
+				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on arrays"));
 			}
 			node.returnType = operandType;
 		}
@@ -497,8 +434,8 @@ protected:
 		checkAST(node.operand);
 		// now it it's `!`, only accept int, if `@`, var
 		if (node.operator == "!"){
-			if (getReturnType(node.operand) != DataType(DataType.Type.Int)){
-				compileErrors.append (CompileError(node.operand.lineno, "cannot use ! on a non-int data type"));
+			if (getReturnType(node.operand) != DataType(DataType.Type.Bool)){
+				compileErrors.append (CompileError(node.operand.lineno, "can only use ! with a bool"));
 			}
 			node.returnType = DataType(DataType.Type.Int);
 		}else if (node.operator == "@"){
@@ -523,13 +460,13 @@ protected:
 		checkAST (node.readFromNode);
 		checkAST (node.index);
 		// index must return int
-		if (getReturnType(node.index) != DataType(DataType.Type.Int)){
-			compileErrors.append (CompileError(node.index.lineno, "index must return integer"));
+		if (getReturnType(node.index) != DataType(DataType.Type.Uint)){
+			compileErrors.append (CompileError(node.index.lineno, "index must be of type uint"));
 		}
 		// now make sure that the data is an array or a string
 		DataType readFromType = getReturnType (node.readFromNode);
 		if (readFromType.arrayDimensionCount == 0){
-			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-string non-array data"));
+			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-array data"));
 		}
 		node.returnType = readFromType;
 		node.returnType.arrayDimensionCount --;
@@ -545,9 +482,7 @@ protected:
 			compileErrors.append (CompileError(node.lineno,"variable "~node.varName~" not declared but used"));
 		}
 		// and put the assigned ID to it
-		node.id = getVarID(node.varName);
-		// set it's type
-		node.returnType = getVarType(node.varName);
+		getVar(node.varName, node.returnType, node.id, node.libraryId, node.isGlobal);
 	}
 	/// checks an ArrayNode
 	void checkAST(ref ArrayNode node){
@@ -569,12 +504,15 @@ protected:
 			node.returnType = DataType(DataType.Type.Void,1);
 	}
 public:
-	this (Function[] predefinedFunctions){
+	/// constructor
+	this (Library[] libraries){
 		compileErrors = new LinkedList!CompileError;
-		preDefFunctions = predefinedFunctions.dup;
+		_scopeVarCount = new Stack!uinteger;
+		_libraries = libraries.dup;
 	}
 	~this(){
 		.destroy(compileErrors);
+		.destroy(_scopeVarCount);
 	}
 	/// checks a script's AST for any errors
 	/// 
@@ -584,11 +522,10 @@ public:
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
 	CompileError[] checkAST(ref ScriptNode node){
 		// empty everything
-		scriptDefFunctions = [];
 		compileErrors.clear;
-		varTypes.clear;
-		varScope.clear;
-		scopeDepth = 0;
+		_scopeVarCount.clear;
+		_this.clear;
+		_exports.clear;
 		readFunctions(node);
 		// call checkAST on every FunctionNode
 		for (uinteger i=0; i < node.functions.length; i++){
@@ -606,9 +543,9 @@ public:
 	/// `scriptFunctions` is the array to put data about script defined functions in
 	/// 
 	/// Returns: errors in CompileError[], or empty array if there were no errors
-	CompileError[] checkAST(ref ScriptNode node, ref Function[] scriptFunctions){
+	CompileError[] checkAST(ref ScriptNode node, ref Library script){
 		CompileError[] errors = checkAST(node);
-		scriptFunctions = scriptDefFunctions.dup;
+		script = _exports;
 		return errors;
 	}
 }
