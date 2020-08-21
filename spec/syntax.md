@@ -157,21 +157,21 @@ public Position getPosition(int x, int y){
 ## Enums
 Enums are defined like:  
 ```
-enum TYPE EnumName{
+enum EnumName{
 	member0,
 	member1,
 	member2
 }
 ```
 
-* `TYPE` is the actual data type in which it is stored. It must be one of base data types and not derived
 * `EnumName` is the name for this enum
 
-the members are automatically assigned values, **only** if they are of type int. Value can be assigned manually too like:  
+Example:    
 ```
-public enum int ErrorType{
-	FileNotFound = 0,
-	InvalidPath = 1
+public enum ErrorType{
+	FileNotFound,
+	InvalidPath,
+	PermissionDenied
 }
 ```
 
