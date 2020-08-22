@@ -118,6 +118,10 @@ public struct Function{
 		returnType = functionReturnType;
 		_argTypes = functionArgTypes.dup;
 	}
+	/// postblit
+	this (this){
+		this._argTypes = this._argTypes.dup;
+	}
 }
 
 /// To store information about a library
@@ -137,10 +141,8 @@ public struct Library{
 		public string name;
 		/// base data type of enum
 		public DataType type;
-		/// members names
-		public string[] membersName;
-		/// members values
-		public string[] membersValue;
+		/// members names, index is their value
+		public string[] members;
 	}
 	/// To store information about a global variable
 	public struct Variable{
