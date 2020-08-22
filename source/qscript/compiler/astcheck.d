@@ -124,26 +124,57 @@ private:
 		}
 		return false;
 	}
-	/// reads all FunctionNode from ScriptNode and writes them into `scriptDefFunctions` & `_libraries[0].functions`
+	/// reads all FunctionNode from ScriptNode
 	/// 
 	/// any error is appended to compileErrors
 	void readFunctions(ScriptNode node){
-		/// first check for conflicts
-		foreach (funcId; 1 .. node.functions.length){
+		/// first check for conflicts, also append public functions
+		bool thisFunctionDeclared = false; // if the `this()` function has been declared
+		foreach (funcId; 0 .. node.functions.length){
 			FunctionNode funcA = node.functions[funcId];
+			if (funcA.name == "this"){
+				if (thisFunctionDeclared)
+					compileErrors.append(CompileError(funcA.lineno, "`this` function defined multiple times"));
+				else
+					thisFunctionDeclared = true;
+			}
 			foreach (i; 0 .. funcId){
 				FunctionNode funcB = node.functions[i];
 				if (funcA.name == funcB.name && funcA.argTypes == funcB.argTypes)
 					compileErrors.append(CompileError(funcB.lineno,
 						"functionns with same name must have different argument types"));
 			}
+			// append if public
+			if (funcA.visibility == Visibility.Public){
+				_this.functions ~= Function(funcA.name, funcA.returnType, funcA.argTypes);
+				_exports.functions ~= _this.functions[$-1];
+			}
 		}
-		// first do public functions, so exported ID's and local IDs match
+		// now append private functions
 		foreach (i, func; node.functions){
-			if (func.visibility == Visibility.Public)
-				_exports.functions ~= Function(func.name, func.returnType, func.argTypes);
-			_this.functions ~= Function(func.name, func.returnType, func.argTypes);
+			if (func.visibility == Visibility.Private){
+				_this.functions ~= Function(func.name, func.returnType, func.argTypes);
+				_exports.functions ~= _this.functions[$-1];
+			}
 		}
+	}
+	/// reads all EnumNode from ScriptNode
+	/// 
+	/// any error is appended to compileErrors
+	void readEnums(ScriptNode node){
+		// check for conflicts, and append public enums
+		foreach (id; 1 .. node.enums.length){
+			EnumNode enumA = node.enums[id];
+			foreach (i; 0 .. id){
+				EnumNode enumB = node.enums[i];
+				if (enumA.name == enumB.name)
+					compileErrors.append(CompileError(enumB.lineno, enumB.name~" is declared multiple times"));
+			}
+			if (enumA.visibility == Visibility.Public){
+				//_this.enums ~= Library.Enum()
+			}
+		}
+		
 	}
 	/// Returns: return type for a CodeNode
 	/// 
@@ -502,6 +533,12 @@ protected:
 			node.returnType.arrayDimensionCount ++;
 		}else
 			node.returnType = DataType(DataType.Type.Void,1);
+	}
+	/// checks a MemberSelectorNode
+	void checkAST(ref MemberSelectorNode node){
+		// first check parent
+		checkAST(node.parent);
+		// TODO
 	}
 public:
 	/// constructor
