@@ -141,25 +141,27 @@ package struct EnumNode{
 	public uinteger lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
-	/// stores name of this enum
-	public string name;
-	/// stores base type of this enum
-	public DataType baseDataType;
-	/// stores members names
-	public string[] membersName;
-	/// stores member's values (automatically populated by astcheck if baseDataType is int)
-	public LiteralNode[] membersValue;
+	/// stores the actual enum
+	private Library.Enum _enum;
+	/// Returns: the name of this enum
+	public @property string name() return{
+		return _enum.name;
+	}
+	/// ditto
+	public @property string name(string newName) return{
+		return _enum.name = newName;
+	}
+	/// Returns: the members' names (index is the int value it gets replaced with)
+	public @property ref string[] members() return{
+		return _enum.members;
+	}
+	/// ditto
+	public @property ref string[] members(string[] newMembers) return{
+		return _enum.members = newMembers;
+	}
 	/// returns: misc.Enum representing this enum
 	public Library.Enum toEnum(){
-		Library.Enum r;
-		r.name = this.name;
-		r.type = this.baseDataType;
-		r.membersName = this.membersName.dup;
-		r.membersValue.length = this.membersValue.length;
-		foreach (i, val; this.membersValue){
-			r.membersValue[i] = val.literal;
-		}
-		return r;
+		return _enum;
 	}
 }
 
@@ -449,6 +451,13 @@ package struct CodeNode{
 
 /// to store a member selection (someStructOrEnum.memberName)
 package struct MemberSelectorNode{
+	/// Types
+	public enum Type{
+		EnumMemberRead, /// reading a member from an enum
+		StructMemberRead, /// reading a member from a struct
+	}
+	/// stores the type this MemberSelector is of. Only valid after ASTCheck has been called on this
+	public Type type;
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
 	/// the parent node (to select member from)
