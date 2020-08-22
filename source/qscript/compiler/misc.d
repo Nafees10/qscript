@@ -139,8 +139,6 @@ public struct Library{
 	public struct Enum{
 		/// name of the enum
 		public string name;
-		/// base data type of enum
-		public DataType type;
 		/// members names, index is their value
 		public string[] members;
 	}

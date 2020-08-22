@@ -152,10 +152,8 @@ private:
 		}
 		// now append private functions
 		foreach (i, func; node.functions){
-			if (func.visibility == Visibility.Private){
+			if (func.visibility == Visibility.Private)
 				_this.functions ~= Function(func.name, func.returnType, func.argTypes);
-				_exports.functions ~= _this.functions[$-1];
-			}
 		}
 	}
 	/// reads all EnumNode from ScriptNode
@@ -171,10 +169,15 @@ private:
 					compileErrors.append(CompileError(enumB.lineno, enumB.name~" is declared multiple times"));
 			}
 			if (enumA.visibility == Visibility.Public){
-				//_this.enums ~= Library.Enum()
+				_this.enums ~= Library.Enum(enumA.name, enumA.members.dup);
+				_exports.enums ~= _this.enums[$-1];
 			}
 		}
-		
+		// now do private enums
+		foreach (currentEnum; node.enums){
+			if (currentEnum.visibility == Visibility.Private)
+				_this.enums ~= Library.Enum(currentEnum.name, currentEnum.members.dup);
+		}
 	}
 	/// Returns: return type for a CodeNode
 	/// 
