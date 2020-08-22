@@ -92,18 +92,10 @@ JSONValue toJSON(EnumNode node){
 	r["lineno"] = JSONValue(node.lineno);
 	r["visibility"] = JSONValue(node.visibility.to!string);
 	r["name"] = JSONValue(node.name);
-	r["baseDataType"] = JSONValue(node.baseDataType.name);
 	JSONValue[] members;
-	members.length = node.membersName.length;
-	if (node.membersValue.length){
-		foreach (i; 0 .. node.membersName.length){
-			members[i]["name"] = JSONValue(node.membersName[i]);
-			members[i]["value"] = node.membersValue[i].toJSON;
-		}
-	}else{
-		foreach (i, name; node.membersName){
-			members[i] = JSONValue(name);
-		}
+	members.length = node.members.length;
+	foreach (i, name; node.members){
+		members[i] = JSONValue(name);
 	}
 	r["members"] = JSONValue(members);
 	return r;

@@ -190,18 +190,6 @@ struct ASTGen{
 			EnumNode enumNode;
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "enum")){
 				index ++;
-				try{
-					enumNode.baseDataType = readType();
-				}catch (Exception e){
-					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
-					.destroy (e);
-				}
-				// make sure it's a base type
-				if (enumNode.baseDataType.isArray() || enumNode.baseDataType.type == DataType.Type.Void ||
-				enumNode.baseDataType.type == DataType.Type.Custom){
-					compileErrors.append(CompileError(tokens.getTokenLine(index),
-						"derived data types and arrays cannot be base type for enums"));
-				}
 				if (tokens.tokens[index].type == Token.Type.Identifier){
 					enumNode.name = tokens.tokens[index].token;
 					index ++;
@@ -210,15 +198,12 @@ struct ASTGen{
 						// now start reading members
 						while (tokens.tokens[index].type != Token.Type.BlockEnd){
 							if (tokens.tokens[index].type == Token.Type.Identifier){
-								enumNode.membersName ~= tokens.tokens[index].token;
-								// check if value explicitly provided
+								enumNode.members ~= tokens.tokens[index].token;
 								index ++;
-								if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
-									index ++;
-									enumNode.membersValue ~= generateLiteralAST();
-								}
 								// expect a } or a comma
-								if (tokens.tokens[index].type != Token.Type.BlockEnd && tokens.tokens[index].type != Token.Type.Comma){
+								if (tokens.tokens[index].type == Token.Type.Comma){
+									index++;
+								}else if (tokens.tokens[index].type != Token.Type.BlockEnd){
 									compileErrors.append(CompileError(tokens.getTokenLine(index),"enum members must be separated using comma"));
 								}
 							}else{
