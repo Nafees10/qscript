@@ -469,7 +469,7 @@ package struct MemberSelectorNode{
 	/// stores if value is static
 	public bool isLiteral = false;
 	/// Returns: the parent node
-	@property CodeNode parent(){
+	@property ref CodeNode parent(){
 		return *_parentPtr;
 	}
 	/// ditto
