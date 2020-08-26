@@ -161,7 +161,7 @@ private:
 	/// any error is appended to compileErrors
 	void readEnums(ScriptNode node){
 		// check for conflicts, and append public enums
-		foreach (id; 1 .. node.enums.length){
+		foreach (id; 0 .. node.enums.length){
 			EnumNode enumA = node.enums[id];
 			foreach (i; 0 .. id){
 				EnumNode enumB = node.enums[i];
@@ -169,7 +169,7 @@ private:
 					compileErrors.append(CompileError(enumB.lineno, enumB.name~" is declared multiple times"));
 			}
 			if (enumA.visibility == Visibility.Public){
-				_this.enums ~= Library.Enum(enumA.name, enumA.members.dup);
+				_this.enums ~= enumA.toEnum;
 				_exports.enums ~= _this.enums[$-1];
 			}
 		}
@@ -177,6 +177,85 @@ private:
 		foreach (currentEnum; node.enums){
 			if (currentEnum.visibility == Visibility.Private)
 				_this.enums ~= Library.Enum(currentEnum.name, currentEnum.members.dup);
+		}
+	}
+	/// Reads all structs from ScriptNode
+	/// 
+	/// Checks for any circular dependency, and other issues. Appends errors to compileErrors
+	void readStructs(ScriptNode node){
+		// first check for conflicts in name, and append public struct to _exports
+		foreach (id, currentStruct; node.structs){
+			foreach (i; 0 .. id){
+				if (node.structs[i].name == currentStruct.name)
+					compileErrors.append(CompileError(currentStruct.lineno, currentStruct.name~" is declared multiple times"));
+			}
+			if (currentStruct.visibility == Visibility.Public){
+				_this.structs ~= currentStruct.toStruct;
+				_exports.structs ~= _this.structs[$-1];
+			}
+		}
+		// now add private structs to _this
+		foreach (currentStruct; node.structs){
+			if (currentStruct.visibility == Visibility.Private)
+				_this.structs ~= currentStruct.toStruct;
+		}
+		// now to check for recursive dependency
+		List!string conflicts = new List!string;
+		foreach (str; _this.structs)
+			checkRecursiveDependency(str.name, conflicts);
+		// add errors for all structs named in conflicts
+		for (conflicts.seek = 0; conflicts.seek < conflicts.length; ){
+			immutable string name = conflicts.read();
+			// locate it's line number
+			uinteger lineno;
+			foreach (str; node.structs){
+				if (str.name == name){
+					lineno = str.lineno;
+					break;
+				}
+			}
+			compileErrors.append(CompileError(lineno, "recursive dependency detected"));
+		}
+		.destroy(conflicts);
+	}
+	/// Checks for circular dependency in a struct
+	/// `name` is name of struct to check
+	/// Puts names of structs where conflicts occur in `conflicting`
+	/// `parents` are the structs that `name` struct is used in (i.e have member of type `name` struct)
+	void checkRecursiveDependency(string name, List!string conflicting, immutable string[] parents = []){
+		/// Returns: true if a string is a locally defined struct name
+		static bool isLocalStruct(string name, Library.Struct[] structs){
+			foreach (currStr; structs){
+				if (currStr.name == name)
+					return true;
+			}
+			return false;
+		}
+		// find that struct in _this, if not found, no big deal
+		integer structId = -1;
+		foreach (i, str; _this.structs){
+			if (str.name == name){
+				structId = i;
+				break;
+			}
+		}
+		if (structId >= 0){
+			Library.Struct str = _this.structs[structId];
+			/// structs must not be in members' data types
+			immutable string[] notAllowed = parents ~ cast(immutable string[])[name];
+			foreach (i; 0 .. str.membersName.length){
+				string memberTypeName = str.membersDataType[i].typeName;
+				// if not a locally defined struct, or is a ref, skip
+				if (!isLocalStruct(memberTypeName, _this.structs) || str.membersDataType[i].isRef)
+					continue;
+				if (notAllowed.hasElement(memberTypeName)){
+					if (conflicting.indexOf(name) < 0)
+						conflicting.append(name);
+				}else{
+					// I used the recursion to destroy recursive dependency
+					checkRecursiveDependency(str.membersName[i], conflicting, notAllowed);
+				}
+			}
 		}
 	}
 	/// Returns: return type for a CodeNode
@@ -540,7 +619,7 @@ protected:
 	/// checks a MemberSelectorNode
 	void checkAST(ref MemberSelectorNode node){
 		// first check parent
-		checkAST(node.parent);
+		//checkAST(node.parent);
 		// TODO
 	}
 public:
