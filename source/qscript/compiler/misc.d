@@ -134,6 +134,11 @@ public struct Library{
 		public string[] membersName;
 		/// data types of members of this struct
 		public DataType[] membersDataType;
+		/// postblit
+		this (this){
+			this.membersName = this.membersName.dup;
+			this.membersDataType = this.membersDataType.dup;
+		}
 	}
 	/// To store information about a enum
 	public struct Enum{
@@ -141,6 +146,10 @@ public struct Library{
 		public string name;
 		/// members names, index is their value
 		public string[] members;
+		/// postblit
+		this (this){
+			this.members = this.members.dup;
+		}
 	}
 	/// To store information about a global variable
 	public struct Variable{
@@ -160,12 +169,19 @@ public struct Library{
 	/// Enums exported by library
 	Library.Enum[] enums;
 	/// clears this
-	void clear(){
+	package void clear(){
 		functions = [];
 		vars = [];
 		structs = [];
 		enums = [];
 		name = "";
+	}
+	/// postblit
+	this (this){
+		this.functions = this.functions.dup;
+		this.vars = this.vars.dup;
+		this.structs = this.structs.dup;
+		this.enums = this.enums.dup;
 	}
 }
 
