@@ -124,6 +124,30 @@ private:
 		}
 		return false;
 	}
+	/// Returns: true if a struct exists, false if not. Sets struct data to `structData`
+	bool getStruct(string name, ref Library.Struct structData){
+		foreach (library; _this ~ _libraries){
+			foreach (str; library.structs){
+				if (str.name == name){
+					structData = str;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	/// Returns: true if an enum exists, false if not. Sets enum data to `enumData`
+	bool getEnum(string name, ref Library.Enum enumData){
+		foreach (library; _this ~ _libraries){
+			foreach (enu; library.enums){
+				if (enu.name == name){
+					enumData = enu;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 	/// reads all FunctionNode from ScriptNode
 	/// 
 	/// any error is appended to compileErrors
