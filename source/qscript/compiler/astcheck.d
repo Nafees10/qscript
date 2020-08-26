@@ -180,6 +180,37 @@ private:
 				_this.functions ~= Function(func.name, func.returnType, func.argTypes);
 		}
 	}
+	/// Reads all `VarDeclareNode`s from ScriptNode (global variable declarations)
+	/// 
+	/// any error is appended to compileErrors
+	void readGlobVars(ref ScriptNode node){
+		// check for conflicts among names, and append public 
+		foreach (ref varDeclare; node.variables){
+			foreach (varName; varDeclare.vars){
+				// conflict check
+				foreach (var; _this.vars){
+					if (var.name == varName)
+						compileErrors.append(CompileError(varDeclare.lineno, "global variable "~var.name~" is declared multiple times"));
+				}
+				// append
+				if (varDeclare.visibility == Visibility.Public){
+					// just assign it an id, it wont be used anywhere, but why not do it anyways?
+					varDeclare.setVarID(varName, _this.vars.length);
+					_this.vars ~= Library.Variable(varName, varDeclare.type);
+					_exports.vars ~= _this.vars[$-1];
+				}
+			}
+		}
+		// now append the private ones
+		foreach (ref varDeclare; node.variables){
+			if (varDeclare.visibility == Visibility.Public){
+				foreach (varName; varDeclare.vars){
+					varDeclare.setVarID(varName, _this.vars.length);
+					_this.vars ~= Library.Variable(varName, varDeclare.type);
+				}
+			}
+		}
+	}
 	/// reads all EnumNode from ScriptNode
 	/// 
 	/// any error is appended to compileErrors
