@@ -203,7 +203,7 @@ private:
 		}
 		// now append the private ones
 		foreach (ref varDeclare; node.variables){
-			if (varDeclare.visibility == Visibility.Public){
+			if (varDeclare.visibility == Visibility.Private){
 				foreach (varName; varDeclare.vars){
 					varDeclare.setVarID(varName, _this.vars.length);
 					_this.vars ~= Library.Variable(varName, varDeclare.type);
@@ -674,7 +674,9 @@ protected:
 	/// checks a MemberSelectorNode
 	void checkAST(ref MemberSelectorNode node){
 		// first check parent
-		//checkAST(node.parent);
+		checkAST(node.parent);
+		DataType rType = node.parent.returnType;
+		// it's either going to be an enum, or a 
 		// TODO
 	}
 public:
