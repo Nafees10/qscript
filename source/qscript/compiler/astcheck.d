@@ -166,7 +166,7 @@ private:
 				FunctionNode funcB = node.functions[i];
 				if (funcA.name == funcB.name && funcA.argTypes == funcB.argTypes)
 					compileErrors.append(CompileError(funcB.lineno,
-						"functionns with same name must have different argument types"));
+						"functions with same name must have different argument types"));
 			}
 			// append if public
 			if (funcA.visibility == Visibility.Public){
