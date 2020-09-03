@@ -463,8 +463,12 @@ package struct MemberSelectorNode{
 	public uinteger lineno;
 	/// the parent node (to select member from)
 	private CodeNode* _parentPtr;
-	/// name of member
-	public string memberName;
+	union{
+		/// name of member, this is valid for Type.EnumMemberRead & Type.StructMemberRead
+		public string memberName;
+		/// function call, this is valid for Type.FunctionCall, this can be read independent of `this.parent`
+		public FunctionCallNode fCall;
+	}
 	/// Return type. Only valid after ASTCheck
 	public DataType returnType;
 	/// stores if value is static
@@ -474,7 +478,7 @@ package struct MemberSelectorNode{
 		return *_parentPtr;
 	}
 	/// ditto
-	@property CodeNode paernt(CodeNode newParent){
+	@property CodeNode parent(CodeNode newParent){
 		if (!_parentPtr)
 			_parentPtr = new CodeNode;
 		return *_parentPtr = newParent;
