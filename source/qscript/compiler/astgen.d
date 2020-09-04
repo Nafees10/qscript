@@ -556,13 +556,14 @@ struct ASTGen{
 		AssignmentNode generateAssignmentAST(CodeNode lvalue){
 			AssignmentNode assignment;
 			assignment.lineno = tokens.getTokenLine(index);
-			// get the variable to assign to
-			// check if the var is being deref-ed first
-			/*if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
-				assignment.deref = true;
-				index++;
+			// if lvalue is being read through a @ operator, mark assignment.deref as true
+			if (lvalue.type == CodeNode.Type.SOperator){
+				SOperatorNode opNode = lvalue.node!(CodeNode.Type.SOperator);
+				if (opNode.operator == "@"){
+					assignment.deref = true;
+					lvalue = opNode.operand;
+				}
 			}
-			CodeNode lvalue = generateCodeAST();*/
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
 				// everything's ok till the `=` operator
