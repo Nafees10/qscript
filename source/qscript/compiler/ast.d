@@ -455,7 +455,7 @@ package struct MemberSelectorNode{
 	public enum Type{
 		EnumMemberRead, /// reading a member from an enum
 		StructMemberRead, /// reading a member from a struct
-		FunctionCall, /// calling a function where the parent is treated as first argument to function call
+		//FunctionCall, /// calling a function where the parent is treated as first argument to function call
 	}
 	/// stores the type this MemberSelector is of. Only valid after ASTCheck has been called on this
 	public Type type;
@@ -467,7 +467,7 @@ package struct MemberSelectorNode{
 		/// name of member, this is valid for Type.EnumMemberRead & Type.StructMemberRead
 		public string memberName;
 		/// function call, this is valid for Type.FunctionCall, this can be read independent of `this.parent`
-		public FunctionCallNode fCall;
+		//public FunctionCallNode fCall;
 	}
 	/// Return type. Only valid after ASTCheck
 	public DataType returnType;
