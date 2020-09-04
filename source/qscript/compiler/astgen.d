@@ -366,8 +366,22 @@ struct ASTGen{
 				// is a function call
 				return StatementNode(generateFunctionCallAST());
 			}else{
-				// now if it's not a assignment statement, idk what it is
-				return StatementNode(generateAssignmentAST());
+				// could be an assignment statement, could be something.something.something(); function call
+				// use generateCodeAST to read lvalue, or in case of later, will read whole thing
+				CodeNode lvalue = generateCodeAST();
+				if (tokens.tokens[index].type == Token.Type.StatementEnd){
+					index ++;
+					// just a something.something() function call, but still, make sure
+					if (lvalue.type == CodeNode.Type.FunctionCall){
+						return StatementNode(lvalue.node!(CodeNode.Type.FunctionCall));
+					}else{
+						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
+					}
+				}else if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
+					return StatementNode(generateAssignmentAST(lvalue));
+				}else{
+					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
+				}
 			}
 			compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid statement"));
 			index ++;
@@ -539,16 +553,16 @@ struct ASTGen{
 		}
 		
 		/// generates AST for assignment operator
-		AssignmentNode generateAssignmentAST(){
+		AssignmentNode generateAssignmentAST(CodeNode lvalue){
 			AssignmentNode assignment;
 			assignment.lineno = tokens.getTokenLine(index);
 			// get the variable to assign to
 			// check if the var is being deref-ed first
-			if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
+			/*if (tokens.tokens[index] == Token(Token.Type.Operator, "@")){
 				assignment.deref = true;
 				index++;
 			}
-			CodeNode lvalue = generateCodeAST();
+			CodeNode lvalue = generateCodeAST();*/
 			// now at index, the token should be a `=` operator
 			if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
 				// everything's ok till the `=` operator
@@ -777,9 +791,8 @@ struct ASTGen{
 		/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
 		/// 
 		/// set `skipPost` to true in case you do not want it to read into `[...]` or `.` after the Node
-		CodeNode generateNodeAST(){
+		CodeNode generateNodeAST(CodeNode r = CodeNode()){
 			Token token = tokens.tokens[index];
-			CodeNode r = CodeNode();
 			// an identifier, or literal (i.e some data) was expected
 			if (token.type == Token.Type.Identifier){
 				if (index+1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
@@ -854,6 +867,15 @@ struct ASTGen{
 						compileErrors.append(CompileError(tokens.getTokenLine(index),
 								"Expected identifier after member selector operator"));
 					}else{
+						// check if is a function call
+						if (index + 1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
+							index ++;
+							FunctionCallNode fCall = generateFunctionCallAST();
+							fCall.arguments = r ~ fCall.arguments;
+							r = CodeNode(fCall);
+							if (tokens.tokens[index-1].type == Token.Type.StatementEnd)
+								break;
+						}
 						r = CodeNode(MemberSelectorNode(r, tokens.tokens[index].token, lineno));
 						index ++;
 					}

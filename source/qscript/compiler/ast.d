@@ -485,7 +485,7 @@ package struct MemberSelectorNode{
 	}
 	/// Constructor
 	this(CodeNode parent, string member, uinteger lineno){
-		this.paernt = parent;
+		this.parent = parent;
 		this.memberName = member;
 		this.lineno = lineno;
 	}
