@@ -370,17 +370,13 @@ struct ASTGen{
 				// use generateCodeAST to read lvalue, or in case of later, will read whole thing
 				CodeNode lvalue = generateCodeAST();
 				if (tokens.tokens[index].type == Token.Type.StatementEnd){
-					index ++;
 					// just a something.something() function call, but still, make sure
 					if (lvalue.type == CodeNode.Type.FunctionCall){
+						index ++;
 						return StatementNode(lvalue.node!(CodeNode.Type.FunctionCall));
-					}else{
-						compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
 					}
 				}else if (tokens.tokens[index].type == Token.Type.AssignmentOperator){
 					return StatementNode(generateAssignmentAST(lvalue));
-				}else{
-					compileErrors.append(CompileError(tokens.getTokenLine(index), "invalid statement"));
 				}
 			}
 			compileErrors.append (CompileError(tokens.getTokenLine(index), "invalid statement"));
@@ -870,12 +866,14 @@ struct ASTGen{
 					}else{
 						// check if is a function call
 						if (index + 1 < tokens.tokens.length && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
-							index ++;
+							//index ++;
 							FunctionCallNode fCall = generateFunctionCallAST();
 							fCall.arguments = r ~ fCall.arguments;
 							r = CodeNode(fCall);
-							if (tokens.tokens[index-1].type == Token.Type.StatementEnd)
+							if (tokens.tokens[index-1].type == Token.Type.StatementEnd){
+								index --;
 								break;
+							}
 						}
 						r = CodeNode(MemberSelectorNode(r, tokens.tokens[index].token, lineno));
 						index ++;
