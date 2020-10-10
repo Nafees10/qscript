@@ -64,6 +64,10 @@ package Function[] INBUILT_FUNCTIONS = [
 	/// copy(void[], @void[])
 	Function("copy", DataType(DataType.Type.Void), [DataType(DataType.Type.Void, 1), DataType(DataType.Type.Void, 1, true)]),
 ];
+/// Stores what types can be converted to what other types implicitly
+package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
+	[DataType.Type.Int, DataType.Type.Uint, DataType.Type.Byte, DataType.Type.Ubyte]
+];
 
 /// Used by compiler's functions to return error
 public struct CompileError{
@@ -91,6 +95,17 @@ package Visibility strToVisibility(string s){
 			return curVisibility;
 	}
 	throw new Exception(s~" is not a visibility option");
+}
+
+/// Checks if a type can be implicitly casted to another type
+/// 
+/// Returns: true if can cast implicitely
+package bool canImplicitCast(DataType.Type type1, DataType.Type type2){
+	foreach(list; IMPLICIT_CAST_TYPES){
+		if (list.hasElement(type1) && list.hasElement(type2))
+			return true;
+	}
+	return false;
 }
 
 /// To store information about a function
@@ -511,27 +526,6 @@ string decodeString(string s){
 	return r;
 }
 
-/// Generates a string containing Function Name, along with it's argument types.
-/// Makes it easier to differentiate b/w function overloads
-/// 
-/// Arguments:
-/// `name` is the function name  
-/// `argTypes` is the array of it's arguments' Data Types
-/// 
-/// Returns: the byte code style function name
-string encodeFunctionName (string name, DataType[] argTypes){
-	string r = name ~ '/';
-	foreach (argType; argTypes)
-		r = r ~ argType.name~ '/';
-	return r;
-}
-/// 
-unittest{
-	assert ("abcd".encodeFunctionName ([DataType(DataType.Type.Double,3),DataType(DataType.Type.Void)]) == 
-			"abcd/double[][][]/void/"
-		);
-}
-
 /// matches argument types with defined argument types. Used by ASTGen
 /// 
 /// * `void` will match true against all types (arrays, and even references)
@@ -546,15 +540,12 @@ bool matchArguments(DataType[] definedTypes, DataType[] argTypes){
 	for (uinteger i = 0; i < argTypes.length; i ++){
 		if (definedTypes[i].isRef != argTypes[i].isRef)
 			return false;
-		if (definedTypes[i].type == DataType.Type.Void || argTypes[i].type == DataType.Type.Void){
-			if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount)
-				return false;
-			continue;
-		}
 		// check the array dimension
 		if (definedTypes[i].arrayDimensionCount != argTypes[i].arrayDimensionCount)
 			return false;
-		if (argTypes[i].type != definedTypes[i].type)
+		if (definedTypes[i].type == DataType.Type.Void && argTypes[i].type != DataType.Type.Void)
+			continue;
+		if (!argTypes[i].type.canImplicitCast(definedTypes[i].type))
 			return false;
 	}
 	return true;
