@@ -471,6 +471,8 @@ package struct MemberSelectorNode{
 	}
 	/// Return type. Only valid after ASTCheck
 	public DataType returnType;
+	/// index of memberName in struct definition or enum definition. Only valid after ASTCheck
+	public integer memberNameIndex = -1;
 	/// stores if value is static
 	public bool isLiteral = false;
 	/// Returns: the parent node
