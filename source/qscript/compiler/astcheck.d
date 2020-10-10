@@ -675,9 +675,31 @@ protected:
 	void checkAST(ref MemberSelectorNode node){
 		// first check parent
 		checkAST(node.parent);
-		DataType rType = node.parent.returnType;
-		// it's either going to be an enum, or a 
-		// TODO
+		// it's either going to be an enum, or a struct
+		string parentDataTypeName = node.parent.returnType.typeName;
+		Library.Struct parentStructType;
+		Library.Enum parentEnumType;
+		// not gonna work if its a reference to that type, or an array
+		if (node.parent.returnType.isArray || node.parent.returnType.isRef){
+			compileErrors.append(CompileError(node.parent.lineno, "invalid data type of operand for . operator"));
+		}else if (getStruct(parentDataTypeName, parentStructType)){
+			// check if that struct has some member of that name
+			node.memberNameIndex = parentStructType.membersName.indexOf(node.memberName);
+			if (node.memberNameIndex > -1)
+				// set data type
+				node.returnType = parentStructType.membersDataType[node.memberNameIndex];
+			else
+				compileErrors.append(
+					CompileError(node.lineno, "no member with name "~node.memberName~" exists in struct "~parentDataTypeName));
+		}else if (getEnum(parentDataTypeName, parentEnumType)){
+			node.memberNameIndex = parentEnumType.members.indexOf(node.memberName);
+			node.returnType = DataType(DataType.Type.Int);
+			if (node.memberNameIndex == -1)
+				compileErrors.append(
+					CompileError(node.lineno, "no member with name "~node.memberName~" exists in enum "~parentDataTypeName));
+		}else{
+			compileErrors.append(CompileError(node.parent.lineno, "invalid data type of operand for . operator"));
+		}
 	}
 public:
 	/// constructor
