@@ -66,7 +66,8 @@ package Function[] INBUILT_FUNCTIONS = [
 ];
 /// Stores what types can be converted to what other types implicitly
 package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
-	[DataType.Type.Int, DataType.Type.Uint, DataType.Type.Byte, DataType.Type.Ubyte]
+	[DataType.Type.Int, DataType.Type.Uint, DataType.Type.Byte, DataType.Type.Ubyte],
+	
 ];
 
 /// Used by compiler's functions to return error

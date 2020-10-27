@@ -423,7 +423,7 @@ protected:
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
 			}else{
-				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type != rType.type ||
+				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type.canImplicitCast(rType.type) ||
 				lType.isRef != rType.isRef){
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
@@ -444,6 +444,8 @@ protected:
 	void checkAST(ref DoWhileNode node){
 		increaseScope();
 		checkAST(node.condition);
+		if (node.condition.returnType != DataType(DataType.Type.Bool))
+			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		if (node.statement.type == StatementNode.Type.Block){
 			checkAST(node.statement.node!(StatementNode.Type.Block), false);
 		}else{
@@ -458,6 +460,8 @@ protected:
 		checkAST(node.initStatement);
 		// then the condition
 		checkAST(node.condition);
+		if (node.condition.returnType != DataType(DataType.Type.Bool))
+			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// then the increment one
 		checkAST(node.incStatement);
 		// finally the loop body
@@ -473,7 +477,7 @@ protected:
 		for (uinteger i=0; i < node.arguments.length; i ++){
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
-		}
+		}// TODO use matchArguments to match functions
 		if (!getFunction(node.fName, argTypes, node.returnType, node.id, node.libraryId))
 			compileErrors.append(CompileError(node.lineno,
 					"function "~node.fName~" does not exist or cannot be called with these arguments"));
@@ -482,6 +486,8 @@ protected:
 	void checkAST(ref IfNode node){
 		// first the condition
 		checkAST(node.condition);
+		if (node.condition.returnType != DataType(DataType.Type.Bool))
+			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// then statements
 		increaseScope();
 		checkAST(node.statement);
@@ -517,6 +523,8 @@ protected:
 	void checkAST(ref WhileNode node){
 		// first condition
 		checkAST(node.condition);
+		if (node.condition.returnType != DataType(DataType.Type.Bool))
+			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// the the statement
 		increaseScope();
 		checkAST(node.statement);
@@ -557,12 +565,12 @@ protected:
 		// check the val
 		checkAST(node.value);
 		// make sure data type is either double or integer, nothing else works
-		if (node.value.returnType.isArray || ![DataType.Type.Int, DataType.Type.Double].hasElement(node.returnType.type)){
-			compileErrors.append(CompileError(node.lineno, "cannot do use - operator on non-int & non-double types"));
-		}
-		if (node.value.returnType.isRef){
-			compileErrors.append(CompileError(node.lineno, "cannot use - operator on references"));
-		}
+		CompileError err = CompileError(node.lineno, "can only use - operator on numerical data types");
+		if (node.value.returnType.isArray || node.returnType.isRef)
+			compileErrors.append(err);
+		else if (!node.value.returnType.type.canImplicitCast(DataType.Type.Int) && 
+			!node.value.returnType.type.canImplicitCast(DataType.Type.Double))
+			compileErrors.append(err);
 	}
 	/// checks a OperatorNode
 	void checkAST(ref OperatorNode node){
