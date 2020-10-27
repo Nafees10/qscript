@@ -1,9 +1,9 @@
 {
 	"name": "qscript",
-	"description": "a tiny, small, & fast scripting lang.",
-	"copyright": "Copyright © 2016-2020, nafees",
+	"description": "A Simple Scripting Language",
+	"copyright": "Copyright © 2016-2020, Nafees Hassan",
 	"license":"MIT",
-	"authors": ["nafees"],
+	"authors": ["Nafees Hassan"],
 	"dependencies": {
 		"utils": "~>0.3.7",
 		"navm": "~>0.2.3"
