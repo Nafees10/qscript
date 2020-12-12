@@ -64,10 +64,16 @@ package Function[] INBUILT_FUNCTIONS = [
 	/// copy(void[], @void[])
 	Function("copy", DataType(DataType.Type.Void), [DataType(DataType.Type.Void, 1), DataType(DataType.Type.Void, 1, true)]),
 ];
-/// Stores what types can be converted to what other types implicitly
+/// Stores what types can be converted to what other types implicitly.
+/// **THESE ARE NOT SUPPORTED RIGHT NOW, just stick with integer, char, and double**
 package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
 	[DataType.Type.Int, DataType.Type.Uint, DataType.Type.Byte, DataType.Type.Ubyte],
-	
+	[DataType.Type.Double],
+	[DataType.Type.Char, DataType.Type.Byte, DataType.Type.Ubyte, DataType.Type.Bool],
+];
+/// only these data types are currently available
+public const DataType.Type[] AVAILABLE_DATA_TYPES = [
+	DataType.Type.Int, DataType.Type.Double, DataType.Type.Char
 ];
 
 /// Used by compiler's functions to return error
