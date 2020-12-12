@@ -117,7 +117,7 @@ private:
 				if (func.name == name && func.argTypes == argTypes){
 					type = func.returnType;
 					id = i;
-					libraryId  =libId;
+					libraryId = libId;
 					return true;
 				}
 			}
@@ -366,7 +366,10 @@ private:
 			r.arrayDimensionCount ++;
 			return r;
 		}else if (node.type == CodeNode.Type.MemberSelector){
-			// TODO: implement getReturnType for MemberSelectorNode
+			MemberSelectorNode memberSelector = node.node!(CodeNode.Type.MemberSelector);
+			if (memberSelector.returnType.type == DataType.Type.Void)
+				checkAST(memberSelector);
+			return memberSelector.returnType;
 		}
 		return DataType(DataType.Type.Void);
 	}
@@ -477,7 +480,7 @@ protected:
 		for (uinteger i=0; i < node.arguments.length; i ++){
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
-		}// TODO use matchArguments to match functions
+		}// TODO use matchArguments to match functions. not yet tho, in next few versions maybe?
 		if (!getFunction(node.fName, argTypes, node.returnType, node.id, node.libraryId))
 			compileErrors.append(CompileError(node.lineno,
 					"function "~node.fName~" does not exist or cannot be called with these arguments"));
