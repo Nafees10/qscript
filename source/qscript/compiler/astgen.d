@@ -592,6 +592,8 @@ struct ASTGen{
 				// read the type
 				try{
 					varDeclare.type = readType();
+					if (!AVAILABLE_DATA_TYPES.hasElement(varDeclare.type.type))
+						throw new Exception("Data type "~varDeclare.type.typeName~" is currently not supported");
 				}catch(Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));
 					.destroy (e);
