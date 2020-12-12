@@ -192,6 +192,7 @@ private TokenList separateTokens(string[] script){
 				// see if it's still operator after adding c
 				if (OPERATORS.hasElement(cast(string)(token ~ c)) || SOPERATORS.hasElement(cast(string)(token ~ c))){
 					// go on
+					token = token ~ c;
 					return false;
 				}else{
 					pendingTokenChar = c;
@@ -264,6 +265,9 @@ unittest{
 		"\ta = 5.5;",
 		" a = -20+5;",
 		" a=-20+5;",
+		" a == -b;",
+		"a <= b;",
+		"a > b",
 	];
 	Token[] tokens = separateTokens(script).tokens;
 	string[] strTokens;
@@ -282,6 +286,9 @@ unittest{
 			"a", "=", "5.5", ";",
 			"a", "=", "-20", "+", "5", ";",
 			"a", "=", "-20", "+", "5", ";",
+			"a", "==", "-", "b", ";",
+			"a", "<=", "b", ";",
+			"a", ">", "b",
 		]);
 }
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
