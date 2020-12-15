@@ -136,6 +136,7 @@ struct ASTGen{
 		StructNode generateStructAST(){
 			StructNode structNode;
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "struct")){
+				structNode.lineno = tokens.getTokenLine(index);
 				// read the name
 				index ++;
 				if (tokens.tokens[index].type == Token.Type.Identifier){
@@ -189,6 +190,7 @@ struct ASTGen{
 		EnumNode generateEnumAST(){
 			EnumNode enumNode;
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "enum")){
+				enumNode.lineno = tokens.getTokenLine(index);
 				index ++;
 				if (tokens.tokens[index].type == Token.Type.Identifier){
 					enumNode.name = tokens.tokens[index].token;
