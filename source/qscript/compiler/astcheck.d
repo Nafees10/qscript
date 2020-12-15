@@ -436,7 +436,7 @@ protected:
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
 			}else{
-				if (lType.arrayDimensionCount != rType.arrayDimensionCount || lType.type.canImplicitCast(rType.type) ||
+				if (lType.arrayDimensionCount != rType.arrayDimensionCount || !lType.type.canImplicitCast(rType.type) ||
 				lType.isRef != rType.isRef){
 					compileErrors.append(CompileError(node.lineno, "rvalue and lvalue data type not matching"));
 				}
@@ -716,10 +716,10 @@ protected:
 		if (getStruct(parentDataTypeName, parentStructType)){
 			// check if that struct has some member of that name
 			node.memberNameIndex = parentStructType.membersName.indexOf(node.memberName);
-			if (node.memberNameIndex > -1)
-				// set data type
+			if (node.memberNameIndex > -1){
+				node.type = MemberSelectorNode.Type.StructMemberRead;
 				node.returnType = parentStructType.membersDataType[node.memberNameIndex];
-			else
+			}else
 				compileErrors.append(
 					CompileError(node.lineno, "no member with name "~node.memberName~" exists in struct "~parentDataTypeName));
 		}else{
