@@ -252,6 +252,10 @@ public struct DataType{
 	@property string typeName(){
 		return type == Type.Custom ? _name : type.to!string;
 	}
+	/// Returns: true if the type is a custom one
+	@property bool isCustom(){
+		return type == Type.Custom;
+	}
 	/// returns: true if it's an array. Strings are arrays too (char[])
 	@property bool isArray(){
 		if (arrayDimensionCount > 0){
