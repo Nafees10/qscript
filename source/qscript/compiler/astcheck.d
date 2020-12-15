@@ -168,6 +168,17 @@ private:
 					compileErrors.append(CompileError(funcB.lineno,
 						"functions with same name must have different argument types"));
 			}
+			// if return type is an enum, change it to int
+			if (funcA.returnType.isCustom){
+				Library.Enum dummyEnum;
+				Library.Struct dummyStruct;
+				if (getEnum(funcA.returnType.typeName, dummyEnum))
+					node.functions[funcId].returnType.type = DataType.Type.Int;
+				else if (!getStruct(funcA.returnType.typeName, dummyStruct)){
+					compileErrors.append(CompileError(funcA.lineno, "invalid data type "~funcA.returnType.typeName));
+					continue;
+				}
+			}
 			// append if public
 			if (funcA.visibility == Visibility.Public){
 				_this.functions ~= Function(funcA.name, funcA.returnType, funcA.argTypes);
@@ -738,10 +749,10 @@ public:
 		_scopeVarCount.clear;
 		_this.clear;
 		_exports.clear;
-		readFunctions(node);
 		readEnums(node);
 		readStructs(node);
 		readGlobVars(node);
+		readFunctions(node);
 		// call checkAST on every FunctionNode
 		for (uinteger i=0; i < node.functions.length; i++){
 			checkAST(node.functions[i]);
