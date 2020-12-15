@@ -683,16 +683,26 @@ protected:
 	}
 	/// checks a MemberSelectorNode
 	void checkAST(ref MemberSelectorNode node){
-		// first check parent
+		// first check parent, could be an enum, so first match names
+		if (node.parent.type == CodeNode.Type.Variable){
+			Library.Enum enumData;
+			string enumName = node.parent.node!(CodeNode.Type.Variable).varName;
+			if (getEnum(enumName, enumData)){
+				node.memberNameIndex = enumData.members.indexOf(node.memberName);
+				if (node.memberNameIndex < 0){
+					compileErrors.append(CompileError(node.lineno, "enum "~enumName~" has no member named "~node.memberName));
+				}
+				node.type = MemberSelectorNode.Type.EnumMemberRead;
+				node.returnType = DataType(DataType.Type.Int);
+				return;
+			}
+		}
 		checkAST(node.parent);
 		// it's either going to be an enum, or a struct
-		string parentDataTypeName = node.parent.returnType.typeName;
+		string parentDataTypeName = node.parent.returnType.name;
 		Library.Struct parentStructType;
-		Library.Enum parentEnumType;
 		// not gonna work if its a reference to that type, or an array
-		if (node.parent.returnType.isArray || node.parent.returnType.isRef){
-			compileErrors.append(CompileError(node.parent.lineno, "invalid data type of operand for . operator"));
-		}else if (getStruct(parentDataTypeName, parentStructType)){
+		if (getStruct(parentDataTypeName, parentStructType)){
 			// check if that struct has some member of that name
 			node.memberNameIndex = parentStructType.membersName.indexOf(node.memberName);
 			if (node.memberNameIndex > -1)
@@ -701,12 +711,6 @@ protected:
 			else
 				compileErrors.append(
 					CompileError(node.lineno, "no member with name "~node.memberName~" exists in struct "~parentDataTypeName));
-		}else if (getEnum(parentDataTypeName, parentEnumType)){
-			node.memberNameIndex = parentEnumType.members.indexOf(node.memberName);
-			node.returnType = DataType(DataType.Type.Int);
-			if (node.memberNameIndex == -1)
-				compileErrors.append(
-					CompileError(node.lineno, "no member with name "~node.memberName~" exists in enum "~parentDataTypeName));
 		}else{
 			compileErrors.append(CompileError(node.parent.lineno, "invalid data type of operand for . operator"));
 		}
@@ -735,6 +739,9 @@ public:
 		_this.clear;
 		_exports.clear;
 		readFunctions(node);
+		readEnums(node);
+		readStructs(node);
+		readGlobVars(node);
 		// call checkAST on every FunctionNode
 		for (uinteger i=0; i < node.functions.length; i++){
 			checkAST(node.functions[i]);
