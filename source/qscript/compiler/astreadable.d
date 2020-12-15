@@ -335,6 +335,8 @@ JSONValue toJSON(NegativeValueNode node){
 JSONValue toJSON(MemberSelectorNode node){
 	JSONValue r;
 	r["node"] = JSONValue("MemberSelectorNode");
+	r["nodeType"] = JSONValue(node.type.to!string);
+	r["memberNameIndex"] = JSONValue(node.memberNameIndex);
 	r["type"] = JSONValue(node.returnType.name);
 	r["lineno"] = JSONValue(node.lineno);
 	r["parent"] = node.parent.toJSON;
