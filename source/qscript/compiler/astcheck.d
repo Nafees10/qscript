@@ -339,10 +339,9 @@ private:
 		}else if (node.type == CodeNode.Type.SOperator){
 			SOperatorNode opNode = node.node!(CodeNode.Type.SOperator);
 			DataType operandType = getReturnType(opNode.operand);
-			// hardcoded stuff, beware
-			if (opNode.operator == "@"){
+			// hardcoded 2 lines below, beware
+			if (opNode.operator == "@")
 				operandType.isRef = operandType.isRef ? false : true;
-			}
 			// </hardcoded>
 			return operandType;
 		}else if (node.type == CodeNode.Type.ReadElement){

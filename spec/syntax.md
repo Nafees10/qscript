@@ -326,9 +326,11 @@ else
 ---
 
 # Loops
+
 QScript curently has the following types of loops:
 
 ## While:
+
 While loops are written like:
 ```
 while (CONDITION){
@@ -338,6 +340,7 @@ while (CONDITION){
 As long as `CONDITION` is `true`, `# some code in a loop` is executed. And just like if statements, while loops can also be nested
 
 ## Do While:
+
 Do while loops are writen like:
 ```
 do{
@@ -347,6 +350,7 @@ do{
 First the code is executed, then if the condition is `true`, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
 
 ## For:
+
 The for loop in QScript is a bit different from other languages, it's written like:
 ```
 for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT;){
@@ -360,6 +364,7 @@ Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and `INCREME
 ---
 
 # Operators
+
 One important thing to keep in mind when using operators is that they are evaluated left-to right. So instead of writing:
 ```
 if (a == 0 || a == 1){
@@ -371,13 +376,17 @@ if ((a == 0) || (a == 1)){
 }
 ```
 The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.
+
 ## Arithmetic Operators
+
 * `/` operator divides two integers/floats
 * `*` operator multiplies two integeres/floats
 * `+` operator adds two integers/floats
 * `-` subtracts two integers/floats
 * `%` divides two integers/floats, returns the remainder
+
 ## Comparison Operators
+
 * `==` returns `true` if two integers/floats/strings/arrays are same. 
 * `>` returns `true` if `value0` int/float is greater than `value1` int/float.
 * `<` returns `true` if `value0` int/float is lesser than `value1` int/float.
@@ -385,6 +394,8 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `<=` returns `true` if `value0` int/float is lesser than or equal to `value1` int/float.
 * `&&` returns `true` if `value0` and `value1` are both `true`
 * `||` returns `true` if either of `value0` or `value1` are `true`, or both are `true`
+
 ## Other Operators:
+
 * `!` not operator (works on `bool`), returns `true` if operand is `false`, `false` if operand is `true`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
