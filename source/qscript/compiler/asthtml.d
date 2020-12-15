@@ -49,7 +49,7 @@ version (compiler){
 		void tableNew(string heading, bool asRow = false){
 			if (asRow)
 				_html.append(HTML.ROW_START);
-			_html.append(HTML.TABLE_HEADING_START~heading.htmlEncode~HTML.TABLE_HEADING_END);
+			_html.append(HTML.TABLE_HEADING_START~htmlEncode(heading)~HTML.TABLE_HEADING_END);
 			if (asRow)
 				_html.append(HTML.ROW_END);
 		}
@@ -63,7 +63,7 @@ version (compiler){
 			if (bold)
 				_html.append(HTML.BOLD_START);
 			foreach (val; values)
-				_html.append(HTML.DATA_START~val.htmlEncode~HTML.DATA_END);
+				_html.append(HTML.DATA_START~htmlEncode(val)~HTML.DATA_END);
 			if (bold)
 				_html.append(HTML.BOLD_END);
 			_html.append(HTML.ROW_END);
@@ -86,8 +86,8 @@ version (compiler){
 				tableRow(["visibility", node.visibility.to!string]);
 				tableRow(["containsRef", node.containsRef.to!string]);
 				tableRow(["members:"], true);
-				foreach (i; 0 .. node.membersName.length)
-					tableRow([node.membersDataType[i].name, node.membersName[i]]);
+				foreach (memberId; 0 .. node.membersName.length)
+					tableRow([node.membersDataType[memberId].name, node.membersName[i]]);
 				tableEnd();
 			}
 			tableEnd();
@@ -130,7 +130,7 @@ version (compiler){
 			}
 			if (node.structs.length){
 				tableNew("structs");
-				foreach (structNode; node.structs)
+				/*foreach (structNode; node.structs)
 					this.generateHtml(structNode);
 				tableEnd();
 			}
@@ -144,7 +144,7 @@ version (compiler){
 				tableNew("functions");
 				foreach (func; node.functions)
 					generateHtml(func);
-				tableEnd();
+				tableEnd();*/
 			}
 		}
 		/// Returns: generated page as a string[] where each string is a separate line. does **not** include endl characters
