@@ -111,11 +111,12 @@ unittest{
 }
 
 /// returns Token[] with type identified based on string[] input
-package Token[] stringToTokens(string[] s){
+package Token[] stringToTokens(string[] s, bool detectType = true){
 	Token[] r;
 	r.length = s.length;
 	foreach (i, token; s){
-		//r[i].type = getTokenType(s[i]);
+		if (detectType)
+			r[i].type = getTokenType(s[i]);
 		r[i].token = s[i].dup;
 	}
 	return r;
@@ -252,7 +253,7 @@ private TokenList separateTokens(string[] script){
 	// put them all in TokenList
 	TokenList r;
 	r.tokenPerLine = tokenPerLine; // no need to dup it
-	r.tokens = stringToTokens(tokens.toArray);
+	r.tokens = stringToTokens(tokens.toArray, false);
 	.destroy (tokens);
 	return r;
 }
