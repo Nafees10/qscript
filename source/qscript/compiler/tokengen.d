@@ -115,7 +115,7 @@ package Token[] stringToTokens(string[] s){
 	Token[] r;
 	r.length = s.length;
 	foreach (i, token; s){
-		r[i].type = getTokenType(s[i]);
+		//r[i].type = getTokenType(s[i]);
 		r[i].token = s[i].dup;
 	}
 	return r;
