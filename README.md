@@ -44,26 +44,34 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 1. Simple syntax
 1. Dynamic arrays
 1. Fast execution
-1. Static typed.
+1. Static typed
 1. Function overloading
 1. References
 
 ## TODO For Upcoming Versions
 
-1. add `cast(Type)`
-1. unsigned integers
-1. bitshift operators
+**Coming in next version:**
+
 1. Structs
-1. Be able to load multiple scripts, to make it easier to separete scripts across files. Something similar to D's `import`
+1. Enums
+1. Global Variables
+1. Scripts as libraries for other scripts
+
+**Planned for sometime later:**
+
+1. bitshift operators
+1. More data types
 
 ---
 
 ## Hello World
 
-This is how a hello world would look like in QScript. For more examples, see `examples/`.
+This is how a hello world would look like in QScript. For more examples, see `examples/`.  
 
 ```
 function void main(){
 	writeln ("Hello World!");
 }
 ```
+
+_writeln is not included in QScript, programs that use QScript are to provide their own functions, QScript only provides the very basic functions. However, writeln is provided in the demo program so any example scripts can be run using that_
