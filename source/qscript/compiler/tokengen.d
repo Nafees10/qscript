@@ -157,15 +157,16 @@ private TokenList separateTokens(string[] script){
 		}
 		if (token.length > 0){
 			// strings
-			if (token[0] == '\"' || token[0] == '\''){
+			if (token[0] == '"' || token[0] == '\''){
 				token = token ~ c;
 				if (c == token[0] && token[$-1] != '\\'){
 					lastToken = token.dup;
 					return true;
 				}
+				return false;
 			}
 			// unexpected strings get read as separate tokens
-			if ((c == '\"' || c == '\'') && token[0] != c){
+			if ((c == '"' || c == '\'') && token[0] != c){
 				pendingTokenChar = c;
 				lastToken = token.dup;
 				return true;
