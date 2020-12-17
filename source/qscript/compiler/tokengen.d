@@ -158,6 +158,7 @@ private TokenList separateTokens(string[] script){
 					lastToken = token.dup;
 					return true;
 				}
+				return false;
 			}
 			// unexpected strings get read as separate tokens
 			if ((c == '\"' || c == '\'') && token[0] != c){
