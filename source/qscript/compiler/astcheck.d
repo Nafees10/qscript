@@ -210,6 +210,9 @@ private:
 					_this.vars ~= Library.Variable(varName, varDeclare.type);
 					_exports.vars ~= _this.vars[$-1];
 				}
+				// check type
+				if (!isValidType(varDeclare.type))
+					compileErrors.append(CompileError(varDeclare.lineno, "invalid data type"));
 			}
 		}
 		// now append the private ones
@@ -534,6 +537,9 @@ protected:
 	}
 	/// checks a VarDeclareNode
 	void checkAST(ref VarDeclareNode node){
+		// check data type
+		if (!isValidType(node.type))
+			compileErrors.append(CompileError(node.lineno, "invalid data type"));
 		foreach (i, varName; node.vars){
 			if (varExists(varName)){
 				compileErrors.append(CompileError(node.lineno, "variable "~varName~" has already been declared"));
