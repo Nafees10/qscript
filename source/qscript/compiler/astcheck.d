@@ -17,6 +17,8 @@ class ASTCheck{
 private:
 	/// stores the libraries available. Index is the library ID.
 	Library[] _libraries;
+	/// stores whether a library was imported. Index is library id
+	bool[integer] _isImported;
 	/// stores all declarations of this script, public and private
 	Library _this;
 	/// stores this script's public declarations, this is what is exported at end
@@ -56,6 +58,8 @@ private:
 			}
 		}
 		foreach (libId, library; _libraries){
+			if (!isImported(libId))
+				continue;
 			foreach (i, var; library.vars){
 				if (var.name == name){
 					type = var.type;
@@ -113,6 +117,8 @@ private:
 			}
 		}
 		foreach (libId, lib; _libraries){
+			if (!isImported(libId))
+				continue;
 			foreach (i, func; lib.functions){
 				if (func.name == name && func.argTypes == argTypes){
 					type = func.returnType;
@@ -126,7 +132,9 @@ private:
 	}
 	/// Returns: true if a struct exists, false if not. Sets struct data to `structData`
 	bool getStruct(string name, ref Library.Struct structData){
-		foreach (library; _this ~ _libraries){
+		foreach (integer libId, library; _this ~ _libraries){
+			if (!isImported(libId-1))
+				continue;
 			foreach (str; library.structs){
 				if (str.name == name){
 					structData = str;
@@ -138,7 +146,9 @@ private:
 	}
 	/// Returns: true if an enum exists, false if not. Sets enum data to `enumData`
 	bool getEnum(string name, ref Library.Enum enumData){
-		foreach (library; _this ~ _libraries){
+		foreach (integer libId, library; _this ~ _libraries){
+			if (!isImported(libId-1))
+				continue;
 			foreach (enu; library.enums){
 				if (enu.name == name){
 					enumData = enu;
@@ -147,6 +157,22 @@ private:
 			}
 		}
 		return false;
+	}
+	/// reads all imports from ScriptNode
+	void readImports(ScriptNode node){
+		_isImported[-1] = true; // first mark -1 as imported, coz thats used for local stuff
+		foreach (importName; node.imports){
+			integer index = -1;
+			foreach (i, library; _libraries){
+				if (library.name == importName){
+					index = i;
+					break;
+				}
+			}
+			if (index == -1)
+				compileErrors.append(CompileError(0, "cannot import "~importName~", does not exist"));
+			_isImported[index] = true;
+		}
 	}
 	/// reads all FunctionNode from ScriptNode
 	/// 
@@ -399,12 +425,20 @@ private:
 		if (!type.isCustom)
 			return true;
 		// now time to search in all libraries' structs names
-		foreach (lib; [_this]~_libraries){
+		foreach (integer libId, lib; _this~_libraries){
+			if (!isImported(libId-1))
+				continue;
 			foreach (currentStruct; lib.structs){
 				if (currentStruct.name == type.typeName)
 					return true;
 			}
 		}
+		return false;
+	}
+	/// Returns: true if a library is imported
+	bool isImported(integer id){
+		if (id in _isImported)
+			return _isImported[id];
 		return false;
 	}
 protected:
@@ -776,6 +810,7 @@ public:
 		_scopeVarCount.clear;
 		_this.clear;
 		_exports.clear;
+		readImports(node);
 		readEnums(node);
 		readStructs(node);
 		readGlobVars(node);
