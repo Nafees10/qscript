@@ -265,6 +265,14 @@ private:
 			if (currentStruct.visibility == Visibility.Private)
 				_this.structs ~= currentStruct.toStruct;
 		}
+		// now look at data types of members
+		foreach (currentStruct; node.structs){
+			foreach (i, type; currentStruct.membersDataType){
+				if (!isValidType(type))
+					compileErrors.append(CompileError(currentStruct.lineno,
+						"struct member "~currentStruct.membersName[i]~" has invalid data type"));
+			}
+		}
 		// now to check for recursive dependency
 		List!string conflicts = new List!string;
 		foreach (str; _this.structs)
@@ -382,6 +390,19 @@ private:
 			return memberSelector.returnType;
 		}
 		return DataType(DataType.Type.Void);
+	}
+	/// Returns: true if a data type is valid (enum name is a not a valid data type btw, use int)
+	bool isValidType(DataType type){
+		if (!type.isCustom)
+			return true;
+		// now time to search in all libraries' structs names
+		foreach (lib; [_this]~_libraries){
+			foreach (currentStruct; lib.structs){
+				if (currentStruct.name == type.typeName)
+					return true;
+			}
+		}
+		return false;
 	}
 protected:
 	/// checks if a FunctionNode is valid
