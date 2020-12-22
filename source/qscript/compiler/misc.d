@@ -67,9 +67,19 @@ package Function[] INBUILT_FUNCTIONS = [
 /// Stores what types can be converted to what other types implicitly.
 /// **THESE ARE NOT SUPPORTED RIGHT NOW, just stick with integer, char, and double**
 package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
-	[DataType.Type.Int, DataType.Type.Uint, DataType.Type.Byte, DataType.Type.Ubyte],
+	[DataType.Type.Int, DataType.Type.Uint],
 	[DataType.Type.Double],
-	[DataType.Type.Char, DataType.Type.Byte, DataType.Type.Ubyte, DataType.Type.Bool],
+	[DataType.Type.Byte, DataType.Type.Ubyte],
+	[DataType.Type.Char, DataType.Type.Ubyte],
+	[DataType.Type.Bool, DataType.Type.Ubyte],
+];
+/// Stores numerical data types (where numbers are stored)
+package const DataType.Type[] NUMERICAL_DATA_TYPES = [
+	DataType.Type.Int,
+	DataType.Type.Uint,
+	DataType.Type.Double,
+	DataType.Type.Byte,
+	DataType.Type.Ubyte,
 ];
 /// only these data types are currently available
 public const DataType.Type[] AVAILABLE_DATA_TYPES = [
@@ -104,15 +114,32 @@ package Visibility strToVisibility(string s){
 	throw new Exception(s~" is not a visibility option");
 }
 
-/// Checks if a type can be implicitly casted to another type
+/// Checks if a type can be implicitly casted to another type. does not work for custom types, returns false
 /// 
 /// Returns: true if can cast implicitely
 package bool canImplicitCast(DataType.Type type1, DataType.Type type2){
+	if (type1 == DataType.Type.Custom || type2 == DataType.Type.Custom)
+		return false;
 	foreach(list; IMPLICIT_CAST_TYPES){
 		if (list.hasElement(type1) && list.hasElement(type2))
 			return true;
 	}
 	return false;
+}
+/// ditto
+package bool canImplicitCast(DataType type1, DataType type2){
+	if (type1.arrayDimensionCount == type1.arrayDimensionCount && type1.isRef == type2.isRef){
+		if (type1.type == DataType.Type.Custom || type2.type == DataType.Type.Custom)
+			return type1.typeName == type2.typeName;
+		return canImplicitCast(type1.type, type2.type);
+	}
+	return false;
+}
+/// Returns: true if arithmatic operators can be used on a data type
+package bool isNumerical(DataType type){
+	if (type.isArray || type.isRef)
+		return false;
+	return NUMERICAL_DATA_TYPES.hasElement(type.type);
 }
 
 /// To store information about a function
