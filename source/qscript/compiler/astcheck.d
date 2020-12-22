@@ -608,11 +608,11 @@ protected:
 	void checkAST(ref ReturnNode node){
 		/// check the value
 		checkAST(node.value);
-		if (!node.value.returnType.canImplicitCast(functionReturnType) || 
+		if (!node.value.returnType.canImplicitCast(functionReturnType) && 
 			(functionReturnType.type == DataType.Type.Void && // let `return null;` be valid for void functions
 			!node.value.returnType.canImplicitCast(DataType(DataType.Type.Void,0,true)))){
 
-			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"));
+			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"~node.value.returnType.name));
 		}
 	}
 	/// checks a CodeNode
