@@ -515,7 +515,7 @@ protected:
 	void checkAST(ref DoWhileNode node){
 		increaseScope();
 		checkAST(node.condition);
-		if (node.condition.returnType != DataType(DataType.Type.Bool))
+		if (node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		if (node.statement.type == StatementNode.Type.Block){
 			checkAST(node.statement.node!(StatementNode.Type.Block), false);
@@ -531,7 +531,7 @@ protected:
 		checkAST(node.initStatement);
 		// then the condition
 		checkAST(node.condition);
-		if (node.condition.returnType != DataType(DataType.Type.Bool))
+		if (!node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// then the increment one
 		checkAST(node.incStatement);
@@ -557,7 +557,7 @@ protected:
 	void checkAST(ref IfNode node){
 		// first the condition
 		checkAST(node.condition);
-		if (node.condition.returnType != DataType(DataType.Type.Bool))
+		if (!node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// then statements
 		increaseScope();
@@ -597,7 +597,7 @@ protected:
 	void checkAST(ref WhileNode node){
 		// first condition
 		checkAST(node.condition);
-		if (node.condition.returnType != DataType(DataType.Type.Bool))
+		if (!node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// the the statement
 		increaseScope();
@@ -608,7 +608,10 @@ protected:
 	void checkAST(ref ReturnNode node){
 		/// check the value
 		checkAST(node.value);
-		if (node.value.returnType != functionReturnType || functionReturnType.type == DataType.Type.Void){
+		if (!node.value.returnType.canImplicitCast(functionReturnType) || 
+			(functionReturnType.type == DataType.Type.Void && // let `return null;` be valid for void functions
+			!node.value.returnType.canImplicitCast(DataType(DataType.Type.Void,0,true)))){
+
 			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"));
 		}
 	}
@@ -654,21 +657,19 @@ protected:
 		}
 		// make sure both operands are of same data type
 		DataType operandType = getReturnType(node.operands[0]);
-		if (getReturnType(node.operands[0]) != getReturnType(node.operands[1])){
-			compileErrors.append(CompileError(node.lineno, "Both operands for operator must be of same type"));
+		if (!getReturnType(node.operands[0]).canImplicitCast(getReturnType(node.operands[1]))){
+			compileErrors.append(CompileError(node.lineno, "cannot implicitly cast operands to match data types"));
 		}
 		// now make sure that the data type of operands is allowed with that operator
 		if (["+","-","*","/","%", "<", ">", ">=", "<="].hasElement(node.operator)){
 			// only double and int allowed
-			if (operandType.isArray || operandType.isRef || 
-				![DataType.Type.Byte, DataType.Type.Double, DataType.Type.Int,
-				DataType.Type.Ubyte, DataType.Type.Uint].hasElement(operandType.type)){
+			if (!operandType.isNumerical()){
 				compileErrors.append (CompileError(node.lineno, "invalid data type for operand"));
 			}
 			node.returnType = operandType;
 		}else if (["&&", "||"].hasElement(node.operator)){
-			if (operandType != DataType(DataType.Type.Bool)){
-				compileErrors.append (CompileError(node.lineno, "that operator can only be used on bool"));
+			if (!operandType.canImplicitCast(DataType(DataType.Type.Bool))){
+				compileErrors.append (CompileError(node.lineno, "cannot implicitly cast"~operandType.name~" to bool"));
 			}
 			node.returnType = DataType(DataType.Type.Bool);
 		}else if (node.operator == "~"){
@@ -684,23 +685,16 @@ protected:
 		checkAST(node.operand);
 		// now it it's `!`, only accept int, if `@`, var
 		if (node.operator == "!"){
-			if (getReturnType(node.operand) != DataType(DataType.Type.Bool)){
-				compileErrors.append (CompileError(node.operand.lineno, "can only use ! with a bool"));
+			if (!getReturnType(node.operand).canImplicitCast(DataType(DataType.Type.Bool))){
+				compileErrors.append (CompileError(node.operand.lineno, "can only use ! operator with a bool"));
 			}
-			node.returnType = DataType(DataType.Type.Int);
+			node.returnType = DataType(DataType.Type.Bool);
 		}else if (node.operator == "@"){
 			node.returnType = node.operand.returnType;
 			node.returnType.isRef = !node.returnType.isRef;
-			// if it's used to get a ref, it can only be used on variables, nothing else.
-			if (!node.operand.returnType.isRef && node.operand.type != CodeNode.Type.Variable){
-				// could be that it's getting ref of ReadElement, check it that's the case
-				CodeNode subNode = node.operand;
-				while (subNode.type == CodeNode.Type.ReadElement){
-					subNode = subNode.node!(CodeNode.Type.ReadElement).readFromNode;
-				}
-				if (subNode.type != CodeNode.Type.Variable)
-					compileErrors.append(CompileError(node.lineno, "@ can only be used to get reference of variables"));
-			}
+			// cant deref/ref void
+			if (node.returnType.type == DataType.Type.Void)
+				compileErrors.append(CompileError(node.lineno, "cannot use @ on void type"));
 		}else
 			compileErrors.append (CompileError(node.lineno, "invalid operator"));
 	}
@@ -710,20 +704,18 @@ protected:
 		checkAST (node.readFromNode);
 		checkAST (node.index);
 		// index must return int
-		if (getReturnType(node.index) != DataType(DataType.Type.Uint)){
-			compileErrors.append (CompileError(node.index.lineno, "index must be of type uint"));
+		if (getReturnType(node.index).canImplicitCast(DataType(DataType.Type.Uint))){
+			compileErrors.append (CompileError(node.index.lineno,
+				"cannot implicitly cast "~getReturnType(node.index).name~" to uint"));
 		}
 		// now make sure that the data is an array or a string
-		DataType readFromType = getReturnType (node.readFromNode);
-		if (readFromType.arrayDimensionCount == 0){
+		immutable DataType readFromType = getReturnType (node.readFromNode);
+		if (readFromType.arrayDimensionCount == 0)
 			compileErrors.append (CompileError(node.readFromNode.lineno, "cannnot use [..] on non-array data"));
-		}
+		if (readFromType.isRef)
+			compileErrors.append (CompileError(node.readFromNode.lineno, "cannot use [..] on references"));
 		node.returnType = readFromType;
 		node.returnType.arrayDimensionCount --;
-		/// `[..]` can not be used on refs
-		if (readFromType.isRef){
-			compileErrors.append (CompileError(node.readFromNode.lineno, "cannot use [..] on references"));
-		}
 	}
 	/// checks a VariableNode
 	void checkAST(ref VariableNode node){
@@ -743,7 +735,7 @@ protected:
 			bool typeMatches = true;
 			for (uinteger i=1; i < node.elements.length; i ++){
 				checkAST (node.elements[i]);
-				if (typeMatches && node.elements[i].returnType != type){
+				if (typeMatches && !node.elements[i].returnType.canImplicitCast(type)){
 					compileErrors.append (CompileError(node.elements[i].lineno, "elements in array must be of same type"));
 					typeMatches = false;
 				}
