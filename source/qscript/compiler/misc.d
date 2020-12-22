@@ -72,6 +72,7 @@ package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
 	[DataType.Type.Byte, DataType.Type.Ubyte],
 	[DataType.Type.Char, DataType.Type.Ubyte],
 	[DataType.Type.Bool, DataType.Type.Ubyte],
+	[DataType.Type.Void],
 ];
 /// Stores numerical data types (where numbers are stored)
 package const DataType.Type[] NUMERICAL_DATA_TYPES = [
