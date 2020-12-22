@@ -87,6 +87,15 @@ function int someFunction(){
 }
 ```
 
+In case of functions of type void, `return null;` can be used to terminate execution, like:
+```
+function void main(){
+	# ..
+	return null;
+	# anything below wont be executed
+}
+```
+
 ## `this` Function
 Each script can have 1 `this` function. It will be called before any other function in the scipt is called i.e: the `this` function can be used to initialize the script.  
 
