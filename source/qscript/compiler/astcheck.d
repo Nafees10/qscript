@@ -609,10 +609,10 @@ protected:
 		/// check the value
 		checkAST(node.value);
 		if (!node.value.returnType.canImplicitCast(functionReturnType) && 
-			(functionReturnType.type == DataType.Type.Void && // let `return null;` be valid for void functions
-			!node.value.returnType.canImplicitCast(DataType(DataType.Type.Void,0,true)))){
+			!(functionReturnType.type == DataType.Type.Void && // let `return null;` be valid for void functions
+			node.value.returnType.canImplicitCast(DataType(DataType.Type.Void,0,true)))){
 
-			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"~node.value.returnType.name));
+			compileErrors.append(CompileError(node.value.lineno,"wrong data type for return value"));
 		}
 	}
 	/// checks a CodeNode
