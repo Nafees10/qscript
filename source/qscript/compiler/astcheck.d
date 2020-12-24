@@ -548,10 +548,14 @@ protected:
 		for (uinteger i=0; i < node.arguments.length; i ++){
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
-		}// TODO use matchArguments to match functions. not yet tho, in next few versions maybe?
+		}
+		// TODO use matchArguments to match functions. not yet tho, in next few versions maybe?
 		if (!getFunction(node.fName, argTypes, node.returnType, node.id, node.libraryId))
 			compileErrors.append(CompileError(node.lineno,
 					"function "~node.fName~" does not exist or cannot be called with these arguments"));
+		// do not let it call `this`
+		else if (node.fName == "this")
+			compileErrors.append(CompileError(node.lineno, "calling `this` function is not allowed"));
 	}
 	/// checks an IfNode
 	void checkAST(ref IfNode node){
