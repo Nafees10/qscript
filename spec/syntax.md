@@ -101,12 +101,14 @@ Each script can have 1 `this` function. It will be called before any other funct
 
 `this` function is defined like:
 ```
-function this(){
+function void this(){
 	# code to be executed when script is loaded
 }
 var int someGlobalVar = 5; # global variables are initialized before calling this()
 ```
 `this` function must not return any value.
+
+`this` function's visibility does not matter, as it cannot be called in script.
 
 ## Function Calls
 Function calls can be made liks this:
