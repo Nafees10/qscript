@@ -766,7 +766,6 @@ protected:
 			}
 		}
 		checkAST(node.parent);
-		// it's either going to be an enum, or a struct
 		string parentDataTypeName = node.parent.returnType.name;
 		Library.Struct parentStructType;
 		// not gonna work if its a reference to that type, or an array

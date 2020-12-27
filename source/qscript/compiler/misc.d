@@ -174,64 +174,160 @@ public struct Function{
 	}
 }
 
-/// To store information about a library
+/// To store information about a library (what a library exports)
 public struct Library{
 	/// To store information about a struct
 	public struct Struct{
 		/// the name of this struct
-		public string name;
+		private string _name;
+		/// ditto
+		@property string name(){
+			return _name;
+		}
+		/// ditto 
+		@property string name(string newName){
+			return _name = newName;
+		}
 		/// name of members of this struct
-		public string[] membersName;
+		private string[] _membersName;
+		/// ditto
+		@property ref string[] membersName() return{
+			return _membersName;
+		}
+		/// ditto
+		@property ref string[] membersName(string[] newVal) return{
+			return _membersName = newVal;
+		}
 		/// data types of members of this struct
-		public DataType[] membersDataType;
+		private DataType[] _membersDataType;
+		/// ditto
+		@property ref DataType[] membersDataType() return{
+			return _membersDataType;
+		}
+		/// ditto
+		@property ref DataType[] membersDataType(DataType[] newVal) return{
+			return _membersDataType = newVal;
+		}
 		/// postblit
 		this (this){
-			this.membersName = this.membersName.dup;
-			this.membersDataType = this.membersDataType.dup;
+			this._membersName = this._membersName.dup;
+			this._membersDataType = this._membersDataType.dup;
 		}
 	}
 	/// To store information about a enum
 	public struct Enum{
 		/// name of the enum
-		public string name;
+		private string _name;
+		/// ditto
+		@property string name(){
+			return _name;
+		}
+		/// ditto
+		@property string name(string newName){
+			return _name = newName;
+		}
 		/// members names, index is their value
-		public string[] members;
+		private string[] _members;
+		/// ditto
+		@property ref string[] members() return{
+			return _members;
+		}
+		/// ditto
+		@property ref string[] members(string[] newVal) return{
+			return _members = newVal;
+		}
 		/// postblit
 		this (this){
-			this.members = this.members.dup;
+			this._members = this._members.dup;
 		}
 	}
 	/// To store information about a global variable
 	public struct Variable{
 		/// name of var
-		public string name;
+		private  string _name;
+		/// ditto
+		@property string name(){
+			return _name;
+		}
+		/// ditto
+		@property string name(string newName){
+			return _name = newName;
+		}
 		/// data type
-		public DataType type;
+		private DataType _type;
+		/// ditto
+		@property DataType type(){
+			return _type;
+		}
+		/// ditto
+		@property DataType type(DataType newType){
+			return _type = newType;
+		}
 	}
 	/// name of library
-	string name;
+	private string _name;
+	/// ditto
+	@property string name(){
+		return _name;
+	}
+	/// ditto
+	@property string name(string newName){
+		return _name = newName;
+	}
 	/// functions exported by library. The index is function ID.
-	Function[] functions;
+	private Function[] _functions;
+	/// ditto
+	@property ref Function[] functions() return{
+		return _functions;
+	}
+	/// ditto
+	@property ref Function[] functions(Function[] newVal) return{
+		return _functions = newVal;
+	}
 	/// global variables exported by this library. index is ID
-	Library.Variable[] vars;
+	private Library.Variable[] _vars;
+	/// ditto
+	@property ref Library.Variable[] vars() return{
+		return _vars;
+	}
+	/// ditto
+	@property ref Library.Variable[] vars(Library.Variable[] newVal) return{
+		return _vars = newVal;
+	}
 	/// structs exported by library
-	Library.Struct[] structs;
+	private Library.Struct[] _structs;
+	/// ditto
+	@property ref Library.Struct[] structs() return{
+		return _structs;
+	}
+	/// ditto
+	@property ref Library.Struct[] structs(Library.Struct[] newVal) return{
+		return _structs = newVal;
+	}
 	/// Enums exported by library
-	Library.Enum[] enums;
+	private Library.Enum[] _enums;
+	/// ditto
+	@property ref Library.Enum[] enums() return{
+		return _enums;
+	}
+	/// ditto
+	@property ref Library.Enum[] enums(Library.Enum[] newVal) return{
+		return _enums = newVal;
+	}
 	/// clears this
 	package void clear(){
-		functions = [];
-		vars = [];
-		structs = [];
-		enums = [];
-		name = "";
+		_functions = [];
+		_vars = [];
+		_structs = [];
+		_enums = [];
+		_name = "";
 	}
 	/// postblit
 	this (this){
-		this.functions = this.functions.dup;
-		this.vars = this.vars.dup;
-		this.structs = this.structs.dup;
-		this.enums = this.enums.dup;
+		this._functions = this._functions.dup;
+		this._vars = this._vars.dup;
+		this._structs = this._structs.dup;
+		this._enums = this._enums.dup;
 	}
 }
 
