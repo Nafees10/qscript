@@ -152,9 +152,6 @@ public struct Function{
 	/// stores the data type of the arguments received by this function
 	private DataType[] _argTypes;
 	/// the data type of the arguments received by this function
-	/// 
-	/// if an argType is defined as void, with array dimensions=0, it means accept any type.
-	/// if an argType is defined as void with array dimensions>0, it means array of any type of that dimensions
 	@property ref DataType[] argTypes() return{
 		return _argTypes;
 	}
@@ -321,6 +318,87 @@ public struct Library{
 		_structs = [];
 		_enums = [];
 		_name = "";
+	}
+	/// Returns: true if struct exists
+	bool hasStruct(string name, ref Library.Struct str){
+		foreach (currentStruct; _structs){
+			if (currentStruct.name == name){
+				str = currentStruct;
+				return true;
+			}
+		}
+		return false;
+	}
+	/// ditto
+	bool hasStruct(string name){
+		foreach (currentStruct; _structs){
+			if (currentStruct.name == name)
+				return true;
+		}
+		return false;
+	}
+	/// Returns: true if enum exists
+	bool hasEnum(string name, ref Library.Enum enu){
+		foreach (currentEnum; _enums){
+			if (currentEnum.name == name){
+				enu = currentEnum;
+				return true;
+			}
+		}
+		return false;
+	}
+	/// ditto
+	bool hasEnum(string name){
+		foreach (currentEnum; _enums){
+			if (currentEnum.name == name)
+				return true;
+		}
+		return false;
+	}
+	/// Returns: variable ID, or -1 if doesnt exist
+	integer hasVar(string name, ref DataType type){
+		foreach (i, var; _vars){
+			if (var.name == name){
+				type = var.type;
+				return i;
+			}
+		}
+		return -1;
+	}
+	/// Returns: true if variable exists
+	bool hasVar(string name){
+		foreach (var; _vars){
+			if (var.name == name)
+				return true;
+		}
+		return false;
+	}
+	/// Returns: function ID, or -1 if doesnt exist
+	integer hasFunction(string name, DataType[] argsType, ref bool argTypesMatch, ref DataType returnType){
+		argTypesMatch = false;
+		foreach (i, func; _functions){
+			if (func.name == name){
+				if (argsType.length == func.argTypes.length){
+					foreach (j; 0 .. argsType.length){
+						if (!argsType[j].canImplicitCast(func.argTypes[j])){
+							argTypesMatch = false;
+							break;
+						}
+					}
+				}
+				returnType = func.returnType;
+				return i;
+			}
+		}
+		return -1;
+	}
+	/// Returns: true if a function by a name exists
+	bool hasFunction(string name){
+		foreach (func; _functions){
+			if (func.name == name)
+				return true;
+		}
+		return false;
 	}
 	/// postblit
 	this (this){
