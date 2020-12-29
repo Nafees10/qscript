@@ -47,27 +47,21 @@ private:
 	/// Returns: true if a var exists. False if not.
 	/// also sets the variable data type to `type` and id to `id`, and library id to `libraryId`, and 
 	/// if it is global, sets `isGlobal` to `true`
-	bool getVar(string name, ref DataType type, ref uinteger id, ref integer libraryId, ref bool isGlobal){
-		foreach (i, var; _this.vars){
-			if (var.name == name){
-				type = var.type;
-				id = i;
-				isGlobal = false;
-				libraryId = -1;
-				return true;
-			}
+	bool getVar(string name, ref DataType type, ref integer id, ref integer libraryId, ref bool isGlobal){
+		id = _this.hasVar(name, type);
+		if (id > -1){
+			isGlobal = id < _exports.vars.length;
+			libraryId = -1;
+			return true;
 		}
 		foreach (libId, library; _libraries){
 			if (!isImported(libId))
 				continue;
-			foreach (i, var; library.vars){
-				if (var.name == name){
-					type = var.type;
-					id = i;
-					isGlobal = true;
-					libraryId = libId;
-					return true;
-				}
+			id = library.hasVar(name, type);
+			if (id > -1){
+				isGlobal = true;
+				libraryId = libId;
+				return true;
 			}
 		}
 		return false;
@@ -75,7 +69,7 @@ private:
 	/// Returns: variable ID for a variable with a name. Only use when you know the variable is local
 	uinteger getVarID(string name){
 		DataType type;
-		uinteger id;
+		integer id;
 		integer libraryId;
 		bool isGlobal;
 		getVar(name, type, id, libraryId, isGlobal);
@@ -84,7 +78,7 @@ private:
 	/// Returns: true if a variable with a name is found
 	bool varExists(string name){
 		DataType type;
-		uinteger id;
+		integer id;
 		integer libraryId;
 		bool isGlobal;
 		return getVar(name, type, id, libraryId, isGlobal);
@@ -106,41 +100,32 @@ private:
 	}
 	/// Returns: true if a function exists, false if not. Sets function return type to `type`,
 	/// id to `id`, and library id to `libraryId`
-	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref uinteger id,
+	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref integer id,
 		ref integer libraryId){
-		foreach (i, func; _this.functions){
-			if (func.name == name && func.argTypes == argTypes){
-				type = func.returnType;
-				id = i;
-				libraryId = -1;
-				return true;
-			}
+		bool argsMatch;
+		id = _this.hasFunction(name, argTypes, argsMatch, type);
+		if (argsMatch && id > -1){
+			libraryId = -1;
+			return true;
 		}
 		foreach (libId, lib; _libraries){
 			if (!isImported(libId))
 				continue;
-			foreach (i, func; lib.functions){
-				if (func.name == name && func.argTypes == argTypes){
-					type = func.returnType;
-					id = i;
-					libraryId = libId;
-					return true;
-				}
+			id = lib.hasFunction(name, argTypes, argsMatch, type);
+			if (argsMatch && id > -1){
+				libraryId = libId;
+				return true;
 			}
 		}
 		return false;
 	}
 	/// Returns: true if a struct exists, false if not. Sets struct data to `structData`
 	bool getStruct(string name, ref Library.Struct structData){
-		foreach (integer libId, library; _this ~ _libraries){
+		foreach (integer libId, lib; _this ~ _libraries){
 			if (!isImported(libId-1))
 				continue;
-			foreach (str; library.structs){
-				if (str.name == name){
-					structData = str;
-					return true;
-				}
-			}
+			if (lib.hasStruct(name, structData))
+				return true;
 		}
 		return false;
 	}
@@ -149,12 +134,8 @@ private:
 		foreach (integer libId, library; _this ~ _libraries){
 			if (!isImported(libId-1))
 				continue;
-			foreach (enu; library.enums){
-				if (enu.name == name){
-					enumData = enu;
-					return true;
-				}
-			}
+			if (library.hasEnum(name, enumData))
+				return true;
 		}
 		return false;
 	}
