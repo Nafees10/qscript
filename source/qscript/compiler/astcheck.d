@@ -418,6 +418,10 @@ private:
 	}
 	/// Returns: true if a library is imported
 	bool isImported(integer id){
+		if (id >= _libraries.length)
+			return false;
+		if (_libraries[id].autoImport)
+			return true;
 		if (id in _isImported)
 			return _isImported[id];
 		return false;

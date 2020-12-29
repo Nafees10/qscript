@@ -261,6 +261,16 @@ public struct Library{
 			return _type = newType;
 		}
 	}
+	/// constructor
+	this(bool autoImport){
+		this._autoImport = autoImport;
+	}
+	/// if this library is automatically imported
+	private bool _autoImport;
+	/// ditto
+	@property bool autoImport(){
+		return _autoImport;
+	}
 	/// name of library
 	private string _name;
 	/// ditto
