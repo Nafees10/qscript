@@ -495,7 +495,7 @@ package struct VariableNode{
 	/// the name of this var
 	public string varName;
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
-	public uinteger id;
+	public integer id;
 	/// the library ID where this is defined
 	public integer libraryId = -1;
 	/// stores if this is a global variable. Only valid valid after ASTCheck has been called on this.
@@ -1066,7 +1066,7 @@ package struct FunctionCallNode{
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
-	public uinteger id;
+	public integer id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
 	public deprecated @property bool isScriptDefined(){
 		return libraryId == -1;
