@@ -15,8 +15,6 @@ import qscript.compiler.astreadable;
 
 import utils.misc;
 
-import navm.navm : NaFunction;
-
 /// compiles a script from string[] to bytecode (in NaFunction[]).
 /// 
 /// `script` is the script to compile
