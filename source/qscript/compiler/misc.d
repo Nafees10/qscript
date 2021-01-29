@@ -172,9 +172,24 @@ public struct Function{
 }
 
 /// To store information about a library (what a library exports)
-public struct Library{
+public class Library{
+private:
+	/// if this library is automatically imported
+	bool _autoImport;
+	/// name of library
+	string _name;
+	/// functions exported by library. The index is function ID.
+	Function[] _functions;
+	/// global variables exported by this library. index is ID
+	Library.Variable[] _vars;
+	/// structs exported by library
+	Library.Struct[] _structs;
+	/// Enums exported by library
+	Library.Enum[] _enums;
+
+public:
 	/// To store information about a struct
-	public struct Struct{
+	struct Struct{
 		/// the name of this struct
 		private string _name;
 		/// ditto
@@ -212,7 +227,7 @@ public struct Library{
 		}
 	}
 	/// To store information about a enum
-	public struct Enum{
+	struct Enum{
 		/// name of the enum
 		private string _name;
 		/// ditto
@@ -239,7 +254,7 @@ public struct Library{
 		}
 	}
 	/// To store information about a global variable
-	public struct Variable{
+	struct Variable{
 		/// name of var
 		private  string _name;
 		/// ditto
@@ -266,68 +281,69 @@ public struct Library{
 		this._autoImport = autoImport;
 	}
 	/// if this library is automatically imported
-	private bool _autoImport;
-	/// ditto
 	@property bool autoImport(){
 		return _autoImport;
 	}
-	/// name of library
-	private string _name;
-	/// ditto
+	/// library name
 	@property string name(){
 		return _name;
 	}
-	/// ditto
-	@property string name(string newName){
-		return _name = newName;
-	}
 	/// functions exported by library. The index is function ID.
-	private Function[] _functions;
-	/// ditto
-	@property ref Function[] functions() return{
+	@property Function[] functions(){
 		return _functions;
 	}
-	/// ditto
-	@property ref Function[] functions(Function[] newVal) return{
-		return _functions = newVal;
+	/// Adds a new function
+	/// 
+	/// Returns: function ID, or -1 if function already exists
+	integer addFunction(Function func){
+		if (this.hasFunction(func.name, func.argTypes)!=-1)
+			return -1;
+		_functions ~= func;
+		return cast(integer)_functions.length-1;
 	}
 	/// global variables exported by this library. index is ID
-	private Library.Variable[] _vars;
-	/// ditto
-	@property ref Library.Variable[] vars() return{
+	@property ref Library.Variable[] vars(){
 		return _vars;
 	}
-	/// ditto
-	@property ref Library.Variable[] vars(Library.Variable[] newVal) return{
-		return _vars = newVal;
+	/// Adds a new variable.
+	/// 
+	/// Returns: Variable ID, or -1 if it already exists
+	integer addVar(Library.Variable var){
+		if (this.hasVar(var.name))
+			return -1;
+		_vars ~= var;
+		return cast(integer)_vars.length-1;
+	}
+	/// HACK
+	/// DO NOT USE THIS FUNCTION, except for the one place in astcheck where I used it
+	package void setVarCount(uinteger count){
+		_vars.length = count;
 	}
 	/// structs exported by library
-	private Library.Struct[] _structs;
-	/// ditto
-	@property ref Library.Struct[] structs() return{
+	@property ref Library.Struct[] structs(){
 		return _structs;
 	}
-	/// ditto
-	@property ref Library.Struct[] structs(Library.Struct[] newVal) return{
-		return _structs = newVal;
+	/// Adds a new struct
+	/// 
+	/// Returns: struct ID, or -1 if already exists
+	integer addStruct(Library.Struct str){
+		if (this.hasStruct(str.name))
+			return -1;
+		_structs ~= str;
+		return cast(integer)_structs.length-1;
 	}
 	/// Enums exported by library
-	private Library.Enum[] _enums;
-	/// ditto
-	@property ref Library.Enum[] enums() return{
+	@property ref Library.Enum[] enums() {
 		return _enums;
 	}
-	/// ditto
-	@property ref Library.Enum[] enums(Library.Enum[] newVal) return{
-		return _enums = newVal;
-	}
-	/// clears this
-	package void clear(){
-		_functions = [];
-		_vars = [];
-		_structs = [];
-		_enums = [];
-		_name = "";
+	/// Adds a new enum
+	/// 
+	/// Returns: enum ID, or -1 if it already exists
+	integer addEnum(Library.Enum enu){
+		if (this.hasEnum(enu.name))
+			return -1;
+		_enums ~= enu;
+		return cast(integer)_enums.length-1;
 	}
 	/// Returns: true if struct exists
 	bool hasStruct(string name, ref Library.Struct str){
@@ -402,6 +418,12 @@ public struct Library{
 		}
 		return -1;
 	}
+	/// ditto
+	integer hasFunction(string name, DataType[] argsType){
+		bool argsTypesMatch;
+		DataType returnType;
+		return this.hasFunction(name, argsType, argsTypesMatch, returnType);
+	}
 	/// Returns: true if a function by a name exists
 	bool hasFunction(string name){
 		foreach (func; _functions){
@@ -409,13 +431,6 @@ public struct Library{
 				return true;
 		}
 		return false;
-	}
-	/// postblit
-	this (this){
-		this._functions = this._functions.dup;
-		this._vars = this._vars.dup;
-		this._structs = this._structs.dup;
-		this._enums = this._enums.dup;
 	}
 }
 
