@@ -6,7 +6,7 @@
 	"authors": ["Nafees Hassan"],
 	"dependencies": {
 		"utils": "~>0.3.7",
-		"navm": "~>0.2.3"
+		"navm": "~>1.1.0"
 	},"configurations": [
 		{
 			"name": "default",
