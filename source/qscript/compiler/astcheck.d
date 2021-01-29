@@ -34,13 +34,11 @@ private:
 	/// Returns: false if it was already registered or global variable with same name exists,  
 	/// true if it was successful
 	bool addVar(string name, DataType type, bool isGlobal = false){
-		foreach (var; _this.vars){
-			if (var.name == name)
-				return false;
-		}
+		if (_this.hasVar(name))
+			return false;
 		if (isGlobal && _scopeVarCount.count == 1)
-			_exports.vars ~= Library.Variable(name, type);
-		_this.vars ~= Library.Variable(name, type);
+			_exports.addVar(Library.Variable(name, type));
+		_this.addVar(Library.Variable(name, type));
 		_scopeVarCount.push(_scopeVarCount.pop + 1);
 		return true;
 	}
@@ -95,7 +93,7 @@ private:
 	/// it will put the vars declared inside that scope go out of scope
 	void decreaseScope(){
 		if (_scopeVarCount.count > 1){
-			_this.vars.length -= _scopeVarCount.pop;
+			_this.setVarCount(_this.vars.length - _scopeVarCount.pop);
 		}
 	}
 	/// Returns: true if a function exists, false if not. Sets function return type to `type`,
@@ -188,14 +186,14 @@ private:
 			}
 			// append if public
 			if (funcA.visibility == Visibility.Public){
-				_this.functions ~= Function(funcA.name, funcA.returnType, funcA.argTypes);
-				_exports.functions ~= _this.functions[$-1];
+				_this.addFunction(Function(funcA.name, funcA.returnType, funcA.argTypes));
+				_exports.addFunction(Function(funcA.name, funcA.returnType, funcA.argTypes));
 			}
 		}
 		// now append private functions
 		foreach (i, func; node.functions){
 			if (func.visibility == Visibility.Private)
-				_this.functions ~= Function(func.name, func.returnType, func.argTypes);
+				_this.addFunction(Function(func.name, func.returnType, func.argTypes));
 		}
 	}
 	/// Reads all `VarDeclareNode`s from ScriptNode (global variable declarations)
@@ -206,16 +204,14 @@ private:
 		foreach (ref varDeclare; node.variables){
 			foreach (varName; varDeclare.vars){
 				// conflict check
-				foreach (var; _this.vars){
-					if (var.name == varName)
-						compileErrors.append(CompileError(varDeclare.lineno, "global variable "~var.name~" is declared multiple times"));
-				}
+				if (_this.hasVar(varName))
+					compileErrors.append(CompileError(varDeclare.lineno, "global variable "~var.name~" is declared multiple times"));
 				// append
 				if (varDeclare.visibility == Visibility.Public){
 					// just assign it an id, it wont be used anywhere, but why not do it anyways?
 					varDeclare.setVarID(varName, _this.vars.length);
-					_this.vars ~= Library.Variable(varName, varDeclare.type);
-					_exports.vars ~= _this.vars[$-1];
+					_this.addVar(Library.Variable(varName, varDeclare.type));
+					_exports.addVar(Library.Variable(varName, varDeclare.type));
 				}
 				// check type
 				if (!isValidType(varDeclare.type))
@@ -227,7 +223,7 @@ private:
 			if (varDeclare.visibility == Visibility.Private){
 				foreach (varName; varDeclare.vars){
 					varDeclare.setVarID(varName, _this.vars.length);
-					_this.vars ~= Library.Variable(varName, varDeclare.type);
+					_this.addVar(Library.Variable(varName, varDeclare.type));
 				}
 			}
 		}
@@ -245,14 +241,14 @@ private:
 					compileErrors.append(CompileError(enumB.lineno, enumB.name~" is declared multiple times"));
 			}
 			if (enumA.visibility == Visibility.Public){
-				_this.enums ~= enumA.toEnum;
-				_exports.enums ~= _this.enums[$-1];
+				_this.addEnum(enumA.toEnum);
+				_exports.addEnum(enumA.toEnum);
 			}
 		}
 		// now do private enums
 		foreach (currentEnum; node.enums){
 			if (currentEnum.visibility == Visibility.Private)
-				_this.enums ~= Library.Enum(currentEnum.name, currentEnum.members.dup);
+				_this.addEnum(Library.Enum(currentEnum.name, currentEnum.members.dup));
 		}
 	}
 	/// Reads all structs from ScriptNode
@@ -266,14 +262,14 @@ private:
 					compileErrors.append(CompileError(currentStruct.lineno, currentStruct.name~" is declared multiple times"));
 			}
 			if (currentStruct.visibility == Visibility.Public){
-				_this.structs ~= currentStruct.toStruct;
-				_exports.structs ~= _this.structs[$-1];
+				_this.addStruct(currentStruct.toStruct);
+				_exports.addStruct(currentStruct.toStruct);
 			}
 		}
 		// now add private structs to _this
 		foreach (currentStruct; node.structs){
 			if (currentStruct.visibility == Visibility.Private)
-				_this.structs ~= currentStruct.toStruct;
+				_this.addStruct(currentStruct.toStruct);
 		}
 		// now look at data types of members
 		foreach (currentStruct; node.structs){
@@ -315,17 +311,9 @@ private:
 			}
 			return false;
 		}
-		// find that struct in _this, if not found, no big deal
-		integer structId = -1;
-		foreach (i, str; _this.structs){
-			if (str.name == name){
-				structId = i;
-				break;
-			}
-		}
-		if (structId >= 0){
-			Library.Struct str = _this.structs[structId];
-			/// structs must not be in members' data types
+		Library.Struct str;
+		if (_this.hasStruct(name, str)){
+			// structs must not be in members' data types
 			immutable string[] notAllowed = parents ~ cast(immutable string[])[name];
 			foreach (i; 0 .. str.membersName.length){
 				string memberTypeName = str.membersDataType[i].typeName;
@@ -409,10 +397,8 @@ private:
 		foreach (integer libId, lib; _this~_libraries){
 			if (!isImported(libId-1))
 				continue;
-			foreach (currentStruct; lib.structs){
-				if (currentStruct.name == type.typeName)
-					return true;
-			}
+			if (lib.hasStruct(type.typeName))
+				return true;
 		}
 		return false;
 	}
