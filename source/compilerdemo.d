@@ -7,7 +7,7 @@ This can be used to:
 * optimize existing byte code, and output new optimized byte code (to be added, when optimizer is added)
 * convert script to byte code, optimize it, and output optimized byte code (to be added, when optimizer is added)
 +/
-module compiler;
+module compilerdemo;
 
 import std.stdio;
 import std.file;
