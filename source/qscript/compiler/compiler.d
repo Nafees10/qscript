@@ -10,6 +10,8 @@ import qscript.compiler.astcheck;
 import qscript.compiler.codegen;
 import qscript.compiler.astreadable;
 
+import navm.bytecode : NaBytecode;
+
 import std.json;
 import std.range;
 import std.traits;
@@ -119,33 +121,12 @@ package bool canImplicitCast(DataType type1, DataType type2){
 	return false;
 }
 
-/// To store information about a function
-public struct Function{
-	/// the name of the function
-	string name;
-	/// the data type of the value returned by this function
-	DataType returnType;
-	/// stores the data type of the arguments received by this function
-	private DataType[] _argTypes;
-	/// the data type of the arguments received by this function
-	@property ref DataType[] argTypes() return{
-		return _argTypes;
-	}
-	/// the data type of the arguments received by this function
-	@property ref DataType[] argTypes(DataType[] newArray) return{
-		return _argTypes = newArray.dup;
-	}
-	/// constructor
-	this (string functionName, DataType functionReturnType, DataType[] functionArgTypes){
-		name = functionName;
-		returnType = functionReturnType;
-		_argTypes = functionArgTypes.dup;
-	}
-	/// postblit
-	this (this){
-		this._argTypes = this._argTypes.dup;
-	}
-}
+/// To store information about a function that can be called
+public alias Function = Library.Function;
+/// Function called to generate bytecode for a call to a macro function
+public alias FunctionCallCodeGenFunc = void delegate (string name, DataType[] argTypes, NaBytecode bytecode);
+/// Function called to generate bytecode for accessing a macro variable
+public alias VariableCodeGenFunc = void delegate (string name, NaBytecode bytecode);
 
 /// To store information about a library (what a library exports)
 public class Library{
@@ -162,20 +143,52 @@ private:
 	Library.Struct[] _structs;
 	/// Enums exported by library
 	Library.Enum[] _enums;
-
+package:
+	/// HACK
+	/// DO NOT USE THIS FUNCTION, except for the one place in astcheck where I used it
+	void setVarCount(uinteger count){
+		_vars.length = count;
+	}
 public:
+	/// To store information about a function
+	struct Function{
+		/// the name of the function
+		string name;
+		/// the data type of the value returned by this function
+		DataType returnType;
+		/// stores the data type of the arguments received by this function
+		private DataType[] _argTypes;
+		/// the data type of the arguments received by this function
+		@property ref DataType[] argTypes() return{
+			return _argTypes;
+		}
+		/// the data type of the arguments received by this function
+		@property ref DataType[] argTypes(DataType[] newArray) return{
+			return _argTypes = newArray.dup;
+		}
+		/// Function that should be called to generate a bytecode for this. Only valid if not null
+		private FunctionCallCodeGenFunc _codegen;
+		/// ditto
+		@property FunctionCallCodeGenFunc codegen(){
+			return _codegen;
+		}
+		/// constructor
+		this (string functionName, DataType functionReturnType, DataType[] functionArgTypes,
+		FunctionCallCodeGenFunc codegen = null){
+			name = functionName;
+			returnType = functionReturnType;
+			_argTypes = functionArgTypes.dup;
+			_codegen = codegen;
+		}
+		/// postblit
+		this (this){
+			this._argTypes = this._argTypes.dup;
+		}
+	}
 	/// To store information about a struct
 	struct Struct{
 		/// the name of this struct
-		private string _name;
-		/// ditto
-		@property string name(){
-			return _name;
-		}
-		/// ditto 
-		@property string name(string newName){
-			return _name = newName;
-		}
+		string name;
 		/// name of members of this struct
 		private string[] _membersName;
 		/// ditto
@@ -205,15 +218,7 @@ public:
 	/// To store information about a enum
 	struct Enum{
 		/// name of the enum
-		private string _name;
-		/// ditto
-		@property string name(){
-			return _name;
-		}
-		/// ditto
-		@property string name(string newName){
-			return _name = newName;
-		}
+		string name;
 		/// members names, index is their value
 		private string[] _members;
 		/// ditto
@@ -232,24 +237,20 @@ public:
 	/// To store information about a global variable
 	struct Variable{
 		/// name of var
-		private  string _name;
-		/// ditto
-		@property string name(){
-			return _name;
-		}
-		/// ditto
-		@property string name(string newName){
-			return _name = newName;
-		}
+		string name;
 		/// data type
-		private DataType _type;
+		DataType type;
+		/// Function that should be called to generate a bytecode for this. Only valid if not null
+		private VariableCodeGenFunc _codegen;
 		/// ditto
-		@property DataType type(){
-			return _type;
+		@property VariableCodeGenFunc codegen(){
+			return _codegen;
 		}
-		/// ditto
-		@property DataType type(DataType newType){
-			return _type = newType;
+		/// constructor
+		this(string name, DataType type, VariableCodeGenFunc codegen = null){
+			this.name = name;
+			this.type = type;
+			this._codegen = codegen;
 		}
 	}
 	/// constructor
@@ -289,11 +290,6 @@ public:
 			return -1;
 		_vars ~= var;
 		return cast(integer)_vars.length-1;
-	}
-	/// HACK
-	/// DO NOT USE THIS FUNCTION, except for the one place in astcheck where I used it
-	package void setVarCount(uinteger count){
-		_vars.length = count;
 	}
 	/// structs exported by library
 	@property ref Library.Struct[] structs(){
