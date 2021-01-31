@@ -33,7 +33,7 @@ struct ASTGen{
 			// look for visibility specifier, or default to private
 			Visibility vis = Visibility.Private;
 			if (tokens.tokens[index].type == Token.Type.Keyword && VISIBILITY_SPECIFIERS.hasElement(tokens.tokens[index].token)){
-				vis = strToVisibility(tokens.tokens[index].token);
+				vis = visibility(tokens.tokens[index].token);
 				index ++;
 			}
 			// look for TokenType.Keyword where token.token == "function"
@@ -837,7 +837,7 @@ struct ASTGen{
 				// literal
 				index ++;
 				try{
-					LiteralNode ltNode = LiteralNode([token]);
+					LiteralNode ltNode = LiteralNode(token);
 					ltNode.lineno = tokens.getTokenLine(index);
 					r = CodeNode(ltNode);
 				}catch (Exception e){
@@ -892,7 +892,7 @@ struct ASTGen{
 			LiteralNode r;
 			if ([Token.Type.Double,Token.Type.Integer,Token.Type.String,Token.Type.Char].hasElement(tokens.tokens[index].type)){
 				try{
-					r = LiteralNode([tokens.tokens[index]]);
+					r = LiteralNode(tokens.tokens[index]);
 					r.lineno = tokens.getTokenLine(index);
 				}catch (Exception e){
 					compileErrors.append(CompileError(tokens.getTokenLine(index), e.msg));

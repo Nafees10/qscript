@@ -6,6 +6,7 @@ module qscript.compiler.ast;
 import utils.misc;
 import utils.lists;
 import qscript.compiler.misc;
+import qscript.compiler.tokengen : Token, TokenList;
 
 import std.conv : to;
 
@@ -570,15 +571,14 @@ package struct LiteralNode{
 		returnType = dataType;
 	}
 	/// constructor using `fromTokens`
-	this (Token[] tokensLiteral){
-		fromTokens(tokensLiteral);
+	this (Token tokenLiteral){
+		fromToken(tokenLiteral);
 	}
 	/// reads the literal from a string
 	/// 
 	/// throws Exception on error
-	void fromTokens(Token[] tokensLiteral){
-		literal = TokenList.toString(tokensLiteral);
-		returnType.fromData(tokensLiteral);
+	void fromToken(Token token){
+		returnType.fromData(token);
 	}
 }
 

@@ -1,5 +1,5 @@
 ﻿/++
-Provides an "interface" to all the compiler modules.
+All the compiler modules packaged into one, this one module should be used to compile scripts.
 +/
 module qscript.compiler.compiler;
 
@@ -9,11 +9,22 @@ import qscript.compiler.ast;
 import qscript.compiler.astgen;
 import qscript.compiler.astcheck;
 import qscript.compiler.codegen;
-
-import std.json;
 import qscript.compiler.astreadable;
 
+import std.json;
+import std.range;
+import std.traits;
+import std.conv : to;
+
 import utils.misc;
+
+
+
+/// all the compiler modules wrapped into a single class. This is all that should be needed to compile scripts
+public class QSCompiler{
+private:
+
+}
 
 /// compiles a script from string[] to bytecode (in NaFunction[]).
 /// 

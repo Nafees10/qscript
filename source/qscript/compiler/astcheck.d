@@ -205,7 +205,7 @@ private:
 			foreach (varName; varDeclare.vars){
 				// conflict check
 				if (_this.hasVar(varName))
-					compileErrors.append(CompileError(varDeclare.lineno, "global variable "~var.name~" is declared multiple times"));
+					compileErrors.append(CompileError(varDeclare.lineno, "global variable "~varName~" is declared multiple times"));
 				// append
 				if (varDeclare.visibility == Visibility.Public){
 					// just assign it an id, it wont be used anywhere, but why not do it anyways?
@@ -520,7 +520,6 @@ protected:
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
 		}
-		// TODO use matchArguments to match functions. not yet tho, in next few versions maybe?
 		if (!getFunction(node.fName, argTypes, node.returnType, node.id, node.libraryId))
 			compileErrors.append(CompileError(node.lineno,
 					"function "~node.fName~" does not exist or cannot be called with these arguments"));
@@ -774,8 +773,6 @@ public:
 		// empty everything
 		compileErrors.clear;
 		_scopeVarCount.clear;
-		_this.clear;
-		_exports.clear;
 		readImports(node);
 		readEnums(node);
 		readStructs(node);
