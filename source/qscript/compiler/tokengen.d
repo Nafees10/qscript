@@ -6,7 +6,7 @@ module qscript.compiler.tokengen;
 import utils.misc;
 import utils.lists;
 import std.conv:to;
-import qscript.compiler.misc;
+import qscript.compiler.compiler;
 
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{

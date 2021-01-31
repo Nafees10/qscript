@@ -3,7 +3,7 @@ Functions to check if a script is valid (or certain nodes) by its generated AST
 +/
 module qscript.compiler.astcheck;
 
-import qscript.compiler.misc;
+import qscript.compiler.compiler;
 import qscript.compiler.ast;
 
 import utils.misc;

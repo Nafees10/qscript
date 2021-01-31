@@ -5,7 +5,7 @@ module qscript.compiler.ast;
 
 import utils.misc;
 import utils.lists;
-import qscript.compiler.misc;
+import qscript.compiler.compiler;
 import qscript.compiler.tokengen : Token, TokenList;
 
 import std.conv : to;

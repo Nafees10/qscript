@@ -13,8 +13,6 @@ import std.stdio;
 import std.file;
 
 import qscript.compiler.compiler;
-import qscript.compiler.misc : CompileError;
-import qscript.compiler.misc : Function;
 
 import utils.misc;
 
