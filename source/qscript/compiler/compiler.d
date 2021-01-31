@@ -3,7 +3,6 @@ All the compiler modules packaged into one, this one module should be used to co
 +/
 module qscript.compiler.compiler;
 
-import qscript.compiler.misc;
 import qscript.compiler.tokengen;
 import qscript.compiler.ast;
 import qscript.compiler.astgen;

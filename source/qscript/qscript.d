@@ -6,7 +6,6 @@ module qscript.qscript;
 import utils.misc;
 import utils.lists;
 import qscript.compiler.compiler;
-import qscript.compiler.misc;
 import std.conv:to;
 
 import navm.navm;

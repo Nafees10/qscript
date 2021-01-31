@@ -5,7 +5,6 @@ module qscript.compiler.codegen;
 
 import qscript.compiler.ast;
 import qscript.compiler.astcheck;
-import qscript.compiler.misc;
 
 import utils.misc;
 import utils.lists;
