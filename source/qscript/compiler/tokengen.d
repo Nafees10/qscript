@@ -133,6 +133,14 @@ private TokenList separateTokens(string[] script){
 				return true;
 			}
 		}
+		if (token.length && ['"', '\''].hasElement(token[0])){
+			token = token ~ c;
+			if (c == token[0] && token[$-1] != '\\'){
+				lastToken = token.dup;
+				return true;
+			}
+			return false;
+		}
 		if (WHITESPACE.hasElement(c)){
 			if (token.length > 0){
 				lastToken = token.dup;
