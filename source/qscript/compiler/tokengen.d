@@ -210,6 +210,14 @@ private TokenList separateTokens(string[] script, LinkedList!CompileError compil
 				return true;
 			}
 		}
+		if (token.length && ['"', '\''].hasElement(token[0])){
+			token = token ~ c;
+			if (c == token[0] && token[$-2] != '\\'){
+				lastToken = token.dup;
+				return true;
+			}
+			return false;
+		}
 		if (WHITESPACE.hasElement(c)){
 			if (token.length > 0){
 				lastToken = token.dup;
@@ -341,6 +349,7 @@ unittest{
 		" a == -b;",
 		"a <= b;",
 		"a > b",
+		"\"string\twith white\\\"Space\"\"unexpected string\""
 	];
 	LinkedList!CompileError err = new LinkedList!CompileError;
 	Token[] tokens = separateTokens(script, err).tokens;
@@ -363,7 +372,8 @@ unittest{
 			"a", "=", "-20", "+", "5", ";",
 			"a", "==", "-", "b", ";",
 			"a", "<=", "b", ";",
-			"a", ">", "b"
+			"a", ">", "b",
+			"\"string\twith white\\\"Space\"", "\"unexpected string\""
 		]);
 }
 
