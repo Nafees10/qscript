@@ -42,25 +42,24 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 ## Features
 
 1. Simple syntax
-1. Dynamic arrays
-1. Fast execution
-1. Static typed
-1. Function overloading
-1. References
+2. Dynamic arrays
+3. Fast execution
+4. Static typed
+5. Function overloading
+6. References
 
 ## TODO For Upcoming Versions
 
-**Coming in next version:**
-
 1. Structs
-1. Enums
-1. Global Variables
-1. Scripts as libraries for other scripts
+2. Enums
+3. Global Variables
+4. Libraries
+6. Scripts as libraries for other scripts
+7. Macro Functions that are detected at compile time and compiled separately rather than as a function call.
+8. Exporting function map - be able to run from bytecode only
+9. Array of references - not directly possible as the syntax doesnt allow it, but possible using structs.
 
-**Planned for sometime later:**
-
-1. bitshift operators
-1. More data types
+Features listed above are almost done (codegen.d & VM is left). You can track the progress in dev branch
 
 ---
 
