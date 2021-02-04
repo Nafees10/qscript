@@ -1,7 +1,7 @@
 {
 	"name": "qscript",
 	"description": "A Simple Scripting Language",
-	"copyright": "Copyright © 2016-2020, Nafees Hassan",
+	"copyright": "Copyright © 2016-2021, Nafees Hassan",
 	"license":"MIT",
 	"authors": ["Nafees Hassan"],
 	"dependencies": {
