@@ -37,8 +37,8 @@ private:
 		if (_this.hasVar(name))
 			return false;
 		if (isGlobal && _scopeVarCount.count == 1)
-			_exports.addVar(Library.Variable(name, type));
-		_this.addVar(Library.Variable(name, type));
+			_exports.addVar(Variable(name, type));
+		_this.addVar(Variable(name, type));
 		_scopeVarCount.push(_scopeVarCount.pop + 1);
 		return true;
 	}
@@ -118,7 +118,7 @@ private:
 		return false;
 	}
 	/// Returns: true if a struct exists, false if not. Sets struct data to `structData`
-	bool getStruct(string name, ref Library.Struct structData){
+	bool getStruct(string name, ref Struct structData){
 		foreach (integer libId, lib; _this ~ _libraries){
 			if (!isImported(libId-1))
 				continue;
@@ -128,7 +128,7 @@ private:
 		return false;
 	}
 	/// Returns: true if an enum exists, false if not. Sets enum data to `enumData`
-	bool getEnum(string name, ref Library.Enum enumData){
+	bool getEnum(string name, ref Enum enumData){
 		foreach (integer libId, library; _this ~ _libraries){
 			if (!isImported(libId-1))
 				continue;
@@ -175,8 +175,8 @@ private:
 			}
 			// if return type is an enum, change it to int
 			if (funcA.returnType.isCustom){
-				Library.Enum dummyEnum;
-				Library.Struct dummyStruct;
+				Enum dummyEnum;
+				Struct dummyStruct;
 				if (getEnum(funcA.returnType.typeName, dummyEnum))
 					node.functions[funcId].returnType.type = DataType.Type.Int;
 				else if (!getStruct(funcA.returnType.typeName, dummyStruct)){
@@ -210,8 +210,8 @@ private:
 				if (varDeclare.visibility == Visibility.Public){
 					// just assign it an id, it wont be used anywhere, but why not do it anyways?
 					varDeclare.setVarID(varName, _this.vars.length);
-					_this.addVar(Library.Variable(varName, varDeclare.type));
-					_exports.addVar(Library.Variable(varName, varDeclare.type));
+					_this.addVar(Variable(varName, varDeclare.type));
+					_exports.addVar(Variable(varName, varDeclare.type));
 				}
 				// check type
 				if (!isValidType(varDeclare.type))
@@ -223,7 +223,7 @@ private:
 			if (varDeclare.visibility == Visibility.Private){
 				foreach (varName; varDeclare.vars){
 					varDeclare.setVarID(varName, _this.vars.length);
-					_this.addVar(Library.Variable(varName, varDeclare.type));
+					_this.addVar(Variable(varName, varDeclare.type));
 				}
 			}
 		}
@@ -248,7 +248,7 @@ private:
 		// now do private enums
 		foreach (currentEnum; node.enums){
 			if (currentEnum.visibility == Visibility.Private)
-				_this.addEnum(Library.Enum(currentEnum.name, currentEnum.members.dup));
+				_this.addEnum(Enum(currentEnum.name, currentEnum.members.dup));
 		}
 	}
 	/// Reads all structs from ScriptNode
@@ -304,14 +304,14 @@ private:
 	/// `parents` are the structs that `name` struct is used in (i.e have member of type `name` struct)
 	void checkRecursiveDependency(string name, List!string conflicting, immutable string[] parents = []){
 		/// Returns: true if a string is a locally defined struct name
-		static bool isLocalStruct(string name, Library.Struct[] structs){
+		static bool isLocalStruct(string name, Struct[] structs){
 			foreach (currStr; structs){
 				if (currStr.name == name)
 					return true;
 			}
 			return false;
 		}
-		Library.Struct str;
+		Struct str;
 		if (_this.hasStruct(name, str)){
 			// structs must not be in members' data types
 			immutable string[] notAllowed = parents ~ cast(immutable string[])[name];
@@ -723,7 +723,7 @@ protected:
 	void checkAST(ref MemberSelectorNode node){
 		// first check parent, could be an enum, so first match names
 		if (node.parent.type == CodeNode.Type.Variable){
-			Library.Enum enumData;
+			Enum enumData;
 			string enumName = node.parent.node!(CodeNode.Type.Variable).varName;
 			if (getEnum(enumName, enumData)){
 				node.memberNameIndex = enumData.members.indexOf(node.memberName);
@@ -737,7 +737,7 @@ protected:
 		}
 		checkAST(node.parent);
 		string parentDataTypeName = node.parent.returnType.name;
-		Library.Struct parentStructType;
+		Struct parentStructType;
 		// not gonna work if its a reference to that type, or an array
 		if (getStruct(parentDataTypeName, parentStructType)){
 			// check if that struct has some member of that name

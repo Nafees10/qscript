@@ -121,12 +121,113 @@ package bool canImplicitCast(DataType type1, DataType type2){
 	return false;
 }
 
-/// To store information about a function that can be called
-public alias Function = Library.Function;
 /// Function called to generate bytecode for a call to a macro function
 public alias FunctionCallCodeGenFunc = void delegate (string name, DataType[] argTypes, NaBytecode bytecode);
 /// Function called to generate bytecode for accessing a macro variable
 public alias VariableCodeGenFunc = void delegate (string name, NaBytecode bytecode);
+/// To store information about a function
+public struct Function{
+	/// the name of the function
+	string name;
+	/// the data type of the value returned by this function
+	DataType returnType;
+	/// stores the data type of the arguments received by this function
+	private DataType[] _argTypes;
+	/// the data type of the arguments received by this function
+	@property ref DataType[] argTypes() return{
+		return _argTypes;
+	}
+	/// the data type of the arguments received by this function
+	@property ref DataType[] argTypes(DataType[] newArray) return{
+		return _argTypes = newArray.dup;
+	}
+	/// Function that should be called to generate a bytecode for this. Only valid if not null
+	private FunctionCallCodeGenFunc _codegen;
+	/// ditto
+	@property FunctionCallCodeGenFunc codegen(){
+		return _codegen;
+	}
+	/// constructor
+	this (string functionName, DataType functionReturnType, DataType[] functionArgTypes,
+	FunctionCallCodeGenFunc codegen = null){
+		name = functionName;
+		returnType = functionReturnType;
+		_argTypes = functionArgTypes.dup;
+		_codegen = codegen;
+	}
+	/// postblit
+	this (this){
+		this._argTypes = this._argTypes.dup;
+	}
+}
+/// To store information about a struct
+public struct Struct{
+	/// the name of this struct
+	string name;
+	/// name of members of this struct
+	private string[] _membersName;
+	/// ditto
+	@property ref string[] membersName() return{
+		return _membersName;
+	}
+	/// ditto
+	@property ref string[] membersName(string[] newVal) return{
+		return _membersName = newVal;
+	}
+	/// data types of members of this struct
+	private DataType[] _membersDataType;
+	/// ditto
+	@property ref DataType[] membersDataType() return{
+		return _membersDataType;
+	}
+	/// ditto
+	@property ref DataType[] membersDataType(DataType[] newVal) return{
+		return _membersDataType = newVal;
+	}
+	/// postblit
+	this (this){
+		this._membersName = this._membersName.dup;
+		this._membersDataType = this._membersDataType.dup;
+	}
+}
+/// To store information about a enum
+public struct Enum{
+	/// name of the enum
+	string name;
+	/// members names, index is their value
+	private string[] _members;
+	/// ditto
+	@property ref string[] members() return{
+		return _members;
+	}
+	/// ditto
+	@property ref string[] members(string[] newVal) return{
+		return _members = newVal;
+	}
+	/// postblit
+	this (this){
+		this._members = this._members.dup;
+	}
+}
+/// To store information about a global variable
+public struct Variable{
+	/// name of var
+	string name;
+	/// data type
+	DataType type;
+	/// Function that should be called to generate a bytecode for this. Only valid if not null
+	private VariableCodeGenFunc _codegen;
+	/// ditto
+	@property VariableCodeGenFunc codegen(){
+		return _codegen;
+	}
+	/// constructor
+	this(string name, DataType type, VariableCodeGenFunc codegen = null){
+		this.name = name;
+		this.type = type;
+		this._codegen = codegen;
+	}
+}
 
 /// To store information about a library (what a library exports)
 public class Library{
@@ -138,11 +239,11 @@ private:
 	/// functions exported by library. The index is function ID.
 	Function[] _functions;
 	/// global variables exported by this library. index is ID
-	Library.Variable[] _vars;
+	Variable[] _vars;
 	/// structs exported by library
-	Library.Struct[] _structs;
+	Struct[] _structs;
 	/// Enums exported by library
-	Library.Enum[] _enums;
+	Enum[] _enums;
 package:
 	/// HACK
 	/// DO NOT USE THIS FUNCTION, except for the one place in astcheck where I used it
@@ -150,109 +251,6 @@ package:
 		_vars.length = count;
 	}
 public:
-	/// To store information about a function
-	struct Function{
-		/// the name of the function
-		string name;
-		/// the data type of the value returned by this function
-		DataType returnType;
-		/// stores the data type of the arguments received by this function
-		private DataType[] _argTypes;
-		/// the data type of the arguments received by this function
-		@property ref DataType[] argTypes() return{
-			return _argTypes;
-		}
-		/// the data type of the arguments received by this function
-		@property ref DataType[] argTypes(DataType[] newArray) return{
-			return _argTypes = newArray.dup;
-		}
-		/// Function that should be called to generate a bytecode for this. Only valid if not null
-		private FunctionCallCodeGenFunc _codegen;
-		/// ditto
-		@property FunctionCallCodeGenFunc codegen(){
-			return _codegen;
-		}
-		/// constructor
-		this (string functionName, DataType functionReturnType, DataType[] functionArgTypes,
-		FunctionCallCodeGenFunc codegen = null){
-			name = functionName;
-			returnType = functionReturnType;
-			_argTypes = functionArgTypes.dup;
-			_codegen = codegen;
-		}
-		/// postblit
-		this (this){
-			this._argTypes = this._argTypes.dup;
-		}
-	}
-	/// To store information about a struct
-	struct Struct{
-		/// the name of this struct
-		string name;
-		/// name of members of this struct
-		private string[] _membersName;
-		/// ditto
-		@property ref string[] membersName() return{
-			return _membersName;
-		}
-		/// ditto
-		@property ref string[] membersName(string[] newVal) return{
-			return _membersName = newVal;
-		}
-		/// data types of members of this struct
-		private DataType[] _membersDataType;
-		/// ditto
-		@property ref DataType[] membersDataType() return{
-			return _membersDataType;
-		}
-		/// ditto
-		@property ref DataType[] membersDataType(DataType[] newVal) return{
-			return _membersDataType = newVal;
-		}
-		/// postblit
-		this (this){
-			this._membersName = this._membersName.dup;
-			this._membersDataType = this._membersDataType.dup;
-		}
-	}
-	/// To store information about a enum
-	struct Enum{
-		/// name of the enum
-		string name;
-		/// members names, index is their value
-		private string[] _members;
-		/// ditto
-		@property ref string[] members() return{
-			return _members;
-		}
-		/// ditto
-		@property ref string[] members(string[] newVal) return{
-			return _members = newVal;
-		}
-		/// postblit
-		this (this){
-			this._members = this._members.dup;
-		}
-	}
-	/// To store information about a global variable
-	struct Variable{
-		/// name of var
-		string name;
-		/// data type
-		DataType type;
-		/// Function that should be called to generate a bytecode for this. Only valid if not null
-		private VariableCodeGenFunc _codegen;
-		/// ditto
-		@property VariableCodeGenFunc codegen(){
-			return _codegen;
-		}
-		/// constructor
-		this(string name, DataType type, VariableCodeGenFunc codegen = null){
-			this.name = name;
-			this.type = type;
-			this._codegen = codegen;
-		}
-	}
 	/// constructor
 	this(bool autoImport){
 		this._autoImport = autoImport;
@@ -279,46 +277,46 @@ public:
 		return cast(integer)_functions.length-1;
 	}
 	/// global variables exported by this library. index is ID
-	@property ref Library.Variable[] vars(){
+	@property ref Variable[] vars(){
 		return _vars;
 	}
 	/// Adds a new variable.
 	/// 
 	/// Returns: Variable ID, or -1 if it already exists
-	integer addVar(Library.Variable var){
+	integer addVar(Variable var){
 		if (this.hasVar(var.name))
 			return -1;
 		_vars ~= var;
 		return cast(integer)_vars.length-1;
 	}
 	/// structs exported by library
-	@property ref Library.Struct[] structs(){
+	@property ref Struct[] structs(){
 		return _structs;
 	}
 	/// Adds a new struct
 	/// 
 	/// Returns: struct ID, or -1 if already exists
-	integer addStruct(Library.Struct str){
+	integer addStruct(Struct str){
 		if (this.hasStruct(str.name))
 			return -1;
 		_structs ~= str;
 		return cast(integer)_structs.length-1;
 	}
 	/// Enums exported by library
-	@property ref Library.Enum[] enums() {
+	@property ref Enum[] enums() {
 		return _enums;
 	}
 	/// Adds a new enum
 	/// 
 	/// Returns: enum ID, or -1 if it already exists
-	integer addEnum(Library.Enum enu){
+	integer addEnum(Enum enu){
 		if (this.hasEnum(enu.name))
 			return -1;
 		_enums ~= enu;
 		return cast(integer)_enums.length-1;
 	}
 	/// Returns: true if struct exists
-	bool hasStruct(string name, ref Library.Struct str){
+	bool hasStruct(string name, ref Struct str){
 		foreach (currentStruct; _structs){
 			if (currentStruct.name == name){
 				str = currentStruct;
@@ -336,7 +334,7 @@ public:
 		return false;
 	}
 	/// Returns: true if enum exists
-	bool hasEnum(string name, ref Library.Enum enu){
+	bool hasEnum(string name, ref Enum enu){
 		foreach (currentEnum; _enums){
 			if (currentEnum.name == name){
 				enu = currentEnum;

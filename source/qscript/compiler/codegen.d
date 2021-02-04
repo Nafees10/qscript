@@ -17,5 +17,12 @@ private:
 	NaBytecode _bytecode;
 	ScriptNode _script;
 	Library[] _libs;
-	
+public:
+	/// constructor
+	this(Library[] libraries){
+		_libs = libraries.dup;
+	}
+	/// generates byte code for a ScriptNode.
+	/// 
+	/// Returns: 
 }

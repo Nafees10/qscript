@@ -97,7 +97,7 @@ package struct StructNode{
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// the actual struct
-	private Library.Struct _struct;
+	private Struct _struct;
 	/// the name of this struct
 	public @property string name(){
 		return _struct.name;
@@ -131,7 +131,7 @@ package struct StructNode{
 		return false;
 	}
 	/// Returns: Library.Struct representing this
-	public @property Library.Struct toStruct(){
+	public @property Struct toStruct(){
 		return _struct;
 	}
 }
@@ -143,7 +143,7 @@ package struct EnumNode{
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// stores the actual enum
-	private Library.Enum _enum;
+	private Enum _enum;
 	/// Returns: the name of this enum
 	public @property string name() return{
 		return _enum.name;
@@ -161,7 +161,7 @@ package struct EnumNode{
 		return _enum.members = newMembers;
 	}
 	/// returns: misc.Enum representing this enum
-	public Library.Enum toEnum(){
+	public Enum toEnum(){
 		return _enum;
 	}
 }
