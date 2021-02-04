@@ -124,13 +124,15 @@ package bool canImplicitCast(DataType type1, DataType type2){
 /// comma separates a string.
 /// 
 /// Returns: the comma separated string
-private string[] commaSeparate(string str){
+private string[] commaSeparate(char comma=',', bool excludeEmpty=false)(string str){
 	string[] r;
 	uinteger readFrom;
 	for(uinteger i=0; i < str.length ; i ++){
-		if (str[i] == ',' || i+1 == str.length){
+		if (str[i] == comma || i+1 == str.length){
 			if (readFrom < i)
 				r ~= str[readFrom .. i];
+			else static if (!excludeEmpty)
+				r ~= "";
 			readFrom = i+1;
 		}
 	}
@@ -434,7 +436,8 @@ package:
 	}
 public:
 	/// constructor
-	this(bool autoImport){
+	this(string name, bool autoImport){
+		_name = name;
 		this._autoImport = autoImport;
 	}
 	/// if this library is automatically imported
@@ -584,6 +587,87 @@ public:
 		}
 		return false;
 	}
+	/// Writes this library to a single printable string
+	/// 
+	/// Returns: string representing contents of this library
+	override string toString(){
+		char[] r = cast(char[])"library|"~name~'|'~_autoImport.to!string~'|';
+		foreach (func; _functions)
+			r ~= func.toString ~ '/';
+		r ~= '|';
+		foreach (str; _structs)
+			r ~= str.toString ~ '/';
+		r ~= '|';
+		foreach (enu; _enums)
+			r ~= enu.toString ~ '/';
+		r ~= '|';
+		foreach (var; _vars)
+			r ~= var.toString ~ '/';
+		r ~= '|';
+		return cast(string)r;
+	}
+	/// Reads this library from a string (reverse of toString)
+	/// 
+	/// Returns: empty string in case of success, error in string in case of error
+	string fromString(string libraryString){
+		string[] vals = commaSeparate!('|',false)(libraryString);
+		if (vals.length < 7 || vals[0] != "library")
+			return "invalid string to read Library from";
+		_name = vals[1];
+		_autoImport = vals[2] == "true" ? true : false;
+		vals = vals[3 .. $];
+		string[] subVals = vals[0].commaSeparate!'/';
+		string error;
+		_functions = [];
+		_structs = [];
+		_enums = [];
+		_vars = [];
+		_functions.length = subVals.length;
+		foreach (i, val; subVals){
+			error = _functions[i].fromString(val);
+			if (error.length)
+				return error;
+		}
+		subVals = vals[1].commaSeparate!'/';
+		_structs.length = subVals.length;
+		foreach (i, val; subVals){
+			error = _structs[i].fromString(val);
+			if (error.length)
+				return error;
+		}
+		subVals = vals[2].commaSeparate!'/';
+		_enums.length = subVals.length;
+		foreach (i, val; subVals){
+			error = _enums[i].fromString(val);
+			if (error.length)
+				return error;
+		}
+		subVals = vals[3].commaSeparate!'/';
+		_vars.length = subVals.length;
+		foreach (i, val; subVals){
+			error = _vars[i].fromString(val);
+			if (error.length)
+				return error;
+		}
+		return [];
+	}
+}
+/// 
+unittest{
+	Library dummyLib = new Library("dummyLib",true);
+	dummyLib.addEnum(Enum("Potatoes",["red","brown"]));
+	dummyLib.addEnum(Enum("Colors", ["red", "brown"]));
+	dummyLib.addFunction(Function("main",DataType("void"),[DataType("char[][]")]));
+	dummyLib.addFunction(Function("add",DataType("int"),[DataType("int"),DataType("int")]));
+	dummyLib.addVar(Variable("abc",DataType("char[]")));
+	Library loadedLib = new Library("blabla",false);
+	loadedLib.fromString(dummyLib.toString);
+	assert(loadedLib.name == dummyLib.name);
+	assert(loadedLib._autoImport == dummyLib._autoImport);
+	assert(loadedLib._functions == dummyLib._functions);
+	assert(loadedLib._structs == dummyLib._structs);
+	assert(loadedLib._enums == dummyLib._enums);
+	assert(loadedLib._vars == dummyLib._vars);
 }
 
 /// used to store data types for data at compile time
