@@ -5,7 +5,7 @@ Comments can be added using the `#` character. Anything following a `#` is ignor
 For example:  
 ```
 # a comment
-void main(){ # This is a comment
+function void main(){ # This is a comment
 	# This also is a comment
 }
 
@@ -37,7 +37,7 @@ By default, all declarations are `private`.
 
 These can be written right before any declaration like:  
 ```
-private void somePrivateFunction(int arg){
+private function void somePrivateFunction(int arg){
 	# body of private function
 }
 public struct SomeStruct{
@@ -78,8 +78,7 @@ A return statement is written as following:
 ```
 return RETURN_VALUE;
 ```
-where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, 
-writeln will not be called.
+where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, writeln will not be called. write `null` in place of `RETURN_VALUE` to exit the function in case the function return type is void.
 ```
 function int someFunction(){
 	return 0;
@@ -127,13 +126,10 @@ declared in the script will be called.
 
 # Data Types
 QScript has these basic data types:
-* `int` - a signed integer (`ptrdiff_t` in DLang is used for this)
-* `uint` - an unsigned integer (`size_t` in DLang)
+* `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
 * `double` - a floating point (same as `double` in DLang)
-* `char` - a 1 byte character
-* `bool` - a `true` (non-zero int) or `false` (int, 0)
-* `byte` - signed 1 byte integer
-* `ubyte` - unsigned 1 byte integer
+* `char` - a 32 bit character (`dchar` in Dlang)
+* `bool` - a `true` or `false` (same as Dlang `bool`)
 
 Following data types can be defined in scripts that are derived from the above basic types:
 
@@ -157,7 +153,7 @@ An example usage of a struct would be:
 public struct Position{
 	var int x, y;
 }
-public Position getPosition(int x, int y){
+public function Position getPosition(int x, int y){
 	Position pos;
 	pos.x = x;
 	pos.y = y;
@@ -240,7 +236,7 @@ or:
 ```
 var @int[] refToIntArray; # this is a pointer to array of int
 ```
-Array of references is currently not possible in QScript.
+Array of references is currently not directly possible in QScript. _However_, you could create a struct that has a reference as a member, and create an array of that struct.
 
 By default, references are initliazed to be `null`.
 
@@ -248,7 +244,7 @@ By default, references are initliazed to be `null`.
 Variables and references are only available inside the "scope" they are declared in. In the code below:  
 ```
 var int someGlobalVar;
-public void main(int count){
+public function void main(int count){
 	var int i = 0;
 	while (i < count){
 		var int j;
@@ -275,13 +271,13 @@ writeln("Value of i="toStr(@ref)); # @ref returns the value of the variable it i
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
-void main(){
+function void main(){
 	var int i;
 	setRefTo(@i, 1024);
 	# i is now 1024
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
 }
-void setRefTo(@int ref, int to){
+function void setRefTo(@int ref, int to){
 	@ref = to;
 }
 ```
@@ -314,7 +310,7 @@ if (CONDITION)
 else
 	# some other code, single statement
 ```
-Even indentation is not necessary, it can be written like:
+Indentation is also not necessary, it can be written like:
 ```
 if (CONDITION)
 # some code, single statement
@@ -386,7 +382,9 @@ you should write:
 if ((a == 0) || (a == 1)){
 }
 ```
-The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.
+The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.  
+Operators that take only one operand are written like: `OPERATOR value`.  
+The whitespace between value(s) and operator is not necessary.
 
 ## Arithmetic Operators
 
@@ -405,8 +403,9 @@ The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is a
 * `<=` returns `true` if `value0` int/float is lesser than or equal to `value1` int/float.
 * `&&` returns `true` if `value0` and `value1` are both `true`
 * `||` returns `true` if either of `value0` or `value1` are `true`, or both are `true`
+* `!` not operator (works on `bool`), returns `true` if operand is `false`, `false` if operand is `true`
 
 ## Other Operators:
 
-* `!` not operator (works on `bool`), returns `true` if operand is `false`, `false` if operand is `true`
 * `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
+* `~` concatenate operator. Concatenates two arrays, returns new array.
