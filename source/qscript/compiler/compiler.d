@@ -590,8 +590,13 @@ unittest{
 	assert(dType == DataType("double"));
 	// unittests for `.name()`
 	assert(DataType("potatoType[][]").name == "potatoType[][]");
-	assert(DataType("double[]").name == "double[]");
-	
+	assert(DataType("double[]").name == "double[]");	
+}
+
+/// Stores compiled bytecode of a script along with its linker info (what it exports, & how to read it)
+public struct QScriptBytecode{
+	NaBytecode bytecode; /// the bytecode
+	string linkerInfo; /// linker info
 }
 
 /// all the compiler modules wrapped into a single class. This is all that should be needed to compile scripts
