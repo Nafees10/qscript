@@ -64,6 +64,7 @@ JSONValue toJSON(FunctionNode node){
 	r["id"] = JSONValue(node.id);
 	r["lineno"] = JSONValue(node.lineno);
 	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["varStackCount"] = JSONValue(node.varStackCount);
 	return r;
 }
 
