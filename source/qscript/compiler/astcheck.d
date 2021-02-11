@@ -11,6 +11,103 @@ import utils.lists;
 
 import std.conv : to;
 
+/// To temporarily store variables
+private class VarStore{
+private:
+	/// variables exported by this library. index is ID
+	List!Variable _vars;
+	/// number of variables in different scopes
+	List!uinteger _scopeVarCount;
+	/// maximum number of variables declared in and after a specific scope (inside function)
+	uinteger _scopeMaxVars;
+	/// the scope to count max variables from
+	uinteger _scopeIndexVarCount;
+public:
+	/// constructor
+	this(){
+		_scopeVarCount = new List!uinteger;
+		_scopeVarCount.append(0);
+		_scopeMaxVars = 0;
+		_scopeIndexVarCount = -1;
+	}
+	~this(){
+		.destroy(_scopeVarCount);
+	}
+	/// clears
+	void clear(){
+		_vars.clear();
+		_scopeVarCount.clear;
+	}
+	/// removes a number of variables
+	void removeVars(uinteger count){
+		if (count > _vars.length)
+			_vars.clear;
+		else
+			_vars.removeLast(count);
+	}
+	/// increases scope
+	void scopeIncrease(){
+		_scopeVarCount.append(0);
+	}
+	/// decrease scope
+	void scopeDecrease(){
+		// count how many variables going away
+		uinteger varCount = 0;
+		if (_scopeIndexVarCount != -1){
+			foreach (i; _scopeIndexVarCount .. _scopeVarCount.length)
+				varCount += _scopeVarCount.read(i);
+			if (varCount > _scopeMaxVars)
+				_scopeMaxVars = varCount;
+		}
+		_vars.removeLast(_scopeVarCount.readLast);
+		_scopeVarCount.removeLast();
+		if (_scopeVarCount.length == 0)
+			_scopeVarCount.append(0);
+	}
+	/// Start counting how many variables are going to be available in current scope
+	void scopeVarCountStart(){
+		_scopeIndexVarCount = cast(integer)_scopeVarCount.length-1;
+		_scopeMaxVars = 0;
+	}
+	/// how many variables are in a scope (and in scopes within this scope and in...). Use `scopeVarCountStart` to specify scope
+	/// 
+	/// Returns: number of variables in scope
+	@property uinteger scopeVarCount(){
+		return _scopeMaxVars;
+	}
+	/// variables exported by this library. index is ID
+	@property Variable[] vars(){
+		return _vars.toArray;
+	}
+	/// Returns: variable ID, or -1 if doesnt exist
+	integer hasVar(string name, ref DataType type){
+		_vars.seek = 0;
+		while (_vars.seek < _vars.length){
+			immutable Variable var = _vars.read;
+			if (var.name == name){
+				type = var.type;
+				return _vars.seek - 1;
+			}
+		}
+		return -1;
+	}
+	/// Returns: true if variable exists
+	bool hasVar(string name){
+		DataType dummy;
+		return this.hasVar(name, dummy) > 0;
+	}
+	/// Adds a new variable.
+	/// 
+	/// Returns: Variable ID, or -1 if it already exists
+	integer addVar(Variable var){
+		if (this.hasVar(var.name))
+			return -1;
+		_vars.append(var);
+		_scopeVarCount.set(_scopeVarCount.length-1, _scopeVarCount.readLast+1);
+		return cast(integer)_vars.length-1;
+	}
+}
+
 /// Contains functions to check ASTs for errors  
 /// One instance of this class can be used to check for errors in a script's AST.
 class ASTCheck{
@@ -19,8 +116,11 @@ private:
 	Library[] _libraries;
 	/// stores whether a library was imported. Index is library id
 	bool[integer] _isImported;
-	/// stores all declarations of this script, public and private
+	/// stores all declarations of this script, public and private. But not variables, those keep changes as going from function to function.
+	/// _vars store them
 	Library _this;
+	/// variables that are curerntly in scope
+	VarStore _vars;
 	/// stores this script's public declarations, this is what is exported at end
 	Library _exports;
 	/// stores number of variables in a scope. The 1st item is global variables, then come function-local ones
@@ -34,11 +134,11 @@ private:
 	/// Returns: false if it was already registered or global variable with same name exists,  
 	/// true if it was successful
 	bool addVar(string name, DataType type, bool isGlobal = false){
-		if (_this.hasVar(name))
+		if (_vars.hasVar(name))
 			return false;
 		if (isGlobal && _scopeVarCount.count == 1)
 			_exports.addVar(Variable(name, type));
-		_this.addVar(Variable(name, type));
+		_vars.addVar(Variable(name, type));
 		_scopeVarCount.push(_scopeVarCount.pop + 1);
 		return true;
 	}
@@ -758,10 +858,12 @@ public:
 		compileErrors = new LinkedList!CompileError;
 		_scopeVarCount = new Stack!uinteger;
 		_libraries = libraries.dup;
+		_vars = new VarStore();
 	}
 	~this(){
 		.destroy(compileErrors);
 		.destroy(_scopeVarCount);
+		.destroy(_vars);
 	}
 	/// checks a script's AST for any errors
 	/// 
@@ -795,6 +897,7 @@ public:
 	/// 
 	/// Returns: errors in CompileError[], or empty array if there were no errors
 	CompileError[] checkAST(ref ScriptNode node, ref Library script){
+		_vars.clear();
 		CompileError[] errors = checkAST(node);
 		script = _exports;
 		return errors;
