@@ -733,6 +733,8 @@ protected:
 				compileErrors.append (CompileError(node.lineno, "invalid data type for operand"));
 			}
 			node.returnType = operandType;
+			if (["<", ">", ">=", "<="].hasElement(node.operator))
+				node.returnType = DataType(DataType.Type.Bool);
 		}else if (["&&", "||"].hasElement(node.operator)){
 			if (!operandType.canImplicitCast(DataType(DataType.Type.Bool))){
 				compileErrors.append (CompileError(node.lineno, "cannot implicitly cast"~operandType.name~" to bool"));
