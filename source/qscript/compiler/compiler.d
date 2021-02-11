@@ -602,7 +602,7 @@ public struct QScriptBytecode{
 /// all the compiler modules wrapped into a single class. This is all that should be needed to compile scripts
 public class QSCompiler{
 private:
-
+	
 }
 
 /// compiles a script from string[] to bytecode (in NaFunction[]).
