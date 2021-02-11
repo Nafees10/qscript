@@ -11,7 +11,7 @@ This is **not** used for calling functions that are in the same bytecode.
 * _`RetValSet`_  
 Pops an element from stack, stores it temporarily as a return value.
 * _`RetValPush`_  
-Pushes the return value that was saved using `RetValSet`.
+Pushes the return value that was saved using `RetValSet`, and unsets the return value.
 
 ### Arrays:
 * _`arrayCopy`_  
