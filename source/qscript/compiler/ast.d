@@ -44,6 +44,8 @@ package struct FunctionNode{
 	public uinteger lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
+	/// number of elements to allocate on stack for variables, this is set by ASTCheck
+	public uinteger varStackCount;
 	/// stores arguments with their data type
 	public FunctionNode.Argument[] arguments;
 	/// returns: data types of arguments
