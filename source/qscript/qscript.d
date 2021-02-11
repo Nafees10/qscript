@@ -33,12 +33,6 @@ private:
 	Struct[] _structs;
 	/// Enums exported by library
 	Enum[] _enums;
-package:
-	/// HACK
-	/// DO NOT USE THIS FUNCTION, except for the one place in astcheck where I used it
-	void setVarCount(uinteger count){
-		_vars.length = count;
-	}
 public:
 	/// constructor
 	this(string name, bool autoImport = false){
