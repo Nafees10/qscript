@@ -862,12 +862,12 @@ public:
 	/// `scriptFunctions` is the array to put data about script defined functions in
 	/// 
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
-	CompileError[] checkAST(ref ScriptNode node, ref Library script){
+	CompileError[] checkAST(ref ScriptNode node, Library exports, Library allDeclerations){
 		// empty everything
 		compileErrors.clear;
 		_vars.clear;
-		_exports = script;
-		_this = new Library("_"~_exports.name);
+		_exports = exports;
+		_this = allDeclerations;
 		readImports(node);
 		readEnums(node);
 		readStructs(node);
@@ -879,14 +879,17 @@ public:
 			node.functions[i].id = i; // set the id
 		}
 		_exports = null;
-		.destroy(_this);
+		_this = null;
 		CompileError[] r = compileErrors.toArray;
 		.destroy(compileErrors);
 		return r;
 	}
 	/// checks a script's AST for any errors
 	CompileError[] checkAST(ref ScriptNode node){
-		Library lib = new Library("_THIS");
-		return checkAST(node, lib);
+		Library lib = new Library("THIS"), priv = new Library("_THIS");
+		CompileError[] r = checkAST(node, lib, priv);
+		.destroy(lib);
+		.destroy(priv);
+		return r;
 	}
 }
