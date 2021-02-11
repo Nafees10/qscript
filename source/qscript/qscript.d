@@ -373,7 +373,7 @@ public:
 		_stack.push(toPush);
 		super.execute(index);
 		NaData r = _retVal;
-		_retVal = 0;
+		_retVal = NaData(0);
 		return r;
 	}
 }
