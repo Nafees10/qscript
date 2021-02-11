@@ -26,11 +26,13 @@ public:
 	/// constructor
 	this(){
 		_scopeVarCount = new List!uinteger;
+		_vars = new List!Variable;
 		_scopeVarCount.append(0);
 		_scopeMaxVars = 0;
 		_scopeIndexVarCount = -1;
 	}
 	~this(){
+		.destroy(_vars);
 		.destroy(_scopeVarCount);
 	}
 	/// clears
@@ -857,13 +859,16 @@ public:
 	/// checks a script's AST for any errors
 	/// 
 	/// Arguments:
-	/// `node` is the ScriptNode for the script
+	/// `node` is the ScriptNode for the script  
+	/// `scriptFunctions` is the array to put data about script defined functions in
 	/// 
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
-	CompileError[] checkAST(ref ScriptNode node){
+	CompileError[] checkAST(ref ScriptNode node, ref Library script){
 		// empty everything
 		compileErrors.clear;
 		_vars.clear;
+		_exports = script;
+		_this = new Library("_"~_exports.name);
 		readImports(node);
 		readEnums(node);
 		readStructs(node);
@@ -874,21 +879,15 @@ public:
 			checkAST(node.functions[i]);
 			node.functions[i].id = i; // set the id
 		}
+		_exports = null;
+		.destroy(_this);
 		CompileError[] r = compileErrors.toArray;
 		.destroy(compileErrors);
 		return r;
 	}
 	/// checks a script's AST for any errors
-	/// 
-	/// Arguments:
-	/// `node` is the ScriptNode for the script  
-	/// `scriptFunctions` is the array to put data about script defined functions in
-	/// 
-	/// Returns: errors in CompileError[], or empty array if there were no errors
-	CompileError[] checkAST(ref ScriptNode node, ref Library script){
-		_vars.clear();
-		CompileError[] errors = checkAST(node);
-		script = _exports;
-		return errors;
+	CompileError[] checkAST(ref ScriptNode node){
+		Library lib = new Library("_THIS");
+		return checkAST(node, lib);
 	}
 }
