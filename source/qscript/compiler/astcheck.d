@@ -37,6 +37,10 @@ public:
 	void clear(){
 		_vars.clear();
 		_scopeVarCount.clear;
+		_scopeVarCount.append(0);
+		_scopeMaxVars = 0;
+		_scopeVarCount.clear;
+		_scopeIndexVarCount = -1;
 	}
 	/// removes a number of variables
 	void removeVars(uinteger count){
@@ -71,8 +75,11 @@ public:
 	}
 	/// how many variables are in a scope (and in scopes within this scope and in...). Use `scopeVarCountStart` to specify scope
 	/// 
+	/// Call this AFTER `decreaseScope`
+	/// 
 	/// Returns: number of variables in scope
 	@property uinteger scopeVarCount(){
+		_scopeIndexVarCount = -1;
 		return _scopeMaxVars;
 	}
 	/// variables exported by this library. index is ID
@@ -103,7 +110,7 @@ public:
 		if (this.hasVar(var.name))
 			return -1;
 		_vars.append(var);
-		_scopeVarCount.set(_scopeVarCount.length-1, _scopeVarCount.readLast+1);
+		_scopeVarCount.set(cast(integer)_scopeVarCount.length-1, _scopeVarCount.readLast+1);
 		return cast(integer)_vars.length-1;
 	}
 }
@@ -123,8 +130,6 @@ private:
 	VarStore _vars;
 	/// stores this script's public declarations, this is what is exported at end
 	Library _exports;
-	/// stores number of variables in a scope. The 1st item is global variables, then come function-local ones
-	Stack!uinteger _scopeVarCount;
 	/// stores all the errors that are there in the AST being checked
 	LinkedList!CompileError compileErrors;
 	/// stores expected return type of currently-being-checked function
@@ -136,17 +141,16 @@ private:
 	bool addVar(string name, DataType type, bool isGlobal = false){
 		if (_vars.hasVar(name))
 			return false;
-		if (isGlobal && _scopeVarCount.count == 1)
+		if (isGlobal)
 			_exports.addVar(Variable(name, type));
 		_vars.addVar(Variable(name, type));
-		_scopeVarCount.push(_scopeVarCount.pop + 1);
 		return true;
 	}
 	/// Returns: true if a var exists. False if not.
 	/// also sets the variable data type to `type` and id to `id`, and library id to `libraryId`, and 
 	/// if it is global, sets `isGlobal` to `true`
 	bool getVar(string name, ref DataType type, ref integer id, ref integer libraryId, ref bool isGlobal){
-		id = _this.hasVar(name, type);
+		id = _vars.hasVar(name, type);
 		if (id > -1){
 			isGlobal = id < _exports.vars.length;
 			libraryId = -1;
@@ -180,21 +184,6 @@ private:
 		integer libraryId;
 		bool isGlobal;
 		return getVar(name, type, id, libraryId, isGlobal);
-	}
-	/// increases the scope-depth
-	/// 
-	/// this function should be called before any AST-checking in a sub-BlockNode or anything like that is started
-	void increaseScope(){
-		_scopeVarCount.push(0);
-	}
-	/// decreases the scope-depth
-	/// 
-	/// this function should be called right after checking in a sub-BlockNode or anything like that is finished  
-	/// it will put the vars declared inside that scope go out of scope
-	void decreaseScope(){
-		if (_scopeVarCount.count > 1){
-			_this.setVarCount(_this.vars.length - _scopeVarCount.pop);
-		}
 	}
 	/// Returns: true if a function exists, false if not. Sets function return type to `type`,
 	/// id to `id`, and library id to `libraryId`
@@ -515,7 +504,8 @@ private:
 protected:
 	/// checks if a FunctionNode is valid
 	void checkAST(ref FunctionNode node){
-		increaseScope();
+		_vars.scopeIncrease();
+		_vars.scopeVarCountStart();
 		functionReturnType = node.returnType;
 		// add the arg's to the var scope. make sure one arg name is not used more than once
 		foreach (i, arg; node.arguments){
@@ -525,7 +515,8 @@ protected:
 		}
 		// now check the statements
 		checkAST(node.bodyBlock);
-		decreaseScope();
+		_vars.scopeDecrease();
+		node.varStackCount = _vars.scopeVarCount;
 	}
 	/// checks if a StatementNode is valid
 	void checkAST(ref StatementNode node){
@@ -575,16 +566,16 @@ protected:
 	/// checks a BlockNode
 	void checkAST(ref BlockNode node, bool ownScope = true){
 		if (ownScope)
-			increaseScope();
+			_vars.scopeIncrease();
 		for (uinteger i=0; i < node.statements.length; i ++){
 			checkAST(node.statements[i]);
 		}
 		if (ownScope)
-			decreaseScope();
+			_vars.scopeDecrease();
 	}
 	/// checks a DoWhileNode
 	void checkAST(ref DoWhileNode node){
-		increaseScope();
+		_vars.scopeIncrease();
 		checkAST(node.condition);
 		if (node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
@@ -593,11 +584,11 @@ protected:
 		}else{
 			checkAST(node.statement);
 		}
-		decreaseScope();
+		_vars.scopeDecrease();
 	}
 	/// checks a ForNode
 	void checkAST(ref ForNode node){
-		increaseScope();
+		_vars.scopeIncrease();
 		// first the init statement
 		checkAST(node.initStatement);
 		// then the condition
@@ -608,7 +599,7 @@ protected:
 		checkAST(node.incStatement);
 		// finally the loop body
 		checkAST(node.statement);
-		decreaseScope();
+		_vars.scopeDecrease();
 	}
 	/// checks a FunctionCallNode
 	void checkAST(ref FunctionCallNode node){
@@ -634,13 +625,13 @@ protected:
 		if (!node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// then statements
-		increaseScope();
+		_vars.scopeIncrease();
 		checkAST(node.statement);
-		decreaseScope();
+		_vars.scopeDecrease();
 		if (node.hasElse){
-			increaseScope();
+			_vars.scopeIncrease();
 			checkAST(node.elseStatement);
-			decreaseScope();
+			_vars.scopeDecrease();
 		}
 	}
 	/// checks a VarDeclareNode
@@ -674,9 +665,9 @@ protected:
 		if (!node.condition.returnType.canImplicitCast(DataType(DataType.Type.Bool)))
 			compileErrors.append(CompileError(node.condition.lineno, "condition must return a bool value"));
 		// the the statement
-		increaseScope();
+		_vars.scopeIncrease();
 		checkAST(node.statement);
-		decreaseScope();
+		_vars.scopeDecrease();
 	}
 	/// checks a ReturnNode
 	void checkAST(ref ReturnNode node){
@@ -856,13 +847,11 @@ public:
 	/// constructor
 	this (Library[] libraries){
 		compileErrors = new LinkedList!CompileError;
-		_scopeVarCount = new Stack!uinteger;
 		_libraries = libraries.dup;
 		_vars = new VarStore();
 	}
 	~this(){
 		.destroy(compileErrors);
-		.destroy(_scopeVarCount);
 		.destroy(_vars);
 	}
 	/// checks a script's AST for any errors
@@ -874,7 +863,7 @@ public:
 	CompileError[] checkAST(ref ScriptNode node){
 		// empty everything
 		compileErrors.clear;
-		_scopeVarCount.clear;
+		_vars.clear;
 		readImports(node);
 		readEnums(node);
 		readStructs(node);
