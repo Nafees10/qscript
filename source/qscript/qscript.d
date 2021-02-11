@@ -378,16 +378,9 @@ public:
 	NaData execute(uinteger index, NaData[] toPush){
 		_stack.push(toPush);
 		super.execute(index);
-		_retVal.intVal = 0;
-		_inst = &(_instructions[index]);
-		_arg = &(_arguments[index]);
-		const void delegate()* lastInst = &_instructions[$-1]+1;
-		do{
-			(*_inst)();
-			_inst++;
-			_arg++;
-		}while (_inst < lastInst);
-		return _retVal;
+		NaData r = _retVal;
+		_retVal = 0;
+		return r;
 	}
 }
 
