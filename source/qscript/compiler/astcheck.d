@@ -41,7 +41,6 @@ public:
 		_scopeVarCount.clear;
 		_scopeVarCount.append(0);
 		_scopeMaxVars = 0;
-		_scopeVarCount.clear;
 		_scopeIndexVarCount = -1;
 	}
 	/// removes a number of variables
@@ -295,13 +294,13 @@ private:
 		foreach (ref varDeclare; node.variables){
 			foreach (varName; varDeclare.vars){
 				// conflict check
-				if (_this.hasVar(varName))
+				if (_vars.hasVar(varName))
 					compileErrors.append(CompileError(varDeclare.lineno, "global variable "~varName~" is declared multiple times"));
 				// append
 				if (varDeclare.visibility == Visibility.Public){
 					// just assign it an id, it wont be used anywhere, but why not do it anyways?
-					varDeclare.setVarID(varName, _this.vars.length);
-					_this.addVar(Variable(varName, varDeclare.type));
+					varDeclare.setVarID(varName, _vars.vars.length);
+					_vars.addVar(Variable(varName, varDeclare.type));
 					_exports.addVar(Variable(varName, varDeclare.type));
 				}
 				// check type
@@ -313,8 +312,8 @@ private:
 		foreach (ref varDeclare; node.variables){
 			if (varDeclare.visibility == Visibility.Private){
 				foreach (varName; varDeclare.vars){
-					varDeclare.setVarID(varName, _this.vars.length);
-					_this.addVar(Variable(varName, varDeclare.type));
+					varDeclare.setVarID(varName, _vars.vars.length);
+					_vars.addVar(Variable(varName, varDeclare.type));
 				}
 			}
 		}
@@ -518,7 +517,7 @@ protected:
 		// now check the statements
 		checkAST(node.bodyBlock);
 		_vars.scopeDecrease();
-		node.varStackCount = _vars.scopeVarCount;
+		node.varStackCount = _vars.scopeVarCount/* + node.arguments.length*/;
 	}
 	/// checks if a StatementNode is valid
 	void checkAST(ref StatementNode node){
