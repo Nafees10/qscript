@@ -13,6 +13,12 @@ Pops an element from stack, stores it temporarily as a return value.
 * _`RetValPush`_  
 Pushes the return value that was saved using `RetValSet`, and unsets the return value.
 
+### Variables
+* _`VarGet [libId - integer>=0]`_  
+Pops variable id (integer>=0) from stack, pushes value of that variable from that library.
+* _`VarGetRef [liId - integer>=0]`_  
+Same as above, but pushes reference to that variable so it can be written to.
+
 ### Arrays:
 * _`arrayCopy`_  
 pops a reference to array, creates a copy of that, and pushes it back.
