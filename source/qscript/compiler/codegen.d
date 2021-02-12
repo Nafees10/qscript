@@ -16,14 +16,42 @@ import std.conv : to;
 
 /// Flags passed to `generateCode` functions
 private enum CodeGenFlag : ubyte{
+	None = 0, /// all flags zero
 	PushRef = 1 << 0, /// if the code should push a reference to the needed data, or the value.
-
+	PopReturn = 1 << 1, /// if the return value should be popped
 }
+
+/// just an inherited NaBytecode that makes it easier to check if it failed to add some instruction
+private class ByteCodeWriter : NaBytecode{
+private:
+	bool _error;
+public:
+	this(NaInstruction[] instructionTable){
+		super(instructionTable);
+		_error = false;
+	}
+	/// Returns: true if an error occurred, now, or previously
+	override bool addInstruction(string instName, string argument){
+		_error = _error || super.addInstruction(instName, argument);
+		return _error;
+	}
+	/// sets errorOccurred to false
+	void resetError(){
+		_error = false;
+	}
+	/// whether an error has occured
+	@property bool error(){
+		return _error;
+	}
+}
+
+/// added at start of most error messages where the errors never should've happened
+const string ERROR_PREFIX = "possible compiler bug, please report it: ";
 
 /// Contains functions to generate NaByteCode from AST nodes
 class CodeGen{
 private:
-	List!(string[2]) _code;
+	ByteCodeWriter _code;
 	NaInstruction[] _instTable;
 	ScriptNode _script;
 	Library _scriptLib;
@@ -35,11 +63,12 @@ protected:
 
 	/// Generates bytecode for FunctionNode
 	void generateCode(FunctionNode node, CodeGenFlag flags){
+		_code.addJumpPos("__qscriptFunction"~node.id.to!string);
 		// make space for variables
 		foreach (i; 0 .. node.varStackCount)
-			_code.append(["push", "0"]);
+			_code.addInstruction("push","0");
 		generateCode(node.bodyBlock, flags);
-		_code.append(["jumpBack", ""]);
+		_code.addInstruction("jumpBack","");
 	}
 	/// generates bytecode for BlockNode
 	void generateCode(BlockNode node, CodeGenFlag flags){
@@ -69,21 +98,62 @@ protected:
 		}
 	}
 	/// generates bytecode for MemberSelectorNode
+	/// 
+	/// Valid flags:  
+	/// * PushRef - only if node.type == Type.StructMemberRead
 	void generateCode(MemberSelectorNode node, CodeGenFlag flags){
 		if (node.type == MemberSelectorNode.Type.EnumMemberRead){
-			_code.append(["push", node.memberNameIndex.to!string]);
+			_code.addInstruction("push", node.memberNameIndex.to!string);
 			return;
 		}
-		_code.append(["push",node.memberNameIndex.to!string]);
-		generateCode(node.parent, flags);
+		if (flags & CodeGenFlag.PushRef){
+			_code.addInstruction("push",node.memberNameIndex.to!string);
+			generateCode(node.parent, CodeGenFlag.None);
+			_code.addInstruction("IncRef","");
+		}else{
+			// use the `arrayElement` from QScriptVM
+			generateCode(node.parent, CodeGenFlag.None);
+			_code.addInstruction("arrayElement", node.memberNameIndex.to!string);
+		}
 	}
-
+	/// generates bytecode for VariableNode. This function can report error, see this._errors  
+	/// after this.
+	/// 
+	/// Valid flags:  
+	/// * PushRef - only if node.type == Type.StructMemberRead
+	void generateCode(VariableNode node, CodeGenFlag flags){
+		// check if local to script
+		if (node.libraryId == -1){
+			if (node.isGlobal){
+				_code.addInstruction(flags & CodeGenFlag.PushRef ? "PushRefFromAbs" : "pushFromAbs", 
+					node.id.to!string);
+				return;
+			}
+			_code.addInstruction(flags & CodeGenFlag.PushRef ? "pushRefFrom" : "pushFrom", 
+				node.id.to!string);
+			return;
+		}
+		if (node.libraryId >= _libs.length){
+			_errors.append(CompileError(node.lineno, ERROR_PREFIX~"[VariableNode] invalid library"));
+			return;
+		}
+		// try to use the library's own code generators if they exist
+		Library lib = _libs[node.libraryId];
+		if (flags & CodeGenFlag.PushRef && lib.generateVariableRefCode(_code,node.id))
+			return;
+		if (lib.generateVariableValueCode(_code, node.id))
+			return;
+		// Fine, I'll do it myself
+		_code.addInstruction("push", node.id.to!string);
+		_code.addInstruction(flags & CodeGenFlag.PushRef ? "VarGetRef" : "VarGet",
+			node.libraryId.to!string);
+	}
 public:
 	/// constructor
 	this(Library[] libraries, NaInstruction[] instructionTable){
 		_libs = libraries;
 		_instTable = instructionTable;
-		_code = new List!(string[2]);
+		_code = new ByteCodeWriter(instructionTable);
 		_errors = new List!CompileError;
 	}
 	~this(){
@@ -95,20 +165,28 @@ public:
 	/// `node` is the ScriptNode to generate bytecode for  
 	/// `scriptLibrary` is the private & public declarations of the script (allDeclarations from `ASTCheck.checkAST(..,x)`)
 	/// 
-	/// Returns: compiled bytecode
-	QScriptBytecode generateCode(ScriptNode node, Library scriptLibrary){
+	/// Returns: true if successfully generated, false if there were errors
+	bool generateCode(ScriptNode node, Library scriptLibrary){
+		_code.resetError();
 		_errors.clear;
 		_script = node;
 		_scriptLib = scriptLibrary;
+		_jumpPosNum = 0;
 		// TODO write code for this node
 
 		// make space for jumps for function calls
 		foreach (i; 0 .. _script.functions.length)
-			_code.append(["jump", ""]);
+			_code.addInstruction("jump", "__qscriptFunction"~i.to!string);
+		// TODO write this thing
 
-		NaBytecode bytecode = new NaBytecode(_instTable);
-		// TODO read _code into bytecode
-		QScriptBytecode code = QScriptBytecode(bytecode, _scriptLib.toString);
-		return code;
+		return _code.error;
+	}
+	/// Returns: errors occurred
+	@property CompileError[] errors(){
+		return _errors.toArray;
+	}
+	/// Returns: generated bytecode
+	@property NaBytecode bytecode(){
+		return _code;
 	}
 }
