@@ -634,15 +634,22 @@ package struct OperatorNode{
 		}
 		return true;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType = DataType(DataType.Type.Void);
+	/// the return type. Only valid after ASTCheck has checked it
+	public @property DataType returnType(){
+		return fCall.returnType;
+	}
+	/// ditto
+	public @property DataType returnType(DataType newType){
+		return fCall.returnType = newType;
+	}
+	/// FunctionCallNode corresponding to this OperatorNode. Only valid after ASTCheck
+	public FunctionCallNode fCall;
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
 		operands.length = 2;
 		operands[0] = a;
 		operands[1] = b;
-		returnType = DataType(DataType.Type.Void);
 	}
 }
 
@@ -665,8 +672,16 @@ package struct SOperatorNode{
 	public @property ref CodeNode operand(){
 		return *operandPtr;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType = DataType(DataType.Type.Void);
+	/// the return type. Only valid after ASTCheck has checked it
+	public @property DataType returnType(){
+		return fCall.returnType;
+	}
+	/// ditto
+	public @property DataType returnType(DataType newType){
+		return fCall.returnType = newType;
+	}
+	/// FunctionCallNode corresponding to this OperatorNode. Only valid after ASTCheck
+	public FunctionCallNode fCall;
 	/// Returns: true if its return value is static, i.e will always be same when executed
 	@property bool isLiteral(){
 		return (operandPtr !is null && operand.isLiteral);
