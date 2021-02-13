@@ -717,54 +717,24 @@ protected:
 	}
 	/// checks a OperatorNode
 	void checkAST(ref OperatorNode node){
-		// check the operands
-		for (uinteger i=0; i < node.operands.length; i ++){
-			checkAST (node.operands[i]);
+		if (node.operator !in OPERATOR_FUNCTIONS){
+			compileErrors.append(CompileError(node.lineno, "operator has no corresponding function"));
+			return;
 		}
-		// make sure both operands are of same data type
-		DataType operandType = getReturnType(node.operands[0]);
-		if (!getReturnType(node.operands[0]).canImplicitCast(getReturnType(node.operands[1]))){
-			compileErrors.append(CompileError(node.lineno, "cannot implicitly cast operands to match data types"));
-		}
-		// now make sure that the data type of operands is allowed with that operator
-		if (["+","-","*","/","%", "<", ">", ">=", "<="].hasElement(node.operator)){
-			// only double and int allowed
-			if (!operandType.isNumerical()){
-				compileErrors.append (CompileError(node.lineno, "invalid data type for operand"));
-			}
-			node.returnType = operandType;
-			if (["<", ">", ">=", "<="].hasElement(node.operator))
-				node.returnType = DataType(DataType.Type.Bool);
-		}else if (["&&", "||"].hasElement(node.operator)){
-			if (!operandType.canImplicitCast(DataType(DataType.Type.Bool))){
-				compileErrors.append (CompileError(node.lineno, "cannot implicitly cast"~operandType.name~" to bool"));
-			}
-			node.returnType = DataType(DataType.Type.Bool);
-		}else if (node.operator == "~"){
-			if (operandType.arrayDimensionCount == 0){
-				compileErrors.append (CompileError(node.lineno, "~ operator can only be used on arrays"));
-			}
-			node.returnType = operandType;
-		}
+		node.fCall = FunctionCallNode(OPERATOR_FUNCTIONS[node.operator], node.operands);
+		node.fCall.lineno = node.lineno;
+		// just use the FunctionCallNode
+		checkAST(node.fCall);
 	}
 	/// checks a SOperatorNode
 	void checkAST(ref SOperatorNode node){
-		// check the operand
-		checkAST(node.operand);
-		// now it it's `!`, only accept int, if `@`, var
-		if (node.operator == "!"){
-			if (!getReturnType(node.operand).canImplicitCast(DataType(DataType.Type.Bool))){
-				compileErrors.append (CompileError(node.operand.lineno, "can only use ! operator with a bool"));
-			}
-			node.returnType = DataType(DataType.Type.Bool);
-		}else if (node.operator == "@"){
-			node.returnType = node.operand.returnType;
-			node.returnType.isRef = !node.returnType.isRef;
-			// cant deref/ref void
-			if (node.returnType.type == DataType.Type.Void)
-				compileErrors.append(CompileError(node.lineno, "cannot use @ on void type"));
-		}else
-			compileErrors.append (CompileError(node.lineno, "invalid operator"));
+		if (node.operator !in OPERATOR_FUNCTIONS){
+			compileErrors.append(CompileError(node.lineno, "operator has no corresponding function"));
+			return;
+		}
+		node.fCall = FunctionCallNode(OPERATOR_FUNCTIONS[node.operator], [node.operand]);
+		node.fCall.lineno = node.lineno;
+		checkAST(node.fCall);
 	}
 	/// checks a ReadElement
 	void checkAST(ref ReadElement node){
