@@ -148,6 +148,32 @@ protected:
 		_code.addInstruction(flags & CodeGenFlag.PushRef ? "VarGetRef" : "VarGet",
 			node.libraryId.to!string);
 	}
+	/// generates bytecode for ArrayNode. flags are ignored
+	void generateCode(ArrayNode node, CodeGenFlag flags){
+		foreach (elem; node.elements)
+			generateCode(elem, CodeGenFlag.None);
+		_code.addInstruction("arrayFromElements", node.elements.length.to!string);
+	}
+	/// generates bytecode for LiteralNode. Flags are ignored
+	void generateCode(LiteralNode node, CodeGenFlag flags){
+		_code.addInstruction("push", node.literal); // ez
+	}
+	/// generates bytecode for NegativeValueNode. flags are ignored
+	void generateCode(NegativeValueNode node, CodeGenFlag flags){
+		generateCode(node.value, CodeGenFlag.None);
+		_code.addInstruction("push", "-1");
+		if (node.value.returnType == DataType(DataType.Type.Int))
+			_code.addInstruction("mathMultiplyInt", "");
+		else if (node.value.returnType == DataType(DataType.Type.Double))
+			_code.addInstruction("mathMultiplyDouble", "");
+		else
+			_errors.append(CompileError(node.value.lineno, ERROR_PREFIX~
+				"[NegativeValueNode] not a numerical data type"));
+	}
+	/// generates bytecode for OperatorNode. flags are ignored
+	void generateCode(OperatorNode node, CodeGenFlag flags){
+		
+	}
 public:
 	/// constructor
 	this(Library[] libraries, NaInstruction[] instructionTable){
