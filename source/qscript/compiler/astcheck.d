@@ -772,7 +772,7 @@ protected:
 		checkAST (node.readFromNode);
 		checkAST (node.index);
 		// index must return int
-		if (getReturnType(node.index).canImplicitCast(DataType(DataType.Type.Uint))){
+		if (getReturnType(node.index).canImplicitCast(DataType(DataType.Type.Int))){
 			compileErrors.append (CompileError(node.index.lineno,
 				"cannot implicitly cast "~getReturnType(node.index).name~" to uint"));
 		}
