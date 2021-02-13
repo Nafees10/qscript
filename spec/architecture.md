@@ -26,6 +26,8 @@ pops a reference to array, creates a copy of that, and pushes it back.
 pops a reference to array, pushes value of the element at `index=n` of array.
 * _`arrayElementWrite [n - integer>=0]`_  
 pops a reference to array, then a value. Writes that value to `array[n]`.
+* _`arrayFromElements [n - integer>=0]`_  
+Pops n elements (in the order they were pushed), puts them in an array, pushes the reference to the array.
 
 ### Jumps:
 * _`jumpFrameN [jumpPosition]`_  
