@@ -41,30 +41,45 @@ package const string[] KEYWORDS = [
 /// Visibility Specifier keywords
 package const string[] VISIBILITY_SPECIFIERS = ["public", "private"];
 /// data types
-package const string[] DATA_TYPES = ["void", "int", "uint", "double", "char", "bool", "byte", "ubyte"];
+package const string[] DATA_TYPES = ["void", "int", "double", "char", "bool"];
 /// An array containing double-operand operators
 package const string[] OPERATORS = [".", "/", "*", "+", "-", "%", "~", "<", ">", ">=", "<=", "==", "=", "&&", "||"];
 /// single-operand operators
 package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", ">=", "<=", "==", "&&", "||"];
+/// function names corresponding to operators
+package const string[string] OPERATOR_FUNCTIONS = [
+	"." : "opMemberSelect",
+	"/" : "opDivide",
+	"*" : "opMultiply",
+	"+" : "opAdd",
+	"-" : "opSubtract",
+	"%" : "opMod",
+	"~" : "opConcat",
+	"<" : "opLesser",
+	">" : "opGreater",
+	"<=" : "opLesserSame",
+	">=" : "opGreaterSame",
+	"==" : "opSame",
+	"=" : "opAssign",
+	"&&" : "opAndBool",
+	"||" : "opOrBool",
+	"!" : "opNot",
+	"@" : "opRef",
+];
 /// Stores what types can be converted to what other types implicitly.
-/// **THESE ARE NOT SUPPORTED RIGHT NOW, just stick with integer, char, and double**
 package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
-	[DataType.Type.Int, DataType.Type.Uint],
+	[DataType.Type.Int, DataType.Type.Bool],
 	[DataType.Type.Double],
-	[DataType.Type.Byte, DataType.Type.Ubyte],
-	[DataType.Type.Char, DataType.Type.Ubyte],
-	[DataType.Type.Bool, DataType.Type.Ubyte],
+	[DataType.Type.Char],
+	[DataType.Type.Bool],
 	[DataType.Type.Void],
 ];
 /// Stores numerical data types (where numbers are stored)
 package const DataType.Type[] NUMERICAL_DATA_TYPES = [
 	DataType.Type.Int,
-	DataType.Type.Uint,
 	DataType.Type.Double,
-	DataType.Type.Byte,
-	DataType.Type.Ubyte,
 ];
 /// only these data types are currently available
 public const DataType.Type[] AVAILABLE_DATA_TYPES = [
@@ -407,11 +422,8 @@ public struct DataType{
 		Void, /// .
 		Char, /// .
 		Int, /// .
-		Uint, /// .
 		Double, /// .
 		Bool, /// .
-		Byte, /// signed 8 bit int
-		Ubyte, /// unsigned 8 bit int
 		Custom, /// some other type
 	}
 	/// the actual data type
@@ -602,7 +614,7 @@ public struct QScriptBytecode{
 /// all the compiler modules wrapped into a single class. This is all that should be needed to compile scripts
 public class QSCompiler{
 private:
-	
+
 }
 
 /// compiles a script from string[] to bytecode (in NaFunction[]).
