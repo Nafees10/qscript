@@ -188,26 +188,18 @@ public:
 	}
 	/// Generates bytecode for a function call, or return false
 	/// 
+	/// This function must consider all flags
+	/// 
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	bool generateFunctionCallCode(NaBytecode bytecode, uinteger functionId, DataType[] argTypes){
+	bool generateFunctionCallCode(NaBytecode bytecode, uinteger functionId, DataType[] argTypes, CodeGenFlags flags){
 		return false;
 	}
 	/// Generates bytecode that will push value of a variable to stack, or return false
 	/// 
+	/// This function must consider all flags
+	/// 
 	/// Returns: true if it added code, false if codegen.d should
-	bool generateVariableValueCode(NaBytecode bytecode, uinteger variableId){
-		return false;
-	}
-	/// Generates bytecode that will push reference of a variable to stack, or return false
-	/// 
-	/// Returns: true if code added, false if not
-	bool generateVariableRefCode(NaBytecode bytecode, uinteger variableId){
-		return false;
-	}
-	/// Generates code that will write a value to a variable, or return false
-	/// 
-	/// Returns: true if code added, false if not
-	bool generateVariableWriteCode(NaBytecode bytecode, uinteger variableId){
+	bool generateVariableCode(NaBytecode bytecode, uinteger variableId, CodeGenFlags flags){
 		return false;
 	}
 	/// Executes a library function
@@ -221,7 +213,9 @@ public:
 		return NaData(0);
 	}
 	/// Sets value of a variable
-	void setVar(uinteger varId, NaData value){}
+	NaData getVarRef(uinteger varId){
+		return NaData(null);
+	}
 	/// Writes this library to a single printable string
 	/// 
 	/// Returns: string representing contents of this library
@@ -416,7 +410,7 @@ public:
 	override NaData getVar(uinteger varId){
 		return _vm.stack.read(varId);
 	}
-	override void setVar(uinteger varId, NaData value){
-		_vm.stack.write(varId, value);
+	override NaData getVarRef(uinteger varId){
+		return NaData(_vm.stack.readPtr(varId));
 	}
 }
