@@ -327,6 +327,9 @@ protected:
 		// left side should evaluate first (if my old comments are right)
 		*(_stack.pop.ptrVal + _arg.intVal) = _stack.pop;
 	}
+	void incRefN(){
+		_stack.push(NaData(cast(NaData*)(_stack.pop.ptrVal + _arg.intVal)));
+	}
 
 	void jumpFrameN(){
 		import navm.defs : StackFrame;
@@ -346,7 +349,8 @@ public:
 		addInstruction(NaInstruction("arrayCopy",0x43,1,1,&arrayCopy));
 		addInstruction(NaInstruction("arrayElement",0x44,true,1,1,&arrayElement));
 		addInstruction(NaInstruction("arrayElementWrite",0x45,true,2,0,&arrayElementWrite));
-		addInstruction(NaInstruction("jumpFrameN",0x56,true,true,1,0,&jumpFrameN));
+		addInstruction(NaInstruction("incRefN",0x46,true,1,1,&incRefN));
+		addInstruction(NaInstruction("jumpFrameN",0x47,true,true,1,0,&jumpFrameN));
 	}
 	/// The VM's stack
 	@property ArrayStack!NaData stack(){
