@@ -60,13 +60,13 @@ protected:
 		// make space for variables
 		foreach (i; 0 .. node.varStackCount)
 			_code.addInstruction("push","0");
-		generateCode(node.bodyBlock, flags);
+		generateCode(node.bodyBlock, CodeGenFlags.None);
 		_code.addInstruction("jumpBack","");
 	}
 	/// generates bytecode for BlockNode
 	void generateCode(BlockNode node, CodeGenFlags flags){
 		foreach (statement; node.statements)
-			generateCode(statement, flags);
+			generateCode(statement, CodeGenFlags.None);
 	}
 	/// generates bytecode for CodeNode
 	void generateCode(CodeNode node, CodeGenFlags flags){
@@ -141,17 +141,21 @@ protected:
 		_code.addInstruction(flags & CodeGenFlags.PushRef ? "VarGetRef" : "VarGet",
 			node.libraryId.to!string);
 	}
-	/// generates bytecode for ArrayNode. flags are ignored
+	/// generates bytecode for ArrayNode.
 	void generateCode(ArrayNode node, CodeGenFlags flags){
 		foreach (elem; node.elements)
 			generateCode(elem, CodeGenFlags.None);
 		_code.addInstruction("arrayFromElements", node.elements.length.to!string);
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
 	}
-	/// generates bytecode for LiteralNode. Flags are ignored
+	/// generates bytecode for LiteralNode.
 	void generateCode(LiteralNode node, CodeGenFlags flags){
 		_code.addInstruction("push", node.literal); // ez
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
 	}
-	/// generates bytecode for NegativeValueNode. flags are ignored
+	/// generates bytecode for NegativeValueNode.
 	void generateCode(NegativeValueNode node, CodeGenFlags flags){
 		generateCode(node.value, CodeGenFlags.None);
 		_code.addInstruction("push", "-1");
@@ -162,11 +166,15 @@ protected:
 		else
 			_errors.append(CompileError(node.value.lineno, ERROR_PREFIX~
 				"[NegativeValueNode] not a numerical data type"));
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
 	}
-	/// generates bytecode for OperatorNode. flags are ignored
+	/// generates bytecode for OperatorNode.
 	void generateCode(OperatorNode node, CodeGenFlags flags){
 		// just generator code for the function call
 		generateCode(node.fCall, CodeGenFlags.None);
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
 	}
 	/// generates bytecode for SOperatorNode. 
 	/// 
@@ -174,19 +182,26 @@ protected:
 	/// * PushRef
 	void generateCode(SOperatorNode node, CodeGenFlags flags){
 		// make sure only PushRef is passed, coz the function will see other flags too
-		generatesCode(node.fCall, flags & CodeGenFlags.PushRef);
+		generateCode(node.fCall, flags & CodeGenFlags.PushRef);
 	}
 	/// generates bytecode for ReadElement
 	/// 
 	/// Valid flags are:
 	/// * pushRef
 	void generateCode(ReadElement node, CodeGenFlags flags){
+		// if index is known, and it doesnt want ref, then there's a better way:
+		if (node.index.type == CodeNode.Type.Literal && node.index.returnType == DataType(DataType.Type.Int) &&
+		!(flags & CodeGenFlags.PushRef)){
+			generateCode(node.readFromNode, CodeGenFlags.None);
+			_code.addInstruction("arrayElement", node.index.node!(CodeNode.Type.Literal).literal);
+			return;
+		}
+		// otherwise, use the multiple instructions method
 		generateCode(node.index, CodeGenFlags.None);
 		generateCode(node.readFromNode, CodeGenFlags.PushRef);
 		_code.addInstruction("incRef", "");
-		if (flags & CodeGenFlags.PushRef)
-			return;
-		_code.addInstruction("deref", "");
+		if (!(flags & CodeGenFlags.PushRef))
+			_code.addInstruction("deref", "");
 	}
 	/// generates bytecode for StatementNode
 	void generateCode(StatementNode node, CodeGenFlags flags){
