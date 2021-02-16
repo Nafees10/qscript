@@ -50,13 +50,23 @@ private:
 	Library _scriptLib;
 	Library[] _libs;
 	List!CompileError _errors;
-	uinteger _jumpPosNum;
 protected:
-	// TODO write functions to generate code for all AST Nodes
-
 	/// Generates bytecode for FunctionNode
 	void generateCode(FunctionNode node, CodeGenFlags flags = CodeGenFlags.None){
 		_code.addJumpPos("__qscriptFunction"~node.id.to!string);
+		if (node.name == "this"){
+			// gotta do global variables too now
+			foreach(varDecl; _script.variables)
+				foreach (i; 0 .. varDecl.vars.length)
+					_code.addInstruction("push", "0");
+			foreach(varDecl; _script.variables)
+				generateCode(varDecl);
+		}else{
+			// use jumpFrameN to adjust _stackIndex
+			_code.addInstruction("push", node.arguments.length.to!string);
+			_code.addInstruction("jumpFrameN", "__qscriptFunction"~node.id.to!string~"start");
+			_code.addJumpPos("__qscriptFunction"~node.id.to!string~"start");
+		}
 		// make space for variables
 		foreach (i; 0 .. node.varStackCount)
 			_code.addInstruction("push","0");
@@ -357,14 +367,11 @@ public:
 		_errors.clear;
 		_script = node;
 		_scriptLib = scriptLibrary;
-		_jumpPosNum = 0;
-		// TODO write code for this node
-
 		// make space for jumps for function calls
 		foreach (i; 0 .. _script.functions.length)
 			_code.addInstruction("jump", "__qscriptFunction"~i.to!string);
-		// TODO write this thing
-
+		foreach (func; _script.functions)
+			generateCode(func);
 		return _code.error;
 	}
 	/// Returns: errors occurred
