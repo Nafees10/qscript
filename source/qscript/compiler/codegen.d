@@ -225,6 +225,23 @@ protected:
 			generateCode(node.node!(StatementNode.Type.Return), flags);
 		}
 	}
+	/// generates bytecode for VarDeclareNode
+	void generateCode(VarDeclareNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// just push 0 or 0.0 to id
+		foreach (i, varName; node.vars){
+			if (node.hasValue(varName))
+				generateCode(node.getValue(varName));
+			else if ([DataType.Type.Int, DataType.Type.Bool, DataType.Type.Char].hasElement(node.type.type))
+				_code.addInstruction("push", "0");
+			else if (node.type.type == DataType.Type.Double)
+				_code.addInstruction("push", "0.0");
+			else if (node.type == DataType(DataType.Type.Custom)){
+				// create an array of length so members can be accomodated
+				_code.addInstruction("makeArrayN", node.type.customLength.to!string);
+			}
+			_code.addInstruction("writeTo", node.varIDs[varName].to!string);
+		}
+	}
 	/// generates bytecode for AssignmentNode
 	void generateCode(AssignmentNode node, CodeGenFlags flags = CodeGenFlags.None){
 		generateCode(node.rvalue, CodeGenFlags.None);
