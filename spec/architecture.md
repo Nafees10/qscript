@@ -6,7 +6,7 @@ Below is a list of instructions that QScript adds to the NaVM VM
 
 ### Function Calls:
 * _`Call [n - integer >=2]`_  
-Pops a library ID & then a function ID (both `integer>=0`). Then pops `n-2` number of elements (in order they were pushed) and passes them as arguments for the function call. Pushes the value returned by function.  
+Pops a library ID & then a function ID (both `integer>=0`). Then pops `n-2` number of elements (in order they were pushed) and passes them as arguments for the function call. Return value can be get by using `RetValPush`
 This is **not** used for calling functions that are in the same bytecode.
 * _`RetValSet`_  
 Pops an element from stack, stores it temporarily as a return value.

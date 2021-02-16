@@ -306,8 +306,7 @@ private:
 protected:
 	void call(){
 		immutable uinteger libId = _stack.pop.intVal, funcID = _stack.pop.intVal;
-		NaData[] args = _stack.pop(_arg.intVal-2);
-		_stack.push(_libraries[libId].execute(funcID, args));
+		_retVal = _libraries[libId].execute(funcID, _stack.pop(_arg.intVal-2));
 	}
 	void retValSet(){
 		_retVal = _stack.pop;
