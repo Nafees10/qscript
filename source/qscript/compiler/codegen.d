@@ -14,13 +14,6 @@ import utils.lists;
 
 import std.conv : to;
 
-/// Flags passed to `generateCode` functions
-private enum CodeGenFlag : ubyte{
-	None = 0, /// all flags zero
-	PushRef = 1 << 0, /// if the code should push a reference to the needed data, or the value.
-	PopReturn = 1 << 1, /// if the return value should be popped
-}
-
 /// just an inherited NaBytecode that makes it easier to check if it failed to add some instruction
 private class ByteCodeWriter : NaBytecode{
 private:
@@ -46,7 +39,7 @@ public:
 }
 
 /// added at start of most error messages where the errors never should've happened
-const string ERROR_PREFIX = "possible compiler bug, please report it: ";
+const string ERROR_PREFIX = "possible compiler bug, please report it:\n";
 
 /// Contains functions to generate NaByteCode from AST nodes
 class CodeGen{
@@ -62,7 +55,7 @@ protected:
 	// TODO write functions to generate code for all AST Nodes
 
 	/// Generates bytecode for FunctionNode
-	void generateCode(FunctionNode node, CodeGenFlag flags){
+	void generateCode(FunctionNode node, CodeGenFlags flags){
 		_code.addJumpPos("__qscriptFunction"~node.id.to!string);
 		// make space for variables
 		foreach (i; 0 .. node.varStackCount)
@@ -71,48 +64,48 @@ protected:
 		_code.addInstruction("jumpBack","");
 	}
 	/// generates bytecode for BlockNode
-	void generateCode(BlockNode node, CodeGenFlag flags){
+	void generateCode(BlockNode node, CodeGenFlags flags){
 		foreach (statement; node.statements)
 			generateCode(statement, flags);
 	}
 	/// generates bytecode for CodeNode
-	void generateCode(CodeNode node, CodeGenFlag flags){
+	void generateCode(CodeNode node, CodeGenFlags flags){
 		if (node.type == CodeNode.Type.Array){
-			generateCode(node.node!CodeNode.Type.Array, flags);
+			generateCode(node.node!(CodeNode.Type.Array), flags);
 		}else if (node.type == CodeNode.Type.FunctionCall){
-			generateCode(node.node!CodeNode.Type.FunctionCall, flags);
+			generateCode(node.node!(CodeNode.Type.FunctionCall), flags);
 		}else if (node.type == CodeNode.Type.Literal){
-			generateCode(node.node!CodeNode.Type.Literal, flags);
+			generateCode(node.node!(CodeNode.Type.Literal), flags);
 		}else if (node.type == CodeNode.Type.Negative){
-			generateCode(node.node!CodeNode.Type.Negative, flags);
+			generateCode(node.node!(CodeNode.Type.Negative), flags);
 		}else if (node.type == CodeNode.Type.Operator){
-			generateCode(node.node!CodeNode.Type.Operator, flags);
+			generateCode(node.node!(CodeNode.Type.Operator), flags);
 		}else if (node.type == CodeNode.Type.ReadElement){
-			generateCode(node.node!CodeNode.Type.ReadElement, flags);
+			generateCode(node.node!(CodeNode.Type.ReadElement), flags);
 		}else if (node.type == CodeNode.Type.SOperator){
-			generateCode(node.node!CodeNode.Type.SOperator, flags);
+			generateCode(node.node!(CodeNode.Type.SOperator), flags);
 		}else if (node.type == CodeNode.Type.Variable){
-			generateCode(node.node!CodeNode.Type.Variable, flags);
+			generateCode(node.node!(CodeNode.Type.Variable), flags);
 		}else if (node.type == CodeNode.Type.MemberSelector){
-			generateCode(node.node!CodeNode.Type.MemberSelector, flags);
+			generateCode(node.node!(CodeNode.Type.MemberSelector), flags);
 		}
 	}
 	/// generates bytecode for MemberSelectorNode
 	/// 
 	/// Valid flags:  
 	/// * PushRef - only if node.type == Type.StructMemberRead
-	void generateCode(MemberSelectorNode node, CodeGenFlag flags){
+	void generateCode(MemberSelectorNode node, CodeGenFlags flags){
 		if (node.type == MemberSelectorNode.Type.EnumMemberRead){
 			_code.addInstruction("push", node.memberNameIndex.to!string);
 			return;
 		}
-		if (flags & CodeGenFlag.PushRef){
+		if (flags & CodeGenFlags.PushRef){
 			_code.addInstruction("push",node.memberNameIndex.to!string);
-			generateCode(node.parent, CodeGenFlag.None);
+			generateCode(node.parent, CodeGenFlags.None);
 			_code.addInstruction("IncRef","");
 		}else{
 			// use the `arrayElement` from QScriptVM
-			generateCode(node.parent, CodeGenFlag.None);
+			generateCode(node.parent, CodeGenFlags.None);
 			_code.addInstruction("arrayElement", node.memberNameIndex.to!string);
 		}
 	}
@@ -121,15 +114,15 @@ protected:
 	/// 
 	/// Valid flags:  
 	/// * PushRef - only if node.type == Type.StructMemberRead
-	void generateCode(VariableNode node, CodeGenFlag flags){
+	void generateCode(VariableNode node, CodeGenFlags flags){
 		// check if local to script
 		if (node.libraryId == -1){
 			if (node.isGlobal){
-				_code.addInstruction(flags & CodeGenFlag.PushRef ? "PushRefFromAbs" : "pushFromAbs", 
+				_code.addInstruction(flags & CodeGenFlags.PushRef ? "PushRefFromAbs" : "pushFromAbs", 
 					node.id.to!string);
 				return;
 			}
-			_code.addInstruction(flags & CodeGenFlag.PushRef ? "pushRefFrom" : "pushFrom", 
+			_code.addInstruction(flags & CodeGenFlags.PushRef ? "pushRefFrom" : "pushFrom", 
 				node.id.to!string);
 			return;
 		}
@@ -139,28 +132,28 @@ protected:
 		}
 		// try to use the library's own code generators if they exist
 		Library lib = _libs[node.libraryId];
-		if (flags & CodeGenFlag.PushRef && lib.generateVariableRefCode(_code,node.id))
+		if (flags & CodeGenFlags.PushRef && lib.generateVariableCode(_code,node.id, CodeGenFlags.PushRef))
 			return;
-		if (lib.generateVariableValueCode(_code, node.id))
+		if (lib.generateVariableCode(_code, node.id, CodeGenFlags.None))
 			return;
 		// Fine, I'll do it myself
 		_code.addInstruction("push", node.id.to!string);
-		_code.addInstruction(flags & CodeGenFlag.PushRef ? "VarGetRef" : "VarGet",
+		_code.addInstruction(flags & CodeGenFlags.PushRef ? "VarGetRef" : "VarGet",
 			node.libraryId.to!string);
 	}
 	/// generates bytecode for ArrayNode. flags are ignored
-	void generateCode(ArrayNode node, CodeGenFlag flags){
+	void generateCode(ArrayNode node, CodeGenFlags flags){
 		foreach (elem; node.elements)
-			generateCode(elem, CodeGenFlag.None);
+			generateCode(elem, CodeGenFlags.None);
 		_code.addInstruction("arrayFromElements", node.elements.length.to!string);
 	}
 	/// generates bytecode for LiteralNode. Flags are ignored
-	void generateCode(LiteralNode node, CodeGenFlag flags){
+	void generateCode(LiteralNode node, CodeGenFlags flags){
 		_code.addInstruction("push", node.literal); // ez
 	}
 	/// generates bytecode for NegativeValueNode. flags are ignored
-	void generateCode(NegativeValueNode node, CodeGenFlag flags){
-		generateCode(node.value, CodeGenFlag.None);
+	void generateCode(NegativeValueNode node, CodeGenFlags flags){
+		generateCode(node.value, CodeGenFlags.None);
 		_code.addInstruction("push", "-1");
 		if (node.value.returnType == DataType(DataType.Type.Int))
 			_code.addInstruction("mathMultiplyInt", "");
@@ -171,7 +164,62 @@ protected:
 				"[NegativeValueNode] not a numerical data type"));
 	}
 	/// generates bytecode for OperatorNode. flags are ignored
-	void generateCode(OperatorNode node, CodeGenFlag flags){
+	void generateCode(OperatorNode node, CodeGenFlags flags){
+		// just generator code for the function call
+		generateCode(node.fCall, CodeGenFlags.None);
+	}
+	/// generates bytecode for SOperatorNode. 
+	/// 
+	/// Valid flags are:  
+	/// * PushRef
+	void generateCode(SOperatorNode node, CodeGenFlags flags){
+		// make sure only PushRef is passed, coz the function will see other flags too
+		generatesCode(node.fCall, flags & CodeGenFlags.PushRef);
+	}
+	/// generates bytecode for ReadElement
+	/// 
+	/// Valid flags are:
+	/// * pushRef
+	void generateCode(ReadElement node, CodeGenFlags flags){
+		generateCode(node.index, CodeGenFlags.None);
+		generateCode(node.readFromNode, CodeGenFlags.PushRef);
+		_code.addInstruction("incRef", "");
+		if (flags & CodeGenFlags.PushRef)
+			return;
+		_code.addInstruction("deref", "");
+	}
+	/// generates bytecode for StatementNode
+	void generateCode(StatementNode node, CodeGenFlags flags){
+		if (node.type == StatementNode.Type.Assignment){
+			generateCode(node.node!(StatementNode.Type.Assignment), flags);
+		}else if (node.type == StatementNode.Type.Block){
+			generateCode(node.node!(StatementNode.Type.Block), flags);
+		}else if (node.type == StatementNode.Type.DoWhile){
+			generateCode(node.node!(StatementNode.Type.DoWhile), flags);
+		}else if (node.type == StatementNode.Type.For){
+			generateCode(node.node!(StatementNode.Type.For), flags);
+		}else if (node.type == StatementNode.Type.FunctionCall){
+			generateCode(node.node!(StatementNode.Type.FunctionCall), flags);
+		}else if (node.type == StatementNode.Type.If){
+			generateCode(node.node!(StatementNode.Type.If), flags);
+		}else if (node.type == StatementNode.Type.VarDeclare){
+			generateCode(node.node!(StatementNode.Type.VarDeclare), flags);
+		}else if (node.type == StatementNode.Type.While){
+			generateCode(node.node!(StatementNode.Type.While), flags);
+		}else if (node.type == StatementNode.Type.Return){
+			generateCode(node.node!(StatementNode.Type.Return), flags);
+		}
+	}
+	/// generates bytecode for AssignmentNode
+	/// 
+	/// Flags are ignored
+	void generateCode(AssignmentNode node, CodeGenFlags flags){
+		generateCode(node.rvalue, CodeGenFlags.None);
+		generateCode(node.lvalue, CodeGenFlags.PushRef);
+		_code.addInstruction("writeToRef", "");
+	}
+	/// generates bytecode for IfNode
+	void generateCode(IfNode node, CodeGenFlags flags){
 		
 	}
 public:

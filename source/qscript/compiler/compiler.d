@@ -97,6 +97,15 @@ public struct CompileError{
 	}
 }
 
+/// Flags passed to bytecode generating functions
+/// 
+/// Not all functions look at each flag, some functions might ignore all flags
+public enum CodeGenFlags : ubyte{
+	None = 0, /// all flags zero
+	PushRef = 1 << 0, /// if the code should push a reference to the needed data. By default, the actual data is pushed.
+	PopReturn = 1 << 1, /// if the return value should be popped
+}
+
 /// Visibility Specifiers
 package enum Visibility{
 	Public,
