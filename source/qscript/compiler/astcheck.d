@@ -364,7 +364,7 @@ private:
 		// now look at data types of members
 		foreach (currentStruct; node.structs){
 			foreach (i, type; currentStruct.membersDataType){
-				if (!isValidType(type))
+				if (!isValidType(currentStruct.membersDataType[i]))
 					compileErrors.append(CompileError(currentStruct.lineno,
 						"struct member "~currentStruct.membersName[i]~" has invalid data type"));
 			}
@@ -480,15 +480,18 @@ private:
 		return DataType(DataType.Type.Void);
 	}
 	/// Returns: true if a data type is valid (enum name is a not a valid data type btw, use int)
-	bool isValidType(DataType type){
+	bool isValidType(ref DataType type){
 		if (!type.isCustom)
 			return true;
 		// now time to search in all libraries' structs names
 		foreach (integer libId, lib; _this~_libraries){
 			if (!isImported(libId-1))
 				continue;
-			if (lib.hasStruct(type.typeName))
+			Struct str;
+			if (lib.hasStruct(type.typeName, str)){
+				type.customLength = str.membersName.length;
 				return true;
+			}
 		}
 		return false;
 	}
@@ -508,6 +511,8 @@ protected:
 		_vars.scopeIncrease();
 		_vars.scopeVarCountStart();
 		functionReturnType = node.returnType;
+		if (!isValidType(node.returnType))
+			compileErrors.append(CompileError(node.lineno, "invalid data type"));
 		// add the arg's to the var scope. make sure one arg name is not used more than once
 		foreach (i, arg; node.arguments){
 			if (!addVar(arg.argName, arg.argType)){
@@ -761,6 +766,8 @@ protected:
 		if (!varExists(node.varName)){
 			compileErrors.append (CompileError(node.lineno,"variable "~node.varName~" not declared but used"));
 		}
+		// just call this to write struct size just in case it is a struct
+		isValidType(node.returnType);
 		// and put the assigned ID to it
 		getVar(node.varName, node.returnType, node.id, node.libraryId, node.isGlobal);
 	}
