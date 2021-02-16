@@ -49,25 +49,28 @@ package const string[] SOPERATORS = ["!", "@"];
 /// An array containing all bool-operators (operators that return true/false)
 package const string[] BOOL_OPERATORS = ["<", ">", ">=", "<=", "==", "&&", "||"];
 /// function names corresponding to operators
-package const string[string] OPERATOR_FUNCTIONS = [
-	"." : "opMemberSelect",
-	"/" : "opDivide",
-	"*" : "opMultiply",
-	"+" : "opAdd",
-	"-" : "opSubtract",
-	"%" : "opMod",
-	"~" : "opConcat",
-	"<" : "opLesser",
-	">" : "opGreater",
-	"<=" : "opLesserSame",
-	">=" : "opGreaterSame",
-	"==" : "opSame",
-	"=" : "opAssign",
-	"&&" : "opAndBool",
-	"||" : "opOrBool",
-	"!" : "opNot",
-	"@" : "opRef",
-];
+package string[string] OPERATOR_FUNCTIONS;
+static this(){
+	OPERATOR_FUNCTIONS = [
+		"." : "opMemberSelect",
+		"/" : "opDivide",
+		"*" : "opMultiply",
+		"+" : "opAdd",
+		"-" : "opSubtract",
+		"%" : "opMod",
+		"~" : "opConcat",
+		"<" : "opLesser",
+		">" : "opGreater",
+		"<=" : "opLesserSame",
+		">=" : "opGreaterSame",
+		"==" : "opSame",
+		"=" : "opAssign",
+		"&&" : "opAndBool",
+		"||" : "opOrBool",
+		"!" : "opNot",
+		"@" : "opRef",
+	];
+}
 /// Stores what types can be converted to what other types implicitly.
 package const DataType.Type[][] IMPLICIT_CAST_TYPES = [
 	[DataType.Type.Int, DataType.Type.Bool],
@@ -439,6 +442,8 @@ public struct DataType{
 	Type type = DataType.Type.Void;
 	/// stores if it's an array. If type is `int`, it will be 0, if `int[]` it will be 1, if `int[][]`, then 2 ...
 	uinteger arrayDimensionCount = 0;
+	/// stores length in case of Type.Custom
+	uinteger customLength;
 	/// stores if it's a reference to a type
 	bool isRef = false;
 	/// stores the type name in case of Type.Custom
