@@ -55,7 +55,7 @@ protected:
 	// TODO write functions to generate code for all AST Nodes
 
 	/// Generates bytecode for FunctionNode
-	void generateCode(FunctionNode node, CodeGenFlags flags){
+	void generateCode(FunctionNode node, CodeGenFlags flags = CodeGenFlags.None){
 		_code.addJumpPos("__qscriptFunction"~node.id.to!string);
 		// make space for variables
 		foreach (i; 0 .. node.varStackCount)
@@ -64,12 +64,12 @@ protected:
 		_code.addInstruction("jumpBack","");
 	}
 	/// generates bytecode for BlockNode
-	void generateCode(BlockNode node, CodeGenFlags flags){
+	void generateCode(BlockNode node, CodeGenFlags flags = CodeGenFlags.None){
 		foreach (statement; node.statements)
 			generateCode(statement, CodeGenFlags.None);
 	}
 	/// generates bytecode for CodeNode
-	void generateCode(CodeNode node, CodeGenFlags flags){
+	void generateCode(CodeNode node, CodeGenFlags flags = CodeGenFlags.None){
 		if (node.type == CodeNode.Type.Array){
 			generateCode(node.node!(CodeNode.Type.Array), flags);
 		}else if (node.type == CodeNode.Type.FunctionCall){
@@ -94,7 +94,7 @@ protected:
 	/// 
 	/// Valid flags:  
 	/// * PushRef - only if node.type == Type.StructMemberRead
-	void generateCode(MemberSelectorNode node, CodeGenFlags flags){
+	void generateCode(MemberSelectorNode node, CodeGenFlags flags = CodeGenFlags.None){
 		if (node.type == MemberSelectorNode.Type.EnumMemberRead){
 			_code.addInstruction("push", node.memberNameIndex.to!string);
 			return;
@@ -114,7 +114,7 @@ protected:
 	/// 
 	/// Valid flags:  
 	/// * PushRef - only if node.type == Type.StructMemberRead
-	void generateCode(VariableNode node, CodeGenFlags flags){
+	void generateCode(VariableNode node, CodeGenFlags flags = CodeGenFlags.None){
 		// check if local to script
 		if (node.libraryId == -1){
 			if (node.isGlobal){
@@ -142,7 +142,7 @@ protected:
 			node.libraryId.to!string);
 	}
 	/// generates bytecode for ArrayNode.
-	void generateCode(ArrayNode node, CodeGenFlags flags){
+	void generateCode(ArrayNode node, CodeGenFlags flags = CodeGenFlags.None){
 		foreach (elem; node.elements)
 			generateCode(elem, CodeGenFlags.None);
 		_code.addInstruction("arrayFromElements", node.elements.length.to!string);
@@ -150,13 +150,13 @@ protected:
 			_code.addInstruction("pushRefFromPop","");
 	}
 	/// generates bytecode for LiteralNode.
-	void generateCode(LiteralNode node, CodeGenFlags flags){
+	void generateCode(LiteralNode node, CodeGenFlags flags = CodeGenFlags.None){
 		_code.addInstruction("push", node.literal); // ez
 		if (flags & CodeGenFlags.PushRef)
 			_code.addInstruction("pushRefFromPop","");
 	}
 	/// generates bytecode for NegativeValueNode.
-	void generateCode(NegativeValueNode node, CodeGenFlags flags){
+	void generateCode(NegativeValueNode node, CodeGenFlags flags = CodeGenFlags.None){
 		generateCode(node.value, CodeGenFlags.None);
 		_code.addInstruction("push", "-1");
 		if (node.value.returnType == DataType(DataType.Type.Int))
@@ -170,7 +170,7 @@ protected:
 			_code.addInstruction("pushRefFromPop","");
 	}
 	/// generates bytecode for OperatorNode.
-	void generateCode(OperatorNode node, CodeGenFlags flags){
+	void generateCode(OperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
 		// just generator code for the function call
 		generateCode(node.fCall, CodeGenFlags.None);
 		if (flags & CodeGenFlags.PushRef)
@@ -180,15 +180,15 @@ protected:
 	/// 
 	/// Valid flags are:  
 	/// * PushRef
-	void generateCode(SOperatorNode node, CodeGenFlags flags){
+	void generateCode(SOperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
 		// make sure only PushRef is passed, coz the function will see other flags too
-		generateCode(node.fCall, flags & CodeGenFlags.PushRef);
+		generateCode(node.fCall, cast(CodeGenFlags)(flags & CodeGenFlags.PushRef));
 	}
 	/// generates bytecode for ReadElement
 	/// 
 	/// Valid flags are:
 	/// * pushRef
-	void generateCode(ReadElement node, CodeGenFlags flags){
+	void generateCode(ReadElement node, CodeGenFlags flags = CodeGenFlags.None){
 		// if index is known, and it doesnt want ref, then there's a better way:
 		if (node.index.type == CodeNode.Type.Literal && node.index.returnType == DataType(DataType.Type.Int) &&
 		!(flags & CodeGenFlags.PushRef)){
@@ -204,7 +204,7 @@ protected:
 			_code.addInstruction("deref", "");
 	}
 	/// generates bytecode for StatementNode
-	void generateCode(StatementNode node, CodeGenFlags flags){
+	void generateCode(StatementNode node, CodeGenFlags flags = CodeGenFlags.None){
 		if (node.type == StatementNode.Type.Assignment){
 			generateCode(node.node!(StatementNode.Type.Assignment), flags);
 		}else if (node.type == StatementNode.Type.Block){
@@ -226,16 +226,96 @@ protected:
 		}
 	}
 	/// generates bytecode for AssignmentNode
-	/// 
-	/// Flags are ignored
-	void generateCode(AssignmentNode node, CodeGenFlags flags){
+	void generateCode(AssignmentNode node, CodeGenFlags flags = CodeGenFlags.None){
 		generateCode(node.rvalue, CodeGenFlags.None);
 		generateCode(node.lvalue, CodeGenFlags.PushRef);
 		_code.addInstruction("writeToRef", "");
 	}
 	/// generates bytecode for IfNode
-	void generateCode(IfNode node, CodeGenFlags flags){
-		
+	void generateCode(IfNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		generateCode(node.condition, CodeGenFlags.None);
+		_code.addInstruction("If", "");
+		_code.addInstruction("Jump", "if"~currentJumpCount.to!string~"OnTrue");
+		if (node.hasElse)
+			generateCode(node.elseStatement, CodeGenFlags.None);
+		_code.addInstruction("Jump", "if"~currentJumpCount.to!string~"End");
+		_code.addJumpPos("if"~currentJumpCount.to!string~"OnTrue");
+		generateCode(node.statement, CodeGenFlags.None);
+		if (node.hasElse)
+			_code.addJumpPos("if"~currentJumpCount.to!string~"End");
+	}
+	/// generates bytecode for WhileNode
+	void generateCode(WhileNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		// its less instructions if a modified do-while loop is used
+		_code.addJumpPos("While"~currentJumpCount.to!string~"Start");
+		_code.addInstruction("Jump", "While"~currentJumpCount.to!string~"Condition");
+		generateCode(node.statement, CodeGenFlags.None);
+		_code.addJumpPos("While"~currentJumpCount.to!string~"Condition");
+		generateCode(node.condition);
+		_code.addInstruction("If","");
+		_code.addInstruction("Jump", "While"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for DoWhileNode
+	void generateCode(DoWhileNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		// its less instructions if a modified do-while loop is used
+		_code.addJumpPos("DoWhile"~currentJumpCount.to!string~"Start");
+		generateCode(node.statement, CodeGenFlags.None);
+		generateCode(node.condition);
+		_code.addInstruction("If","");
+		_code.addInstruction("Jump", "DoWhile"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for ForNode
+	void generateCode(ForNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		generateCode(node.initStatement);
+		_code.addInstruction("Jump", "For"~currentJumpCount.to!string~"Condition");
+		_code.addJumpPos("For"~currentJumpCount.to!string~"Start");
+		generateCode(node.statement);
+		generateCode(node.incStatement);
+		_code.addJumpPos("For"~currentJumpCount.to!string~"Condition");
+		generateCode(node.condition);
+		_code.addInstruction("If", "");
+		_code.addInstruction("Jump", "For"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for FunctionCallNode
+	void generateCode(FunctionCallNode node, CodeGenFlags flags = CodeGenFlags.None){
+		foreach (arg; node.arguments)
+			generateCode(arg);
+		// if a local call, just use JumpStackN
+		if (node.libraryId == -1){
+			_code.addInstruction("jumpStackN", node.arguments.length.to!string);
+		}else{
+			// try to generate it's code, if no, then just use Call
+			Library lib = _libs[node.libraryId];
+			DataType[] argTypes;
+			argTypes.length = node.arguments.length;
+			foreach (i, arg; node.arguments)
+				argTypes[i] = arg.returnType;
+			if (!lib.generateFunctionCallCode(_code, node.id, argTypes, flags))
+				_code.addInstruction("Call", node.id.to!string);
+		}
+		if (flags & CodeGenFlags.PushFunctionReturn){
+			_code.addInstruction("retValPush", "");
+			if (flags & CodeGenFlags.PushRef && !node.returnType.isRef)
+				_code.addInstruction("pushRefFromPop", "");
+		}
+	}
+	/// generates bytecode for ReturnNode
+	void generateCode(ReturnNode node, CodeGenFlags flags = CodeGenFlags.None){
+		generateCode(node.value);
+		_code.addInstruction("retValSet", "");
+		_code.addInstruction("jumpBack", "");
 	}
 public:
 	/// constructor
