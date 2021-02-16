@@ -30,6 +30,8 @@ pops a reference to array, then a value. Writes that value to `array[n]`.
 Pops n elements (in the order they were pushed), puts them in an array, pushes the reference to the array.
 * _`incRefN [n - integer]`_  
 same as NaVM's incRef, but here it increments by `n`.
+* _`pushRefFromPop`_  
+Pops an element, pushes it's reference.
 
 ### Jumps:
 * _`jumpFrameN [jumpPosition]`_  
