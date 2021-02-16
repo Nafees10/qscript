@@ -316,6 +316,11 @@ protected:
 		_retVal.intVal = 0;
 	}
 
+	void makeArrayN(){
+		NaData array;
+		array.makeArray(_arg.intVal);
+		_stack.push(array);
+	}
 	void arrayCopy(){
 		_stack.push(NaData(_stack.pop.arrayVal));
 	}
@@ -348,12 +353,13 @@ public:
 		addInstruction(NaInstruction("call",0x40,true,255,1,&call));
 		addInstruction(NaInstruction("retValSet",0x41,1,0,&retValSet));
 		addInstruction(NaInstruction("retValPush",0x42,0,1,&retValPush));
-		addInstruction(NaInstruction("arrayCopy",0x43,1,1,&arrayCopy));
-		addInstruction(NaInstruction("arrayElement",0x44,true,1,1,&arrayElement));
-		addInstruction(NaInstruction("arrayElementWrite",0x45,true,2,0,&arrayElementWrite));
-		addInstruction(NaInstruction("incRefN",0x46,true,1,1,&incRefN));
-		addInstruction(NaInstruction("pushRefFromPop",0x47,1,1,&pushRefFromPop));
-		addInstruction(NaInstruction("jumpFrameN",0x48,true,true,1,0,&jumpFrameN));
+		addInstruction(NaInstruction("makeArrayN",0x43,true,0,1,&makeArrayN));
+		addInstruction(NaInstruction("arrayCopy",0x44,1,1,&arrayCopy));
+		addInstruction(NaInstruction("arrayElement",0x45,true,1,1,&arrayElement));
+		addInstruction(NaInstruction("arrayElementWrite",0x46,true,2,0,&arrayElementWrite));
+		addInstruction(NaInstruction("incRefN",0x47,true,1,1,&incRefN));
+		addInstruction(NaInstruction("pushRefFromPop",0x48,1,1,&pushRefFromPop));
+		addInstruction(NaInstruction("jumpFrameN",0x49,true,true,1,0,&jumpFrameN));
 	}
 	/// The VM's stack
 	@property ArrayStack!NaData stack(){

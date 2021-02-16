@@ -20,6 +20,8 @@ Pops variable id (integer>=0) from stack, pushes value of that variable from tha
 Same as above, but pushes reference to that variable so it can be written to.
 
 ### Arrays & References:
+* _`makeArrayN [n - integer>=0]`_  
+Creates an array of length `n`, pushes its reference to stack.
 * _`arrayCopy`_  
 pops a reference to array, creates a copy of that, and pushes it back.
 * _`arrayElement [n - integer>=0]`_  
