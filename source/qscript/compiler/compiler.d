@@ -660,6 +660,10 @@ public:
 	@property CompileError[] errors(){
 		return _errors.dup;
 	}
+	/// clears errors
+	void errorsClear(){
+		_errors.length = 0;
+	}
 	/// get a JSON representing the generated AST
 	/// 
 	/// Returns: pretty printed JSON
