@@ -38,9 +38,6 @@ public:
 	}
 }
 
-/// added at start of most error messages where the errors never should've happened
-const string ERROR_PREFIX = "possible compiler bug, please report it:\n";
-
 /// Contains functions to generate NaByteCode from AST nodes
 class CodeGen{
 private:
