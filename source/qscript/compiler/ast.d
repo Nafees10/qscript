@@ -565,7 +565,7 @@ package struct LiteralNode{
 	public uinteger lineno;
 	/// stores the data type for the literal
 	public DataType returnType = DataType(DataType.Type.Void);
-	/// stores the literal in a QData
+	/// stores the literal
 	public string literal;
 	/// constructor
 	this (string data, DataType dataType){
@@ -581,6 +581,7 @@ package struct LiteralNode{
 	/// throws Exception on error
 	void fromToken(Token token){
 		returnType.fromData(token);
+		literal = token.token;
 	}
 }
 
