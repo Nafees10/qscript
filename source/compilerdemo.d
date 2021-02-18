@@ -19,7 +19,6 @@ import utils.misc;
 
 version(compiler){
 	void main(string[] args){
-		debug{args = args[0] ~ ["bytecode", "sample"];}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON\n* bytecode - output Byte Code");
@@ -36,9 +35,11 @@ version(compiler){
 				writeln ("Error reading file");
 			}
 			CompileError[] errors;
+			QScript qs = new QScript("script",false);
 			if (args[1] == "ast"){
 				QSCompiler compiler = new QSCompiler([],[]);
 				compiler.loadScript(script);
+				compiler.scriptExports = qs;
 				if (!compiler.generateTokens || !compiler.generateAST || !compiler.finaliseAST){
 					stderr.writeln ("There are errors:");
 					foreach (error; compiler.errors)
@@ -47,7 +48,6 @@ version(compiler){
 				writeln (compiler.prettyAST);
 				.destroy(compiler);
 			}else if (args[1] == "bytecode"){
-				QScript qs = new QScript("script",false);
 				QScriptBytecode bytecodeObject = qs.compileScript(script, errors);
 				if (errors.length > 0 || bytecodeObject is null){
 					stderr.writeln ("There are errors:");
@@ -61,8 +61,8 @@ version(compiler){
 					writeln(line);
 				}
 				.destroy(bytecodeObject);
-				.destroy(qs);
 			}
+			.destroy(qs);
 		}
 	}
 }
