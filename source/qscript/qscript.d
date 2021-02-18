@@ -412,12 +412,9 @@ public:
 	/// 
 	/// Returns: errors in a string[], or [] if no errors
 	override string[] readByteCode(string[] input){
-		if (input.length < 2)
+		if (input.length < 2 || input[1].length < 2 || input[1][0] != '#')
 			return ["not a valid QScript Bytecode"];
-		string linkLine = input[1].dup;
-		if (linkLine.length < 2 || linkLine[0] != '#')
-			return ["not a valid QScript Bytecode"];
-		_linkInfo = linkLine[1 .. $];
+		_linkInfo = input[1][1 .. $];
 		return super.readByteCode(input[2 .. $]);
 	}
 }
