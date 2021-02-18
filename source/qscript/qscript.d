@@ -405,7 +405,7 @@ public:
 	/// Returns: the bytecode in a readable format
 	override string[] getBytecodePretty(){
 		return [
-
+			"#","#"~linkInfo
 		]~super.getBytecodePretty();
 	}
 	/// Reads from a string[] (follows spec/syntax.md)
