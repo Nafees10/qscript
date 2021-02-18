@@ -619,12 +619,6 @@ unittest{
 	assert(DataType("double[]").name == "double[]");	
 }
 
-/// Stores compiled bytecode of a script along with its linker info (what it exports, & how to read it)
-public struct QScriptBytecode{
-	NaBytecode bytecode; /// the bytecode
-	string linkerInfo; /// linker info
-}
-
 /// all the compiler modules wrapped into a single class. This is all that should be needed to compile scripts
 public class QSCompiler{
 private:
@@ -637,8 +631,10 @@ private:
 /// `functions` is an array containing data about a function in Function[]
 /// `errors` is the array to which errors will be appended
 /// 
+/// Deprecated: use QSCompiler class
+/// 
 /// Returns: ByteCode class with the compiled byte code. or null if errors.length > 0
-public string[] compileScript(string[] script, Library[] libraries, ref CompileError[] errors,
+public deprecated string[] compileScript(string[] script, Library[] libraries, ref CompileError[] errors,
 ref Function[] functionMap){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length > 0)
@@ -663,8 +659,10 @@ ref Function[] functionMap){
 
 /// Generates an AST for a script, uses ASTCheck.checkAST on it.
 /// 
+/// Deprecated: use QSCompiler class
+/// 
 /// Returns: the final AST in readable JSON.
-public string compileScriptAST(string[] script, Library[] libraries, ref CompileError[] errors){
+public deprecated string compileScriptAST(string[] script, Library[] libraries, ref CompileError[] errors){
 	TokenList tokens = toTokens(script, errors);
 	if (errors.length == 0){
 		ASTGen astMake;
