@@ -385,10 +385,48 @@ public:
 	}
 }
 
+/// Stores QScript bytecode
+class QScriptBytecode : NaBytecode{
+private:
+	string _linkInfo;
+public:
+	/// constructor
+	this(NaInstruction[] instructionTable){
+		super(instructionTable);
+	}
+	/// link info
+	@property string linkInfo(){
+		return _linkInfo;
+	}
+	/// ditto
+	@property string linkInfo(string newVal){
+		return _linkInfo = newVal;
+	}
+	/// Returns: the bytecode in a readable format
+	override string[] getBytecodePretty(){
+		return [
+
+		]~super.getBytecodePretty();
+	}
+	/// Reads from a string[] (follows spec/syntax.md)
+	/// 
+	/// Returns: errors in a string[], or [] if no errors
+	override string[] readByteCode(string[] input){
+		if (input.length < 2)
+			return ["not a valid QScript Bytecode"];
+		string linkLine = input[1].dup;
+		if (linkLine.length < 2 || linkLine[0] != '#')
+			return ["not a valid QScript Bytecode"];
+		_linkInfo = linkLine[1 .. $];
+		return super.readByteCode(input[2 .. $]);
+	}
+}
+
 /// to execute a script, or use a script as a library
 public class QScript : Library{
 private:
 	QScriptVM _vm;
+	QSCompiler _compiler;
 public:
 	/// constructor.
 	/// 
@@ -425,5 +463,42 @@ public:
 	}
 	override NaData getVarRef(uinteger varId){
 		return NaData(_vm.stack.readPtr(varId));
+	}
+	/// compiles a script, and prepares it for execution with this class
+	/// 
+	/// **Libraries must be set before calling this.**
+	/// 
+	/// Returns: true if compiled without errors, false if there were errors (written to `errors` array)
+	bool compileScript(string[] script, CompileError[] errors){
+		if (_compiler is null)
+			_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
+		// clear itself
+		_functions.length = 0;
+		_vars.length = 0;
+		_structs.length = 0;
+		_enums.length = 0;
+		// prepare compiler
+		_compiler.scriptExports = this;
+		_compiler.errorsClear;
+		// start compiling
+		if (!_compiler.generateTokens || !_compiler.generateAST || !_compiler.finaliseAST || !_compiler.generateCode){
+			errors = _compiler.errors;
+			return false;
+		}
+		return _vm.load(_compiler.bytecode).length == 0;
+	}
+	/// Loads bytecode and library info
+	bool load(QScriptBytecode bytecode, string[] errors){
+		errors = bytecode.resolve;
+		if (errors.length)
+			return false;
+		errors = [this.fromString(bytecode.linkInfo)];
+		if (errors[0] != "")
+			return false;
+		errors = [];
+		errors = _vm.load(bytecode);
+		if (errors.length)
+			return false;
+		return true;
 	}
 }
