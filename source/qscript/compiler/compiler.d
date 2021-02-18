@@ -653,7 +653,7 @@ public:
 		return _scriptExports;
 	}
 	/// ditto
-	@property Library scriptExpors(Library newVal){
+	@property Library scriptExports(Library newVal){
 		return _scriptExports = newVal;
 	}
 	/// what errors occurred
