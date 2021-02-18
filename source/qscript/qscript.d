@@ -20,7 +20,7 @@ alias CompileError = qscript.compiler.compiler.CompileError;
 
 /// To store a library (could be a script as a library as well)
 public class Library{
-private:
+protected:
 	/// if this library is automatically imported
 	bool _autoImport;
 	/// name of library
