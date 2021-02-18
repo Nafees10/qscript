@@ -49,17 +49,18 @@ version(compiler){
 			}else if (args[1] == "bytecode"){
 				QScript qs = new QScript("script",false);
 				QScriptBytecode bytecodeObject = qs.compileScript(script, errors);
-				string[] byteCode = bytecodeObject.getBytecodePretty;
-				.destroy(bytecodeObject);
-				if (errors.length > 0){
+				if (errors.length > 0 || bytecodeObject is null){
 					stderr.writeln ("There are errors:");
 					foreach (error; errors){
 						stderr.writeln("Line#",error.lineno,": ",error.msg);
 					}
+					return;
 				}
+				string[] byteCode = bytecodeObject.getBytecodePretty;
 				foreach (line; byteCode){
 					writeln(line);
 				}
+				.destroy(bytecodeObject);
 				.destroy(qs);
 			}
 		}

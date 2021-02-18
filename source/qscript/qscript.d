@@ -470,7 +470,7 @@ public:
 	/// 
 	/// Returns: bytecode, or null in case of error
 	/// the returned bytecode will not be freed by this class, so you should do it when not needed
-	QScriptBytecode compileScript(string[] script, CompileError[] errors){
+	QScriptBytecode compileScript(string[] script, ref CompileError[] errors){
 		if (_compiler is null)
 			_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
 		// clear itself
@@ -481,6 +481,7 @@ public:
 		// prepare compiler
 		_compiler.scriptExports = this;
 		_compiler.errorsClear;
+		_compiler.loadScript(script);
 		// start compiling
 		if (!_compiler.generateTokens || !_compiler.generateAST || !_compiler.finaliseAST || !_compiler.generateCode){
 			errors = _compiler.errors;
