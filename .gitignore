@@ -8,3 +8,5 @@ lib*.a
 *.bcode
 *-test-default
 sample
+/ast.json
+/compiler
