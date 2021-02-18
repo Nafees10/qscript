@@ -468,8 +468,9 @@ public:
 	/// 
 	/// **Libraries must be set before calling this.**
 	/// 
-	/// Returns: true if compiled without errors, false if there were errors (written to `errors` array)
-	bool compileScript(string[] script, CompileError[] errors){
+	/// Returns: bytecode, or null in case of error
+	/// the returned bytecode will not be freed by this class, so you should do it when not needed
+	QScriptBytecode compileScript(string[] script, CompileError[] errors){
 		if (_compiler is null)
 			_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
 		// clear itself
@@ -483,11 +484,29 @@ public:
 		// start compiling
 		if (!_compiler.generateTokens || !_compiler.generateAST || !_compiler.finaliseAST || !_compiler.generateCode){
 			errors = _compiler.errors;
-			return false;
+			return null;
 		}
-		return _vm.load(_compiler.bytecode).length == 0;
+		QScriptBytecode bytecode = _compiler.bytecode;
+		string[] sErrors;
+		if (!this.load(bytecode, sErrors))
+			foreach (err; sErrors)
+				errors ~= CompileError(0, err);
+		return bytecode;
 	}
+	/// compiles a script, and prepares it for execution with this class
+	/// 
+	/// **Libraries must be set before calling this.**
+	/// 
+	/// Returns: errors, if any, or empty array
+	CompileError[] compileScript(string[] script){
+		CompileError[] r;
+		this.compileScript(script, r).destroy();
+		return r;
+	}
+
 	/// Loads bytecode and library info
+	/// 
+	/// the bytecode will not be freed by this class, so you should do it when not needed
 	bool load(QScriptBytecode bytecode, string[] errors){
 		errors = bytecode.resolve;
 		if (errors.length)
