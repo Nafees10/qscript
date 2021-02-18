@@ -13,12 +13,13 @@ import std.stdio;
 import std.file;
 
 import qscript.compiler.compiler;
+import qscript.qscript;
 
 import utils.misc;
 
 version(compiler){
 	void main(string[] args){
-		debug{args = args[0] ~ ["ast", "sample"];}
+		debug{args = args[0] ~ ["bytecode", "sample"];}
 		if (args.length < 3){
 			writeln ("not enough args. Usage:\n./compiler CompilationType path/to/script");
 			writeln ("CompilationType can be:\n* ast - output AST in JSON\n* bytecode - output Byte Code");
@@ -36,17 +37,20 @@ version(compiler){
 			}
 			CompileError[] errors;
 			if (args[1] == "ast"){
-				string json = compileScriptAST(script,[],errors);
-				if (errors.length > 0){
+				QSCompiler compiler = new QSCompiler([],[]);
+				compiler.loadScript(script);
+				if (!compiler.generateTokens || !compiler.generateAST || !compiler.finaliseAST){
 					stderr.writeln ("There are errors:");
-					foreach (error; errors){
+					foreach (error; compiler.errors)
 						stderr.writeln("Line#",error.lineno,": ",error.msg);
-					}
 				}
-				writeln (json);
+				writeln (compiler.prettyAST);
+				.destroy(compiler);
 			}else if (args[1] == "bytecode"){
-				Function[] fMap;
-				string[] byteCode = compileScript(script, [], errors, fMap);
+				QScript qs = new QScript("script",false);
+				QScriptBytecode bytecodeObject = qs.compileScript(script, errors);
+				string[] byteCode = bytecodeObject.getBytecodePretty;
+				.destroy(bytecodeObject);
 				if (errors.length > 0){
 					stderr.writeln ("There are errors:");
 					foreach (error; errors){
@@ -56,6 +60,7 @@ version(compiler){
 				foreach (line; byteCode){
 					writeln(line);
 				}
+				.destroy(qs);
 			}
 		}
 	}
