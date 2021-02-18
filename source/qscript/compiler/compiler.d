@@ -732,6 +732,7 @@ public:
 		}
 		immutable bool r = _codegen.generateCode(_ast, _scriptDeclarations);
 		.destroy(_scriptDeclarations);
+		_scriptDeclarations = null;
 		_bytecode = _codegen.bytecode;
 		string[] resolveErrors = _bytecode.resolve;
 		if (resolveErrors.length){
@@ -739,7 +740,6 @@ public:
 				_errors ~= CompileError(0, "[bytecode.resolve]: "~err);
 			return false;
 		}
-		_scriptDeclarations = null;
 		return r;
 	}
 }
