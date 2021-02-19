@@ -5,7 +5,8 @@ module qscript.compiler.ast;
 
 import utils.misc;
 import utils.lists;
-import qscript.compiler.misc;
+import qscript.compiler.compiler;
+import qscript.compiler.tokengen : Token, TokenList;
 
 import std.conv : to;
 
@@ -13,6 +14,14 @@ import std.conv : to;
 package struct ScriptNode{
 	/// list of functions defined in this script
 	public FunctionNode[] functions;
+	/// structs defined in this script
+	public StructNode[] structs;
+	/// enums defined in this script
+	public EnumNode[] enums;
+	/// global variables defined in this script
+	public VarDeclareNode[] variables;
+	/// stores what this script imports
+	public string[] imports;
 	/// constructor
 	this (FunctionNode[] scriptFunctions){
 		functions = scriptFunctions.dup;
@@ -33,8 +42,21 @@ package struct FunctionNode{
 	}
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// number of elements to allocate on stack for variables, this is set by ASTCheck
+	public uinteger varStackCount;
 	/// stores arguments with their data type
 	public FunctionNode.Argument[] arguments;
+	/// returns: data types of arguments
+	public @property DataType[] argTypes(){
+		DataType[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argType;
+		}
+		return r;
+	}
 	/// the name of the function
 	public string name;
 	/// body block of this function
@@ -43,14 +65,166 @@ package struct FunctionNode{
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// the id of this function, assigned after checkAST has been called on this
 	public uinteger id;
-	/// the maximum number of variables available in this function at a time (max var id + 1). assinged after checkAST
-	public uinteger varCount;
 	/// constructor
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
 		name = fName;
 		arguments = funcArgs.dup;
 		returnType = returnType;
+	}
+	/// Returns: the data types for arguments
+	@property DataType[] argumentTypes(){
+		DataType[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argType;
+		}
+		return r;
+	}
+	/// Returns: the names for arguments
+	@property string[] argumentNames(){
+		string[] r;
+		r.length = arguments.length;
+		foreach (i, arg; arguments){
+			r[i] = arg.argName;
+		}
+		return r;
+	}
+}
+
+/// To store a struct definition
+package struct StructNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// the actual struct
+	private Struct _struct;
+	/// the name of this struct
+	public @property string name(){
+		return _struct.name;
+	}
+	/// ditto
+	public @property string name(string newName){
+		return _struct.name = newName;
+	}
+	/// name of members of this struct
+	public @property ref string[] membersName() return {
+		return _struct.membersName;
+	}
+	/// ditto
+	public @property ref string[] membersName(string[] newMembersName) return {
+		return _struct.membersName = newMembersName;
+	}
+	/// data types of members of this struct
+	public @property ref DataType[] membersDataType() return{
+		return _struct.membersDataType;
+	}
+	/// ditto
+	public @property ref DataType[] membersDataType(DataType[] newMembersDataType) return{
+		return _struct.membersDataType = newMembersDataType;
+	}
+	/// Returns: true if this struct contains a reference
+	public @property bool containsRef(){
+		foreach (type; _struct.membersDataType){
+			if (type.isRef)
+				return true;
+		}
+		return false;
+	}
+	/// Returns: Library.Struct representing this
+	public @property Struct toStruct(){
+		return _struct;
+	}
+}
+
+/// To store a enum definition
+package struct EnumNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// stores the actual enum
+	private Enum _enum;
+	/// Returns: the name of this enum
+	public @property string name() return{
+		return _enum.name;
+	}
+	/// ditto
+	public @property string name(string newName) return{
+		return _enum.name = newName;
+	}
+	/// Returns: the members' names (index is the int value it gets replaced with)
+	public @property ref string[] members() return{
+		return _enum.members;
+	}
+	/// ditto
+	public @property ref string[] members(string[] newMembers) return{
+		return _enum.members = newMembers;
+	}
+	/// returns: misc.Enum representing this enum
+	public Enum toEnum(){
+		return _enum;
+	}
+}
+
+/// to store var declaration
+package struct VarDeclareNode{
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// Stores visibility for this node
+	public Visibility visibility = Visibility.Private;
+	/// the data typre of defined vars
+	public DataType type;
+	/// stores names of vars declared
+	private string[] varNames;
+	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
+	private uinteger[string] _varIDs;
+	/// stores vars' assigned values, with key=varName
+	private CodeNode[string] varValues;
+	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
+	public @property string[] vars(){
+		return varNames.dup;
+	}
+	/// returns: array containig ID's of variables in assoc_array
+	public @property uinteger[string] varIDs(){
+		return _varIDs.dup;
+	}
+	/// Returns: assigned value for a var
+	/// 
+	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
+	public ref CodeNode getValue(string varName){
+		if (varName in varValues){
+			return varValues[varName];
+		}
+		throw new Exception ("variable "~varName~" does not exist in array");
+	}
+	/// Returns: true if a variable has a value assigned to it
+	public bool hasValue(string varName){
+		if (varName in varValues)
+			return true;
+		return false;
+	}
+	/// adds a variable to the list
+	public void addVar(string varName){
+		varNames = varNames ~ varName;
+	}
+	/// adds a variable to the list, along with it's assigned value
+	public void addVar(string varName, CodeNode value){
+		varValues[varName] = value;
+		varNames = varNames ~ varName;
+	}
+	/// sets a stored var's assigned value
+	public void setVarValue(string varName, CodeNode value){
+		varValues[varName] = value;
+	}
+	/// sets a stored var's ID
+	public void setVarID(string varName, uinteger id){
+		_varIDs[varName] = id;
+	}
+	/// constructor
+	this (string[] vars){
+		varNames = vars.dup;
 	}
 }
 
@@ -77,39 +251,43 @@ package struct BlockNode{
 package struct CodeNode{
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	@property uinteger lineno(){
-		if (storedType == Type.FunctionCall){
+		if (_type == Type.FunctionCall){
 			return fCall.lineno;
-		}else if (storedType == Type.Literal){
+		}else if (_type == Type.Literal){
 			return literal.lineno;
-		}else if (storedType == Type.Operator){
+		}else if (_type == Type.Operator){
 			return operator.lineno;
-		}else if (storedType == Type.Variable){
+		}else if (_type == Type.Variable){
 			return var.lineno;
-		}else if (storedType == Type.ReadElement){
+		}else if (_type == Type.ReadElement){
 			return arrayRead.lineno;
-		}else if (storedType == Type.Array){
+		}else if (_type == Type.Array){
 			return array.lineno;
-		}else if (storedType == Type.SOperator){
+		}else if (_type == Type.SOperator){
 			return sOperator.lineno;
+		}else if (_type == Type.MemberSelector){
+			return memberSelector.lineno;
 		}
 		return 0;
 	}
 	/// ditto
 	@property uinteger lineno(uinteger newLineno){
-		if (storedType == Type.FunctionCall){
+		if (_type == Type.FunctionCall){
 			return fCall.lineno = newLineno;
-		}else if (storedType == Type.Literal){
+		}else if (_type == Type.Literal){
 			return literal.lineno = newLineno;
-		}else if (storedType == Type.Operator){
+		}else if (_type == Type.Operator){
 			return operator.lineno = newLineno;
-		}else if (storedType == Type.Variable){
+		}else if (_type == Type.Variable){
 			return var.lineno = newLineno;
-		}else if (storedType == Type.ReadElement){
+		}else if (_type == Type.ReadElement){
 			return arrayRead.lineno = newLineno;
-		}else if (storedType == Type.Array){
+		}else if (_type == Type.Array){
 			return array.lineno = newLineno;
-		}else if (storedType == Type.SOperator){
+		}else if (_type == Type.SOperator){
 			return sOperator.lineno = newLineno;
+		}else if (_type == Type.MemberSelector){
+			return memberSelector.lineno = newLineno;
 		}
 		return 0;
 	}
@@ -122,10 +300,11 @@ package struct CodeNode{
 		SOperator, // single operand operator
 		Variable,
 		ReadElement,
-		Array
+		Array,
+		MemberSelector
 	}
 	/// the stored type
-	private Type storedType;
+	private Type _type;
 	/// union storing all possible nodes
 	private union{
 		FunctionCallNode fCall;
@@ -136,43 +315,47 @@ package struct CodeNode{
 		VariableNode var;
 		ReadElement arrayRead;
 		ArrayNode array;
+		MemberSelectorNode memberSelector;
 	}
 	/// returns the type of the stored type
 	@property CodeNode.Type type(){
-		return storedType;
+		return _type;
 	}
 	/// sets the stored node
 	@property auto ref node (T)(T newNode){
 		static if (is (T == FunctionCallNode)){
-			storedType = CodeNode.Type.FunctionCall;
+			_type = CodeNode.Type.FunctionCall;
 			return fCall = newNode;
 		}else static if (is (T == LiteralNode)){
-			storedType = CodeNode.Type.Literal;
+			_type = CodeNode.Type.Literal;
 			return literal = newNode;
 		}else static if (is (T == NegativeValueNode)){
-			storedType = CodeNode.Type.Negative;
+			_type = CodeNode.Type.Negative;
 			return negativeVal = newNode;
 		}else static if (is (T == OperatorNode)){
-			storedType = CodeNode.Type.Operator;
+			_type = CodeNode.Type.Operator;
 			return operator = newNode;
 		}else static if (is (T == VariableNode)){
-			storedType = CodeNode.Type.Variable;
+			_type = CodeNode.Type.Variable;
 			return var = newNode;
 		}else static if (is (T == ReadElement)){
-			storedType = CodeNode.Type.ReadElement;
+			_type = CodeNode.Type.ReadElement;
 			return arrayRead = newNode;
 		}else static if(is (T == ArrayNode)){
-			storedType = CodeNode.Type.Array;
+			_type = CodeNode.Type.Array;
 			return array = newNode;
 		}else static if (is (T == SOperatorNode)){
-			storedType = CodeNode.Type.SOperator;
+			_type = CodeNode.Type.SOperator;
 			return sOperator = newNode;
+		}else static if (is (T == MemberSelectorNode)){
+			_type = CodeNode.Type.MemberSelector;
+			return memberSelector = newNode;
 		}
 	}
 	/// returns the stored type
 	@property auto ref node(CodeNode.Type T)(){
 		// make sure it's the correct type
-		if (T != storedType){
+		if (T != _type){
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
 		static if (T == CodeNode.Type.FunctionCall){
@@ -191,73 +374,120 @@ package struct CodeNode{
 			return array;
 		}else static if (T == CodeNode.Type.SOperator){
 			return sOperator;
+		}else static if (T == CodeNode.Type.MemberSelector){
+			return memberSelector;
 		}else{
 			throw new Exception("attempting to retrieve invalid type from CodeNode.node");
 		}
 	}
 	/// Returns: true if the stored data is literal
 	public @property bool isLiteral (){
-		if (storedType == CodeNode.Type.Literal)
+		if (_type == CodeNode.Type.Literal)
 			return true;
-		if (storedType == CodeNode.Type.Negative)
+		if (_type == CodeNode.Type.Negative)
 			return negativeVal.isLiteral;
-		if (storedType == CodeNode.Type.Array)
+		if (_type == CodeNode.Type.Array)
 			return array.isLiteral;
-		if (storedType == CodeNode.Type.Operator)
+		if (_type == CodeNode.Type.Operator)
 			return operator.isLiteral;
-		if (storedType == CodeNode.Type.ReadElement)
+		if (_type == CodeNode.Type.ReadElement)
 			return arrayRead.isLiteral;
-		if (storedType == CodeNode.Type.SOperator)
+		if (_type == CodeNode.Type.SOperator)
 			return sOperator.isLiteral;
-		if (storedType == CodeNode.Type.Variable)
+		if (_type == CodeNode.Type.Variable)
 			return var.isLiteral;
+		if (_type == CodeNode.Type.MemberSelector)
+			return memberSelector.isLiteral;
 		return false;
 	}
 	/// the return type, only available after ASTCheck has checked it
 	@property DataType returnType (){
-		if (storedType == CodeNode.Type.Array){
+		if (_type == CodeNode.Type.Array){
 			return array.returnType;
-		}else if (storedType == CodeNode.Type.FunctionCall){
+		}else if (_type == CodeNode.Type.FunctionCall){
 			return fCall.returnType;
-		}else if (storedType == CodeNode.Type.Literal){
+		}else if (_type == CodeNode.Type.Literal){
 			return literal.returnType;
-		}else if (storedType == CodeNode.Type.Negative){
+		}else if (_type == CodeNode.Type.Negative){
 			return negativeVal.returnType;
-		}else if (storedType == CodeNode.Type.Operator){
+		}else if (_type == CodeNode.Type.Operator){
 			return operator.returnType;
-		}else if (storedType == CodeNode.Type.ReadElement){
+		}else if (_type == CodeNode.Type.ReadElement){
 			return arrayRead.returnType;
-		}else if (storedType == CodeNode.Type.SOperator){
+		}else if (_type == CodeNode.Type.SOperator){
 			return sOperator.returnType;
-		}else if (storedType == CodeNode.Type.Variable){
+		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType;
+		}else if (_type == CodeNode.Type.MemberSelector){
+			return memberSelector.returnType;
 		}
 		return DataType();
 	}
 	/// ditto
 	@property DataType returnType (DataType newType){
-		if (storedType == CodeNode.Type.Array){
+		if (_type == CodeNode.Type.Array){
 			return array.returnType = newType;
-		}else if (storedType == CodeNode.Type.FunctionCall){
+		}else if (_type == CodeNode.Type.FunctionCall){
 			return fCall.returnType = newType;
-		}else if (storedType == CodeNode.Type.Literal){
+		}else if (_type == CodeNode.Type.Literal){
 			return literal.returnType = newType;
-		}else if (storedType == CodeNode.Type.Negative){
+		}else if (_type == CodeNode.Type.Negative){
 			return negativeVal.returnType = newType;
-		}else if (storedType == CodeNode.Type.Operator){
+		}else if (_type == CodeNode.Type.Operator){
 			return operator.returnType = newType;
-		}else if (storedType == CodeNode.Type.ReadElement){
+		}else if (_type == CodeNode.Type.ReadElement){
 			return arrayRead.returnType = newType;
-		}else if (storedType == CodeNode.Type.SOperator){
+		}else if (_type == CodeNode.Type.SOperator){
 			return sOperator.returnType = newType;
-		}else if (storedType == CodeNode.Type.Variable){
+		}else if (_type == CodeNode.Type.Variable){
 			return var.returnType = newType;
+		}else if (_type == CodeNode.Type.MemberSelector){
+			return memberSelector.returnType = newType;
 		}
 		return DataType();
 	}
 	/// constructor
 	this (T)(T newNode){
 		node = newNode;
+	}
+}
+
+/// to store a member selection (someStructOrEnum.memberName)
+package struct MemberSelectorNode{
+	/// Types
+	public enum Type{
+		EnumMemberRead, /// reading a member from an enum
+		StructMemberRead, /// reading a member from a struct
+	}
+	/// stores the type this MemberSelector is of. Only valid after ASTCheck has been called on this
+	public Type type;
+	/// the line number (starts from 1) from which this node begins, or ends
+	public uinteger lineno;
+	/// the parent node (to select member from)
+	private CodeNode* _parentPtr;
+	/// name of member, this is valid for Type.EnumMemberRead & Type.StructMemberRead
+	public string memberName;
+	/// Return type. Only valid after ASTCheck
+	public DataType returnType;
+	/// index of memberName in struct definition or enum definition. Only valid after ASTCheck
+	public integer memberNameIndex = -1;
+	/// stores if value is static
+	public bool isLiteral = false;
+	/// Returns: the parent node
+	@property ref CodeNode parent(){
+		return *_parentPtr;
+	}
+	/// ditto
+	@property CodeNode parent(CodeNode newParent){
+		if (!_parentPtr)
+			_parentPtr = new CodeNode;
+		return *_parentPtr = newParent;
+	}
+	/// Constructor
+	this(CodeNode parent, string member, uinteger lineno){
+		this.parent = parent;
+		this.memberName = member;
+		this.lineno = lineno;
 	}
 }
 
@@ -268,10 +498,18 @@ package struct VariableNode{
 	/// the name of this var
 	public string varName;
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
-	public uinteger id;
+	public integer id;
+	/// the library ID where this is defined
+	public integer libraryId = -1;
+	/// stores if this is a global variable. Only valid valid after ASTCheck has been called on this.
+	public bool isGlobal = false;
+	/// if the variable is script defined (global or not), assigned after checkAST has been called on this
+	public deprecated @property bool isScriptDefined(){
+		return libraryId == -1;
+	}
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
-	/// true if its return value is static, i.e, will always return same value when executed
+	/// true if its return value is static, i.e, will always return same value when evaluated
 	/// 
 	/// determined by ASTCheck
 	/// 
@@ -282,6 +520,8 @@ package struct VariableNode{
 		varName = name;
 		isLiteral = false;
 		returnType = DataType(DataType.Type.Void);
+		libraryId = -1;
+		isGlobal = false;
 	}
 }
 
@@ -325,7 +565,7 @@ package struct LiteralNode{
 	public uinteger lineno;
 	/// stores the data type for the literal
 	public DataType returnType = DataType(DataType.Type.Void);
-	/// stores the literal in a QData
+	/// stores the literal
 	public string literal;
 	/// constructor
 	this (string data, DataType dataType){
@@ -333,15 +573,15 @@ package struct LiteralNode{
 		returnType = dataType;
 	}
 	/// constructor using `fromTokens`
-	this (Token[] tokensLiteral){
-		fromTokens(tokensLiteral);
+	this (Token tokenLiteral){
+		fromToken(tokenLiteral);
 	}
 	/// reads the literal from a string
 	/// 
 	/// throws Exception on error
-	void fromTokens(Token[] tokensLiteral){
-		literal = TokenList.toString(tokensLiteral);
-		returnType.fromData(tokensLiteral);
+	void fromToken(Token token){
+		returnType.fromData(token);
+		literal = token.token;
 	}
 }
 
@@ -395,15 +635,22 @@ package struct OperatorNode{
 		}
 		return true;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType = DataType(DataType.Type.Void);
+	/// the return type. Only valid after ASTCheck has checked it
+	public @property DataType returnType(){
+		return fCall.returnType;
+	}
+	/// ditto
+	public @property DataType returnType(DataType newType){
+		return fCall.returnType = newType;
+	}
+	/// FunctionCallNode corresponding to this OperatorNode. Only valid after ASTCheck
+	public FunctionCallNode fCall;
 	/// constructor
 	this (string operatorString, CodeNode a, CodeNode b){
 		operator = operatorString;
 		operands.length = 2;
 		operands[0] = a;
 		operands[1] = b;
-		returnType = DataType(DataType.Type.Void);
 	}
 }
 
@@ -426,8 +673,16 @@ package struct SOperatorNode{
 	public @property ref CodeNode operand(){
 		return *operandPtr;
 	}
-	/// stores the return type. Only stored after ASTCheck has checked it
-	public DataType returnType = DataType(DataType.Type.Void);
+	/// the return type. Only valid after ASTCheck has checked it
+	public @property DataType returnType(){
+		return fCall.returnType;
+	}
+	/// ditto
+	public @property DataType returnType(DataType newType){
+		return fCall.returnType = newType;
+	}
+	/// FunctionCallNode corresponding to this OperatorNode. Only valid after ASTCheck
+	public FunctionCallNode fCall;
 	/// Returns: true if its return value is static, i.e will always be same when executed
 	@property bool isLiteral(){
 		return (operandPtr !is null && operand.isLiteral);
@@ -503,52 +758,52 @@ package struct StatementNode{
 	}
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
 	public @property uinteger lineno(){
-		if (storedType == Type.If){
+		if (_type == Type.If){
 			return ifNode.lineno;
-		}else if (storedType == Type.While){
+		}else if (_type == Type.While){
 			return whileNode.lineno;
-		}else if (storedType == Type.For){
+		}else if (_type == Type.For){
 			return forNode.lineno;
-		}else if (storedType == Type.DoWhile){
+		}else if (_type == Type.DoWhile){
 			return doWhile.lineno;
-		}else if (storedType == Type.Block){
+		}else if (_type == Type.Block){
 			return blockNode.lineno;
-		}else if (storedType == Type.Assignment){
+		}else if (_type == Type.Assignment){
 			return assignNode.lineno;
-		}else if (storedType == Type.FunctionCall){
+		}else if (_type == Type.FunctionCall){
 			return functionCallNode.lineno;
-		}else if (storedType == Type.VarDeclare){
+		}else if (_type == Type.VarDeclare){
 			return varDeclareNode.lineno;
-		}else if (storedType == Type.Return){
+		}else if (_type == Type.Return){
 			return returnNode.lineno;
 		}
 		return 0;
 	}
 	/// ditto
 	public @property uinteger lineno(uinteger newLineno){
-		if (storedType == Type.If){
+		if (_type == Type.If){
 			return ifNode.lineno = newLineno;
-		}else if (storedType == Type.While){
+		}else if (_type == Type.While){
 			return whileNode.lineno = newLineno;
-		}else if (storedType == Type.For){
+		}else if (_type == Type.For){
 			return forNode.lineno = newLineno;
-		}else if (storedType == Type.DoWhile){
+		}else if (_type == Type.DoWhile){
 			return doWhile.lineno = newLineno;
-		}else if (storedType == Type.Block){
+		}else if (_type == Type.Block){
 			return blockNode.lineno = newLineno;
-		}else if (storedType == Type.Assignment){
+		}else if (_type == Type.Assignment){
 			return assignNode.lineno = newLineno;
-		}else if (storedType == Type.FunctionCall){
+		}else if (_type == Type.FunctionCall){
 			return functionCallNode.lineno = newLineno;
-		}else if (storedType == Type.VarDeclare){
+		}else if (_type == Type.VarDeclare){
 			return varDeclareNode.lineno = newLineno;
-		}else if (storedType == Type.Return){
+		}else if (_type == Type.Return){
 			return returnNode.lineno = newLineno;
 		}
 		return 0;
 	}
 	/// type of this statement
-	private Type storedType;
+	private Type _type;
 	/// the stored node, is in this union
 	private union{
 		IfNode ifNode;
@@ -564,31 +819,31 @@ package struct StatementNode{
 	/// modifies the stored node
 	@property void node(T)(T newNode){
 		static if (is (T == IfNode)){
-			storedType = StatementNode.Type.If;
+			_type = StatementNode.Type.If;
 			ifNode = newNode;
 		}else static if (is (T == WhileNode)){
-			storedType = StatementNode.Type.While;
+			_type = StatementNode.Type.While;
 			whileNode = newNode;
 		}else static if (is (T == ForNode)){
-			storedType = StatementNode.Type.For;
+			_type = StatementNode.Type.For;
 			forNode = newNode;
 		}else static if (is (T == DoWhileNode)){
-			storedType = StatementNode.Type.DoWhile;
+			_type = StatementNode.Type.DoWhile;
 			doWhile = newNode;
 		}else static if (is (T == BlockNode)){
-			storedType = StatementNode.Type.Block;
+			_type = StatementNode.Type.Block;
 			blockNode = newNode;
 		}else static if (is (T == FunctionCallNode)){
-			storedType = StatementNode.Type.FunctionCall;
+			_type = StatementNode.Type.FunctionCall;
 			functionCallNode = newNode;
 		}else static if (is (T == VarDeclareNode)){
-			storedType = StatementNode.Type.VarDeclare;
+			_type = StatementNode.Type.VarDeclare;
 			varDeclareNode = newNode;
 		}else static if (is (T == AssignmentNode)){
-			storedType = StatementNode.Type.Assignment;
+			_type = StatementNode.Type.Assignment;
 			assignNode = newNode;
 		}else static if (is (T == ReturnNode)){
-			storedType = Type.Return;
+			_type = Type.Return;
 			returnNode = newNode;
 		}else{
 			throw new Exception("attempting to assign invalid node type to StatementNode.node");
@@ -597,7 +852,7 @@ package struct StatementNode{
 	/// returns the stored type
 	@property auto ref node(StatementNode.Type T)(){
 		// make sure type is correct
-		if (T != storedType){
+		if (T != _type){
 			throw new Exception("stored type does not match with type being retrieved");
 		}
 		static if (T == StatementNode.Type.If){
@@ -624,7 +879,7 @@ package struct StatementNode{
 	}
 	/// returns the type of the stored node
 	@property StatementNode.Type type(){
-		return storedType;
+		return _type;
 	}
 	/// constructor
 	this (T)(T newNode){
@@ -639,16 +894,13 @@ package struct AssignmentNode{
 	/// stores whether the assignment is to a variable (false) or if it has to dereference first (true)
 	public bool deref = false;
 	/// the variable to assign to
-	public VariableNode var;
-	/// stores the how "deeper" dimension of the array the value has to be assigned to
-	public CodeNode[] indexes;
+	public CodeNode lvalue;
 	/// the value to assign
-	public CodeNode val;
+	public CodeNode rvalue;
 	/// constructor
-	this (VariableNode variable, CodeNode[] varIndexes, CodeNode value, bool deref = false){
-		var = variable;
-		indexes = varIndexes.dup;
-		val = value;
+	this (CodeNode lv, CodeNode rv, bool deref = false){
+		lvalue = lv;
+		rvalue = rv;
 		this.deref = deref;
 	}
 }
@@ -827,23 +1079,25 @@ package struct ForNode{
 package struct FunctionCallNode{
 	/// the line number (starts from 1) from which this node begins, or ends
 	public uinteger lineno;
+	/// the id of the library this function is from.
+	public integer libraryId = -1;
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
-	public uinteger id;
+	public integer id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
-	public bool isScriptDefined;
-	/// if the function being called in in built QScript function
-	public bool isInBuilt=false;
+	public deprecated @property bool isScriptDefined(){
+		return libraryId == -1;
+	}
 	/// the arguments for this function.
-	private CodeNode[] storedArguments;
+	private CodeNode[] _arguments;
 	/// returns the values for arguments
-	@property ref CodeNode[] arguments(){
-		return storedArguments;
+	@property ref CodeNode[] arguments() return{
+		return _arguments;
 	}
 	/// sets value for storedArguments
-	@property ref CodeNode[] arguments(CodeNode[] newArgs){
-		return storedArguments = newArgs.dup;
+	@property ref CodeNode[] arguments(CodeNode[] newArgs) return{
+		return _arguments = newArgs.dup;
 	}
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
@@ -852,64 +1106,7 @@ package struct FunctionCallNode{
 		fName = functionName;
 		arguments = functionArguments;
 		returnType = DataType(DataType.Type.Void);
-	}
-}
-
-/// to store var declaration
-package struct VarDeclareNode{
-	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
-	/// the data typre of defined vars
-	public DataType type;
-	/// stores names of vars declared
-	private string[] varNames;
-	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
-	private uinteger[string] _varIDs;
-	/// stores vars' assigned values, with key=varName
-	private CodeNode[string] varValues;
-	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
-	public @property string[] vars(){
-		return varNames.dup;
-	}
-	/// returns: array containig ID's of variables in assoc_array
-	public @property uinteger[string] varIDs(){
-		return _varIDs.dup;
-	}
-	/// Returns: assigned value for a var
-	/// 
-	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
-	public ref CodeNode getValue(string varName){
-		if (varName in varValues){
-			return varValues[varName];
-		}
-		throw new Exception ("variable "~varName~" does not exist in array");
-	}
-	/// Returns: true if a variable has a value assigned to it
-	public bool hasValue(string varName){
-		if (varName in varValues)
-			return true;
-		return false;
-	}
-	/// adds a variable to the list
-	public void addVar(string varName){
-		varNames = varNames ~ varName;
-	}
-	/// adds a variable to the list, along with it's assigned value
-	public void addVar(string varName, CodeNode value){
-		varValues[varName] = value;
-		varNames = varNames ~ varName;
-	}
-	/// sets a stored var's assigned value
-	public void setVarValue(string varName, CodeNode value){
-		varValues[varName] = value;
-	}
-	/// sets a stored var's ID
-	public void setVarID(string varName, uinteger id){
-		_varIDs[varName] = id;
-	}
-	/// constructor
-	this (string[] vars){
-		varNames = vars.dup;
+		libraryId = -1;
 	}
 }
 

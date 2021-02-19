@@ -6,7 +6,7 @@
 	"authors": ["Nafees Hassan"],
 	"dependencies": {
 		"utils": "~>0.3.7",
-		"navm": "~>0.2.3"
+		"navm": "~>1.1.4"
 	},"configurations": [
 		{
 			"name": "default",
@@ -14,16 +14,16 @@
 			"targetName": "qscript"
 		},
 		{
-			"name": "qscriptdemo",
+			"name": "qsDemo",
 			"targetType": "executable",
 			"targetName": "demo",
 			"versions": ["qscriptdemo"]
 		},
 		{
-			"name": "compiler",
+			"name": "qsCompiler",
 			"targetType": "executable",
 			"targetName": "compiler",
 			"versions": ["compiler"]
-		},
-	],
+		}
+	]
 }

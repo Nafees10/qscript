@@ -1,0 +1,12 @@
+.dub/
+.vscode/
+ast
+demo
+dub_platform*
+dub.selections.json
+lib*.a
+*.bcode
+*-test-default
+sample
+/ast.json
+/compiler

@@ -29,7 +29,7 @@ The code is thoroughly documented. Separate documentation can be found [here](ht
 
 To be able to run basic scripts, you can build the demo using:  
 
-`dub build -c=demo -b=release`  
+`dub build -c=qsDemo -b=release`  
 
 This will create an executable named `demo` in the directory. To run a script through it, do:  
 
@@ -41,26 +41,14 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 
 ## Features
 
-1. Simple syntax
-2. Dynamic arrays
-3. Fast execution
-4. Static typed
-5. Function overloading
-6. References
-
-## TODO For Upcoming Versions
-
+1. Dynamic arrays
+1. Static typed
+1. Function overloading
+1. References (pointers, but a bit simplified)
 1. Structs
-2. Enums
-3. Global Variables
-4. Libraries
-6. Scripts as libraries for other scripts
-7. Macro Functions that are detected at compile time and compiled separately rather than as a function call.
-8. Exporting function map - be able to run from bytecode only
-9. Array of references - not directly possible as the syntax doesnt allow it, but possible using structs.
-
-Features listed above are almost done (codegen.d & VM is left). You can track the progress in dev branch
-
+1. Enums
+1. Global Variables
+1. Importing libraries (script can be loaded as library too)
 ---
 
 ## Hello World

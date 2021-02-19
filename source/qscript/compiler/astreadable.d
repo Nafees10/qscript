@@ -15,14 +15,34 @@ import std.json;
 
 /// Creates JSONValue for ScriptNode
 JSONValue toJSON(ScriptNode node){
-	JSONValue[] functionsJSON;
-	functionsJSON.length = node.functions.length;
+	JSONValue[] arrayJSON;
+	arrayJSON.length = node.functions.length;
 	foreach (i, fNode; node.functions){
-		functionsJSON[i] = fNode.toJSON;
+		arrayJSON[i] = fNode.toJSON;
 	}
 	JSONValue r;
 	r["node"] = JSONValue("ScriptNode");
-	r["functions"] = JSONValue(functionsJSON);
+	r["functions"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.enums.length;
+	foreach (i, enumNode; node.enums){
+		arrayJSON[i] = enumNode.toJSON;
+	}
+	r["enums"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.structs.length;
+	foreach (i, structNode; node.structs){
+		arrayJSON[i] = structNode.toJSON;
+	}
+	r["structs"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.variables.length;
+	foreach (i, var; node.variables){
+		arrayJSON[i] = var.toJSON;
+	}
+	r["variables"] = JSONValue(arrayJSON.dup);
+	arrayJSON.length = node.imports.length;
+	foreach (i, importName; node.imports){
+		arrayJSON[i] = JSONValue(importName);
+	}
+	r["imports"] = JSONValue(arrayJSON.dup);
 	return r;
 }
 
@@ -32,18 +52,53 @@ JSONValue toJSON(FunctionNode node){
 	argListJSON.length = node.arguments.length;
 	foreach (i, arg; node.arguments){
 		argListJSON[i]["name"] = JSONValue(arg.argName);
-		argListJSON[i]["type"] = JSONValue(arg.argType.getStr);
+		argListJSON[i]["type"] = JSONValue(arg.argType.name);
 	}
 	JSONValue bodyJSON = node.bodyBlock.toJSON;
 	JSONValue r;
 	r["node"] = JSONValue("FunctionNode");
-	r["type"] = node.returnType.getStr;
+	r["type"] = node.returnType.name;
 	r["name"] = node.name;
 	r["arguments"] = JSONValue(argListJSON);
 	r["body"] = JSONValue(bodyJSON);
 	r["id"] = JSONValue(node.id);
 	r["lineno"] = JSONValue(node.lineno);
-	r["varCount"] = JSONValue(node.varCount);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["varStackCount"] = JSONValue(node.varStackCount);
+	return r;
+}
+
+/// Creates JSONValue for StructNode
+JSONValue toJSON(StructNode node){
+	JSONValue r;
+	r["node"] = JSONValue("ScriptNode");
+	r["lineno"] = JSONValue(node.lineno);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["name"] = JSONValue(node.name);
+	JSONValue[] members;
+	members.length = node.membersName.length;
+	foreach (i; 0 .. node.membersName.length){
+		members[i]["name"] = JSONValue(node.membersName[i]);
+		members[i]["type"] = JSONValue(node.membersDataType[i].name);
+	}
+	r["members"] = JSONValue(members);
+	r["containsRef"] = JSONValue(node.containsRef.to!string);
+	return r;
+}
+
+/// Creates JSONValue for EnumNode
+JSONValue toJSON(EnumNode node){
+	JSONValue r;
+	r["node"] = JSONValue("EnumNode");
+	r["lineno"] = JSONValue(node.lineno);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["name"] = JSONValue(node.name);
+	JSONValue[] members;
+	members.length = node.members.length;
+	foreach (i, name; node.members){
+		members[i] = JSONValue(name);
+	}
+	r["members"] = JSONValue(members);
 	return r;
 }
 
@@ -92,17 +147,10 @@ JSONValue toJSON(StatementNode node){
 JSONValue toJSON(AssignmentNode node){
 	JSONValue r;
 	r["node"] = JSONValue("AssignmentNode");
-	r["lvalueIsRef"] = JSONValue(node.deref ? "true" : "false");
-	r["var"] = node.var.toJSON;
-	JSONValue[] indexes;
-	indexes.length = node.indexes.length;
-	foreach (i, index; node.indexes){
-		indexes[i] = index.toJSON;
-	}
-	r["indexes"] = JSONValue(indexes);
-	r["val"] = node.val.toJSON;
-
 	r["lineno"] = JSONValue(node.lineno);
+	r["deref"] = JSONValue(node.deref.to!string);
+	r["lvalue"] = node.lvalue.toJSON;
+	r["rvalue"] = node.rvalue.toJSON;
 	return r;
 }
 
@@ -159,9 +207,8 @@ JSONValue toJSON(FunctionCallNode node){
 	JSONValue r;
 	r["node"] = JSONValue("FunctionCallNode");
 	r["name"] = JSONValue(node.fName);
-	r["type"] = JSONValue(node.returnType.getStr);
-	r["isInbuilt"] = node.isInBuilt;
-	r["isScriptDefined"] = node.isScriptDefined;
+	r["type"] = JSONValue(node.returnType.name);
+	r["libraryId"] = JSONValue(node.libraryId);
 	r["id"] = node.id;
 	JSONValue[] argListJSON;
 	argListJSON.length = node.arguments.length;
@@ -178,13 +225,15 @@ JSONValue toJSON(FunctionCallNode node){
 JSONValue toJSON(VarDeclareNode node){
 	JSONValue r;
 	r["node"] = JSONValue("varDeclareNode");
-	r["type"] = JSONValue(node.type.getStr);
+	r["visibility"] = JSONValue(node.visibility.to!string);
+	r["type"] = JSONValue(node.type.name);
 	JSONValue[] varTypeValueList;
 	varTypeValueList.length = node.vars.length;
 	foreach (i, varName; node.vars){
 		JSONValue var;
 		var["name"] = JSONValue(varName);
-		var["id"] = JSONValue(node.varIDs[varName]);
+		if (varName in node.varIDs)
+			var["id"] = JSONValue(node.varIDs[varName]);
 		if (node.hasValue(varName))
 			var["value"] = node.getValue(varName).toJSON;
 		varTypeValueList[i] = var;
@@ -207,7 +256,7 @@ JSONValue toJSON(ReturnNode node){
 JSONValue toJSON(CodeNode node){
 	JSONValue r;
 	r["node"] = JSONValue("CodeNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	if (node.type == CodeNode.Type.Array){
 		r["code"] = node.node!(CodeNode.Type.Array).toJSON;
@@ -225,6 +274,8 @@ JSONValue toJSON(CodeNode node){
 		r["code"] = node.node!(CodeNode.Type.SOperator).toJSON;
 	}else if (node.type == CodeNode.Type.Variable){
 		r["code"] = node.node!(CodeNode.Type.Variable).toJSON;
+	}else if (node.type == CodeNode.Type.MemberSelector){
+		r["code"] = node.node!(CodeNode.Type.MemberSelector).toJSON;
 	}
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
@@ -234,10 +285,11 @@ JSONValue toJSON(CodeNode node){
 JSONValue toJSON(VariableNode node){
 	JSONValue r;
 	r["node"] = JSONValue("VariableNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["name"] = JSONValue(node.varName);
 	r["id"] = JSONValue(node.id);
-
+	r["libraryId"] = JSONValue(node.libraryId);
+	r["isGlobal"] = JSONValue(node.isGlobal);
 	r["lineno"] = JSONValue(node.lineno);
 	return r;
 }
@@ -246,7 +298,7 @@ JSONValue toJSON(VariableNode node){
 JSONValue toJSON(ArrayNode node){
 	JSONValue r;
 	r["node"] = JSONValue("ArrayNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	JSONValue[] elementList;
 	elementList.length = node.elements.length;
@@ -263,7 +315,7 @@ JSONValue toJSON(ArrayNode node){
 JSONValue toJSON(LiteralNode node){
 	JSONValue r;
 	r["node"] = JSONValue("LiteralNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["value"] = JSONValue(node.literal);
 
 	r["lineno"] = JSONValue(node.lineno);
@@ -274,9 +326,22 @@ JSONValue toJSON(LiteralNode node){
 JSONValue toJSON(NegativeValueNode node){
 	JSONValue r;
 	r["node"] = JSONValue("NegativeValueNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["value"] = node.value.toJSON;
 	r["lineno"] = JSONValue(node.lineno);
+	return r;
+}
+
+/// Creates JSONValue for MemberSelectorNode
+JSONValue toJSON(MemberSelectorNode node){
+	JSONValue r;
+	r["node"] = JSONValue("MemberSelectorNode");
+	r["nodeType"] = JSONValue(node.type.to!string);
+	r["memberNameIndex"] = JSONValue(node.memberNameIndex);
+	r["type"] = JSONValue(node.returnType.name);
+	r["lineno"] = JSONValue(node.lineno);
+	r["parent"] = node.parent.toJSON;
+	r["member"] = JSONValue(node.memberName);
 	return r;
 }
 
@@ -284,7 +349,7 @@ JSONValue toJSON(NegativeValueNode node){
 JSONValue toJSON(OperatorNode node){
 	JSONValue r;
 	r["node"] = JSONValue("OperatorNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["operator"] = JSONValue(node.operator);
 	r["operandA"] = node.operands[0].toJSON;
@@ -298,7 +363,7 @@ JSONValue toJSON(OperatorNode node){
 JSONValue toJSON(SOperatorNode node){
 	JSONValue r;
 	r["node"] = JSONValue("SOperatorNode");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["operator"] = JSONValue(node.operator);
 	r["operand"] = node.operand.toJSON;
@@ -311,7 +376,7 @@ JSONValue toJSON(SOperatorNode node){
 JSONValue toJSON(ReadElement node){
 	JSONValue r;
 	r["node"] = JSONValue("ReadElement");
-	r["type"] = JSONValue(node.returnType.getStr);
+	r["type"] = JSONValue(node.returnType.name);
 	r["isLiteral"] = JSONValue(node.isLiteral ? "true" : "false");
 	r["array"] = node.readFromNode.toJSON;
 	r["index"] = node.index.toJSON;

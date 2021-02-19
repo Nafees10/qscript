@@ -7,14 +7,13 @@ This can be used to:
 * optimize existing byte code, and output new optimized byte code (to be added, when optimizer is added)
 * convert script to byte code, optimize it, and output optimized byte code (to be added, when optimizer is added)
 +/
-module compiler;
+module compilerdemo;
 
 import std.stdio;
 import std.file;
 
 import qscript.compiler.compiler;
-import qscript.compiler.misc : CompileError;
-import qscript.compiler.misc : Function;
+import qscript.qscript;
 
 import utils.misc;
 
@@ -36,28 +35,34 @@ version(compiler){
 				writeln ("Error reading file");
 			}
 			CompileError[] errors;
+			QScript qs = new QScript("script",false,[]);
 			if (args[1] == "ast"){
-				string json = compileScriptAST(script,[],errors);
-				if (errors.length > 0){
+				QSCompiler compiler = new QSCompiler([],[]);
+				compiler.loadScript(script);
+				compiler.scriptExports = qs;
+				if (!compiler.generateTokens || !compiler.generateAST || !compiler.finaliseAST){
 					stderr.writeln ("There are errors:");
-					foreach (error; errors){
+					foreach (error; compiler.errors)
 						stderr.writeln("Line#",error.lineno,": ",error.msg);
-					}
 				}
-				writeln (json);
+				writeln (compiler.prettyAST);
+				.destroy(compiler);
 			}else if (args[1] == "bytecode"){
-				Function[] fMap;
-				string[] byteCode = compileScript(script, [], errors, fMap);
-				if (errors.length > 0){
+				QScriptBytecode bytecodeObject = qs.compileScript(script, errors);
+				if (errors.length > 0 || bytecodeObject is null){
 					stderr.writeln ("There are errors:");
 					foreach (error; errors){
 						stderr.writeln("Line#",error.lineno,": ",error.msg);
 					}
+					return;
 				}
-				foreach (line; byteCode){
-					writeln(line);
+				string[] byteCode = bytecodeObject.getBytecodePretty;
+				foreach (int i, line; byteCode){
+					writeln(i-2,'\t',line);
 				}
+				.destroy(bytecodeObject);
 			}
+			.destroy(qs);
 		}
 	}
 }

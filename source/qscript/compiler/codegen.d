@@ -4,569 +4,367 @@ For generating byte code from AST
 module qscript.compiler.codegen;
 
 import qscript.compiler.ast;
-import qscript.compiler.astcheck;
-import qscript.compiler.misc;
+import qscript.compiler.compiler;
+import qscript.qscript : Library, QScriptBytecode;
+
+import navm.bytecode;
 
 import utils.misc;
 import utils.lists;
 
-import navm.navm : Instruction, NaData;
-import navm.navm : readData;
-import navm.bytecodedefs; // needed to check how many elements instruction wants from stack
-
 import std.conv : to;
 
-/// Contains functions to generate ByteCode from AST nodes
-class CodeGen{
+/// just an inherited NaBytecode that makes it easier to check if it failed to add some instruction
+private class ByteCodeWriter : QScriptBytecode{
 private:
-	/// writer
-	NaByteCodeWriter _writer;
-	/// stores script defined functions
-	Function[] _functions;
-protected:
-	/// generates byte code for a FunctionNode
-	void generateByteCode(FunctionNode node){
-		_writer.startFunction(node.arguments.length);
-		// use push to reserve space on stack for variables
-		foreach (i; 0 .. node.varCount - node.arguments.length){
-			_writer.addInstruction(Instruction.Push, ["0"]);
-		}
-		generateByteCode(node.bodyBlock);
-		// don't forget to Terminate
-		_writer.addInstruction(Instruction.Terminate);
-		_writer.appendFunction();
-		// add itself to _functions
-		Function itself;
-		itself.name = node.name;
-		itself.returnType = node.returnType;
-		itself.argTypes.length = node.arguments.length;
-		foreach (i, arg; node.arguments)
-			itself.argTypes[i] = arg.argType;
-		_functions[node.id] = itself;
-	}
-	/// generates byte code for a BlockNode
-	void generateByteCode(BlockNode node){
-		foreach (statement; node.statements){
-			generateByteCode(statement);
-		}
-	}
-	/// generates byte code for a StatementNode
-	void generateByteCode(StatementNode node){
-		if (node.type == StatementNode.Type.Assignment){
-			generateByteCode(node.node!(StatementNode.Type.Assignment));
-		}else if (node.type == StatementNode.Type.Block){
-			generateByteCode(node.node!(StatementNode.Type.Block));
-		}else if (node.type == StatementNode.Type.DoWhile){
-			generateByteCode(node.node!(StatementNode.Type.DoWhile));
-		}else if (node.type == StatementNode.Type.For){
-			generateByteCode(node.node!(StatementNode.Type.For));
-		}else if (node.type == StatementNode.Type.FunctionCall){
-			generateByteCode(node.node!(StatementNode.Type.FunctionCall), false, true);
-		}else if (node.type == StatementNode.Type.If){
-			generateByteCode(node.node!(StatementNode.Type.If));
-		}else if (node.type == StatementNode.Type.VarDeclare){
-			generateByteCode(node.node!(StatementNode.Type.VarDeclare));
-		}else if (node.type == StatementNode.Type.While){
-			generateByteCode(node.node!(StatementNode.Type.While));
-		}else if (node.type == StatementNode.Type.Return){
-			generateByteCode(node.node!(StatementNode.Type.Return));
-		}
-	}
-	/// generates byte code for AssignmentNode
-	void generateByteCode(AssignmentNode node){
-		// first get the value
-		generateByteCode(node.val);
-		if (node.indexes.length > 0){
-			// use ReadElement to get the element to write to
-			for (integer i = node.indexes.length -1; i >= 0;i--){
-				generateByteCode(node.indexes[i]);
-			}
-			_writer.addInstruction(node.deref ? Instruction.PushFrom : Instruction.PushRefFrom, [to!string(node.var.id)]); // this gets the ref ot array
-			// now add readElement for each of those
-			foreach (i; 0 .. node.indexes.length){
-				_writer.addInstruction(Instruction.ArrayRefElement);
-			}
-			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
-		}else if (node.deref){
-			_writer.addInstruction(Instruction.PushFrom, [to!string(node.var.id)]); // this gets the ref
-			_writer.addInstruction(Instruction.WriteToRef); // and this writes value to ref
-		}else{
-			// just do pushTo 
-			_writer.addInstruction(Instruction.WriteTo, [to!string(node.var.id)]);
-		}
-	}
-	/// generates ByteCode for DoWhileNode
-	void generateByteCode(DoWhileNode node){
-		static uinteger jumpID = 0;
-		const uinteger currentJumpID = jumpID;
-		jumpID++;
-		// get the index of where the loop starts
-		_writer.addJumpPos("DoWhileStart"~currentJumpID.to!string);
-		// now comes loop body
-		generateByteCode(node.statement);
-		// condition
-		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.JumpIf, ["DoWhileStart"~currentJumpID.to!string]);
-	}
-	/// generates byte code for ForNode
-	void generateByteCode(ForNode node){
-		static uinteger jumpID = 0;
-		const uinteger currentJumpID = jumpID;
-		jumpID++;
-		generateByteCode(node.initStatement);
-		// condition
-		_writer.addJumpPos("ForStart"~currentJumpID.to!string);
-		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.Not);
-		_writer.addInstruction(Instruction.JumpIf, ["ForEnd"~currentJumpID.to!string]); //placeholder, will write jumpToIndex later
-		// loop body
-		generateByteCode(node.statement);
-		// now the increment statement
-		generateByteCode(node.incStatement);
-		// jump back
-		_writer.addInstruction(Instruction.Jump, ["ForStart"~currentJumpID.to!string]);
-		_writer.addJumpPos("ForEnd"~currentJumpID.to!string);
-	}
-	/// generates byte code for FunctionCallNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(FunctionCallNode node, bool pushRef = false, bool popReturn = false){
-		if (!node.isScriptDefined && node.isInBuilt){
-			generateInBuiltFunctionByteCode(node, popReturn);
-		}else{
-			// push args
-			foreach (arg; node.arguments){
-				generateByteCode(arg);
-			}
-			_writer.addInstruction(node.isScriptDefined ? Instruction.ExecuteFunction : Instruction.ExecuteFunctionExternal,
-				[to!string(node.id), to!string(node.arguments.length)]);
-			if (popReturn)
-				_writer.addInstruction(Instruction.Pop);
-		}
-	}
-	/// generates byte code for inbuilt QScript functions (`length(void[])` and stuff)
-	void generateInBuiltFunctionByteCode(FunctionCallNode node, bool popReturn = false){
-		/// argument types of function call
-		DataType[] argTypes;
-		argTypes.length = node.arguments.length;
-		foreach (i, arg; node.arguments){
-			argTypes[i] = arg.returnType;
-		}
-		/// encoded name of function
-		string fName = encodeFunctionName(node.fName, argTypes);
-		/// stores if the instructions added push 1 element to stack, or zero (false)
-		bool pushesToStack = true;
-		/// length(@void[], int)
-		if (node.fName == "length"){
-			if (matchArguments([DataType(DataType.Type.Void, 1, true), DataType(DataType.Type.Integer)],argTypes)){
-				// set array length
-				generateByteCode(node.arguments[1]); // length comes first, coz it's popped later
-				generateByteCode(node.arguments[0]);
-				_writer.addInstruction(Instruction.ArrayLengthSet);
-				pushesToStack = false;
-			}else if (matchArguments([DataType(DataType.Type.Void, 1, false)], argTypes) ||
-			matchArguments([DataType(DataType.Type.Char, 1, true)], argTypes)){
-				// get array/string length
-				generateByteCode(node.arguments[0]);
-				_writer.addInstruction(Instruction.ArrayLength);
-			}
-		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.Char, 1)])){
-			/// toInt(string)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.StringToInt);
-		}else if (fName == encodeFunctionName("toInt", [DataType(DataType.Type.Double)])){
-			/// toInt(double)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.DoubleToInt);
-		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Char, 1)])){
-			/// toDouble(string)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.StringToDouble);
-		}else if (fName == encodeFunctionName("toDouble", [DataType(DataType.Type.Integer)])){
-			/// toDouble(int)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.IntToDouble);
-		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Integer)])){
-			/// toStr(int)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.IntToString);
-		}else if (fName == encodeFunctionName("toStr", [DataType(DataType.Type.Double)])){
-			/// toStr(double)
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.DoubleToString);
-		}else if (node.fName == "copy" && matchArguments(
-			[DataType(DataType.Type.Void, 1), DataType(DataType.Type.Void, 1, true)], argTypes)){
-			// first push the argument
-			generateByteCode(node.arguments[0]);
-			_writer.addInstruction(Instruction.CopyArray, []);
-			generateByteCode(node.arguments[1]);
-			_writer.addInstruction(Instruction.WriteToRef, []);
-			pushesToStack = false;
-		}
-		if (pushesToStack && popReturn)
-			_writer.addInstruction(Instruction.Pop);
-	}
-	/// generates byte code for IfNode
-	void generateByteCode(IfNode node){
-		static uinteger jumpID = 0;
-		const uinteger currentJumpID = jumpID;
-		jumpID++;
-		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.JumpIf, ["IfTrue"~currentJumpID.to!string]);
-		if (node.hasElse)
-			generateByteCode(node.elseStatement);
-		_writer.addInstruction(Instruction.Jump, ["IfEnd"~currentJumpID.to!string]);
-		_writer.addJumpPos("IfTrue"~currentJumpID.to!string);
-		generateByteCode(node.statement);
-		_writer.addJumpPos("IfEnd"~currentJumpID.to!string);
-
-	}
-	/// generates byte code for VarDeclareNode - actually, just checks if a value is being assigned to it, if yes, makes var a ref to that val
-	void generateByteCode(VarDeclareNode node){
-		foreach (varName; node.vars){
-			if (node.hasValue(varName))
-				generateByteCode(node.getValue(varName));
-			else
-				_writer.addInstruction(Instruction.Push, [node.type == DataType(DataType.Type.Double) ? "0.0" : "0"]);
-			_writer.addInstruction(Instruction.WriteTo, [to!string(node.varIDs[varName])]);
-		}
-	}
-	/// generates byte code for WhileNode
-	void generateByteCode(WhileNode node){
-		static uinteger jumpID = 0;
-		const uinteger currentJumpID = jumpID;
-		jumpID++;
-		immutable uinteger conditionIndex = _writer.instructionCount;
-		_writer.addJumpPos("WhileStart"~currentJumpID.to!string);
-		generateByteCode(node.condition);
-		_writer.addInstruction(Instruction.Not);
-		_writer.addInstruction(Instruction.JumpIf, ["WhileEnd"~currentJumpID.to!string]);
-		generateByteCode(node.statement);
-		_writer.addInstruction(Instruction.Jump, ["WhileStart"~currentJumpID.to!string]);
-		_writer.addJumpPos("WhileEnd"~currentJumpID.to!string);
-	}
-	/// generates byte code for ReturnNode
-	void generateByteCode(ReturnNode node){
-		generateByteCode(node.value);
-		_writer.addInstruction(Instruction.ReturnVal);
-		// remember, return terminates execution in qscript, not in navm
-		_writer.addInstruction(Instruction.Terminate);
-	}
-
-	/// generates byte code for CodeNode
-	void generateByteCode(CodeNode node, bool pushRef = false){
-		if (node.type == CodeNode.Type.FunctionCall){
-			generateByteCode(node.node!(CodeNode.Type.FunctionCall), pushRef);
-		}else if (node.type == CodeNode.Type.Literal){
-			generateByteCode(node.node!(CodeNode.Type.Literal), pushRef);
-		}else if (node.type == CodeNode.Type.Negative){
-			generateByteCode(node.node!(CodeNode.Type.Negative), pushRef);
-		}else if (node.type == CodeNode.Type.Operator){
-			generateByteCode(node.node!(CodeNode.Type.Operator), pushRef);
-		}else if (node.type == CodeNode.Type.SOperator){
-			generateByteCode(node.node!(CodeNode.Type.SOperator), pushRef);
-		}else if (node.type == CodeNode.Type.ReadElement){
-			generateByteCode(node.node!(CodeNode.Type.ReadElement), pushRef);
-		}else if (node.type == CodeNode.Type.Variable){
-			generateByteCode(node.node!(CodeNode.Type.Variable), pushRef);
-		}else if (node.type == CodeNode.Type.Array){
-			generateByteCode(node.node!(CodeNode.Type.Array), pushRef);
-		}
-	}
-	/// generates byte code for LiteralNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(LiteralNode node, bool pushRef = false){
-		_writer.addInstruction(Instruction.Push, [node.literal]);
-	}
-	/// generates byte code for NegativeValueNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(NegativeValueNode node, bool pushRef = false){
-		// push the value
-		generateByteCode(node.value, false);
-		// push the appropriate zero
-		_writer.addInstruction(Instruction.Push, [node.value.returnType.type == DataType.Type.Integer ? "0" : "0.0"]);
-		// now subtract
-		_writer.addInstruction(node.value.returnType.type == DataType.Type.Integer ?
-			Instruction.MathSubtractInt : Instruction.MathSubtractDouble);
-	}
-	/// generates byte code for OperatorNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(OperatorNode node, bool pushRef = false){
-		bool isFloat = false;
-		if (node.operands[0].returnType == DataType(DataType.Type.Double) ||
-			node.operands[1].returnType == DataType(DataType.Type.Double)){
-			isFloat = true;
-		}
-		Instruction opInst;
-		switch (node.operator){
-		case "/":
-			opInst = isFloat ? Instruction.MathDivideDouble : Instruction.MathDivideInt;
-			break;
-		case "*":
-			opInst = isFloat ? Instruction.MathMultiplyDouble : Instruction.MathMultiplyInt;
-			break;
-		case "+":
-			opInst = isFloat ? Instruction.MathAddDouble : Instruction.MathAddInt;
-			break;
-		case "-":
-			opInst = isFloat ? Instruction.MathSubtractDouble : Instruction.MathSubtractInt;
-			break;
-		case "%":
-			opInst = isFloat ? Instruction.MathModDouble : Instruction.MathModInt;
-			break;
-		case "<":
-			// the the end, just flip the oprands and use > (isGreater) because < doesnt exist in navm
-			opInst = isFloat ? Instruction.IsGreaterDouble : Instruction.IsGreaterInt;
-			break;
-		case ">":
-			opInst = isFloat ? Instruction.IsGreaterDouble : Instruction.IsGreaterInt;
-			break;
-		case "<=":
-			// the the end, just flip the oprands and use >= (isGreaterSame) because <= doesnt exist in navm
-			opInst = isFloat ? Instruction.IsGreaterSameDouble : Instruction.IsGreaterSameInt;
-			break;
-		case ">=":
-			opInst = isFloat ? Instruction.IsGreaterSameDouble : Instruction.IsGreaterSameInt;
-			break;
-		case "==":
-			opInst = node.operands[0].returnType.isArray ? Instruction.IsSameArray : Instruction.IsSame;
-			break;
-		case "&&":
-			opInst = Instruction.And;
-			break;
-		case "||":
-			opInst = Instruction.Or;
-			break;
-		case "~":
-			opInst = Instruction.Concatenate;
-			break;
-		default:
-			break;
-		}
-		// if operator is < or <=, then need to flip operands and change operator to > or >=
-		if (node.operator == "<" || node.operator == "<="){
-			node.operator = node.operator == "<" ? ">" : ">=";
-			CodeNode operand = node.operands[0];
-			node.operands[0] = node.operands[1];
-			node.operands[1] = operand;
-		}
-		generateByteCode(node.operands[1]);
-		generateByteCode(node.operands[0]);
-		_writer.addInstruction(opInst);
-	}
-	/// generates byte code for SOperatorNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(SOperatorNode node, bool pushRef = false){
-		// only 2 SOperators exist at this point, ref/de-ref, and `!`
-		if (node.operator == "@"){
-			// check if its being de-ref-ed
-			if (node.operand.returnType.isRef){
-				generateByteCode(node.operand);
-				_writer.addInstruction(Instruction.Deref,[]);
-			}else if (node.operand.type == CodeNode.Type.Variable){
-				generateByteCode(node.operand, true);
-			}else if (node.operand.type == CodeNode.Type.ReadElement){
-				generateByteCode(node.operand.node!(CodeNode.Type.ReadElement), true);
-			}
-		}else if (node.operator == "!"){
-			generateByteCode(node.operand);
-			_writer.addInstruction(Instruction.Not);
-		}
-	}
-	/// generates byte code for ReadElement
-	void generateByteCode(ReadElement node, bool pushRef = false){
-		generateByteCode(node.index);
-		// the array should be a ref to array, following if-else takes care of that
-		if (node.readFromNode.type == CodeNode.Type.ReadElement || node.readFromNode.type == CodeNode.Type.Variable){
-			generateByteCode(node.readFromNode, true);
-			_writer.addInstruction(Instruction.ArrayRefElement);
-		}else{
-			generateByteCode(node.readFromNode);
-			_writer.addInstruction(Instruction.ArrayElement);
-		}
-		if (!pushRef)
-			_writer.addInstruction(Instruction.Deref);
-	}
-	/// generates byte code for VariableNode
-	void generateByteCode(VariableNode node, bool pushRef = false){
-		_writer.addInstruction(pushRef ? Instruction.PushRefFrom : Instruction.PushFrom, [to!string(node.id)]);
-	}
-	/// generates byte code for ArrayNode
-	/// 
-	/// pushRef is ignored
-	void generateByteCode(ArrayNode node, bool pushRef = false){
-		foreach (element; node.elements){
-			generateByteCode(element);
-		}
-		_writer.addInstruction(Instruction.MakeArray, [node.elements.length.to!string]);
-	}
+	bool _errorFree;
 public:
-	/// constructor
-	this (){
-		_writer = new NaByteCodeWriter();
+	this(NaInstruction[] instructionTable){
+		super(instructionTable);
+		_errorFree = true;
 	}
-	/// destructor
-	~this(){
-		.destroy(_writer);
+	/// Returns: true if an error occurred, now, or previously
+	override bool addInstruction(string instName, string argument){
+		_errorFree = _errorFree && super.addInstruction(instName, argument);
+		return _errorFree;
 	}
-	/// Returns: generated bytecode
-	string[] getByteCode(){
-		return _writer.getCode;
+	/// sets errorOccurred to false
+	void resetError(){
+		_errorFree = true;
 	}
-	/// Returns: array of functions defined in script. The index is the function id (used to call function at runtime)
-	Function[] getFunctionMap(){
-		return _functions.dup;
-	}
-	/// generates byte code for ScriptNode
-	void generateByteCode(ScriptNode node){
-		_functions.length = node.functions.length;
-		foreach (func; node.functions){
-			generateByteCode(func);
-		}
+	/// if its error free
+	@property bool errorFree(){
+		return _errorFree;
 	}
 }
 
-/// Used to generate byte code.
-/// 
-/// Code is really messy in here, needs improving
-private class NaByteCodeWriter{
+/// Contains functions to generate NaByteCode from AST nodes
+class CodeGen{
 private:
-	/// instructions of all functions
-	List!(string[]) _generatedInstructions;
-	/// arguments of all functions' instructions
-	List!(string[][]) _generatedInstructionArgs;
-	/// stackLength of each function
-	List!uinteger _stackLengths;
-	/// instructions of function currently being written to
-	List!string _currentInst;
-	/// arguments of instructions of functions currently being written to
-	List!(string[]) _currentInstArgs;
-	/// number of elements used up on stack at a point
-	uinteger _currentStackUsage;
-	/// max number of elements used on on stack (reset to 0 before starting on a new function)
-	uinteger _maxStackUsage;
-
-	/// called to update _maxStackUsageg if necessary
-	void updateStackUsage(){
-		if (_currentStackUsage > _maxStackUsage)
-			_maxStackUsage = _currentStackUsage;
+	ByteCodeWriter _code;
+	NaInstruction[] _instTable;
+	ScriptNode _script;
+	Library _scriptLib;
+	Library[] _libs;
+protected:
+	/// Generates bytecode for FunctionNode
+	void generateCode(FunctionNode node, CodeGenFlags flags = CodeGenFlags.None){
+		_code.addJumpPos("__qscriptFunction"~node.id.to!string);
+		if (node.name == "this"){
+			// gotta do global variables too now
+			foreach(varDecl; _script.variables)
+				foreach (i; 0 .. varDecl.vars.length)
+					_code.addInstruction("push", "0");
+			foreach(varDecl; _script.variables)
+				generateCode(varDecl);
+		}else{
+			// use jumpFrameN to adjust _stackIndex
+			_code.addInstruction("push", node.arguments.length.to!string);
+			_code.addInstruction("jumpFrameN", "__qscriptFunction"~node.id.to!string~"start");
+			_code.addJumpPos("__qscriptFunction"~node.id.to!string~"start");
+		}
+		// make space for variables
+		foreach (i; 0 .. node.varStackCount)
+			_code.addInstruction("push","0");
+		generateCode(node.bodyBlock, CodeGenFlags.None);
+		_code.addInstruction("jumpBack","");
+	}
+	/// generates bytecode for BlockNode
+	void generateCode(BlockNode node, CodeGenFlags flags = CodeGenFlags.None){
+		foreach (statement; node.statements)
+			generateCode(statement, CodeGenFlags.None);
+	}
+	/// generates bytecode for CodeNode
+	void generateCode(CodeNode node, CodeGenFlags flags = CodeGenFlags.None){
+		if (node.type == CodeNode.Type.Array){
+			generateCode(node.node!(CodeNode.Type.Array), flags);
+		}else if (node.type == CodeNode.Type.FunctionCall){
+			generateCode(node.node!(CodeNode.Type.FunctionCall), flags);
+		}else if (node.type == CodeNode.Type.Literal){
+			generateCode(node.node!(CodeNode.Type.Literal), flags);
+		}else if (node.type == CodeNode.Type.Negative){
+			generateCode(node.node!(CodeNode.Type.Negative), flags);
+		}else if (node.type == CodeNode.Type.Operator){
+			generateCode(node.node!(CodeNode.Type.Operator), flags);
+		}else if (node.type == CodeNode.Type.ReadElement){
+			generateCode(node.node!(CodeNode.Type.ReadElement), flags);
+		}else if (node.type == CodeNode.Type.SOperator){
+			generateCode(node.node!(CodeNode.Type.SOperator), flags);
+		}else if (node.type == CodeNode.Type.Variable){
+			generateCode(node.node!(CodeNode.Type.Variable), flags);
+		}else if (node.type == CodeNode.Type.MemberSelector){
+			generateCode(node.node!(CodeNode.Type.MemberSelector), flags);
+		}
+	}
+	/// generates bytecode for MemberSelectorNode
+	/// 
+	/// Valid flags:  
+	/// * PushRef - only if node.type == Type.StructMemberRead
+	void generateCode(MemberSelectorNode node, CodeGenFlags flags = CodeGenFlags.None){
+		if (node.type == MemberSelectorNode.Type.EnumMemberRead){
+			_code.addInstruction("push", node.memberNameIndex.to!string);
+			return;
+		}
+		if (flags & CodeGenFlags.PushRef){
+			_code.addInstruction("push",node.memberNameIndex.to!string);
+			generateCode(node.parent, CodeGenFlags.None);
+			_code.addInstruction("IncRef","");
+		}else{
+			// use the `arrayElement` from QScriptVM
+			generateCode(node.parent, CodeGenFlags.None);
+			_code.addInstruction("arrayElement", node.memberNameIndex.to!string);
+		}
+	}
+	/// generates bytecode for VariableNode.
+	/// 
+	/// Valid flags:  
+	/// * PushRef - only if node.type == Type.StructMemberRead
+	void generateCode(VariableNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// check if local to script
+		if (node.libraryId == -1){
+			if (node.isGlobal){
+				_code.addInstruction(flags & CodeGenFlags.PushRef ? "PushRefFromAbs" : "pushFromAbs", 
+					node.id.to!string);
+				return;
+			}
+			_code.addInstruction(flags & CodeGenFlags.PushRef ? "pushRefFrom" : "pushFrom", 
+				node.id.to!string);
+			return;
+		}
+		// try to use the library's own code generators if they exist
+		Library lib = _libs[node.libraryId];
+		if (flags & CodeGenFlags.PushRef && lib.generateVariableCode(_code,node.id, CodeGenFlags.PushRef))
+			return;
+		if (lib.generateVariableCode(_code, node.id, CodeGenFlags.None))
+			return;
+		// Fine, I'll do it myself
+		_code.addInstruction("push", node.id.to!string);
+		_code.addInstruction(flags & CodeGenFlags.PushRef ? "VarGetRef" : "VarGet",
+			node.libraryId.to!string);
+	}
+	/// generates bytecode for ArrayNode.
+	void generateCode(ArrayNode node, CodeGenFlags flags = CodeGenFlags.None){
+		foreach (elem; node.elements)
+			generateCode(elem, CodeGenFlags.None);
+		_code.addInstruction("arrayFromElements", node.elements.length.to!string);
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
+	}
+	/// generates bytecode for LiteralNode.
+	void generateCode(LiteralNode node, CodeGenFlags flags = CodeGenFlags.None){
+		_code.addInstruction("push", node.literal); // ez
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
+	}
+	/// generates bytecode for NegativeValueNode.
+	void generateCode(NegativeValueNode node, CodeGenFlags flags = CodeGenFlags.None){
+		generateCode(node.value, CodeGenFlags.None);
+		_code.addInstruction("push", "-1");
+		if (node.value.returnType == DataType(DataType.Type.Int))
+			_code.addInstruction("mathMultiplyInt", "");
+		else if (node.value.returnType == DataType(DataType.Type.Double))
+			_code.addInstruction("mathMultiplyDouble", "");
+		else
+			// this'll never happen, is checked for in ASTCheck
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
+	}
+	/// generates bytecode for OperatorNode.
+	void generateCode(OperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// just generator code for the function call
+		generateCode(node.fCall, CodeGenFlags.None);
+		if (flags & CodeGenFlags.PushRef)
+			_code.addInstruction("pushRefFromPop","");
+	}
+	/// generates bytecode for SOperatorNode. 
+	/// 
+	/// Valid flags are:  
+	/// * PushRef
+	void generateCode(SOperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// opRef is hardcoded
+		if (node.operator == "@"){
+			// dont care about flags, just get ref
+			generateCode(node.operand, CodeGenFlags.PushRef);
+			return;
+		}
+		// make sure only PushRef is passed, coz the function will see other flags too
+		generateCode(node.fCall, cast(CodeGenFlags)(flags & CodeGenFlags.PushRef));
+	}
+	/// generates bytecode for ReadElement
+	/// 
+	/// Valid flags are:
+	/// * pushRef
+	void generateCode(ReadElement node, CodeGenFlags flags = CodeGenFlags.None){
+		// if index is known, and it doesnt want ref, then there's a better way:
+		if (node.index.type == CodeNode.Type.Literal && node.index.returnType == DataType(DataType.Type.Int) &&
+		!(flags & CodeGenFlags.PushRef)){
+			generateCode(node.readFromNode, CodeGenFlags.None);
+			_code.addInstruction("arrayElement", node.index.node!(CodeNode.Type.Literal).literal);
+			return;
+		}
+		// otherwise, use the multiple instructions method
+		generateCode(node.index, CodeGenFlags.None);
+		generateCode(node.readFromNode, CodeGenFlags.PushRef);
+		_code.addInstruction("incRef", "");
+		if (!(flags & CodeGenFlags.PushRef))
+			_code.addInstruction("deref", "");
+	}
+	/// generates bytecode for StatementNode
+	void generateCode(StatementNode node, CodeGenFlags flags = CodeGenFlags.None){
+		if (node.type == StatementNode.Type.Assignment){
+			generateCode(node.node!(StatementNode.Type.Assignment), flags);
+		}else if (node.type == StatementNode.Type.Block){
+			generateCode(node.node!(StatementNode.Type.Block), flags);
+		}else if (node.type == StatementNode.Type.DoWhile){
+			generateCode(node.node!(StatementNode.Type.DoWhile), flags);
+		}else if (node.type == StatementNode.Type.For){
+			generateCode(node.node!(StatementNode.Type.For), flags);
+		}else if (node.type == StatementNode.Type.FunctionCall){
+			generateCode(node.node!(StatementNode.Type.FunctionCall), flags);
+		}else if (node.type == StatementNode.Type.If){
+			generateCode(node.node!(StatementNode.Type.If), flags);
+		}else if (node.type == StatementNode.Type.VarDeclare){
+			generateCode(node.node!(StatementNode.Type.VarDeclare), flags);
+		}else if (node.type == StatementNode.Type.While){
+			generateCode(node.node!(StatementNode.Type.While), flags);
+		}else if (node.type == StatementNode.Type.Return){
+			generateCode(node.node!(StatementNode.Type.Return), flags);
+		}
+	}
+	/// generates bytecode for VarDeclareNode
+	void generateCode(VarDeclareNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// just push 0 or 0.0 to id
+		foreach (i, varName; node.vars){
+			if (node.hasValue(varName))
+				generateCode(node.getValue(varName));
+			else if ([DataType.Type.Int, DataType.Type.Bool, DataType.Type.Char].hasElement(node.type.type))
+				_code.addInstruction("push", "0");
+			else if (node.type.type == DataType.Type.Double)
+				_code.addInstruction("push", "0.0");
+			else if (node.type == DataType(DataType.Type.Custom)){
+				// create an array of length so members can be accomodated
+				_code.addInstruction("makeArrayN", node.type.customLength.to!string);
+			}
+			_code.addInstruction("writeTo", node.varIDs[varName].to!string);
+		}
+	}
+	/// generates bytecode for AssignmentNode
+	void generateCode(AssignmentNode node, CodeGenFlags flags = CodeGenFlags.None){
+		generateCode(node.rvalue, CodeGenFlags.None);
+		generateCode(node.lvalue, node.deref ? CodeGenFlags.None : CodeGenFlags.PushRef);
+		_code.addInstruction("writeToRef", "");
+	}
+	/// generates bytecode for IfNode
+	void generateCode(IfNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		generateCode(node.condition, CodeGenFlags.None);
+		_code.addInstruction("If", "");
+		_code.addInstruction("Jump", "if"~currentJumpCount.to!string~"OnTrue");
+		if (node.hasElse)
+			generateCode(node.elseStatement, CodeGenFlags.None);
+		_code.addInstruction("Jump", "if"~currentJumpCount.to!string~"End");
+		_code.addJumpPos("if"~currentJumpCount.to!string~"OnTrue");
+		generateCode(node.statement, CodeGenFlags.None);
+		if (node.hasElse)
+			_code.addJumpPos("if"~currentJumpCount.to!string~"End");
+	}
+	/// generates bytecode for WhileNode
+	void generateCode(WhileNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		// its less instructions if a modified do-while loop is used
+		_code.addInstruction("Jump", "While"~currentJumpCount.to!string~"Condition");
+		_code.addJumpPos("While"~currentJumpCount.to!string~"Start");
+		generateCode(node.statement, CodeGenFlags.None);
+		_code.addJumpPos("While"~currentJumpCount.to!string~"Condition");
+		generateCode(node.condition);
+		_code.addInstruction("If","");
+		_code.addInstruction("Jump", "While"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for DoWhileNode
+	void generateCode(DoWhileNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		// its less instructions if a modified do-while loop is used
+		_code.addJumpPos("DoWhile"~currentJumpCount.to!string~"Start");
+		generateCode(node.statement, CodeGenFlags.None);
+		generateCode(node.condition);
+		_code.addInstruction("If","");
+		_code.addInstruction("Jump", "DoWhile"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for ForNode
+	void generateCode(ForNode node, CodeGenFlags flags = CodeGenFlags.None){
+		static uinteger jumpCount = 0;
+		uinteger currentJumpCount = jumpCount;
+		jumpCount++;
+		generateCode(node.initStatement);
+		_code.addInstruction("Jump", "For"~currentJumpCount.to!string~"Condition");
+		_code.addJumpPos("For"~currentJumpCount.to!string~"Start");
+		generateCode(node.statement);
+		generateCode(node.incStatement);
+		_code.addJumpPos("For"~currentJumpCount.to!string~"Condition");
+		generateCode(node.condition);
+		_code.addInstruction("If", "");
+		_code.addInstruction("Jump", "For"~currentJumpCount.to!string~"Start");
+	}
+	/// generates bytecode for FunctionCallNode
+	void generateCode(FunctionCallNode node, CodeGenFlags flags = CodeGenFlags.None){
+		foreach (arg; node.arguments)
+			generateCode(arg);
+		// if a local call, just use JumpStackN
+		if (node.libraryId == -1){
+			_code.addInstruction("jumpStackN", node.arguments.length.to!string);
+		}else{
+			// try to generate it's code, if no, then just use Call
+			Library lib = _libs[node.libraryId];
+			if (!lib.generateFunctionCallCode(_code, node.id, flags))
+				_code.addInstruction("Call", node.id.to!string);
+		}
+		if (flags & CodeGenFlags.PushFunctionReturn){
+			_code.addInstruction("retValPush", "");
+			if (flags & CodeGenFlags.PushRef && !node.returnType.isRef)
+				_code.addInstruction("pushRefFromPop", "");
+		}
+	}
+	/// generates bytecode for ReturnNode
+	void generateCode(ReturnNode node, CodeGenFlags flags = CodeGenFlags.None){
+		generateCode(node.value);
+		_code.addInstruction("retValSet", "");
+		_code.addInstruction("jumpBack", "");
 	}
 public:
-	/// Stores types of errors given by `this.addInstruction`
-	enum ErrorType : ubyte{
-		StackElementsInsufficient, /// the instructions needs to pop more elements than there are, on the stack
-		ArgumentCountMismatch, /// instruction needs different number of arguemnts than provided
-		NoError, /// there was no error
-	}
 	/// constructor
-	this(){
-		_generatedInstructions = new List!(string[]);
-		_generatedInstructionArgs = new List!(string[][]);
-		_currentInst = new List!string;
-		_currentInstArgs = new List!(string[]);
-		_stackLengths = new List!uinteger;
+	this(Library[] libraries, NaInstruction[] instructionTable){
+		_libs = libraries;
+		_instTable = instructionTable;
 	}
-	/// destructor
 	~this(){
-		.destroy(_generatedInstructions);
-		.destroy(_generatedInstructionArgs);
-		.destroy(_currentInst);
-		.destroy(_currentInstArgs);
-		.destroy(_stackLengths);
 	}
-	/// Returns: generated byte code in a NaFunction[]
-	string[] getCode(){
-		string[] r;
-		{
-			uinteger l = 0;
-			foreach (instArray; _generatedInstructions.toArray){
-				l += instArray.length+1;
-			}
-			r.length = l;
-		}
-		uinteger writeTo = 0;
-		foreach (i, instList; _generatedInstructions.toArray){
-			r[writeTo] = "def "~to!string(_stackLengths.read(i));
-			writeTo ++;
-			string[][] args = _generatedInstructionArgs.read(i);
-			foreach (index, inst; instList){
-				string argStr = "";
-				foreach (arg; args[index]){
-					argStr ~= ' ' ~ arg;
-				}
-				r[writeTo] = to!string(inst) ~ argStr;
-				writeTo++;
-			}
-		}
-		return r;
+	/// generates byte code for a ScriptNode. Use CodeGen.bytecode to get the generated bytecode
+	/// 
+	/// `node` is the ScriptNode to generate bytecode for  
+	/// `scriptLibrary` is the private & public declarations of the script (allDeclarations from `ASTCheck.checkAST(..,x)`)
+	/// 
+	/// Returns: true if successfully generated, false if there were errors
+	bool generateCode(ScriptNode node, Library scriptLibrary){
+		_code = new ByteCodeWriter(_instTable);
+		_script = node;
+		_scriptLib = scriptLibrary;
+		// make space for jumps for function calls
+		foreach (i; 0 .. _script.functions.length)
+			_code.addInstruction("jump", "__qscriptFunction"~i.to!string);
+		foreach (func; _script.functions)
+			generateCode(func);
+		// put link info on it
+		_code.linkInfo = _scriptLib.toString;
+		return _code.errorFree;
 	}
-	/// Call to prepare writing a function
-	void startFunction(uinteger argCount){
-		// clear lists
-		_currentInst.clear;
-		_currentInstArgs.clear;
-		// make space for arguments on stack
-		_maxStackUsage = argCount;
-		_currentStackUsage = argCount;
-	}
-	/// Call when a function has been completely written to.
-	void appendFunction(){
-		string[] instructions;
-		instructions.length = _currentInst.length;
-		string[] inst = _currentInst.toArray;
-		foreach (i, instruction; inst){
-			instructions[i] = '\t'~instruction;
-		}
-		_generatedInstructions.append(instructions);
-		_generatedInstructionArgs.append(_currentInstArgs.toArray);
-		_stackLengths.append(_maxStackUsage);
-		// reset
-		_currentInst.clear;
-		_currentInstArgs.clear;
-		_maxStackUsage = 0;
-		_currentStackUsage = 0;
-	}
-	/// Returns: nunmber of elements currently on stack
-	@property uinteger stackLength(){
-		return _currentStackUsage;
-	}
-	/// Returns: number of instructions
-	@property uinteger instructionCount(){
-		return _currentInst.length;
-	}
-	/// Adds an instruction
-	///
-	/// Returns: type of error if any, else, ErrorType.NoError
-	ErrorType addInstruction(Instruction inst, string[] args = []){
-		if (args.length != INSTRUCTION_ARG_COUNT[inst])
-			return ErrorType.ArgumentCountMismatch;
-		NaData[] argsNaData;
-		argsNaData.length = args.length;
-		foreach (i, arg; args){
-			try{
-				argsNaData[i] = readData(arg);
-			}catch (Exception e){
-				argsNaData[i] = NaData(0); // its a ugly hack, i know, but it works...
-			}
-		}
-		immutable uinteger popCount = instructionPopCount(inst, argsNaData);
-		immutable uinteger pushCount = INSTRUCTION_PUSH_COUNT[inst];
-		if (popCount > _currentStackUsage)
-			return ErrorType.StackElementsInsufficient;
-		_currentStackUsage -= popCount;
-		_currentStackUsage += pushCount;
-		updateStackUsage;
-		_currentInst.append(inst.to!string);
-		_currentInstArgs.append(args.dup);
-		return ErrorType.NoError;
-	}
-	/// Adds a jump position
-	void addJumpPos(string name){
-		_currentInst.append(name~':');
-		_currentInstArgs.append(cast(string[])[]);
+	/// Returns: generated bytecode
+	@property QScriptBytecode bytecode(){
+		return _code;
 	}
 }

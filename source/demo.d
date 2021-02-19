@@ -4,95 +4,36 @@ version (qscriptdemo){
 	import qscript.qscript;
 	import std.datetime.stopwatch;
 	import std.stdio;
-	/// runs the scripts using QScript
-	class ScriptExec{
-	private:
-		/// where the magic happens
-		QScript _qscript;
-		/// writeln function
-		NaData writeln(NaData[] args){
-			std.stdio.writeln (args[0].strVal);
-			return NaData(0);
-		}
-		/// write function
-		NaData write(NaData[] args){
-			std.stdio.write (args[0].strVal);
-			return NaData(0);
-		}
-		/// write int
-		NaData writeInt(NaData[] args){
-			std.stdio.write(args[0].intVal);
-			return NaData(0);
-		}
-		/// write double
-		NaData writeDbl(NaData[] args){
-			std.stdio.write(args[0].doubleVal);
-			return NaData(0);
-		}
-		/// readln function
-		NaData readln(NaData[] args){
-			string s = std.stdio.readln;
-			s.length--;
-			return NaData(s);
-		}
-	public:
-		/// constructor
-		this (){
-			_qscript = new QScript(
-				[
-					Function("writeln", DataType("void"), [DataType("char[]")]),
-					Function("write", DataType("void"), [DataType("char[]")]),
-					Function("write", DataType("void"), [DataType("int")]),
-					Function("write", DataType("void"), [DataType("double")]),
-					Function("readln", DataType("char[]"), [])
-				],
-				[
-					&writeln,
-					&write,
-					&writeInt,
-					&writeDbl,
-					&this.readln
-				]
-			);
-			// all functions are already loaded, so initialize can be called right away
-			_qscript.initialize();
-		}
-		/// compiles & returns byte code
-		string[] compileToByteCode(string[] script, ref CompileError[] errors){
-			string[] byteCode;
-			errors = _qscript.loadScript(script, byteCode);
-			return byteCode;
-		}
-		/// executes the first function in script
-		NaData execute(uinteger functionID, NaData[] args){
-			return _qscript.execute(functionID, args);
-		}
-	}
 
 	void main (string[] args){
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
-			writeln("./demo script [bytecode output]");
-		}else{
-			StopWatch sw;
-			ScriptExec scr = new ScriptExec();
-			CompileError[] errors;
-			string[] byteCode = scr.compileToByteCode(fileToArray(args[1]), errors);
-			if (errors.length > 0){
-				writeln("Compilation errors:");
-				foreach (err; errors){
-					writeln ("line#",err.lineno, ": ",err.msg);
-				}
-			}else{
-				if (args.length > 2){
-					byteCode.arrayToFile(args[2]);
-				}
-				// now execute main
-				sw.start;
-				scr.execute(0, []);
-				sw.stop;
-				writeln("execution took: ", sw.peek.total!"msecs", "msecs");
-			}
+			writeln("./demo script/path # to execute script");
+			writeln("./demo bcode script/path # to print compiled bytecode");
+			return;
 		}
+		StopWatch sw;
+		// create an instance of qscript, script name is "demo", not auto imported if used as library, no additional libraries, and enable builtin libraries
+		QScript scr = new QScript("demo", false, [], true);
+		string[] script = fileToArray(args[$-1]);
+		CompileError[] errors;
+		QScriptBytecode code = scr.compileScript(script, errors);
+		if (errors.length > 0){
+			writeln("Compilation errors:");
+			foreach (err; errors){
+				writeln ("line#",err.lineno, ": ",err.msg);
+			}
+			return;
+		}
+		if (args.length > 2 && args[1] == "bcode"){
+			foreach (i, line; code.getBytecodePretty)
+				writeln(cast(integer)i-2, '\t', line);
+			return;
+		}
+		// now execute main
+		sw.start;
+		scr.execute(0, []);
+		sw.stop;
+		writeln("execution took: ", sw.peek.total!"msecs", "msecs");
 	}
 }
