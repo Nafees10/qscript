@@ -156,7 +156,7 @@ public:
 	}
 	/// Returns: function ID, or -1 if doesnt exist
 	integer hasFunction(string name, DataType[] argsType, ref bool argTypesMatch, ref DataType returnType){
-		argTypesMatch = false;
+		argTypesMatch = true;
 		foreach (i, func; _functions){
 			if (func.name == name){
 				if (argsType.length == func.argTypes.length){
