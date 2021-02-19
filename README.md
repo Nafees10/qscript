@@ -1,6 +1,8 @@
 # QScript
 
-A fast, static typed, scripting language, with a syntax similar to D Language.
+A Simple Scripting Language.
+
+**This version is currently under development, and has several bugs, use v0.7.4**
 
 ## Setting it up
 
