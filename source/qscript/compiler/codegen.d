@@ -267,8 +267,7 @@ protected:
 		_code.addInstruction("Jump", "if"~currentJumpCount.to!string~"End");
 		_code.addJumpPos("if"~currentJumpCount.to!string~"OnTrue");
 		generateCode(node.statement, CodeGenFlags.None);
-		if (node.hasElse)
-			_code.addJumpPos("if"~currentJumpCount.to!string~"End");
+		_code.addJumpPos("if"~currentJumpCount.to!string~"End");
 	}
 	/// generates bytecode for WhileNode
 	void generateCode(WhileNode node, CodeGenFlags flags = CodeGenFlags.None){
