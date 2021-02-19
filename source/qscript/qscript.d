@@ -484,8 +484,6 @@ public:
 	}
 	/// compiles a script, and prepares it for execution with this class
 	/// 
-	/// **prepareCompilerVM must be called before.**
-	/// 
 	/// Returns: bytecode, or null in case of error
 	/// the returned bytecode will not be freed by this class, so you should do it when not needed
 	QScriptBytecode compileScript(string[] script, ref CompileError[] errors){
@@ -511,8 +509,6 @@ public:
 		return bytecode;
 	}
 	/// compiles a script, and prepares it for execution with this class
-	/// 
-	/// **prepareCompilerVM must be called before**
 	/// 
 	/// Returns: errors, if any, or empty array
 	CompileError[] compileScript(string[] script){
