@@ -191,7 +191,7 @@ public:
 	/// This function must consider all flags
 	/// 
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, DataType[] argTypes, CodeGenFlags flags){
+	bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
 		return false;
 	}
 	/// Generates bytecode that will push value of a variable to stack, or return false
