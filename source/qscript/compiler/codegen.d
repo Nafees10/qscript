@@ -314,9 +314,9 @@ protected:
 	void generateCode(FunctionCallNode node, CodeGenFlags flags = CodeGenFlags.None){
 		foreach (arg; node.arguments)
 			generateCode(arg);
-		// if a local call, just use JumpStackN
+		// if a local call, just use JumpFrameN
 		if (node.libraryId == -1){
-			_code.addInstruction("jumpStackN", node.arguments.length.to!string);
+			_code.addInstruction("jumpFrameN", node.arguments.length.to!string);
 		}else{
 			// try to generate it's code, if no, then just use Call
 			Library lib = _libs[node.libraryId];
