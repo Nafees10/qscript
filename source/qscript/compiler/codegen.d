@@ -181,6 +181,12 @@ protected:
 	/// Valid flags are:  
 	/// * PushRef
 	void generateCode(SOperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
+		// opRef is hardcoded
+		if (node.operator == "@"){
+			// dont care about flags, just get ref
+			generateCode(node.operand, CodeGenFlags.PushRef);
+			return;
+		}
 		// make sure only PushRef is passed, coz the function will see other flags too
 		generateCode(node.fCall, cast(CodeGenFlags)(flags & CodeGenFlags.PushRef));
 	}
@@ -245,7 +251,7 @@ protected:
 	/// generates bytecode for AssignmentNode
 	void generateCode(AssignmentNode node, CodeGenFlags flags = CodeGenFlags.None){
 		generateCode(node.rvalue, CodeGenFlags.None);
-		generateCode(node.lvalue, CodeGenFlags.PushRef);
+		generateCode(node.lvalue, node.deref ? CodeGenFlags.None : CodeGenFlags.PushRef);
 		_code.addInstruction("writeToRef", "");
 	}
 	/// generates bytecode for IfNode
@@ -315,11 +321,7 @@ protected:
 		}else{
 			// try to generate it's code, if no, then just use Call
 			Library lib = _libs[node.libraryId];
-			DataType[] argTypes;
-			argTypes.length = node.arguments.length;
-			foreach (i, arg; node.arguments)
-				argTypes[i] = arg.returnType;
-			if (!lib.generateFunctionCallCode(_code, node.id, argTypes, flags))
+			if (!lib.generateFunctionCallCode(_code, node.id, flags))
 				_code.addInstruction("Call", node.id.to!string);
 		}
 		if (flags & CodeGenFlags.PushFunctionReturn){

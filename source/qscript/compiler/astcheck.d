@@ -737,6 +737,13 @@ protected:
 			compileErrors.append(CompileError(node.lineno, "operator has no corresponding function"));
 			return;
 		}
+		if (node.operator == "@"){
+			checkAST(node.operand);
+			DataType type = node.operand.returnType;
+			type.isRef = !type.isRef;
+			node.returnType= type;
+			return;
+		}
 		node.fCall = FunctionCallNode(OPERATOR_FUNCTIONS[node.operator], [node.operand]);
 		node.fCall.lineno = node.lineno;
 		checkAST(node.fCall);
