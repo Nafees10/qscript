@@ -35,9 +35,9 @@ public:
 			return -1;
 		// check if it previously assigned an ID to a function of this type
 		integer r = super.hasFunction(name, argsType, argTypesMatch, returnType);
+		argTypesMatch = true;
 		if (r > -1)
 			return r;
-		argTypesMatch = true;
 		if (NUM_OPERATORS.hasElement(name)){
 			returnType = argsType[0];
 			if (argsType.length == 2 && argsType[0] == argsType[1] && (argsType[0] == DataType(DataType.Type.Int) ||
