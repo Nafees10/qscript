@@ -30,6 +30,8 @@ pops a reference to array, pushes value of the element at `index=n` of array.
 pops a reference to array, then a value. Writes that value to `array[n]`.
 * _`arrayFromElements [n - integer>=0]`_  
 Pops n elements (in the order they were pushed), puts them in an array, pushes the reference to the array.
+* _`arrayConcat`_  
+Pops array `b`, then `a`. Makes new array by joining `b` after `a`. Pushes new array.
 * _`incRefN [n - integer]`_  
 same as NaVM's incRef, but here it increments by `n`.
 * _`pushRefFromPop`_  
