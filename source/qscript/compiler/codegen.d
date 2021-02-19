@@ -276,8 +276,8 @@ protected:
 		uinteger currentJumpCount = jumpCount;
 		jumpCount++;
 		// its less instructions if a modified do-while loop is used
-		_code.addJumpPos("While"~currentJumpCount.to!string~"Start");
 		_code.addInstruction("Jump", "While"~currentJumpCount.to!string~"Condition");
+		_code.addJumpPos("While"~currentJumpCount.to!string~"Start");
 		generateCode(node.statement, CodeGenFlags.None);
 		_code.addJumpPos("While"~currentJumpCount.to!string~"Condition");
 		generateCode(node.condition);
