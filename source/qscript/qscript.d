@@ -7,6 +7,7 @@ import utils.misc;
 import utils.lists;
 
 import qscript.compiler.compiler;
+import qscript.stdlib;
 
 import std.conv:to;
 
@@ -331,6 +332,15 @@ protected:
 		// left side should evaluate first (if my old comments are right)
 		*(_stack.pop.ptrVal + _arg.intVal) = _stack.pop;
 	}
+	void arrayConcat(){
+		NaData array, a, b;
+		b = _stack.pop;
+		a = _stack.pop;
+		array.makeArray(a.arrayValLength + b.arrayValLength);
+		array.arrayVal[0 .. a.arrayValLength] = a.arrayVal;
+		array.arrayVal[a.arrayValLength+1 .. $] = b.arrayVal;
+		_stack.push(array);
+	}
 	void incRefN(){
 		_stack.push(NaData(cast(NaData*)(_stack.pop.ptrVal + _arg.intVal)));
 	}
@@ -357,9 +367,10 @@ public:
 		addInstruction(NaInstruction("arrayCopy",0x44,1,1,&arrayCopy));
 		addInstruction(NaInstruction("arrayElement",0x45,true,1,1,&arrayElement));
 		addInstruction(NaInstruction("arrayElementWrite",0x46,true,2,0,&arrayElementWrite));
-		addInstruction(NaInstruction("incRefN",0x47,true,1,1,&incRefN));
-		addInstruction(NaInstruction("pushRefFromPop",0x48,1,1,&pushRefFromPop));
-		addInstruction(NaInstruction("jumpFrameN",0x49,true,true,1,0,&jumpFrameN));
+		addInstruction(NaInstruction("arrayConcat",0x47,2,1,&arrayConcat));
+		addInstruction(NaInstruction("incRefN",0x48,true,1,1,&incRefN));
+		addInstruction(NaInstruction("pushRefFromPop",0x49,1,1,&pushRefFromPop));
+		addInstruction(NaInstruction("jumpFrameN",0x4A,true,true,1,0,&jumpFrameN));
 	}
 	/// The VM's stack
 	@property ArrayStack!NaData stack(){
@@ -389,6 +400,7 @@ public:
 class QScriptBytecode : NaBytecode{
 private:
 	string _linkInfo;
+	
 public:
 	/// constructor
 	this(NaInstruction[] instructionTable){
@@ -424,13 +436,26 @@ public class QScript : Library{
 private:
 	QScriptVM _vm;
 	QSCompiler _compiler;
+	OpLibrary _operatorsLibrary;
 public:
 	/// constructor.
 	/// 
 	/// Set stack length of VM here, default should be more than enough
-	this(string scriptName, bool autoImport, uinteger stackLength = 65_536){
+	this(string scriptName, bool autoImport, Library[] libraries, bool enableDefaultLibs = true){
 		super(scriptName, autoImport);
-		_vm = new QScriptVM(stackLength);
+		_vm = new QScriptVM();
+		if (enableDefaultLibs){
+			_operatorsLibrary = new OpLibrary;
+			_vm._libraries = [_operatorsLibrary];
+		}
+		_vm._libraries ~= libraries.dup;
+		_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
+	}
+	~this(){
+		.destroy(_vm);
+		.destroy(_compiler);
+		if (_operatorsLibrary)
+			.destroy(_operatorsLibrary);
 	}
 	// overriding public functions that wont be needed
 	override integer addFunction(Function){
@@ -444,10 +469,6 @@ public:
 	}
 	override integer addVar(Variable){
 		return -1;
-	}
-	/// Sets the available libraries. the indexes must be library ID
-	void setLibraries(Library[] libs){
-		_vm._libraries = libs;
 	}
 	/// Executes a function from script
 	/// 
@@ -463,13 +484,11 @@ public:
 	}
 	/// compiles a script, and prepares it for execution with this class
 	/// 
-	/// **Libraries must be set before calling this.**
+	/// **prepareCompilerVM must be called before.**
 	/// 
 	/// Returns: bytecode, or null in case of error
 	/// the returned bytecode will not be freed by this class, so you should do it when not needed
 	QScriptBytecode compileScript(string[] script, ref CompileError[] errors){
-		if (_compiler is null)
-			_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
 		// clear itself
 		_functions.length = 0;
 		_vars.length = 0;
@@ -493,7 +512,7 @@ public:
 	}
 	/// compiles a script, and prepares it for execution with this class
 	/// 
-	/// **Libraries must be set before calling this.**
+	/// **prepareCompilerVM must be called before**
 	/// 
 	/// Returns: errors, if any, or empty array
 	CompileError[] compileScript(string[] script){
