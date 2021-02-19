@@ -43,25 +43,13 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 
 1. Simple syntax
 1. Dynamic arrays
-1. Fast execution
 1. Static typed
 1. Function overloading
-1. References
-
-## TODO For Upcoming Versions
-
-**Coming in next version:**
-
+1. References (pointers, but a bit simplified)
 1. Structs
 1. Enums
 1. Global Variables
-1. Scripts as libraries for other scripts
-
-**Planned for sometime later:**
-
-1. bitshift operators
-1. More data types
-
+1. Importing libraries (script can be loaded as library too)
 ---
 
 ## Hello World
