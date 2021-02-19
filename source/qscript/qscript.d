@@ -191,7 +191,7 @@ public:
 	/// This function must consider all flags
 	/// 
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	bool generateFunctionCallCode(NaBytecode bytecode, uinteger functionId, DataType[] argTypes, CodeGenFlags flags){
+	bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, DataType[] argTypes, CodeGenFlags flags){
 		return false;
 	}
 	/// Generates bytecode that will push value of a variable to stack, or return false
@@ -199,7 +199,7 @@ public:
 	/// This function must consider all flags
 	/// 
 	/// Returns: true if it added code, false if codegen.d should
-	bool generateVariableCode(NaBytecode bytecode, uinteger variableId, CodeGenFlags flags){
+	bool generateVariableCode(QScriptBytecode bytecode, uinteger variableId, CodeGenFlags flags){
 		return false;
 	}
 	/// Executes a library function
