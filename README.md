@@ -41,7 +41,6 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 
 ## Features
 
-1. Simple syntax
 1. Dynamic arrays
 1. Static typed
 1. Function overloading
