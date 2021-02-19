@@ -18,7 +18,7 @@ version (qscriptdemo){
 		string[] script = fileToArray(args[$-1]);
 		CompileError[] errors;
 		QScriptBytecode code = scr.compileScript(script, errors);
-		if (errors.length > 0){
+		if (errors.length > 0 || code is null){
 			writeln("Compilation errors:");
 			foreach (err; errors){
 				writeln ("line#",err.lineno, ": ",err.msg);
