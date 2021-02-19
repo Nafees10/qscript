@@ -35,7 +35,7 @@ version(compiler){
 				writeln ("Error reading file");
 			}
 			CompileError[] errors;
-			QScript qs = new QScript("script",false);
+			QScript qs = new QScript("script",false,[]);
 			if (args[1] == "ast"){
 				QSCompiler compiler = new QSCompiler([],[]);
 				compiler.loadScript(script);
@@ -57,8 +57,8 @@ version(compiler){
 					return;
 				}
 				string[] byteCode = bytecodeObject.getBytecodePretty;
-				foreach (line; byteCode){
-					writeln(line);
+				foreach (int i, line; byteCode){
+					writeln(i-2,'\t',line);
 				}
 				.destroy(bytecodeObject);
 			}
