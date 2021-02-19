@@ -100,17 +100,17 @@ public:
 			case "opMod":
 				bytecode.addInstruction("mathMod"~typePostFix, "");
 				break;
-			case "opLesser":
-				bytecode.addInstruction("isLesser"~typePostFix, "");
-				break;
-			case "opGreater":
+			case "opLesser": // have to use the opposite instruction because of the order these instructions pop A and B in
 				bytecode.addInstruction("isGreater"~typePostFix, "");
 				break;
+			case "opGreater":
+				bytecode.addInstruction("isLesser"~typePostFix, "");
+				break;
 			case "opLesserSame":
-				bytecode.addInstruction("isLesserSame"~typePostFix, "");
+				bytecode.addInstruction("isGreaterSame"~typePostFix, "");
 				break;
 			case "opGreaterSame":
-				bytecode.addInstruction("isGreaterSame"~typePostFix, "");
+				bytecode.addInstruction("isLesserSame"~typePostFix, "");
 				break;
 			case "opSame":
 				bytecode.addInstruction("isSame", "");
