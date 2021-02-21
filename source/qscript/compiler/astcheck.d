@@ -190,17 +190,16 @@ private:
 	/// id to `id`, and library id to `libraryId`
 	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref integer id,
 		ref integer libraryId){
-		bool argsMatch;
-		id = _this.hasFunction(name, argTypes, argsMatch, type);
-		if (argsMatch && id > -1){
+		id = _this.hasFunction(name, argTypes, type);
+		if (id > -1){
 			libraryId = -1;
 			return true;
 		}
 		foreach (libId, lib; _libraries){
 			if (!isImported(libId))
 				continue;
-			id = lib.hasFunction(name, argTypes, argsMatch, type);
-			if (argsMatch && id > -1){
+			id = lib.hasFunction(name, argTypes, type);
+			if (id > -1){
 				libraryId = libId;
 				return true;
 			}

@@ -22,20 +22,18 @@ public:
 	/// 
 	/// Returns: function ID, or -1 if function already exists
 	override integer addFunction(Function func){
-		bool dummy1;
-		DataType dummy2;
-		if (super.hasFunction(func.name, func.argTypes, dummy1, dummy2)!=-1)
+		DataType dummy;
+		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
 			return -1;
 		_functions ~= func;
 		return cast(integer)_functions.length-1;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	override integer hasFunction(string name, DataType[] argsType, ref bool argTypesMatch, ref DataType returnType){
+	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
 		if (argsType.length == 0) // I got nothing with zero arguments
 			return -1;
 		// check if it previously assigned an ID to a function of this type
-		integer r = super.hasFunction(name, argsType, argTypesMatch, returnType);
-		argTypesMatch = true;
+		integer r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
 		if (NUM_OPERATORS.hasElement(name)){

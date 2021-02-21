@@ -155,29 +155,25 @@ public:
 		return false;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	integer hasFunction(string name, DataType[] argsType, ref bool argTypesMatch, ref DataType returnType){
-		argTypesMatch = true;
+	integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
 		foreach (i, func; _functions){
 			if (func.name == name){
 				if (argsType.length == func.argTypes.length){
 					foreach (j; 0 .. argsType.length){
-						if (!argsType[j].canImplicitCast(func.argTypes[j])){
-							argTypesMatch = false;
-							break;
-						}
+						if (!argsType[j].canImplicitCast(func.argTypes[j]))
+							return -1;
 					}
+					returnType = func.returnType;
+					return i;
 				}
-				returnType = func.returnType;
-				return i;
 			}
 		}
 		return -1;
 	}
 	/// ditto
 	integer hasFunction(string name, DataType[] argsType){
-		bool argsTypesMatch;
 		DataType returnType;
-		return this.hasFunction(name, argsType, argsTypesMatch, returnType);
+		return this.hasFunction(name, argsType, returnType);
 	}
 	/// Returns: true if a function by a name exists
 	bool hasFunction(string name){
