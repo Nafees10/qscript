@@ -351,6 +351,7 @@ protected:
 		_inst = &(_instructions)[_arg.intVal] - 1;
 		_arg = &(_arguments)[_arg.intVal] - 1;
 		_stackIndex = _stack.count - offset;
+		_stack.setIndex(_stackIndex);
 	}
 public:
 	/// constructor
@@ -432,7 +433,8 @@ public class QScript : Library{
 private:
 	QScriptVM _vm;
 	QSCompiler _compiler;
-	OpLibrary _operatorsLibrary;
+	/// number of default libraries
+	uinteger _defLibCount;
 public:
 	/// constructor.
 	/// 
@@ -440,9 +442,10 @@ public:
 	this(string scriptName, bool autoImport, Library[] libraries, bool enableDefaultLibs = true){
 		super(scriptName, autoImport);
 		_vm = new QScriptVM();
+		_defLibCount = 0;
 		if (enableDefaultLibs){
-			_operatorsLibrary = new OpLibrary;
-			_vm._libraries = [_operatorsLibrary];
+			_vm._libraries ~= new OpLibrary();
+			_defLibCount = 1;
 		}
 		_vm._libraries ~= libraries.dup;
 		_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
@@ -450,8 +453,8 @@ public:
 	~this(){
 		.destroy(_vm);
 		.destroy(_compiler);
-		if (_operatorsLibrary)
-			.destroy(_operatorsLibrary);
+		foreach (i; 0 .. _defLibCount)
+			.destroy(_vm._libraries[i]);
 	}
 	// overriding public functions that wont be needed
 	override integer addFunction(Function){
