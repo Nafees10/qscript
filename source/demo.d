@@ -35,5 +35,6 @@ version (qscriptdemo){
 		scr.execute(0, []);
 		sw.stop;
 		writeln("execution took: ", sw.peek.total!"msecs", "msecs");
+		.destroy(scr);
 	}
 }

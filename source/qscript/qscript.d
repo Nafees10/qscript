@@ -451,10 +451,10 @@ public:
 		_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
 	}
 	~this(){
-		.destroy(_vm);
 		.destroy(_compiler);
 		foreach (i; 0 .. _defLibCount)
 			.destroy(_vm._libraries[i]);
+		.destroy(_vm);
 	}
 	// overriding public functions that wont be needed
 	override integer addFunction(Function){
