@@ -25,7 +25,7 @@ version (qscriptdemo){
 			}
 			return;
 		}
-		if (args.length > 2 && args[1] == "bcode"){
+		if (args.length > 2 && args[1] == "--bcode"){
 			foreach (i, line; code.getBytecodePretty)
 				writeln(cast(integer)i-2, '\t', line);
 			return;
