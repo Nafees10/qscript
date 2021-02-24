@@ -369,24 +369,24 @@ public:
 		addInstruction(NaInstruction("pushRefFromPop",0x49,1,1,&pushRefFromPop));
 		addInstruction(NaInstruction("jumpFrameN",0x4A,true,true,1,0,&jumpFrameN));
 	}
-	/// The VM's stack
-	@property ArrayStack!NaData stack(){
-		return _stack;
+	/// gets element at an index on stack
+	/// 
+	/// Returns: the element
+	NaData getElement(uinteger index){
+		return _stack.readAbs(index);
 	}
-	/// The VM's _stackIndex
-	@property uinteger stackIndex(){
-		return _stackIndex;
-	}
-	/// ditto
-	@property uinteger stackIndex(uinteger newVal){
-		return _stackIndex = newVal;
+	/// gets pointer to element at an index on stack
+	/// 
+	/// Returns: the pointer to element
+	NaData* getElementPtr(uinteger index){
+		return _stack.readPtrAbs(index);
 	}
 	/// pushes some data, set _stackIndex=0, and start execution at an instruction
 	/// 
 	/// Returns: return value
-	NaData execute(uinteger index, NaData[] toPush){
+	NaData executeFunction(uinteger index, NaData[] toPush){
 		_stack.push(toPush);
-		super.execute(index);
+		execute(index);
 		NaData r = _retVal;
 		_retVal = NaData(0);
 		return r;
@@ -473,13 +473,13 @@ public:
 	/// 
 	/// Returns: whatever that function returned, or random data
 	override NaData execute(uinteger functionId, NaData[] args){
-		return _vm.execute(functionId, args);
+		return _vm.executeFunction(functionId, args);
 	}
 	override NaData getVar(uinteger varId){
-		return _vm.stack.read(varId);
+		return _vm.getElement(varId);
 	}
 	override NaData getVarRef(uinteger varId){
-		return NaData(_vm.stack.readPtr(varId));
+		return NaData(_vm.getElementPtr(varId));
 	}
 	/// compiles a script, and prepares it for execution with this class
 	/// 
