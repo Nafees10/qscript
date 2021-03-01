@@ -1,5 +1,5 @@
 /++
-QScript core libraries
+QScript core libraries + some libraries providing some extra functions
 +/
 module qscript.stdlib;
 
@@ -16,7 +16,7 @@ private:
 public:
 	/// constructor
 	this(){
-		super("qscriptOperators",true);
+		super("qscript.operators",true);
 	}
 	/// Adds a new function
 	/// 
@@ -30,12 +30,12 @@ public:
 	}
 	/// Returns: function ID, or -1 if doesnt exist
 	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
-		if (argsType.length == 0) // I got nothing with zero arguments
-			return -1;
 		// check if it previously assigned an ID to a function of this type
 		integer r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
+		if (argsType.length == 0) // I got nothing with zero arguments
+			return -1;
 		if (NUM_OPERATORS.hasElement(name)){
 			returnType = argsType[0];
 			if (argsType.length == 2 && argsType[0] == argsType[1] && (argsType[0] == DataType(DataType.Type.Int) ||
@@ -129,5 +129,88 @@ public:
 				return false;
 		}
 		return true;
+	}
+}
+
+/// Library for functions related to arrays
+public class ArrayLibrary : Library{
+public:
+	/// constructor
+	this (){
+		super("qscript.arrays", true);
+	}
+	/// Adds a new function
+	/// 
+	/// Returns: function ID, or -1 if function already exists
+	override integer addFunction(Function func){
+		DataType dummy;
+		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
+			return -1;
+		_functions ~= func;
+		return cast(integer)_functions.length-1;
+	}
+	/// Returns: function ID, or -1 if doesnt exist
+	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		integer r = super.hasFunction(name, argsType, returnType);
+		if (r > -1)
+			return r;
+		if (argsType.length == 0)
+			return -1;
+		if (name == "copy"){
+			returnType = argsType[0];
+			if (argsType.length == 1 && argsType[0].isArray)
+				return this.addFunction(Function("copy",returnType, argsType));
+			return -1;
+		}
+		if (name == "length"){
+			if (!argsType[0].isArray)
+				return -1;
+			if (argsType.length == 1){
+				returnType = DataType(DataType.Type.Int);
+				return this.addFunction(Function("length",returnType,argsType));
+			}
+			return -1;
+		}
+		if (name == "setLength"){
+			if (!argsType[0].isArray)
+				return -1;
+			if (argsType.length == 2 && argsType[1] == DataType(DataType.Type.Int)){
+				returnType = DataType(DataType.Type.Void);
+				return this.addFunction(Function("length",returnType,argsType));
+			}
+			return -1;
+		}
+		return -1;
+	}
+	/// setLength uses arrayLengthSet which wants arguments in opposite order
+	override uinteger[] functionCallArgumentsPushOrder(uinteger functionId){
+		if (functionId >= this.functions.length)
+			return [];
+		Function func = this.functions[functionId];
+		if (func.name == "setLength")
+			return [1,0];
+		return [];
+	}
+	/// Generates bytecode for a function call, or return false
+	/// 
+	/// Returns: true if it added code for the function call, false if codegen.d should
+	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+		Function func;
+		if (functionId >= this.functions.length)
+			return false;
+		func = this.functions[functionId];
+		if (func.name == "copy"){
+			bytecode.addInstruction("arrayCopy");
+			return true;
+		}
+		if (func.name == "length"){
+			bytecode.addInstruction("arrayLength");
+			return true;
+		}
+		if (func.name == "setLength"){
+			bytecode.addInstruction("arrayLengthSet");
+			return true;
+		}
+		return false;
 	}
 }
