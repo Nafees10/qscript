@@ -312,8 +312,14 @@ protected:
 	}
 	/// generates bytecode for FunctionCallNode
 	void generateCode(FunctionCallNode node, CodeGenFlags flags = CodeGenFlags.None){
-		foreach (arg; node.arguments)
-			generateCode(arg);
+		uinteger[] argOrder = node.libraryId>-1 ? _libs[node.libraryId].functionCallArgumentsPushOrder(node.id) :[];
+		if (argOrder.length && argOrder.length == node.arguments.length){
+			foreach (argIndex; argOrder)
+				generateCode(node.arguments[argIndex]);
+		}else{
+			foreach (arg; node.arguments)
+				generateCode(arg);
+		}
 		// if a local call, just use JumpFrameN
 		if (node.libraryId == -1){
 			_code.addInstruction("jumpFrameN", node.arguments.length.to!string);
