@@ -1,4 +1,5 @@
 # Predefined QScript Functions
+**THIS FILE IS OUTDATED**
 This document contains some information about the functions predefined in QScript.
 
 ## Arrays:
