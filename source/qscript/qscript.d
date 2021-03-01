@@ -183,6 +183,13 @@ public:
 		}
 		return false;
 	}
+	/// For use with generateFunctionCallCode. Use this to change what order arguments are pushed to stack
+	/// before the bytecode for functionCall is generated
+	/// 
+	/// Returns: the order of arguments to push (`[1,0]` will push 2 arguments in reverse),  or [] for default
+	uinteger[] functionCallArgumentsPushOrder(uinteger functionId){
+		return [];
+	}
 	/// Generates bytecode for a function call, or return false
 	/// 
 	/// This function must consider all flags
@@ -445,7 +452,8 @@ public:
 		_defLibCount = 0;
 		if (enableDefaultLibs){
 			_vm._libraries ~= new OpLibrary();
-			_defLibCount = 1;
+			_vm._libraries ~= new ArrayLibrary();
+			_defLibCount = 2;
 		}
 		_vm._libraries ~= libraries.dup;
 		_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
