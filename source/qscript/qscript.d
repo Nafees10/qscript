@@ -446,14 +446,18 @@ public:
 	/// constructor.
 	/// 
 	/// Set stack length of VM here, default should be more than enough
-	this(string scriptName, bool autoImport, Library[] libraries, bool enableDefaultLibs = true){
+	this(string scriptName, bool autoImport, Library[] libraries, bool defaultLibs = true, bool extraLibs = true){
 		super(scriptName, autoImport);
 		_vm = new QScriptVM();
 		_defLibCount = 0;
-		if (enableDefaultLibs){
+		if (defaultLibs){
 			_vm._libraries ~= new OpLibrary();
 			_vm._libraries ~= new ArrayLibrary();
 			_defLibCount = 2;
+		}
+		if (extraLibs){
+			_vm._libraries ~= new StdIOLibrary();
+			_defLibCount += 1;
 		}
 		_vm._libraries ~= libraries.dup;
 		_compiler = new QSCompiler(_vm._libraries, _vm.instructionTable);
