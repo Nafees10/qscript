@@ -326,8 +326,11 @@ protected:
 		}else{
 			// try to generate it's code, if no, then just use Call
 			Library lib = _libs[node.libraryId];
-			if (!lib.generateFunctionCallCode(_code, node.id, flags))
-				_code.addInstruction("Call", node.id.to!string);
+			if (!lib.generateFunctionCallCode(_code, node.id, flags)){
+				_code.addInstruction("push", node.id.to!string);
+				_code.addInstruction("push", node.libraryId.to!string);
+				_code.addInstruction("Call", (node.arguments.length+2).to!string);
+			}
 		}
 		if (flags & CodeGenFlags.PushFunctionReturn){
 			_code.addInstruction("retValPush", "");
