@@ -16,7 +16,7 @@ private:
 public:
 	/// constructor
 	this(){
-		super("qscript.operators",true);
+		super("qscript_operators",true);
 	}
 	/// Adds a new function
 	/// 
@@ -137,7 +137,7 @@ public class ArrayLibrary : Library{
 public:
 	/// constructor
 	this (){
-		super("qscript.arrays", true);
+		super("qscript_arrays", true);
 	}
 	/// Adds a new function
 	/// 
@@ -212,5 +212,72 @@ public:
 			return true;
 		}
 		return false;
+	}
+}
+
+/// Library for std input/output
+public class StdIOLibrary : Library{
+private:
+	import std.stdio : write, writeln, readln;
+	import std.string : chomp;
+	NaData writelnStr(NaData[] args){
+		foreach (arg; args)
+			writeln(arg.strVal);
+		return NaData(0);
+	}
+	NaData writeStr(NaData[] args){
+		foreach (arg; args)
+			write(arg.strVal);
+		return NaData(0);
+	}
+	NaData readStr(){
+		return NaData(readln.chomp());
+	}
+public:
+	/// constructor
+	this(){
+		super("qscript_stdio", false);
+	}
+	/// Returns: function ID, or -1 if doesnt exist
+	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		integer r = super.hasFunction(name, argsType, returnType);
+		if (r > -1)
+			return r;
+		returnType = DataType(DataType.Type.Void);
+		if (name == "writeln" && argsType.length > 0){
+			foreach (argType; argsType){
+				if (argType != DataType(DataType.Type.Char, 1))
+					return -1;
+			}
+			/// just return 0 on it, its not like its gonna ask to send over function with id=0 (at least not yet)
+			return 0;
+		}
+		if (name == "write" && argsType.length > 0){
+			foreach (argType; argsType){
+				if (argType != DataType(DataType.Type.Char, 1))
+					return -1;
+			}
+			return 1;
+		}
+		if (name == "read" && argsType.length == 0){
+			returnType = DataType(DataType.Type.Char,1);
+			return 2;
+		}
+		return -1;
+	}
+	/// Executes a library function
+	/// 
+	/// Returns: whatever that function returned
+	override NaData execute(uinteger functionId, NaData[] args){
+		switch (functionId){
+			case 0:
+				return writelnStr(args);
+			case 1:
+				return writeStr(args);
+			case 2:
+				return readStr();
+			default:
+				return NaData(0);
+		}
 	}
 }
