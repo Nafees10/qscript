@@ -61,6 +61,7 @@ protected:
 			// use jumpFrameN to adjust _stackIndex
 			_code.addInstruction("push", node.arguments.length.to!string);
 			_code.addInstruction("jumpFrameN", "__qscriptFunction"~node.id.to!string~"start");
+			_code.addInstruction("jumpBack", "");
 			_code.addJumpPos("__qscriptFunction"~node.id.to!string~"start");
 		}
 		// make space for variables
