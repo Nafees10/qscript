@@ -451,9 +451,12 @@ public:
 		_vm = new QScriptVM();
 		_defLibCount = 0;
 		if (defaultLibs){
-			_vm._libraries ~= new OpLibrary();
-			_vm._libraries ~= new ArrayLibrary();
-			_defLibCount = 2;
+			_vm._libraries = [
+				new OpLibrary(),
+				new ArrayLibrary(),
+				new TypeConvLibrary(),
+			];
+			_defLibCount = _vm._libraries.length;
 		}
 		if (extraLibs){
 			_vm._libraries ~= new StdIOLibrary();

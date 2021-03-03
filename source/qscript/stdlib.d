@@ -215,6 +215,116 @@ public:
 	}
 }
 
+/// Library for data type conversion
+public class TypeConvLibrary : Library{
+public:
+	/// constructor
+	this(){
+		super("qscript_typeconv", true);
+	}
+	/// Adds a new function
+	/// 
+	/// Returns: function ID, or -1 if function already exists
+	override integer addFunction(Function func){
+		DataType dummy;
+		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
+			return -1;
+		_functions ~= func;
+		return cast(integer)_functions.length-1;
+	}
+	/// Returns: function ID, or -1 if doesnt exist
+	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		integer r = super.hasFunction(name, argsType, returnType);
+		if (r > -1)
+			return r;
+		if (argsType.length != 1)
+			return -1;
+		if (name == "toInt"){
+			returnType = DataType(DataType.Type.Int);
+			// can do char to character code in int, bool to int (0 or 1), or int to double, or int to string
+			if ([DataType(DataType.Type.Char), DataType(DataType.Type.Bool), DataType(DataType.Type.Double),
+			DataType(DataType.Type.Char,1)].hasElement(argsType[0]))
+				return this.addFunction(Function(name, returnType, argsType));
+			return -1;
+		}
+		if (name == "toChar"){
+			// for converting character code in int to char
+			returnType = DataType(DataType.Type.Char);
+			if (argsType[0] == DataType(DataType.Type.Int))
+				return this.addFunction(Function(name, returnType, argsType));
+			return -1;
+		}
+		if (name == "toDouble"){
+			// can convert int to double, and string to double, nothing else
+			returnType = DataType(DataType.Type.Double);
+			if ([DataType(DataType.Type.Int), DataType(DataType.Type.Char,1)].hasElement(argsType[0]))
+				return this.addFunction(Function(name, returnType, argsType));
+			return -1;
+		}
+		if (name == "toString"){
+			// can convert int, double, and bool to string
+			returnType = DataType(DataType.Type.Char,1);
+			if ([DataType(DataType.Type.Int),DataType(DataType.Type.Double),DataType(DataType.Type.Bool)].hasElement(argsType))
+				return this.addFunction(Function(name, returnType, argsType));
+			return -1;
+		}
+		return -1;
+	}
+	/// Generates bytecode for a function call, or return false
+	/// 
+	/// Returns: true if it added code for the function call, false if codegen.d should
+	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+		Function func;
+		if (functionId >= this.functions.length)
+			return false;
+		func = this.functions[functionId];
+		if (func.name == "toInt"){
+			if (func.argTypes[0] == DataType(DataType.Type.Char))
+				return true; // do absolutely nothing
+			if (func.argTypes[0] == DataType(DataType.Type.Bool))
+				return true; // still do nothing
+			if (func.argTypes[0] == DataType(DataType.Type.Double)){
+				bytecode.addInstruction("doubleToInt", "");
+				return true;
+			}
+			if (func.argTypes[0] == DataType(DataType.Type.Char, 1)){
+				bytecode.addInstruction("stringToInt", "");
+				return true;
+			}
+			return false;
+		}
+		if (func.name == "toChar" && func.argTypes[0] == DataType(DataType.Type.Int)) // do nothing
+			return true;
+		if (func.name == "toDouble"){
+			if (func.argTypes[0] == DataType(DataType.Type.Int)){
+				bytecode.addInstruction("intToDouble", "");
+				return true;
+			}
+			if (func.argTypes[0] == DataType(DataType.Type.Char,1)){
+				bytecode.addInstruction("stringToDouble", "");
+				return true;
+			}
+			return false;
+		}
+		if (func.name == "toString"){
+			if (func.argTypes[0] == DataType(DataType.Type.Int)){
+				bytecode.addInstruction("intToString", "");
+				return true;
+			}
+			if (func.argTypes[0] == DataType(DataType.Type.Double)){
+				bytecode.addInstruction("doubleToString", "");
+				return true;
+			}
+			if (func.argTypes[0] == DataType(DataType.Type.Bool)){
+				bytecode.addInstruction("boolToString", "");
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+}
+
 /// Library for std input/output
 public class StdIOLibrary : Library{
 private:
