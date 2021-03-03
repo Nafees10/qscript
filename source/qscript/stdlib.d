@@ -8,6 +8,8 @@ import qscript.compiler.compiler;
 
 import utils.misc;
 
+import std.conv : to;
+
 /// library providing operators
 public class OpLibrary : Library{
 private:
@@ -341,7 +343,7 @@ private:
 		return NaData(0);
 	}
 	NaData readStr(){
-		return NaData(readln.chomp());
+		return NaData(readln.chomp().to!dstring);
 	}
 public:
 	/// constructor
