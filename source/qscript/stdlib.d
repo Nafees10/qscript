@@ -82,6 +82,8 @@ public:
 		Function func;
 		if (functionId >= this.functions.length)
 			return false;
+		if (!(flags & CodeGenFlags.PushFunctionReturn))
+			return false;
 		func = this.functions[functionId];
 		string typePostFix = func.argTypes[0].type == DataType.Type.Int ? "Int" : "Double";
 		switch (func.name){
@@ -203,16 +205,14 @@ public:
 		func = this.functions[functionId];
 		if (func.name == "copy"){
 			bytecode.addInstruction("arrayCopy");
-			return true;
-		}
-		if (func.name == "length"){
+		}else if (func.name == "length"){
 			bytecode.addInstruction("arrayLength");
-			return true;
-		}
-		if (func.name == "setLength"){
+		}else if (func.name == "setLength"){
 			bytecode.addInstruction("arrayLengthSet");
-			return true;
+			return true; // so it doesnt try and pop the return, coz there is no return
 		}
+		if (!(flags & CodeGenFlags.PushFunctionReturn))
+			bytecode.addInstruction("pop", "");
 		return false;
 	}
 }
@@ -278,6 +278,8 @@ public:
 	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
 		Function func;
 		if (functionId >= this.functions.length)
+			return false;
+		if (!(flags & CodeGenFlags.PushFunctionReturn))
 			return false;
 		func = this.functions[functionId];
 		if (func.name == "toInt"){

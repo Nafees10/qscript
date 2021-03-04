@@ -76,7 +76,10 @@ protected:
 			generateCode(statement, CodeGenFlags.None);
 	}
 	/// generates bytecode for CodeNode
+	/// 
+	/// `PushFunctionReturn` is set to flags regardless of value passed
 	void generateCode(CodeNode node, CodeGenFlags flags = CodeGenFlags.None){
+		flags |= CodeGenFlags.PushFunctionReturn;
 		if (node.type == CodeNode.Type.Array){
 			generateCode(node.node!(CodeNode.Type.Array), flags);
 		}else if (node.type == CodeNode.Type.FunctionCall){
@@ -173,7 +176,7 @@ protected:
 	/// generates bytecode for OperatorNode.
 	void generateCode(OperatorNode node, CodeGenFlags flags = CodeGenFlags.None){
 		// just generator code for the function call
-		generateCode(node.fCall, CodeGenFlags.None);
+		generateCode(node.fCall, CodeGenFlags.PushFunctionReturn);
 		if (flags & CodeGenFlags.PushRef)
 			_code.addInstruction("pushRefFromPop","");
 	}
@@ -327,11 +330,11 @@ protected:
 		}else{
 			// try to generate it's code, if no, then just use Call
 			Library lib = _libs[node.libraryId];
-			if (!lib.generateFunctionCallCode(_code, node.id, flags)){
-				_code.addInstruction("push", node.id.to!string);
-				_code.addInstruction("push", node.libraryId.to!string);
-				_code.addInstruction("Call", (node.arguments.length+2).to!string);
-			}
+			if (lib.generateFunctionCallCode(_code, node.id, flags))
+				return;
+			_code.addInstruction("push", node.id.to!string);
+			_code.addInstruction("push", node.libraryId.to!string);
+			_code.addInstruction("Call", (node.arguments.length+2).to!string);
 		}
 		if (flags & CodeGenFlags.PushFunctionReturn){
 			_code.addInstruction("retValPush", "");
