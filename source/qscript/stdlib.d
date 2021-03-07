@@ -132,6 +132,8 @@ public:
 			default:
 				return false;
 		}
+		if (flags & CodeGenFlags.PushRef)
+			bytecode.addInstruction("pushRefFromPop", "");
 		return true;
 	}
 }
@@ -213,6 +215,8 @@ public:
 		}
 		if (!(flags & CodeGenFlags.PushFunctionReturn))
 			bytecode.addInstruction("pop", "");
+		else if (flags & CodeGenFlags.PushRef)
+			bytecode.addInstruction("pushRefFromPop", "");
 		return false;
 	}
 }
@@ -283,49 +287,37 @@ public:
 			return false;
 		func = this.functions[functionId];
 		if (func.name == "toInt"){
-			if (func.argTypes[0] == DataType(DataType.Type.Char))
-				return true; // do absolutely nothing
-			if (func.argTypes[0] == DataType(DataType.Type.Bool))
-				return true; // still do nothing
-			if (func.argTypes[0] == DataType(DataType.Type.Double)){
+			if (func.argTypes[0] == DataType(DataType.Type.Double))
 				bytecode.addInstruction("doubleToInt", "");
-				return true;
-			}
-			if (func.argTypes[0] == DataType(DataType.Type.Char, 1)){
+			else if (func.argTypes[0] == DataType(DataType.Type.Char, 1))
 				bytecode.addInstruction("stringToInt", "");
-				return true;
-			}
-			return false;
-		}
-		if (func.name == "toChar" && func.argTypes[0] == DataType(DataType.Type.Int)) // do nothing
-			return true;
-		if (func.name == "toDouble"){
-			if (func.argTypes[0] == DataType(DataType.Type.Int)){
+			else if (func.argTypes[0] != DataType(DataType.Type.Char) && func.argTypes[0] != DataType(DataType.Type.Bool))
+				return false; // those data types (in condition above) are valid, but no byte code is generated for those.
+		}else if (func.name == "toChar"){
+			if (func.argTypes[0] != DataType(DataType.Type.Int))
+				return false; // toChar only works with int
+			// no need to generate any code
+		}else if (func.name == "toDouble"){
+			if (func.argTypes[0] == DataType(DataType.Type.Int))
 				bytecode.addInstruction("intToDouble", "");
-				return true;
-			}
-			if (func.argTypes[0] == DataType(DataType.Type.Char,1)){
+			else if (func.argTypes[0] == DataType(DataType.Type.Char,1))
 				bytecode.addInstruction("stringToDouble", "");
-				return true;
-			}
-			return false;
-		}
-		if (func.name == "toString"){
-			if (func.argTypes[0] == DataType(DataType.Type.Int)){
+			else 
+				return false;
+		}else if (func.name == "toString"){
+			if (func.argTypes[0] == DataType(DataType.Type.Int))
 				bytecode.addInstruction("intToString", "");
-				return true;
-			}
-			if (func.argTypes[0] == DataType(DataType.Type.Double)){
+			if (func.argTypes[0] == DataType(DataType.Type.Double))
 				bytecode.addInstruction("doubleToString", "");
-				return true;
-			}
-			if (func.argTypes[0] == DataType(DataType.Type.Bool)){
+			if (func.argTypes[0] == DataType(DataType.Type.Bool))
 				bytecode.addInstruction("boolToString", "");
-				return true;
-			}
+			else
+				return false;
+		}else
 			return false;
-		}
-		return false;
+		if (flags & CodeGenFlags.PushRef)
+			bytecode.addInstruction("pushRefFromPop", "");
+		return true;
 	}
 }
 
