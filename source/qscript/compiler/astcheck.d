@@ -740,7 +740,10 @@ protected:
 			checkAST(node.operand);
 			DataType type = node.operand.returnType;
 			type.isRef = !type.isRef;
-			node.returnType= type;
+			node.returnType = type;
+			// do not allow ref from or deref from any type involving void
+			if (type.type == DataType.Type.Void)
+				compileErrors.append(CompileError(node.lineno, "Cannot use @ operator on a void"));
 			return;
 		}
 		node.fCall = FunctionCallNode(OPERATOR_FUNCTIONS[node.operator], [node.operand]);
