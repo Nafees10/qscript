@@ -307,9 +307,9 @@ public:
 		}else if (func.name == "toString"){
 			if (func.argTypes[0] == DataType(DataType.Type.Int))
 				bytecode.addInstruction("intToString", "");
-			if (func.argTypes[0] == DataType(DataType.Type.Double))
+			else if (func.argTypes[0] == DataType(DataType.Type.Double))
 				bytecode.addInstruction("doubleToString", "");
-			if (func.argTypes[0] == DataType(DataType.Type.Bool))
+			else if (func.argTypes[0] == DataType(DataType.Type.Bool))
 				bytecode.addInstruction("boolToString", "");
 			else
 				return false;
