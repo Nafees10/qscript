@@ -245,7 +245,7 @@ protected:
 				_code.addInstruction("push", "0");
 			else if (node.type.type == DataType.Type.Double)
 				_code.addInstruction("push", "0.0");
-			else if (node.type == DataType(DataType.Type.Custom)){
+			else if (node.type.type == DataType.Type.Custom && !node.type.isRef && !node.type.isArray){
 				// create an array of length so members can be accomodated
 				_code.addInstruction("makeArrayN", node.type.customLength.to!string);
 			}
