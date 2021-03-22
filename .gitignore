@@ -9,4 +9,4 @@ lib*.a
 *-test-default
 sample
 /ast.json
-/compiler
+/qscript
