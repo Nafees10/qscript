@@ -1,4 +1,4 @@
-﻿module source.standalone;
+﻿module standalone;
 version (qscriptstandalone){
 	import utils.misc;
 	import qscript.qscript;
