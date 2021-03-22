@@ -23,7 +23,7 @@ version (qscriptstandalone){
 			QSCompiler compiler = new QSCompiler([],[]); // no need to provide instruction table, we wont be using codeGen
 			compiler.loadScript(script);
 			compiler.scriptExports = scr;
-			if (compiler.generateTokens || !compiler.generateAST || !compiler.checkAST){
+			if (!compiler.generateTokens || !compiler.generateAST || !compiler.checkAST){
 				stderr.writeln("There are errors:");
 				errors = compiler.errors;
 				foreach (error; errors)
