@@ -486,13 +486,15 @@ private:
 	bool isValidType(ref DataType type){
 		if (!type.isCustom)
 			return true;
-		if (_this.hasStruct(type.typeName))
+		Struct str;
+		if (_this.hasStruct(type.typeName, str)){
+			type.customLength = str.membersName.length;
 			return true;
+		}
 		// now time to search in all libraries' structs names
 		foreach (integer libId, lib; _libraries){
 			if (!isImported(libId-1))
 				continue;
-			Struct str;
 			if (lib.hasStruct(type.typeName, str)){
 				type.customLength = str.membersName.length;
 				return true;
