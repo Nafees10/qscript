@@ -8,10 +8,10 @@ version (qscriptstandalone){
 
 	void main (string[] args){
 		if (args.length < 2){
-			writeln("not enough args. Usage:");
-			writeln("execute script:\n demo script/path");
-			writeln("print compiled bytecode:\n demo --bcode script/path");
-			writeln("pretty print generated AST:\n demo --ast script/path");
+			stderr.writeln("not enough args. Usage:");
+			stderr.writeln("execute script:\n qscript script/path");
+			stderr.writeln("print compiled bytecode:\n qscript --bcode script/path");
+			stderr.writeln("pretty print generated AST:\n qscript --ast script/path");
 			return;
 		}
 		StopWatch sw;
@@ -36,10 +36,9 @@ version (qscriptstandalone){
 		}
 		QScriptBytecode code = scr.compileScript(script, errors);
 		if (errors.length > 0 || code is null){
-			writeln("Compilation errors:");
-			foreach (err; errors){
-				writeln ("line#",err.lineno, ": ",err.msg);
-			}
+			stderr.writeln("Compilation errors:");
+			foreach (err; errors)
+				stderr.writeln ("line#",err.lineno, ": ",err.msg);
 			return;
 		}
 		if (args.length > 2 && args[1] == "--bcode"){
@@ -51,7 +50,7 @@ version (qscriptstandalone){
 		sw.start;
 		scr.execute(0, []);
 		sw.stop;
-		writeln("execution took: ", sw.peek.total!"msecs", "msecs");
+		stderr.writeln("execution took: ", sw.peek.total!"msecs", "msecs");
 		.destroy(scr);
 	}
 }
