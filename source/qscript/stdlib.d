@@ -192,8 +192,7 @@ public:
 	override uinteger[] functionCallArgumentsPushOrder(uinteger functionId){
 		if (functionId >= this.functions.length)
 			return [];
-		Function func = this.functions[functionId];
-		if (func.name == "setLength")
+		if (this.functions[functionId].name == "setLength")
 			return [1,0];
 		return [];
 	}

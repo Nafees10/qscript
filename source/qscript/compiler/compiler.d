@@ -535,11 +535,11 @@ public struct DataType{
 			s = s[1 .. s.length].dup;
 		}
 		// read the type
-		for (uinteger i = 0, lastInd = s.length-1; i < s.length; i ++){
+		for (uinteger i = 0; i < s.length; i ++){
 			if (s[i] == '['){
 				sType = s[0 .. i];
 				break;
-			}else if (i == lastInd){
+			}else if (i+1 == s.length){
 				sType = s;
 				break;
 			}
