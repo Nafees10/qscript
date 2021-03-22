@@ -208,8 +208,10 @@ private:
 	}
 	/// Returns: true if a struct exists, false if not. Sets struct data to `structData`
 	bool getStruct(string name, ref Struct structData){
-		foreach (integer libId, lib; _this ~ _libraries){
-			if (!isImported(libId-1))
+		if (_this.hasStruct(name, structData))
+			return true;
+		foreach (integer libId, lib; _libraries){
+			if (!isImported(libId))
 				continue;
 			if (lib.hasStruct(name, structData))
 				return true;
@@ -218,8 +220,10 @@ private:
 	}
 	/// Returns: true if an enum exists, false if not. Sets enum data to `enumData`
 	bool getEnum(string name, ref Enum enumData){
-		foreach (integer libId, library; _this ~ _libraries){
-			if (!isImported(libId-1))
+		if (_this.hasEnum(name, enumData))
+			return true;
+		foreach (integer libId, library; _libraries){
+			if (!isImported(libId))
 				continue;
 			if (library.hasEnum(name, enumData))
 				return true;
@@ -482,8 +486,10 @@ private:
 	bool isValidType(ref DataType type){
 		if (!type.isCustom)
 			return true;
+		if (_this.hasStruct(type.typeName))
+			return true;
 		// now time to search in all libraries' structs names
-		foreach (integer libId, lib; _this~_libraries){
+		foreach (integer libId, lib; _libraries){
 			if (!isImported(libId-1))
 				continue;
 			Struct str;
