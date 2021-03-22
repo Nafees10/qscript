@@ -1,7 +1,8 @@
-﻿module demo;
-version (qscriptdemo){
+﻿module source.standalone;
+version (qscriptstandalone){
 	import utils.misc;
 	import qscript.qscript;
+	import qscript.compiler.compiler;
 	import std.datetime.stopwatch;
 	import std.stdio;
 
@@ -10,6 +11,7 @@ version (qscriptdemo){
 			writeln("not enough args. Usage:");
 			writeln("execute script:\n demo script/path");
 			writeln("print compiled bytecode:\n demo --bcode script/path");
+			writeln("pretty print generated AST:\n demo --ast script/path");
 			return;
 		}
 		StopWatch sw;
@@ -17,6 +19,21 @@ version (qscriptdemo){
 		QScript scr = new QScript("demo", false, [], true);
 		string[] script = fileToArray(args[$-1]);
 		CompileError[] errors;
+		if (args.length > 2 && args[1] == "--ast"){
+			QSCompiler compiler = new QSCompiler([],[]); // no need to provide instruction table, we wont be using codeGen
+			compiler.loadScript(script);
+			compiler.scriptExports = scr;
+			if (compiler.generateTokens || !compiler.generateAST || !compiler.checkAST){
+				stderr.writeln("There are errors:");
+				errors = compiler.errors;
+				foreach (error; errors)
+					stderr.writeln("Line#",error.lineno,": ",error.msg);
+			}
+			writeln(compiler.prettyAST);
+			.destroy(scr);
+			.destroy(compiler);
+			return;
+		}
 		QScriptBytecode code = scr.compileScript(script, errors);
 		if (errors.length > 0 || code is null){
 			writeln("Compilation errors:");

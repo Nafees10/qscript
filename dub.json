@@ -14,16 +14,10 @@
 			"targetName": "qscript"
 		},
 		{
-			"name": "qsDemo",
+			"name": "standalone",
 			"targetType": "executable",
-			"targetName": "demo",
-			"versions": ["qscriptdemo"]
-		},
-		{
-			"name": "qsCompiler",
-			"targetType": "executable",
-			"targetName": "compiler",
-			"versions": ["compiler"]
+			"targetName": "qscript",
+			"versions": ["qscriptstandalone"]
 		}
 	]
 }
