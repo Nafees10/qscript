@@ -8,8 +8,8 @@ version (qscriptdemo){
 	void main (string[] args){
 		if (args.length < 2){
 			writeln("not enough args. Usage:");
-			writeln("./demo script/path # to execute script");
-			writeln("./demo bcode script/path # to print compiled bytecode");
+			writeln("execute script:\n demo script/path");
+			writeln("print compiled bytecode:\n demo --bcode script/path");
 			return;
 		}
 		StopWatch sw;
