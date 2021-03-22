@@ -2,7 +2,7 @@
 
 A Simple Scripting Language.
 
-**This version is currently under development, and has several bugs, use v0.7.4**
+**This version is currently under development, and has several bugs, use [v0.7.4](https://github.com/Nafees10/qscript/tree/v0.7.4)**
 
 ## Setting it up
 
@@ -20,27 +20,29 @@ After adding that, look at the `source/demo.d` to see how to use the `QScript` c
 
 To get started on using QScript, see the following documents:
 
-* `spec/syntax.md` - Contains the specification for QScript's syntax.
-* `spec/functions.md`- Contains a list of predefined QScript functions.
-* `source/demo.d`- A demo usage of QScript in D langauage. Shows how to add new functions
+* `spec/architecture.md` - How qscript works under the hood. Don't bother if you wont be using advanced stuff.
+* `spec/libraries.md` - Built in QScript libraries. `// TODO write this`
+* `spec/syntax.md` - describes QScript's syntax and more.
+* `source/standalone.d`- A demo usage of QScript in D langauage.
 * `examples/` - Contains some scripts showing how to write scripts.
 
 The code is thoroughly documented. Separate documentation can be found [here](https://qscript.dpldocs.info/).
 
-### Building Demo
+### Building
+QScript comes with a standalone configuration, so it can be used without being first integrated into some program as a library.  
+You can build it using:
 
-To be able to run basic scripts, you can build the demo using:  
+```bash
+dub build qscript -c=standalone -b=release
+```
+You can use this executable to run scripts, inspect the generated AST for script, or the generated NaVM bytecode:
+```bash
+./qscript /path/to/script # execute a script
 
-`dub build -c=qsDemo -b=release`  
+./qscript --ast /path/to/script # pretty print AST for script
 
-This will create an executable named `demo` in the directory. To run a script through it, do:  
-
-`./demo path/to/script`  
-
-You can also use the demo build to see the generated NaVM byte code for your scripts using:  
-
-`./demo "path/to/script" "output/bytecode/file/path"`
-
+./qscript --bcode /path/to/script # print NaVM bytecode for script
+```
 ## Features
 
 1. Dynamic arrays
@@ -58,9 +60,9 @@ You can also use the demo build to see the generated NaVM byte code for your scr
 This is how a hello world would look like in QScript. For more examples, see `examples/`.  
 
 ```
+import qscript_stdio;
+
 function void main(){
 	writeln ("Hello World!");
 }
 ```
-
-_writeln is not included in QScript, programs that use QScript are to provide their own functions, QScript only provides the very basic functions. However, writeln is provided in the demo program so any example scripts can be run using that_
