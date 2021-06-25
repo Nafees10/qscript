@@ -28,7 +28,7 @@ import stdio;
 ---
 
 # Visibility
-QScript has these visibility specifier:  
+QScript has these visibility specifiers:  
 
 * `private` - Only accessible from within script.
 * `public` - Accessible by other scripts when this script is loaded as a library.
@@ -78,7 +78,7 @@ A return statement is written as following:
 ```
 return RETURN_VALUE;
 ```
-where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, writeln will not be called. write `null` in place of `RETURN_VALUE` to exit the function in case the function return type is void.
+where `RETURN_VALUE` is the value to return. As soon as this statement is executed, the function execution quits, meaning that in the following code, writeln will not be called.
 ```
 function int someFunction(){
 	return 0;
@@ -86,11 +86,11 @@ function int someFunction(){
 }
 ```
 
-In case of functions of type void, `return null;` can be used to terminate execution, like:
+In case of functions of type void, `return;` can be used to terminate execution, like:
 ```
 function void main(){
 	# ..
-	return null;
+	return;
 	# anything below wont be executed
 }
 ```
@@ -128,7 +128,7 @@ declared in the script will be called.
 QScript has these basic data types:
 * `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
 * `double` - a floating point (same as `double` in DLang)
-* `char` - a 32 bit character (`dchar` in Dlang)
+* `char` - an 8 bit character
 * `bool` - a `true` or `false` (same as Dlang `bool`)
 
 Following data types can be defined in scripts that are derived from the above basic types:
@@ -222,23 +222,6 @@ var char someChar = 'a';
 var char[] someString;
 someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
-## Reference Declaration
-References can be used to "point" to another variable.
-They can be declared like:
-```
-var @TYPE ref0, ref1, ref3;
-```
-`TYPE` can be any valid data type, for example:
-```
-var @int ptrInt;
-```
-or:
-```
-var @int[] refToIntArray; # this is a pointer to array of int
-```
-Array of references is currently not directly possible in QScript. _However_, you could create a struct that has a reference as a member, and create an array of that struct.
-
-By default, references are initliazed to be `null`.
 
 ## Variable Scope
 Variables and references are only available inside the "scope" they are declared in. In the code below:  
@@ -255,19 +238,37 @@ public function void main(int count){
 ```
 Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script, as it is `private`.  
 
+## Reference Declaration
+References can be used to "point" to another variable.
+They can be declared like:
+```
+var TYPE@ ref0, ref1, ref3;
+```
+`TYPE` can be any valid data type, for example:
+```
+var int@ ptrInt;
+```
+or:
+```
+var int[]@ refToIntArray; # this is a reference to array of int
+var int@[] arrayOfRefToInt; # this is an array of reference of int
+```
+
+references are initliazed to be `null`.
+
 ## Using References
 References can be assigned like:
 ```
 var int i;
-var @int ref;
+var int@ ref;
 ref = @i; # ref is now pointing to i, @i returns the reference to i
 ```
 and read like:
 ```
 var int i;
-var @int ref = @i;
-i = rand(); # assuming rand() is a function that returns int
-writeln("Value of i="toStr(@ref)); # @ref returns the value of the variable it is pointing 
+var int@ ref = @i;
+i = 5;
+writeln("Value of i="~toStr(@ref));
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
@@ -277,19 +278,32 @@ function void main(){
 	# i is now 1024
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
 }
-function void setRefTo(@int ref, int to){
+function void setRefTo(int@ ref, int to){
 	@ref = to;
 }
 ```
+Functions can also return references, except for reference to a local variable.
 
 ---
 
 # Shadowing
-In case a function call, variable, enum, or struct matches the one made public by a library, and one declared
-in the script, the one declared will be preferred.  
+In case an identifier matches with a library, and with one defined in script, the one declared in the script will be preferred.  
   
-In case of variables where the same variable name is used in a outer scope, this will result in an error. The 
-rule stated above applies only to conflicts between script and libraries.
+In case of variables, see the following example:  
+```
+var int i; # global i
+function void main(int i){
+	# 		local i	^
+	# now this function cannot access the global i
+	i = 5; 		# this refers to i passed as parameter
+	var int i; 	# this is not allowed
+	if (i < 5){
+		var int i = 0;
+		# in this scope, this i is separate from the i above.
+		# this may or may not be allowed, can be changed in compiler
+	}
+}
+```
 
 ---
 
@@ -352,60 +366,37 @@ Do while loops are writen like:
 ```
 do{
     # some code in a loop
-}while (CONDITION)
+}while (CONDITION);
 ```
-First the code is executed, then if the condition is `true`, it's executed again. An optional semicolon can be put at the end of the `while (CONDITION)`. 
+First the code is executed, then if the condition is `true`, it's executed again.
 
 ## For:
 
-The for loop in QScript is a bit different from other languages, it's written like:
 ```
-for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT;){
+for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT){
     # some code in a loop
 }
 ```
-in this loop, notice that there is a semicolon after `INCREMENT_STATEMENT`, that is necessary.  
 First, the `INIT_STATEMENT` is executed, right before starting the loop. This is executed only once. Then if `CONDITION` is `true`, the loop body is executed, then `INCREMENT_STATEMENT` is executed, this is repeated, until condition is false.  
 Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and `INCREMENT_STATEMENT` all must be present.
+
+## Break & Continue
+A `break;` statement can be used to exit a loop at any point, and a `continue;` will jump to the end of current iteration.
 
 ---
 
 # Operators
 
-One important thing to keep in mind when using operators is that they are evaluated left-to right. So instead of writing:
-```
-if (a == 0 || a == 1){
-}
-```
-you should write:
-```
-if ((a == 0) || (a == 1)){
-}
-```
 The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.  
 Operators that take only one operand are written like: `OPERATOR value`.  
-The whitespace between value(s) and operator is not necessary.
+The whitespace between value(s) and operator is not necessary.  
+  
+Some operators can have higher precedence.  
+These are the default precedence settings:  
+1. `&&`, `||`
+2. `==`, `!=`, `>=`, `<=`, `>`, `<`
+3. `!`
+4. `*`, `/`
+5. `+`, `-`, `~`, `%`, `@`
 
-## Arithmetic Operators
-
-* `/` operator divides two integers/floats
-* `*` operator multiplies two integeres/floats
-* `+` operator adds two integers/floats
-* `-` subtracts two integers/floats
-* `%` divides two integers/floats, returns the remainder
-
-## Comparison Operators
-
-* `==` returns `true` if two integers/floats/strings/arrays are same. 
-* `>` returns `true` if `value0` int/float is greater than `value1` int/float.
-* `<` returns `true` if `value0` int/float is lesser than `value1` int/float.
-* `>=` returns `true` if `value0` int/float is greater than or equal to `value1` int/float.
-* `<=` returns `true` if `value0` int/float is lesser than or equal to `value1` int/float.
-* `&&` returns `true` if `value0` and `value1` are both `true`
-* `||` returns `true` if either of `value0` or `value1` are `true`, or both are `true`
-* `!` not operator (works on `bool`), returns `true` if operand is `false`, `false` if operand is `true`
-
-## Other Operators:
-
-* `@` ref/de-ref operator. Returns reference to variable when operand is variable. Returns value of variable which a reference is pointing to when operand is reference.
-* `~` concatenate operator. Concatenates two arrays, returns new array.
+Operators within the same precedence are read left to right.
