@@ -1,0 +1,16 @@
+name "qscript"
+description "A Simple Scripting Language"
+authors "Nafees Hassan"
+copyright "Copyright © 2016-2021, Nafees Hassan"
+license "MIT"
+dependency "utils" version="~>0.4.4"
+dependency "navm" version="~>1.2.1"
+configuration "default" {
+	targetType "library"
+	targetName "qscript"
+}
+configuration "standalone" {
+	targetType "executable"
+	targetName "qscript"
+	versions "standalone"
+}
