@@ -35,8 +35,6 @@ package struct Token{
 /// Token generator using regex
 package class TokenGen{
 private:
-	/// token types
-	ushort[] _tokenTypes;
 	/// regex for token types (excluding the ^ at start and $ at end)
 	Regex!char[ushort] _typeRegex;
 	
@@ -50,8 +48,8 @@ private:
 	/// Returns: first matching token from a string. type will be `ushort.max` in case of no match
 	Token getToken(string str){
 		Token r;
-		foreach (type; _tokenTypes){
-			Captures!string m = matchFirst(str, _typeRegex[type]);
+		foreach (type, expr; _typeRegex){
+			Captures!string m = matchFirst(str, expr);
 			if (!m.empty){
 				r.type = type;
 				r.token = m.hit;
@@ -86,13 +84,12 @@ public:
 		return _errors.length > 0;
 	}
 	/// adds a token type, with its matching regex.  
-	/// the regex can be written assuming the string starts with this token
+	/// Types that are added first, are matched first, so in case of conflicting types, add the higher predcedence one first
 	/// 
 	/// Returns: true if done, false if type already has a regex
 	bool addTokenType(ushort type, string match){
 		if (type in _typeRegex)
 			return false;
-		_tokenTypes ~= type;
 		_typeRegex[type] = regex('^'~match);
 		return true;
 	}
@@ -138,10 +135,15 @@ comment*/
 	assert(tkGen.readTokens());
 	Token[] tokens;
 	string[] tkStrs;
+	ushort[] tkTypes;
 	tokens = tkGen.tokens;
+	tkTypes.length = tokens.length;
 	tkStrs.length = tokens.length;
-	foreach (i; 0 .. tkStrs.length)
+	foreach (i; 0 .. tkStrs.length){
 		tkStrs[i] = tokens[i].token;
+		tkTypes[i] = tokens[i].type;
+	}
 	assert(tkStrs == [" ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
 		"\n\t\t","\"tabs > spaces\"","/* multi\nline\ncomment*/","   \n ", "\"another string\""]);
+	assert(tkTypes == [1, 0, 1, 3, 2, 1, 3]);
 }
