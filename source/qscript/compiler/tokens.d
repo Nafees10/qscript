@@ -152,7 +152,6 @@ comment*/
 	foreach (i; 0 .. tkStrs.length){
 		tkStrs[i] = tokens[i].token;
 		tkTypes[i] = tokens[i].type;
-		writeln(tokens[i].lineno, ':', tokens[i].colno);
 	}
 	assert(tkStrs == [" ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
 		"\n\t\t","\"tabs > spaces\"","/* multi\nline\ncomment*/","   \n ", "\"another string\""]);
