@@ -42,8 +42,8 @@ private:
 	string _source;
 	/// the tokens
 	List!Token _tokens;
-	/// index where an unidentified token type was found
-	uint[] _errors;
+	/// line number and column number of error(s)
+	uint[2][] _errors;
 
 	/// Returns: first matching token from a string. type will be `ushort.max` in case of no match
 	Token getToken(string str){
@@ -73,9 +73,9 @@ public:
 	@property string source(string newVal){
 		return _source = newVal;
 	}
-	/// Returns: indexes where unidentified token found
-	@property uint[] errors(){
-		uint[] r = _errors;
+	/// Returns: line number and column number where unidentified token found
+	@property uint[2][] errors(){
+		uint[2][] r = _errors;
 		_errors.length = 0;
 		return r;
 	}
@@ -106,13 +106,23 @@ public:
 	/// Returns: true if done without errors, false if there was error
 	bool readTokens(){
 		this.clear();
+		uint lineno;
+		uint lastNewLineIndex;
 		for (uint i = 0; i < _source.length; ){
 			Token token = getToken(_source[i .. $]);
+			token.lineno = lineno + 1;
+			token.colno = i - lastNewLineIndex;
 			if (token.type == ushort.max || !token.length){
-				_errors ~= i;
+				_errors ~= [token.lineno, token.colno];
 				return false;
 			}
 			_tokens.append(token);
+			foreach (j, c; _source[i .. i + token.length]){
+				if (c == '\n'){
+					lastNewLineIndex = cast(uint)j + i;
+					lineno ++;
+				}
+			}
 			i += token.length;
 		}
 		return true;
@@ -142,6 +152,7 @@ comment*/
 	foreach (i; 0 .. tkStrs.length){
 		tkStrs[i] = tokens[i].token;
 		tkTypes[i] = tokens[i].type;
+		writeln(tokens[i].lineno, ':', tokens[i].colno);
 	}
 	assert(tkStrs == [" ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
 		"\n\t\t","\"tabs > spaces\"","/* multi\nline\ncomment*/","   \n ", "\"another string\""]);
