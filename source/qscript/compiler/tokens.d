@@ -41,7 +41,7 @@ private:
 	/// currently open source code
 	string _source;
 	/// the tokens
-	List!Token _tokens;
+	Token[] _tokens;
 	/// line number and column number of error(s)
 	uint[2][] _errors;
 
@@ -60,10 +60,8 @@ private:
 	}
 public:
 	this(){
-		_tokens = new List!Token;
 	}
 	~this(){
-		.destroy(_tokens);
 	}
 	/// the source code
 	@property string source(){
@@ -95,11 +93,11 @@ public:
 	}
 	/// Returns: tokens
 	@property Token[] tokens(){
-		return _tokens.toArray;
+		return _tokens;
 	}
 	/// clears tokens
 	void clear(){
-		_tokens.clear();
+		_tokens.length = 0;
 	}
 	/// reads source into tokens. Any existing tokens will be cleared
 	/// 
@@ -116,7 +114,7 @@ public:
 				_errors ~= [token.lineno, token.colno];
 				return false;
 			}
-			_tokens.append(token);
+			_tokens ~= token;
 			foreach (j, c; _source[i .. i + token.length]){
 				if (c == '\n'){
 					lastNewLineIndex = cast(uint)j + i;
@@ -126,6 +124,36 @@ public:
 			i += token.length;
 		}
 		return true;
+	}
+	/// Removes tokens that match type
+	/// 
+	/// Returns: number of tokens removed
+	uint removeByType(ushort type){
+		uint count, i;
+		while (i + count < _tokens.length){
+			if (_tokens[i+count].type == type)
+				count ++;
+			else{
+				_tokens[i] = _tokens[i+count];
+				i ++;
+			}
+		}
+		_tokens.length -= count;
+		return count;
+	}
+	/// ditto
+	uint removeByType(ushort[] types){
+		uint count, i;
+		while (i + count < _tokens.length){
+			if (types.hasElement(_tokens[i+count].type))
+				count ++;
+			else{
+				_tokens[i] = _tokens[i+count];
+				i ++;
+			}
+		}
+		_tokens.length -= count;
+		return count;
 	}
 }
 ///
@@ -156,4 +184,16 @@ comment*/
 	assert(tkStrs == [" ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
 		"\n\t\t","\"tabs > spaces\"","/* multi\nline\ncomment*/","   \n ", "\"another string\""]);
 	assert(tkTypes == [1, 0, 1, 3, 2, 1, 3]);
+	tkGen.removeByType(1); // no whitespace
+	tokens = tkGen.tokens;
+	tkTypes.length = tokens.length;
+	foreach (i; 0 .. tkTypes.length)
+		tkTypes[i] = tokens[i].type;
+	assert(tkTypes == [0, 3, 2, 3]);
+	tkGen.removeByType([0,2]); // no comments, or multi line comments
+	tokens = tkGen.tokens;
+	tkTypes.length = tokens.length;
+	foreach (i; 0 .. tkTypes.length)
+		tkTypes[i] = tokens[i].type;
+	assert(tkTypes == [3,3]);
 }
