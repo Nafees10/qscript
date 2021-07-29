@@ -32,7 +32,9 @@ package struct Token{
 	}
 }
 
-/// Token generator using regex
+/// a fancy string exploder using regex
+///
+/// this should probably be moved to my utils package, but it sits here for now
 package class TokenGen{
 private:
 	/// regex for token types (excluding the ^ at start and $ at end)
@@ -54,6 +56,19 @@ private:
 				r.type = type;
 				r.token = m.hit;
 				break;
+			}
+		}
+		return r;
+	}
+	/// Returns: longest matching token from a string. type will be `ushort.max` in case of no match
+	Token getTokenLongest(string str){
+		Token r;
+		r.type = ushort.max;
+		foreach (type, expr; _typeRegex){
+			Captures!string m = matchFirst(str, expr);
+			if (!m.empty && m.hit.length > r.token.length){
+				r.type = type;
+				r.token = m.hit;
 			}
 		}
 		return r;
@@ -99,7 +114,9 @@ public:
 	void clear(){
 		_tokens.length = 0;
 	}
-	/// reads source into tokens. Any existing tokens will be cleared
+	/// reads source into tokens. Any existing tokens will be cleared.
+	/// 
+	/// This will try to match regex expressions, and use the first one that matches.
 	/// 
 	/// Returns: true if done without errors, false if there was error
 	bool readTokens(){
@@ -108,6 +125,34 @@ public:
 		uint lastNewLineIndex;
 		for (uint i = 0; i < _source.length; ){
 			Token token = getToken(_source[i .. $]);
+			token.lineno = lineno + 1;
+			token.colno = i - lastNewLineIndex;
+			if (token.type == ushort.max || !token.length){
+				_errors ~= [token.lineno, token.colno];
+				return false;
+			}
+			_tokens ~= token;
+			foreach (j, c; _source[i .. i + token.length]){
+				if (c == '\n'){
+					lastNewLineIndex = cast(uint)j + i;
+					lineno ++;
+				}
+			}
+			i += token.length;
+		}
+		return true;
+	}
+	/// reads source into tokens. Any existing tokens will be cleared.
+	/// 
+	/// This will match against all regex, and use the longest hit
+	/// 
+	/// Returns: true if done without errors, false if there was error
+	bool readTokensLongest(){
+		this.clear();
+		uint lineno;
+		uint lastNewLineIndex;
+		for (uint i = 0; i < _source.length; ){
+			Token token = getTokenLongest(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
 			if (token.type == ushort.max || !token.length){
@@ -196,4 +241,20 @@ comment*/
 	foreach (i; 0 .. tkTypes.length)
 		tkTypes[i] = tokens[i].type;
 	assert(tkTypes == [3,3]);
+	.destroy(tkGen);
+	// now testing readTokensLongest
+	tkGen = new TokenGen();
+	assert(tkGen.addTokenType(0, `import`));
+	assert(tkGen.addTokenType(1, `[\S]+`));
+	assert(tkGen.addTokenType(2, `[\s]+`));
+	tkGen.source = "import something importsomethingElse";
+	assert(tkGen.readTokensLongest());
+	tkStrs.length = tkGen.tokens.length;
+	tkTypes.length = tkStrs.length;
+	foreach (i; 0 .. tkStrs.length){
+		tkStrs[i] = tkGen.tokens[i].token;
+		tkTypes[i] = tkGen.tokens[i].type;
+	}
+	assert(tkStrs == ["import", " ", "something", " ", "importsomethingElse"]);
+	assert(tkTypes == [0, 2, 1, 2, 1]);
 }
