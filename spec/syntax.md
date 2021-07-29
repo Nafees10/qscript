@@ -8,7 +8,17 @@ For example:
 function void main(){ # This is a comment
 	# This also is a comment
 }
+```
 
+Multi line comments can be written by enclosing them in between `/*` and `*/` like:   
+```
+/*
+this
+is
+a
+multiline
+comment
+*/
 ```
 
 ---
@@ -127,11 +137,19 @@ declared in the script will be called.
 # Data Types
 QScript has these basic data types:
 * `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
-* `double` - a floating point (same as `double` in DLang)
+* `float` - a floating point (same as `float` in DLang)
 * `char` - an 8 bit character
 * `bool` - a `true` or `false` (same as Dlang `bool`)
 
-Following data types can be defined in scripts that are derived from the above basic types:
+## `int`
+This can be written as series (or just one) digit(s).  
+Or it can be written as a binary literal by using the `0B` prefix like:  
+`0B1100` for `12`  
+Or it can be written as a Hexadecimal literal using the `0x` prefix like:  
+`0xFF` for `15`  
+the `B` in `0B` or `x` in `0x` is not case sensitive:  
+* `0b1011` is same as `0B1011`
+* `0xFF` is same as `0xff` which is same as `0Xff` or `0XFF`
 
 ## Structs
 These can be used to store multiple values of varying or same data types. They are defined like:  
@@ -146,7 +164,9 @@ struct STRUCT_NAME{
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
 
-QScript does not _yet_ allow functions as members of structs, only variables can be members.
+Keep in mind that recursive dependency is not possible in structs, as they are allocated on stack, however, you can store reference to any struct in a struct, as reference will be initialised to null.
+
+QScript does not allow functions as members of structs, only variables can be members.
 
 An example usage of a struct would be:  
 ```
@@ -162,6 +182,7 @@ public function Position getPosition(int x, int y){
 ```
 
 ## Enums
+Enums are always of type `int`, and the value for each member is automatically assigned.  
 Enums are defined like:  
 ```
 enum EnumName{
@@ -193,7 +214,7 @@ Variables can be declared like:
 ```
 var TYPE var0, var1, var2;
 ```
-* `TYPE` is the data type of the variables, it can be a `char`, `int`, `double`, `bool`, or an array of those types: `int[]`, or `int[][]`... .
+* `TYPE` is the data type of the variables, it can be a `char`, `int`, `float`, `bool`, or an array of those types: `int[]`, or `int[][]`... .
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
@@ -387,16 +408,33 @@ A `break;` statement can be used to exit a loop at any point, and a `continue;` 
 
 # Operators
 
-The syntax for all operators is: `value0 OPERATOR value1`, where `OPERATOR` is an operator from the lists below.  
-Operators that take only one operand are written like: `OPERATOR value`.  
-The whitespace between value(s) and operator is not necessary.  
-  
-Some operators can have higher precedence.  
-These are the default precedence settings:  
-1. `&&`, `||`
-2. `==`, `!=`, `>=`, `<=`, `>`, `<`
-3. `!`
-4. `*`, `/`
-5. `+`, `-`, `~`, `%`, `@`
+Syntax for binary operators is: `A operator B`. The space between operator and A/B is not necessary.  
+Syntax for unary operators is: `operator A`. Space between operator and A is not necessary.
 
-Operators within the same precedence are read left to right.
+Operators are read in this order (higher = evaluated first):
+1. `@`, `!`
+2. `*`, `/`, `+`, `-`, `%`, `~`
+3. `==`, `!=`, `>=`, `<=`, `>`, `<`
+4. `&&`, `||`
+5. `=`
+
+## Operator Functions
+Operators are read as functions, and can be overrided same as functions, and the operands are arguments.
+The function name associated with each operator is as follows:
+1. `@` - `opRef` - this operator's behaviour is mostly hardcoded in compiler, overriding is not something that should normally be done.
+1. `!` - `opBoolNot`
+1. `*` - `opMultiply`
+1. `/` - `opDivide`
+1. `+` - `opAdd`
+1. `-` - `opSubtract`
+1. `%` - `opMod`
+1. `~` - `opConcat`
+1. `==` - `opIsSame`
+1. `!=` - `opIsNotSame`
+1. `>=` - `opIsGreaterOrSame`
+1. `<=` - `opIsSmallerOrSame`
+1. `>` - `opIsGreater`
+1. `<` - `opIsSmaller`
+1. `&&` - `opBoolAnd`
+1. `||` - `opBoolOr`
+1. `=` - `opAssign`
