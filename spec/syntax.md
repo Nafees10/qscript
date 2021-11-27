@@ -408,10 +408,11 @@ A `break;` statement can be used to exit a loop at any point, and a `continue;` 
 
 # Operators
 
-Syntax for binary operators is: `A operator B`. The space between operator and A/B is not necessary.  
-Syntax for unary operators is: `operator A`. Space between operator and A is not necessary.
+Syntax for binary operators is: `A operator B`. The whitespace between operator and A/B is not necessary.  
+Syntax for unary operators is: `operator A`. Whitespace between operator and A is not necessary.
 
-Operators are read in this order (higher = evaluated first):
+Operators are read in this order (higher = evaluated first, otherwise left-to-right):
+1. `.`
 1. `@`, `!`
 2. `*`, `/`, `+`, `-`, `%`, `~`
 3. `==`, `!=`, `>=`, `<=`, `>`, `<`
@@ -420,21 +421,24 @@ Operators are read in this order (higher = evaluated first):
 
 ## Operator Functions
 Operators are read as functions, and can be overrided same as functions, and the operands are arguments.
-The function name associated with each operator is as follows:
-1. `@` - `opRef` - this operator's behaviour is mostly hardcoded in compiler, overriding is not something that should normally be done.
-1. `!` - `opBoolNot`
-1. `*` - `opMultiply`
-1. `/` - `opDivide`
-1. `+` - `opAdd`
-1. `-` - `opSubtract`
-1. `%` - `opMod`
-1. `~` - `opConcat`
-1. `==` - `opIsSame`
-1. `!=` - `opIsNotSame`
-1. `>=` - `opIsGreaterOrSame`
-1. `<=` - `opIsSmallerOrSame`
-1. `>` - `opIsGreater`
-1. `<` - `opIsSmaller`
-1. `&&` - `opBoolAnd`
-1. `||` - `opBoolOr`
-1. `=` - `opAssign`
+The function associated with each operator is as follows: (`Ta`, `Tb`, `T` refers to data types, of `a`,`b`, or return value)
+| Operator | Function |
+|----------|----------------------------------------|
+| `.`	|	`Tb opMemberSelect(Ta a, char[] name)`	|
+| `@`	|	`@T opRef(T a)`	,	`T opRef(@T a)`		|
+| `!`	|	`bool opBoolNot(T a)`					|
+| `*`	|	`T opMultiply(T a, T b)`				|
+| `/`	|	`T opDivide(T a, T b)`					|
+| `+`	|	`T opAdd(T a, T b)`						|
+| `-`	|	`T opSubtract(T a, T b)`				|
+| `%`	|	`T opMod(T a, T b)`						|
+| `~`	|	`T opConcat(T a, T b)`					|
+| `==`	|	`bool opIsSame(T a, T b)`				|
+| `!=`	|	`bool opIsNotSame(T a, T b)`			|
+| `>=`	|	`bool opIsGreaterOrSame(T a, T b)`		|
+| `<=`	|	`bool opIsSmallerOrSame(T a, T b)`		|
+| `>`	|	`bool opIsGreater(T a, T b)`			|
+| `<`	|	`bool opIsSmaller(T a, T b)`			|
+| `&&`	|	`bool opBoolAnd(T a, T b)`				|
+| `\|\|`|	`bool opBoolOr(T a, T b)`				|
+| `=`	|	`void opAssign(@T a, T b)`				|
