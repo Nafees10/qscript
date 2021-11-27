@@ -13,15 +13,15 @@ private shared static this(){
 	];
 }
 
-/// Stores explanations for CompileError.Type  
-/// `$` character is replaced by a detail that can be specified in CompileError.details
-private string[CompileError.Type] ERROR_EXPLAIN_STRING;
-
 /// Visibility specifiers
 package enum Visibility{
 	Private,
 	Public
 }
+
+/// Stores explanations for CompileError.Type  
+/// `$` character is replaced by a detail that can be specified in CompileError.details
+private string[CompileError.Type] ERROR_EXPLAIN_STRING;
 
 /// compilation error
 struct CompileError{

@@ -37,8 +37,10 @@ package struct Token{
 /// this should probably be moved to my utils package, but it sits here for now
 package class TokenGen{
 private:
-	/// regex for token types (excluding the ^ at start and $ at end)
+	/// regex for token types
 	Regex!char[ushort] _typeRegex;
+	/// patterns for matching, excluding ^ at start
+	string[ushort] _matchString;
 	
 	/// currently open source code
 	string _source;
@@ -98,13 +100,19 @@ public:
 	}
 	/// adds a token type, with its matching regex.  
 	/// Types that are added first, are matched first, so in case of conflicting types, add the higher predcedence one first
-	/// 
-	/// Returns: true if done, false if type already has a regex
-	bool addTokenType(ushort type, string match){
-		if (type in _typeRegex)
-			return false;
+	void addTokenType(ushort type, string match){
+		_matchString[type] = match;
 		_typeRegex[type] = regex('^'~match);
-		return true;
+	}
+	/// Returns: true if a type has a match string
+	bool hasTokenType(ushort type){
+		return (type in _matchString) != null;
+	}
+	/// Returns: match string for a type, or empty string in case does not exist
+	string getMatchString(ushort type){
+		if (type in _matchString)
+			return _matchString[type];
+		return "";
 	}
 	/// Returns: tokens
 	@property Token[] tokens(){
@@ -204,11 +212,10 @@ public:
 ///
 unittest{
 	TokenGen tkGen = new TokenGen();
-	bool flag = tkGen.addTokenType(0, `#.*`); // comments
-	flag &= tkGen.addTokenType(1, `[\s]+`); // whitespace
-	flag &= tkGen.addTokenType(2, `\/\*[\s\S]*\*\/`); // multi line comment
-	flag &= tkGen.addTokenType(3, `"([^"]|(\\"))*((?<!\\)|(?<=\\\\))"`); // string
-	assert(flag);
+	tkGen.addTokenType(0, `#.*`); // comments
+	tkGen.addTokenType(1, `[\s]+`); // whitespace
+	tkGen.addTokenType(2, `\/\*[\s\S]*\*\/`); // multi line comment
+	tkGen.addTokenType(3, `"([^"]|(\\"))*((?<!\\)|(?<=\\\\))"`); // string
 	tkGen.source = 
 " # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv 
 \t\t\"tabs > spaces\"/* multi
@@ -244,9 +251,9 @@ comment*/
 	.destroy(tkGen);
 	// now testing readTokensLongest
 	tkGen = new TokenGen();
-	assert(tkGen.addTokenType(0, `import`));
-	assert(tkGen.addTokenType(1, `[\S]+`));
-	assert(tkGen.addTokenType(2, `[\s]+`));
+	tkGen.addTokenType(0, `import`);
+	tkGen.addTokenType(1, `[\S]+`);
+	tkGen.addTokenType(2, `[\s]+`);
 	tkGen.source = "import something importsomethingElse";
 	assert(tkGen.readTokensLongest());
 	tkStrs.length = tkGen.tokens.length;
