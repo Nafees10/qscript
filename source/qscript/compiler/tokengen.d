@@ -13,20 +13,20 @@ package struct Token{
 	uint lineno, colno;
 	/// token type.
 	/// 
-	/// `ushort.max` is reserved for `invalid/unknown type`
-	ushort type = ushort.max;
+	/// `uint.max` is reserved for `invalid/unknown type`
+	uint type = uint.max;
 	/// token
 	string token;
 	alias token this;
 	/// constructor
-	this(uint lineno, uint colno, ushort type, string token){
+	this(uint lineno, uint colno, uint type, string token){
 		this.lineno = lineno;
 		this.colno = colno;
 		this.type = type;
 		this.token = token;
 	}
 	/// ditto
-	this(ushort type, string token){
+	this(uint type, string token){
 		this.type = type;
 		this.token = token;
 	}
@@ -38,9 +38,7 @@ package struct Token{
 package class TokenGen{
 private:
 	/// regex for token types
-	Regex!char[ushort] _typeRegex;
-	/// patterns for matching, excluding ^ at start
-	string[ushort] _matchString;
+	Regex!char[uint] _typeRegex;
 	
 	/// currently open source code
 	string _source;
@@ -49,7 +47,7 @@ private:
 	/// line number and column number of error(s)
 	uint[2][] _errors;
 
-	/// Returns: first matching token from a string. type will be `ushort.max` in case of no match
+	/// Returns: first matching token from a string. type will be `uint.max` in case of no match
 	Token getToken(string str){
 		Token r;
 		foreach (type, expr; _typeRegex){
@@ -62,10 +60,10 @@ private:
 		}
 		return r;
 	}
-	/// Returns: longest matching token from a string. type will be `ushort.max` in case of no match
+	/// Returns: longest matching token from a string. type will be `uint.max` in case of no match
 	Token getTokenLongest(string str){
 		Token r;
-		r.type = ushort.max;
+		r.type = uint.max;
 		foreach (type, expr; _typeRegex){
 			Captures!string m = matchFirst(str, expr);
 			if (!m.empty && m.hit.length > r.token.length){
@@ -100,19 +98,21 @@ public:
 	}
 	/// adds a token type, with its matching regex.  
 	/// Types that are added first, are matched first, so in case of conflicting types, add the higher predcedence one first
-	void addTokenType(ushort type, string match){
-		_matchString[type] = match;
+	void addTokenType(uint type, string match){
 		_typeRegex[type] = regex('^'~match);
 	}
-	/// Returns: true if a type has a match string
-	bool hasTokenType(ushort type){
-		return (type in _matchString) != null;
-	}
-	/// Returns: match string for a type, or empty string in case does not exist
-	string getMatchString(ushort type){
-		if (type in _matchString)
-			return _matchString[type];
-		return "";
+	/// adds a token type, selecting a token type for it automatically
+	/// 
+	/// Returns: the selected token type
+	uint addTokenType(string match){
+		static uint freeIndex = uint.max - 1;
+		while (freeIndex in _typeRegex && freeIndex != uint.max){
+			freeIndex --;
+		}
+		if (freeIndex == uint.max || freeIndex in _typeRegex)
+			return uint.max;
+		addTokenType(freeIndex, match);
+		return freeIndex;
 	}
 	/// Returns: tokens
 	@property Token[] tokens(){
@@ -135,7 +135,7 @@ public:
 			Token token = getToken(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
-			if (token.type == ushort.max || !token.length){
+			if (token.type == uint.max || !token.length){
 				_errors ~= [token.lineno, token.colno];
 				return false;
 			}
@@ -163,7 +163,7 @@ public:
 			Token token = getTokenLongest(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
-			if (token.type == ushort.max || !token.length){
+			if (token.type == uint.max || !token.length){
 				_errors ~= [token.lineno, token.colno];
 				return false;
 			}
@@ -181,7 +181,7 @@ public:
 	/// Removes tokens that match type
 	/// 
 	/// Returns: number of tokens removed
-	uint removeByType(ushort type){
+	uint removeByType(uint type){
 		uint count, i;
 		while (i + count < _tokens.length){
 			if (_tokens[i+count].type == type)
@@ -195,7 +195,7 @@ public:
 		return count;
 	}
 	/// ditto
-	uint removeByType(ushort[] types){
+	uint removeByType(uint[] types){
 		uint count, i;
 		while (i + count < _tokens.length){
 			if (types.hasElement(_tokens[i+count].type))
@@ -225,7 +225,7 @@ comment*/
 	assert(tkGen.readTokens());
 	Token[] tokens;
 	string[] tkStrs;
-	ushort[] tkTypes;
+	uint[] tkTypes;
 	tokens = tkGen.tokens;
 	tkTypes.length = tokens.length;
 	tkStrs.length = tokens.length;
