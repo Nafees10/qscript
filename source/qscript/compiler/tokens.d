@@ -9,7 +9,7 @@ debug{import std.stdio;}
 version(unittest){import std.stdio, std.conv : to;}
 
 /// possible token types
-enum TokenType : ushort{
+enum TokenType : uint{
 	Whitespace			, /// whitespace
 	Comment				, /// single line comment
 	CommentMultiline	, /// multiline comment
@@ -45,8 +45,24 @@ enum TokenType : ushort{
 	Identifier			, /// identifier
 	Semicolon			, /// `;`
 	Comma				, /// `,`
-	Operator			, /// operator
-	OperatorOther		, /// other operators, not built in
+	OpMemberSelect		, /// `.` operator
+	OpRef				, /// `@` operator
+	OpNot				, /// `!` operator
+	OpMultiply			, /// `*` operator
+	OpDivide			, /// `/` operator
+	OpAdd				, /// `+` operator
+	OpSubtract			, /// `-` operator
+	OpMod				, /// `%` operator
+	OpConcat			, /// `~` operator
+	OpIsSame			, /// `==` operator
+	OpIsNotSame			, /// `!=` operator
+	OpIsGreaterOrSame	, /// `>=` operator
+	OpIsSmallerOrSame	, /// `<=` operator
+	OpIsGreater			, /// `>` operator
+	OpIsSmaller			, /// `<` operator
+	OpBoolAnd			, /// `&&` operator
+	OpBoolOr			, /// `||` operator
+	OpAssign			, /// `=` operator
 	BracketOpen			, /// `(`
 	BracketClose		, /// `)`
 	IndexOpen			, /// `[`
@@ -96,8 +112,24 @@ private:
 		_tkGen.addTokenType(TokenType.Identifier, `[a-zA-Z][a-zA-Z0-9_]*`);
 		_tkGen.addTokenType(TokenType.Semicolon, `;`);
 		_tkGen.addTokenType(TokenType.Comma, `,`);
-		_tkGen.addTokenType(TokenType.Operator,
-			`((\.)|(@)|(!)|(\*)|(\/)|(\+)|(-)|(%)|(~)|(<)|(>)|(=)|(==)|(!=)|(>=)|(<=)|(\|\|)|(&&))`);
+		_tkGen.addTokenType(TokenType.OpMemberSelect, `\.`);
+		_tkGen.addTokenType(TokenType.OpRef, `@`);
+		_tkGen.addTokenType(TokenType.OpNot, `!`);
+		_tkGen.addTokenType(TokenType.OpMultiply, `\*`);
+		_tkGen.addTokenType(TokenType.OpDivide, `\/`);
+		_tkGen.addTokenType(TokenType.OpAdd, `\+`);
+		_tkGen.addTokenType(TokenType.OpSubtract, `-`);
+		_tkGen.addTokenType(TokenType.OpMod, `%`);
+		_tkGen.addTokenType(TokenType.OpConcat, `~`);
+		_tkGen.addTokenType(TokenType.OpIsSmaller, `<`);
+		_tkGen.addTokenType(TokenType.OpIsGreater, `>`);
+		_tkGen.addTokenType(TokenType.OpIsSmallerOrSame, `<=`);
+		_tkGen.addTokenType(TokenType.OpIsGreaterOrSame, `>=`);
+		_tkGen.addTokenType(TokenType.OpIsSame, `==`);
+		_tkGen.addTokenType(TokenType.OpIsNotSame, `!=`);
+		_tkGen.addTokenType(TokenType.OpBoolAnd, `&&`);
+		_tkGen.addTokenType(TokenType.OpBoolOr, `\|\|`);
+		_tkGen.addTokenType(TokenType.OpAssign, `=`);
 		_tkGen.addTokenType(TokenType.BracketOpen, `\(`);
 		_tkGen.addTokenType(TokenType.BracketClose, `\)`);
 		_tkGen.addTokenType(TokenType.IndexOpen, `\[`);
@@ -126,14 +158,6 @@ public:
 		r = _tkGen.tokens;
 		errors = _tkGen.errors;
 		return r;
-	}
-	/// Adds an operator match to TokeType.OperatorOther
-	void addOtherOperator(string operator){
-		string match = _tkGen.getMatchString(TokenType.OperatorOther);
-		if (match.length)
-			match ~= '|';
-		match ~= regEscape(operator);
-		_tkGen.addTokenType(TokenType.OperatorOther, match);
 	}
 	/// changes regex match string for a TokeType
 	void setMatch(TokenType type, string match){
