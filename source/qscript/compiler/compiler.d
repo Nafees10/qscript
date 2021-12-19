@@ -22,6 +22,8 @@ package enum Visibility{
 /// Stores explanations for CompileError.Type  
 /// `$` character is replaced by a detail that can be specified in CompileError.details
 private string[CompileError.Type] ERROR_EXPLAIN_STRING;
+/// default namespace name
+string DEFAULT_NAMESPACE = "this";
 
 /// compilation error
 struct CompileError{
