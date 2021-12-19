@@ -35,40 +35,10 @@ package struct Token{
 /// this should probably be moved to my utils package, but it sits here for now
 package class TokenGen{
 private:
-	/// For storing how to match against a token type
-	struct TokenTypeMatch{
-		enum Type : ubyte{
-			ExactMatch,
-			MatchFinderFunction,
-		}
-		private ubyte _type;
-		private union{
-			string _exactMatch;
-			uint function (string) _findMatch;
-		}
-		/// constructor
-		this (string match){
-			_type = Type.ExactMatch;
-			this._exactMatch = match;
-		}
-		/// constructor
-		/// 
-		/// the `matchFinder` function returns how many characters from start of string match as token, 0 if no match.
-		this (uint function (string) matchFinder){
-			_type = Type.MatchFinderFunction;
-			this._findMatch = matchFinder;
-		}
-		/// tries to match with this type
-		/// 
-		/// Returns: number of initial characters that match, 0 if none, obviously
-		uint matches(string s){
-			if (_type == Type.ExactMatch)
-				return (s.length >= _exactMatch.length && s[0 .. _exactMatch.length] == _exactMatch) * cast(uint)_exactMatch.length;
-			return _findMatch(s);
-		}
-	}
-	/// token matchers
-	TokenTypeMatch[uint] _matchers;
+	string[] _exactMatches;
+	uint[] _exactMatchesTypes;
+	uint function(string)[] _matchFinderFunctions;
+	uint[] _matchFinderTypes;
 	
 	/// currently open source code
 	string _source;
@@ -82,12 +52,20 @@ private:
 		Token r;
 		uint maxLen = 0;
 		uint maxType;
-		foreach (type, matcher; _matchers){
-			const uint len = matcher.matches(str);
-			if (len <= maxLen)
-				continue;
-			maxLen = len;
-			maxType = type;
+		foreach (i, match; _exactMatches){
+			if (match.length > maxLen && match.length <= str.length && str[0 .. match.length] == match){
+				maxLen = cast(uint)match.length;
+				maxType = _exactMatchesTypes[i];
+			}
+		}
+		if (!maxLen){
+			foreach (i, matcher; _matchFinderFunctions){
+				const uint len = matcher(str);
+				if (len > maxLen){
+					maxLen = len;
+					maxType = _matchFinderTypes[i];
+				}
+			}
 		}
 		if (maxLen){
 			r.type = maxType;
@@ -118,40 +96,17 @@ public:
 	@property bool error(){
 		return _errors.length > 0;
 	}
-	/// adds a token type
-	/// 
-	/// Returns: true if added
-	bool addTokenType(uint type, string match, bool overwrite = false){
-		if (type !in _matchers || overwrite){
-			_matchers[type] = TokenTypeMatch(match);
-			return true;
-		}
-		return false;
+	/// adds a token type. Exact matches are checked for first
+	void addTokenType(uint type, string match){
+		_exactMatches ~= match;
+		_exactMatchesTypes ~= type;
 	}
-	/// adds a token type
+	/// adds a token type. Token types added this way are checked for after no exact match is found
 	/// 
 	/// The `matchFinder` function should return the number of characters that match from start
-	/// 
-	/// Returns: true if added
-	bool addTokenType(uint type, uint function (string) matchFinder, bool overwrite = false){
-		if (type !in _matchers || overwrite){
-			_matchers[type] = TokenTypeMatch(matchFinder);
-			return true;
-		}
-		return false;
-	}
-	/// adds a token type, selecting a token type for it automatically
-	/// 
-	/// Returns: the selected token type
-	uint addTokenType(string match){
-		static uint freeIndex = uint.max - 1;
-		while (freeIndex in _matchers && freeIndex != uint.max){
-			freeIndex --;
-		}
-		if (freeIndex == uint.max || freeIndex in _matchers)
-			return uint.max;
-		addTokenType(freeIndex, match);
-		return freeIndex;
+	void addTokenType(uint type, uint function (string) matchFinder){
+		_matchFinderFunctions ~= matchFinder;
+		_matchFinderTypes ~= type;
 	}
 	/// Returns: tokens
 	@property Token[] tokens(){
