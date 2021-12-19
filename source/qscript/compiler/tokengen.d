@@ -63,7 +63,7 @@ private:
 		/// Returns: number of initial characters that match, 0 if none, obviously
 		uint matches(string s){
 			if (_type == Type.ExactMatch)
-				return (s.length >= _exactMatch.length && s[0 .. _exactMatch.length] == _exactMatch) * cast(uint)s.length;
+				return (s.length >= _exactMatch.length && s[0 .. _exactMatch.length] == _exactMatch) * cast(uint)_exactMatch.length;
 			return _findMatch(s);
 		}
 	}
@@ -292,8 +292,10 @@ unittest{
 		}
 		return 0;
 	});
+	// keyword
+	tkGen.addTokenType(4, "keyword");
 	tkGen.source = 
-" # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv 
+"keyword # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv 
 \t\t\"tabs > spaces\"/* multi
 line
 comment*/   
@@ -309,20 +311,20 @@ comment*/
 		tkStrs[i] = tokens[i].token;
 		tkTypes[i] = tokens[i].type;
 	}
-	assert(tkStrs == [" ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
+	assert(tkStrs == ["keyword"," ","# a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv ",
 		"\n\t\t","\"tabs > spaces\"","/* multi\nline\ncomment*/","   \n ", "\"another string\""]);
-	assert(tkTypes == [1, 0, 1, 3, 2, 1, 3]);
+	assert(tkTypes == [4, 1, 0, 1, 3, 2, 1, 3]);
 	tkGen.removeByType(1); // no whitespace
 	tokens = tkGen.tokens;
 	tkTypes.length = tokens.length;
 	foreach (i; 0 .. tkTypes.length)
 		tkTypes[i] = tokens[i].type;
-	assert(tkTypes == [0, 3, 2, 3]);
+	assert(tkTypes == [4, 0, 3, 2, 3]);
 	tkGen.removeByType([0,2]); // no comments, or multi line comments
 	tokens = tkGen.tokens;
 	tkTypes.length = tokens.length;
 	foreach (i; 0 .. tkTypes.length)
 		tkTypes[i] = tokens[i].type;
-	assert(tkTypes == [3,3]);
+	assert(tkTypes == [4, 3,3]);
 	.destroy(tkGen);
 }
