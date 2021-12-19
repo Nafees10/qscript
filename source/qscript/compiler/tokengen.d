@@ -30,7 +30,7 @@ package struct Token{
 	}
 }
 
-/// a fancy string exploder using regex
+/// a fancy string exploder
 ///
 /// this should probably be moved to my utils package, but it sits here for now
 package class TokenGen{
