@@ -77,15 +77,93 @@ private:
 	TokenGen _tkGen; /// the actual class used for token gen
 	/// prepares _tkGen with qscript syntax
 	void _prepare(){
-		_tkGen.addTokenType(TokenType.Whitespace, `[\s]+`);
-		_tkGen.addTokenType(TokenType.Comment, `#.*`);
-		_tkGen.addTokenType(TokenType.CommentMultiline, `\/\*[^\*\/]*\*\/`);
-		_tkGen.addTokenType(TokenType.LiteralInt, `[\d]+`);
-		_tkGen.addTokenType(TokenType.LiteralFloat, `[\d]+\.[\d]+`);
-		_tkGen.addTokenType(TokenType.LiteralString, `"(?:[^"\\]|\\.)*"`);
-		_tkGen.addTokenType(TokenType.LiteralChar, `'(?:[^"\\]|\\.)'`);
-		_tkGen.addTokenType(TokenType.LiteralHexadecimal, `0[xX][\da-fA-F]+`);
-		_tkGen.addTokenType(TokenType.LiteralBinary, `0[bB][01]+`);
+		_tkGen.addTokenType(TokenType.Whitespace, function (string str){
+			foreach (index, ch; str){
+				if (ch != ' ' && ch != '\t' && ch != '\n')
+					return cast(uint)index;
+			}
+			return cast(uint)(str.length);
+		});
+		_tkGen.addTokenType(TokenType.Comment, function (string str){
+			if (!str.length || str[0] != '#')
+				return cast(uint)0;
+			foreach (index, ch; str[1 .. $]){
+				if (ch == '\n')
+					return cast(uint)index + 1;
+			}
+			return cast(uint)(str.length);
+		});
+		_tkGen.addTokenType(TokenType.CommentMultiline, function (string str){
+			if (str.length < 2 || str[0 .. 2] != "/*")
+				return 0;
+			for (uint i = 4; i <= str.length; i ++){
+				if (str[i - 2 .. i] == "*/")
+					return i;
+			}
+			return 0;
+		});
+		_tkGen.addTokenType(TokenType.LiteralInt, function (string str){
+			foreach (index, ch; str){
+				if (ch < '0' || ch > '9')
+					return cast(uint)index;
+			}
+			return cast(uint)str.length;
+		});
+		_tkGen.addTokenType(TokenType.LiteralFloat, function (string str){
+			int charsAfterDot = -1;
+			foreach (index, ch; str){
+				if (ch == '.' && charsAfterDot == -1){
+					charsAfterDot = 0;
+					continue;
+				}
+				if (ch < '0' || ch > '9')
+					return (charsAfterDot > 0) * cast(uint)index;
+				charsAfterDot += charsAfterDot != -1;
+			}
+			return (charsAfterDot > 0) * cast(uint)str.length;
+		});
+		_tkGen.addTokenType(TokenType.LiteralString, function (string str){
+			if (str.length < 2 || str[0] != '"')
+				return 0;
+			for (uint i = 1; i < str.length; i ++){
+				if (str[i] == '\\'){
+					i ++;
+					continue;
+				}
+				if (str[i] == '"')
+					return i + 1;
+			}
+			return 0;
+		});
+		_tkGen.addTokenType(TokenType.LiteralChar, function (string str){
+			if (str.length < 3 || str[0] != '\'')
+				return 0;
+			if (str[1] == '\\' && str.length > 3 && str[3] == '\'')
+				return 4;
+			if (str[1] != '\'' && str[2] == '\'')
+				return 3;
+			return 0;
+		});
+		_tkGen.addTokenType(TokenType.LiteralHexadecimal, function (string str){
+			if (str.length < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X'))
+				return 0;
+			foreach (index, ch; str[2 .. $]){
+				if ((ch < '0' || ch > '9')
+					&& (ch < 'A' || ch > 'F')
+					&& (ch < 'a' || ch > 'f'))
+					return cast(uint)index + 2;
+			}
+			return cast(uint)str.length;
+		});
+		_tkGen.addTokenType(TokenType.LiteralBinary, function (string str){
+			if (str.length < 3 || str[0] != '0' || (str[1] != 'b' && str[1] != 'B'))
+				return 0;
+			foreach (index, ch; str[2 .. $]){
+				if (ch != '0' && ch != '1')
+					return cast(uint)index + 2;
+			}
+			return cast(uint)str.length;
+		});
 		_tkGen.addTokenType(TokenType.KeywordImport, `import`);
 		_tkGen.addTokenType(TokenType.KeywordFunction, `function`);
 		_tkGen.addTokenType(TokenType.KeywordVar, `var`);
@@ -109,15 +187,31 @@ private:
 		_tkGen.addTokenType(TokenType.KeywordFor, `for`);
 		_tkGen.addTokenType(TokenType.KeywordBreak, `break`);
 		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`);
-		_tkGen.addTokenType(TokenType.Identifier, `[a-zA-Z][a-zA-Z0-9_]*`);
+		_tkGen.addTokenType(TokenType.Identifier, function (string str){
+			uint len;
+			while (len < str.length && str[len] == '_')
+				len ++;
+			if (len == 0 && 
+				(str[len] < 'a' || str[len] > 'z') &&
+				(str[len] < 'A' || str[len] > 'Z'))
+				return 0;
+			for (; len < str.length; len ++){
+				const char ch = str[len];
+				if ((ch < '0' || ch > '9') &&
+					(ch < 'a' || ch > 'z') &&
+					(ch < 'A' || ch > 'Z') && ch != '_')
+					return len;
+			}
+			return cast(uint)str.length;
+		});
 		_tkGen.addTokenType(TokenType.Semicolon, `;`);
 		_tkGen.addTokenType(TokenType.Comma, `,`);
-		_tkGen.addTokenType(TokenType.OpMemberSelect, `\.`);
+		_tkGen.addTokenType(TokenType.OpMemberSelect, `.`);
 		_tkGen.addTokenType(TokenType.OpRef, `@`);
 		_tkGen.addTokenType(TokenType.OpNot, `!`);
-		_tkGen.addTokenType(TokenType.OpMultiply, `\*`);
-		_tkGen.addTokenType(TokenType.OpDivide, `\/`);
-		_tkGen.addTokenType(TokenType.OpAdd, `\+`);
+		_tkGen.addTokenType(TokenType.OpMultiply, `*`);
+		_tkGen.addTokenType(TokenType.OpDivide, `/`);
+		_tkGen.addTokenType(TokenType.OpAdd, `+`);
 		_tkGen.addTokenType(TokenType.OpSubtract, `-`);
 		_tkGen.addTokenType(TokenType.OpMod, `%`);
 		_tkGen.addTokenType(TokenType.OpConcat, `~`);
@@ -128,14 +222,14 @@ private:
 		_tkGen.addTokenType(TokenType.OpIsSame, `==`);
 		_tkGen.addTokenType(TokenType.OpIsNotSame, `!=`);
 		_tkGen.addTokenType(TokenType.OpBoolAnd, `&&`);
-		_tkGen.addTokenType(TokenType.OpBoolOr, `\|\|`);
+		_tkGen.addTokenType(TokenType.OpBoolOr, `||`);
 		_tkGen.addTokenType(TokenType.OpAssign, `=`);
-		_tkGen.addTokenType(TokenType.BracketOpen, `\(`);
-		_tkGen.addTokenType(TokenType.BracketClose, `\)`);
-		_tkGen.addTokenType(TokenType.IndexOpen, `\[`);
-		_tkGen.addTokenType(TokenType.IndexClose, `\]`);
-		_tkGen.addTokenType(TokenType.CurlyOpen, `\{`);
-		_tkGen.addTokenType(TokenType.CurlyClose, `\}`);
+		_tkGen.addTokenType(TokenType.BracketOpen, `(`);
+		_tkGen.addTokenType(TokenType.BracketClose, `)`);
+		_tkGen.addTokenType(TokenType.IndexOpen, `[`);
+		_tkGen.addTokenType(TokenType.IndexClose, `]`);
+		_tkGen.addTokenType(TokenType.CurlyOpen, `{`);
+		_tkGen.addTokenType(TokenType.CurlyClose, `}`);
 	}
 public:
 	/// constructor
@@ -146,6 +240,16 @@ public:
 	~this(){
 		.destroy(_tkGen);
 	}
+	/// Adds a token type with a match.
+	/// 
+	/// Returns: token type, or uint.max in case of error
+	uint addToken(string match){
+		static uint type = TokenType.max + 1;
+		if (type == uint.max)
+			return uint.max;
+		_tkGen.addTokenType(type, match);
+		return type ++;
+	}
 	/// Generates tokens from a source.
 	/// Will write errors locations [line, column] to `errors`
 	/// 
@@ -154,14 +258,10 @@ public:
 		Token[] r;
 		errors = [];
 		_tkGen.source = source;
-		_tkGen.readTokensLongest();
+		_tkGen.readTokens();
 		r = _tkGen.tokens;
 		errors = _tkGen.errors;
 		return r;
-	}
-	/// changes regex match string for a TokeType
-	void setMatch(TokenType type, string match){
-		_tkGen.addTokenType(type, match);
 	}
 }
 ///
@@ -169,8 +269,8 @@ unittest{
 	QScriptTokenGen tk = new QScriptTokenGen();
 	uint[2][] errors;
 	Token[] tokens = tk.readTokens(
-`function void main(){
-	return 2 + 2;
+`function void main(){ # comment
+	return 2 + 0B10; #another comment
 }`
 		,errors);
 	if (errors.length){
@@ -180,28 +280,6 @@ unittest{
 		foreach (token; tokens)
 			writeln((cast(TokenType)token.type).to!string, " : '", token.token,"'");
 	}
+	assert(errors.length == 0);
 	.destroy(tk);
-}
-
-/// escapes a string to be used in matching with regex
-private string regEscape(string s){
-	char[] r;
-	r = ['('];
-	foreach (i, c; s){
-		if (c == '\n')
-			r ~= "\\n";
-		else if (c == '\t')
-			r ~= "\\t";
-		else{
-			if ("[{|*+?()^$ .\\".hasElement(c))
-				r ~= '\\';
-			r ~= c;
-		}
-	}
-	r ~= ')';
-	return cast(string)r;
-}
-/// 
-unittest{
-	assert(regEscape("$$\n\t\\") == `(\$\$\n\t\\)`);
 }
