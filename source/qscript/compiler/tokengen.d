@@ -3,8 +3,6 @@ module qscript.compiler.tokengen;
 import utils.misc;
 import utils.ds;
 
-import std.regex;
-
 debug{import std.stdio;}
 
 /// A token
@@ -37,8 +35,40 @@ package struct Token{
 /// this should probably be moved to my utils package, but it sits here for now
 package class TokenGen{
 private:
-	/// regex for token types
-	Regex!char[uint] _typeRegex;
+	/// For storing how to match against a token type
+	struct TokenTypeMatch{
+		enum Type : ubyte{
+			ExactMatch,
+			MatchFinderFunction,
+		}
+		private ubyte _type;
+		private union{
+			string _exactMatch;
+			uint function (string) _findMatch;
+		}
+		/// constructor
+		this (string match){
+			_type = Type.ExactMatch;
+			this._exactMatch = match;
+		}
+		/// constructor
+		/// 
+		/// the `matchFinder` function returns how many characters from start of string match as token, 0 if no match.
+		this (uint function (string) matchFinder){
+			_type = Type.MatchFinderFunction;
+			this._findMatch = matchFinder;
+		}
+		/// tries to match with this type
+		/// 
+		/// Returns: number of initial characters that match, 0 if none, obviously
+		uint matches(string s){
+			if (_type == Type.ExactMatch)
+				return (s.length >= _exactMatch.length && s[0 .. _exactMatch.length] == _exactMatch) * cast(uint)s.length;
+			return _findMatch(s);
+		}
+	}
+	/// token matchers
+	TokenTypeMatch[uint] _matchers;
 	
 	/// currently open source code
 	string _source;
@@ -50,26 +80,18 @@ private:
 	/// Returns: first matching token from a string. type will be `uint.max` in case of no match
 	Token getToken(string str){
 		Token r;
-		foreach (type, expr; _typeRegex){
-			Captures!string m = matchFirst(str, expr);
-			if (!m.empty){
-				r.type = type;
-				r.token = m.hit;
-				break;
-			}
+		uint maxLen = 0;
+		uint maxType;
+		foreach (type, matcher; _matchers){
+			const uint len = matcher.matches(str);
+			if (len <= maxLen)
+				continue;
+			maxLen = len;
+			maxType = type;
 		}
-		return r;
-	}
-	/// Returns: longest matching token from a string. type will be `uint.max` in case of no match
-	Token getTokenLongest(string str){
-		Token r;
-		r.type = uint.max;
-		foreach (type, expr; _typeRegex){
-			Captures!string m = matchFirst(str, expr);
-			if (!m.empty && m.hit.length > r.token.length){
-				r.type = type;
-				r.token = m.hit;
-			}
+		if (maxLen){
+			r.type = maxType;
+			r.token = str[0 .. maxLen];
 		}
 		return r;
 	}
@@ -96,20 +118,37 @@ public:
 	@property bool error(){
 		return _errors.length > 0;
 	}
-	/// adds a token type, with its matching regex.  
-	/// Types that are added first, are matched first, so in case of conflicting types, add the higher predcedence one first
-	void addTokenType(uint type, string match){
-		_typeRegex[type] = regex('^'~match);
+	/// adds a token type
+	/// 
+	/// Returns: true if added
+	bool addTokenType(uint type, string match, bool overwrite = false){
+		if (type !in _matchers || overwrite){
+			_matchers[type] = TokenTypeMatch(match);
+			return true;
+		}
+		return false;
+	}
+	/// adds a token type
+	/// 
+	/// The `matchFinder` function should return the number of characters that match from start
+	/// 
+	/// Returns: true if added
+	bool addTokenType(uint type, uint function (string) matchFinder, bool overwrite = false){
+		if (type !in _matchers || overwrite){
+			_matchers[type] = TokenTypeMatch(matchFinder);
+			return true;
+		}
+		return false;
 	}
 	/// adds a token type, selecting a token type for it automatically
 	/// 
 	/// Returns: the selected token type
 	uint addTokenType(string match){
 		static uint freeIndex = uint.max - 1;
-		while (freeIndex in _typeRegex && freeIndex != uint.max){
+		while (freeIndex in _matchers && freeIndex != uint.max){
 			freeIndex --;
 		}
-		if (freeIndex == uint.max || freeIndex in _typeRegex)
+		if (freeIndex == uint.max || freeIndex in _matchers)
 			return uint.max;
 		addTokenType(freeIndex, match);
 		return freeIndex;
@@ -133,34 +172,6 @@ public:
 		uint lastNewLineIndex;
 		for (uint i = 0; i < _source.length; ){
 			Token token = getToken(_source[i .. $]);
-			token.lineno = lineno + 1;
-			token.colno = i - lastNewLineIndex;
-			if (token.type == uint.max || !token.length){
-				_errors ~= [token.lineno, token.colno];
-				return false;
-			}
-			_tokens ~= token;
-			foreach (j, c; _source[i .. i + token.length]){
-				if (c == '\n'){
-					lastNewLineIndex = cast(uint)j + i;
-					lineno ++;
-				}
-			}
-			i += token.length;
-		}
-		return true;
-	}
-	/// reads source into tokens. Any existing tokens will be cleared.
-	/// 
-	/// This will match against all regex, and use the longest hit
-	/// 
-	/// Returns: true if done without errors, false if there was error
-	bool readTokensLongest(){
-		this.clear();
-		uint lineno;
-		uint lastNewLineIndex;
-		for (uint i = 0; i < _source.length; ){
-			Token token = getTokenLongest(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
 			if (token.type == uint.max || !token.length){
@@ -208,14 +219,79 @@ public:
 		_tokens.length -= count;
 		return count;
 	}
+	/// Replace tokens type by another type
+	/// 
+	/// Returns: number of tokens replaced
+	uint replaceByType(uint type, uint typeTo){
+		uint count = 0;
+		foreach (i, tok; _tokens){
+			if (tok.type == type){
+				count ++;
+				_tokens[i].type = typeTo;
+			}
+		}
+		return count;
+	}
+	/// Replace tokens type by another type
+	/// 
+	/// Returns: number of tokens replaced
+	uint replaceByType(uint type, uint typeTo, string token){
+		uint count = 0;
+		foreach (i, tok; _tokens){
+			if (tok.type == type){
+				count ++;
+				_tokens[i].type = typeTo;
+				_tokens[i].token = token;
+			}
+		}
+		return count;
+	}
 }
 ///
 unittest{
 	TokenGen tkGen = new TokenGen();
-	tkGen.addTokenType(0, `#.*`); // comments
-	tkGen.addTokenType(1, `[\s]+`); // whitespace
-	tkGen.addTokenType(2, `\/\*[\s\S]*\*\/`); // multi line comment
-	tkGen.addTokenType(3, `"([^"]|(\\"))*((?<!\\)|(?<=\\\\))"`); // string
+	/// single line comment
+	tkGen.addTokenType(0, function (string str){
+		if (!str.length || str[0] != '#')
+			return cast(uint)0;
+		foreach (index, ch; str[1 .. $]){
+			if (ch == '\n')
+				return cast(uint)index + 1;
+		}
+		return cast(uint)(str.length);
+	});
+	// whitespace
+	tkGen.addTokenType(1, function (string str){
+		foreach (index, ch; str){
+			if (ch != ' ' && ch != '\t' && ch != '\n')
+				return cast(uint)index;
+		}
+		return cast(uint)(str.length);
+	});
+	// multi line comment
+	tkGen.addTokenType(2, function (string str){
+		if (str.length < 2 || str[0 .. 2] != "/*")
+			return 0;
+		for (uint i = 4; i <= str.length; i ++){
+			if (str[i - 2 .. i] == "*/")
+				return i;
+		}
+		return 0;
+	});
+	// string
+	tkGen.addTokenType(3, function (string str){
+		if (str.length < 2 || str[0] != '"')
+			return 0;
+		for (uint i = 1; i < str.length; i ++){
+			if (str[i] == '\\'){
+				i ++;
+				continue;
+			}
+			if (str[i] == '"')
+				return i + 1;
+		}
+		return 0;
+	});
 	tkGen.source = 
 " # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv 
 \t\t\"tabs > spaces\"/* multi
@@ -249,19 +325,4 @@ comment*/
 		tkTypes[i] = tokens[i].type;
 	assert(tkTypes == [3,3]);
 	.destroy(tkGen);
-	// now testing readTokensLongest
-	tkGen = new TokenGen();
-	tkGen.addTokenType(0, `import`);
-	tkGen.addTokenType(1, `[\S]+`);
-	tkGen.addTokenType(2, `[\s]+`);
-	tkGen.source = "import something importsomethingElse";
-	assert(tkGen.readTokensLongest());
-	tkStrs.length = tkGen.tokens.length;
-	tkTypes.length = tkStrs.length;
-	foreach (i; 0 .. tkStrs.length){
-		tkStrs[i] = tkGen.tokens[i].token;
-		tkTypes[i] = tkGen.tokens[i].type;
-	}
-	assert(tkStrs == ["import", " ", "something", " ", "importsomethingElse"]);
-	assert(tkTypes == [0, 2, 1, 2, 1]);
 }
