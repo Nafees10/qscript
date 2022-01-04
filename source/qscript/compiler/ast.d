@@ -57,12 +57,6 @@ public:
 	@property Identifier namespace(){
 		return _namespace;
 	}
-	/// ditto
-	@property Identifier namespace(Identifier newNS){
-		if (_namespace)
-			.destroy(_namespace);
-		return _namespace = newNS;
-	}
 	/// Reads from tokens
 	/// 
 	/// Returns: number of tokens read
@@ -141,12 +135,6 @@ public:
 	@property Identifier ident(){
 		return _ident;
 	}
-	/// ditto
-	@property Identifier ident(Identifier newIdent){
-		if (_ident)
-			.destroy(_ident);
-		return _ident = newIdent;
-	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
 		return _dimensions;
@@ -200,7 +188,8 @@ public:
 					break;
 				_ident = new Identifier(tokens[index].token);
 				index ++;
-			}
+			}else
+				break;
 		}
 		return index;
 	}
@@ -213,11 +202,11 @@ unittest{
 	];
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
-	assert(type.toString == "int[]@[]");
+	assert(type.toString == "int[]@[]"); // `(int[]*)[]`
 }
 
 /// an AST Node
-package class ASTNode{
+package abstract class ASTNode{
 protected:
 	/// line number and column number
 	uint[2] _location;
@@ -242,43 +231,186 @@ public:
 	}
 }
 
-/// Script Node
-package class ScriptNode : ASTNode{
+/// Definition Node (function def, struct def, enum def...)
+package abstract class DefinitionNode : ASTNode{
+protected:
+	/// visibility
+	Visibility _visibility = Visibility.DEFAULT;
+	/// identifier of what is being defined
+	Identifier _ident;
+public:
+	/// constuctor
+	this(){}
+	/// destructor
+	~this(){
+		if (_ident)
+			.destroy(_ident);
+	}
+	/// visibility
+	@property Visibility visibility(){
+		return _visibility;
+	}
+	/// Returns: identifier
+	@property Identifier ident(){
+		return _ident;
+	}
+}
+
+/// Namespace Node
+package abstract class NamespaceNode : DefinitionNode{
 protected:
 	/// definitions
 	DefinitionNode[] _definitions;
 public:
 	/// constructor
-	this(){
-
-	}
+	this(){}
+	/// destructor
 	~this(){
 		foreach (def; _definitions)
 			.destroy(def);
+		if (_ident)
+			.destroy(_ident);
 	}
 }
 
-/// Definition Node (function def, struct def, enum def...)
-package class DefinitionNode : ASTNode{
-protected:
-	/// visibility
-	Visibility _visibility;
-	/// name of what is defined
-	string _name;
+/// Script Node
+package class ScriptNode : NamespaceNode{
 public:
-	/// visibility
-	@property Visibility visibility(){
-		return _visibility;
+	/// Returns: script name
+	@property string scriptName(){
+		return _ident.name;
 	}
-	/// name of what is being defined
-	@property string name(){
-		return _name;
+	/// ditto
+	@property string scriptName(string newName){
+		return _ident.name = newName;
 	}
 }
 
 /// Variable definition
 package class VarDefNode : DefinitionNode{
 protected:
+	/// Data type
+	DataType _dataType;
 	/// names of variables
+	string[] _varName;
+	/// default value, if not null
+	ExpressionNode[] _varValue;
+public:
+	/// constuctor
+	this(){}
+	/// destructor
+	~this(){
+		foreach (node; _varValue){
+			if (node)
+				.destroy(node);
+		}
+		if (_dataType)
+			.destroy(_dataType);
+	}
+	/// Returns: number of variables defined
+	@property uint varCount(){
+		return cast(uint)_varName.length;
+	}
+	/// Returns: variable name
+	@property string varName(uint index){
+		if (index >= _varName.length)
+			throw new Exception("VarDefNode.varName index out of bounds");
+		return _varName[index];
+	}
+	/// Returns: variable default value
+	@property ExpressionNode varValue(uint index){
+		if (index >= _varValue.length)
+			throw new Exception("VarDefNode.varValue index out of bounds");
+		return _varValue[index];
+	}
+	/// Returns: data type of defined variables
+	@property DataType dataType(){
+		return _dataType;
+	}
+}
+
+/// Struct definition
+package class StructDefNode : NamespaceNode{
+
+}
+
+/// Enum definition
+package class EnumDefNode : DefinitionNode{
+protected:
+	/// Base data type
+	DataType _dataType;
+	/// member names
+	string[] _memberName;
+	/// member values, if not null
+	ExpressionNode[] _memberValue;
+public:
+	/// constructor
+	this(){}
+	/// destructor
+	~this(){
+		foreach (node; _memberValue){
+			if (node)
+				.destroy(node);
+		}
+		if (_dataType)
+			.destroy(_dataType);
+	}
+	/// Returns: number of members
+	@property uint memberCount(){
+		return cast(uint)_memberName.length;
+	}
+	/// Returns: data type
+	@property DataType dataType(){
+		return _dataType;
+	}
+	/// Returns: member name
+	@property string memberName(uint index){
+		if (index >= _memberName.length)
+			throw new Exception("EnumDefNode.memberName index out of bounds");
+		return _memberName[index];
+	}
+	/// Returns: member value
+	@property ExpressionNode memberValue(uint index){
+		if (index >= _memberValue.length)
+			throw new Exception("EnumDefNode.memberValue index out of bounds");
+		return _memberValue[index];
+	}
+}
+
+/// Function definition
+package class FuncDefNode : DefinitionNode{
+protected:
+	/// Return type
+	DataType _returnType;
+	/// Argument types
+	DataType[] _argType;
+	/// Argument names
+	string[] _argName;
+	
+}
+
+/// Expression
+package abstract class ExpressionNode : ASTNode{
+protected:
+	/// Return type of expression, can be void
+	DataType _returnType;
+	/// if this is static (i.e known at compile time)
+	bool _isStatic = false;
+public:
+	/// constructor
+	this(){}
+	/// destructor
+	~this(){
+		if (_returnType)
+			.destroy(_returnType);
+	}
+	/// Returns: whether this can be evaluated at compile time
+	bool isStatic(){
+		return _isStatic;
+	}
+}
+
+/// Statement
+package abstract class StatementNode : ExpressionNode{
 
 }
