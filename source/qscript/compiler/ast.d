@@ -7,6 +7,7 @@ import qscript.compiler.compiler;
 import qscript.compiler.tokens;
 
 debug{import std.stdio;}
+import std.conv : to;
 
 class Identifier{
 private:
@@ -16,8 +17,7 @@ private:
 	Identifier _namespace = null;
 public:
 	/// constructor
-	this(){
-	}
+	this(){}
 	/// destructor
 	~this(){
 		this.clear();
@@ -107,31 +107,45 @@ unittest{
 /// Data Type
 class DataType{
 private:
-	/// name of type
-	string _name;
+	/// its identifier (name)
+	Identifier _ident = null;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
 	/// reference to type. if this is not null (i.e it is valid), then _name and _type are not valid
 	DataType _refTo = null;
-	/// number of bytes that will be occupied, negative if unknown
+	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
 public:
 	/// constructor
-	this(string name, uint dimensions = 0){
-		this.name = name;
+	this (){}
+	/// constructor
+	this(Identifier ident, uint dimensions = 0){
+		this._ident = ident;
 		_dimensions = dimensions;
 	}
 	~this(){
+		this.clear();
+	}
+	/// Clears itself
+	void clear(){
+		if (_ident)
+			.destroy(_ident);
 		if (_refTo)
 			.destroy(_refTo);
+		_ident = null;
+		_refTo = null;
+		_dimensions = 0;
+		_byteCount = 0;
 	}
-	/// name of base type (excluding `[]` for array)
-	@property string name(){
-		return _name;
+	/// Identifier (name) for this type
+	@property Identifier ident(){
+		return _ident;
 	}
 	/// ditto
-	@property string name(string newName){
-		return _name = newName;
+	@property Identifier ident(Identifier newIdent){
+		if (_ident)
+			.destroy(_ident);
+		return _ident = newIdent;
 	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
@@ -148,10 +162,8 @@ public:
 		char[] r;
 		if (_refTo)
 			r = cast(char[])_refTo.toString ~ '@';
-		else{
-			r.length = name.length;
-			r[] = name;
-		}
+		else if (_ident)
+			r = cast(char[])_ident.toString;
 		uint index = cast(uint)r.length;
 		r.length += 2*_dimensions;
 		for (; index < r.length; index += 2)
@@ -162,35 +174,46 @@ public:
 	/// 
 	/// Returns: number of tokens read, or 0 if not a type
 	uint fromTokens(Token[] tokens){
-		_byteCount = 0;
-		_name = "";
-		_dimensions = 0;
-		if (_refTo){
-			.destroy(_refTo);
-			_refTo = null;
-		}
-		if (!tokens.length || !tokens[0].token.isIdentifier)
-			return 0;
-		_name = tokens[0].token;
-		uint index = 1;
+		this.clear();
+		uint index = 0;
 		while (index < tokens.length){
-			if (index + 1 < tokens.length && tokens[index].type == TokenType.IndexOpen &&
-				tokens[index+1].type == TokenType.IndexClose){
-				index += 2;
-				_dimensions ++;
-			}else if (tokens[index].type == TokenType.OpRef){
-				DataType refOf = new DataType("");
-				refOf._name = _name;
-				refOf._dimensions = _dimensions;
-				refOf._refTo = _refTo;
-				_refTo = refOf;
+			if (tokens[index].type == TokenType.OpRef){
+				if (!_refTo && !_ident)
+					break;
+				DataType refTo = new DataType();
+				refTo._ident = this._ident;
+				refTo._dimensions = this._dimensions;
+				refTo._refTo = this._refTo;
+				refTo._byteCount = this._byteCount;
+				this._ident = null; // so clear doesnt free it
+				this._refTo = null; // same reason
+				this.clear();
+				this._refTo = refTo;
 				index ++;
-				continue;
-			}else
-				break;
+			}else if (tokens[index].type == TokenType.IndexOpen){
+				if ((!_ident && !_refTo) || index + 1 >= tokens.length || tokens[index + 1].type != TokenType.IndexClose)
+					break;
+				_dimensions ++;
+				index += 2;
+			}else if (tokens[index].token.isIdentifier){
+				if (_ident)
+					break;
+				_ident = new Identifier(tokens[index].token);
+				index ++;
+			}
 		}
 		return index;
 	}
+}
+/// 
+unittest{
+	Token[] tok = [
+		Token(TokenType.KeywordInt,"int"),Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]"),
+		Token(TokenType.OpRef,"@"),Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]")
+	];
+	DataType type = new DataType();
+	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
+	assert(type.toString == "int[]@[]");
 }
 
 /// an AST Node
@@ -201,17 +224,21 @@ protected:
 	/// parent node
 	ASTNode _parent;
 public:
-	/// Returns: [line number, column number]
-	@property uint[2] location(){
-		return _location;
-	}
 	/// Returns: line number
 	@property uint lineno(){
 		return _location[0];
 	}
+	/// ditto
+	@property uint lineno(uint newVal){
+		return _location[0] = newVal;
+	}
 	/// Returns: column number
 	@property uint colno(){
 		return _location[1];
+	}
+	/// ditto
+	@property uint colno(uint newVal){
+		return _location[1] = newVal;
 	}
 }
 
