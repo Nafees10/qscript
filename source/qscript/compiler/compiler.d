@@ -15,8 +15,12 @@ private shared static this(){
 
 /// Visibility specifiers
 package enum Visibility{
+	/// Accessible only inside parent namespace
 	Private,
-	Public
+	/// Accessible outside namespace as well
+	Public,
+	/// Default
+	DEFAULT = Private
 }
 
 /// Stores explanations for CompileError.Type  
