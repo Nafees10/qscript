@@ -280,8 +280,20 @@ unittest{
 		foreach (error; errors)
 			writeln(error);
 	}else{
-		foreach (token; tokens)
-			writeln((cast(TokenType)token.type).to!string, " : '", token.token,"'");
+		const string[] expectedStr = [
+			"function", " ", "void", " ", "main", "(", ")", "{", " ", "# comment", "\n\t", "return", " ", "2", " ",  "+", " ",
+			"0B10", ";", " ", "#another comment", "\n", "}"
+		];
+		const uint[] expectedType = [
+			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid, TokenType.Whitespace, TokenType.Identifier,
+			TokenType.BracketOpen, TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace, TokenType.Comment,
+			TokenType.Whitespace, TokenType.KeywordReturn, TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
+			TokenType.OpAdd, TokenType.Whitespace, TokenType.LiteralBinary, TokenType.Semicolon, TokenType.Whitespace,
+			TokenType.Comment, TokenType.Whitespace, TokenType.CurlyClose
+		];
+		foreach (i, token; tokens){
+			assert (token.token == expectedStr[i] && token.type == expectedType[i], "failed to match at index " ~ i.to!string);
+		}
 	}
 	assert(errors.length == 0);
 	.destroy(tk);
