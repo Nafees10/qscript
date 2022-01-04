@@ -8,24 +8,87 @@ import qscript.compiler.tokens;
 
 debug{import std.stdio;}
 
-/// Identifier with namespace
-struct Ident{
-	/// namespace and name
-	string namespace, name;
+class Identifier{
+private:
+	/// name of identifier
+	string _name;
+	/// namespace, if any
+	Identifier _namespace = null;
+public:
 	/// constructor
-	this(string namespace, string name){
-		this.namespace = namespace;
-		this.name = name;
+	this(){
 	}
-	/// constructor
+	/// destructor
+	~this(){
+		this.clear();
+	}
+	/// constructor, name only
 	this(string name){
-		this.namespace = "";
-		this.name = name;
+		_name = name;
 	}
-	/// Returns: string representation of this Ident
-	string toString(){
-		return namespace ~ '.' ~ name;
+	/// constructor, both namespace and name from string
+	this (string namespace, string name){
+		_namespace = new Identifier(namespace);
+		_name = name;
 	}
+	/// constructor, both namespace and name
+	this (Identifier namespace, string name){
+		_namespace = namespace;
+		_name = name;
+	}
+	/// clears itself
+	void clear(){
+		if (_namespace)
+			.destroy(_namespace);
+		_name = "";
+	}
+	/// Returns: name
+	@property string name(){
+		return name;
+	}
+	/// Returns: namespace
+	@property Identifier namespace(){
+		return _namespace;
+	}
+	/// Reads from tokens
+	/// 
+	/// Returns: number of tokens read
+	uint fromTokens(Token[] tokens){
+		uint index = 0;
+		this.clear();
+		while (index < tokens.length && tokens[index].token.isIdentifier){
+			_name = tokens[index].token;
+			if (index + 2 < tokens.length &&
+			tokens[index + 1].type == TokenType.OpMemberSelect && tokens[index + 2].token.isIdentifier){
+				Identifier newNamespace = new Identifier();
+				newNamespace._name = _name;
+				newNamespace._namespace = _namespace;
+				this._namespace = newNamespace;
+				index += 2;
+			}else{
+				index ++;
+				break;
+			}
+		}
+		return index;
+	}
+	/// Returns: this identifier expressed as a string
+	override string toString(){
+		if (_namespace)
+			return _namespace.toString ~ '.' ~ _name;
+		return _name;
+	}
+}
+/// 
+unittest{
+	Token[] tok = [
+		Token(TokenType.Identifier,"qscript"),Token(TokenType.OpMemberSelect,"."),Token(TokenType.Identifier,"std"),
+		Token(TokenType.OpMemberSelect,"."),Token(TokenType.Identifier,"io"),Token(TokenType.OpMemberSelect,".")
+	];
+	Identifier ident = new Identifier();
+	assert(ident.fromTokens(tok) == 5);
+	assert(ident.toString == "qscript.std.io");
+	.destroy(ident);
 }
 
 /// Data Type
@@ -34,11 +97,11 @@ private:
 	/// name of type
 	string _name;
 	/// array dimensions (zero if not array)
-	uint _dimensions;
+	uint _dimensions = 0;
 	/// reference to type. if this is not null (i.e it is valid), then _name and _type are not valid
-	DataType _refTo;
-	/// number of bytes that will be occupied
-	uint _byteCount;
+	DataType _refTo = null;
+	/// number of bytes that will be occupied, negative if unknown
+	uint _byteCount = 0;
 public:
 	/// constructor
 	this(string name, uint dimensions = 0){
@@ -57,7 +120,17 @@ public:
 	@property string name(string newName){
 		return _name = newName;
 	}
-	/// this data as string
+	/// Returns: dimensions, in case array, otherwise 0
+	@property uint dimensions(){
+		return _dimensions;
+	}
+	/// ditto
+	@property uint dimensions(uint newDim){
+		return _dimensions = newDim;
+	}
+	/// this data as string  
+	/// 
+	/// only use for debug or error reporting. reading back string to DataType is not a thing
 	override string toString(){
 		char[] r;
 		if (_refTo)
@@ -72,16 +145,38 @@ public:
 			r[index .. index + 2] = "[]";
 		return cast(string)r;
 	}
-	/// read data type from string
+	/// Read from tokens
 	/// 
-	/// Returns: true if read, false if not valid
-	bool fromString(string s){
-		// first empty itself
-		if (_refTo)
+	/// Returns: number of tokens read, or 0 if not a type
+	uint fromTokens(Token[] tokens){
+		_byteCount = 0;
+		_name = "";
+		_dimensions = 0;
+		if (_refTo){
 			.destroy(_refTo);
-		_refTo = null;
-		
-		return true;
+			_refTo = null;
+		}
+		if (!tokens.length || !tokens[0].token.isIdentifier)
+			return 0;
+		_name = tokens[0].token;
+		uint index = 1;
+		while (index < tokens.length){
+			if (index + 1 < tokens.length && tokens[index].type == TokenType.IndexOpen &&
+				tokens[index+1].type == TokenType.IndexClose){
+				index += 2;
+				_dimensions ++;
+			}else if (tokens[index].type == TokenType.OpRef){
+				DataType refOf = new DataType("");
+				refOf._name = _name;
+				refOf._dimensions = _dimensions;
+				refOf._refTo = _refTo;
+				_refTo = refOf;
+				index ++;
+				continue;
+			}else
+				break;
+		}
+		return index;
 	}
 }
 

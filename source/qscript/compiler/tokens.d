@@ -8,6 +8,9 @@ import qscript.compiler.tokengen;
 debug{import std.stdio;}
 version(unittest){import std.stdio, std.conv : to;}
 
+/// A Token
+alias Token = qscript.compiler.tokengen.Token;
+
 /// possible token types
 enum TokenType : uint{
 	Whitespace			, /// whitespace
@@ -282,4 +285,25 @@ unittest{
 	}
 	assert(errors.length == 0);
 	.destroy(tk);
+}
+
+// functions for further reading tokens
+
+/// Returns: true if a string passes as an identifier
+bool isIdentifier(string str){
+	uint len;
+	while (len < str.length && str[len] == '_')
+		len ++;
+	if (len == 0 && 
+		(str[len] < 'a' || str[len] > 'z') &&
+		(str[len] < 'A' || str[len] > 'Z'))
+		return false;
+	for (; len < str.length; len ++){
+		const char ch = str[len];
+		if ((ch < '0' || ch > '9') &&
+			(ch < 'a' || ch > 'z') &&
+			(ch < 'A' || ch > 'Z') && ch != '_')
+			return false;
+	}
+	return true;
 }
