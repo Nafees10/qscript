@@ -40,15 +40,28 @@ public:
 	void clear(){
 		if (_namespace)
 			.destroy(_namespace);
+		_namespace = null;
 		_name = "";
 	}
 	/// Returns: name
 	@property string name(){
-		return name;
+		return _name;
+	}
+	/// ditto
+	@property string name(string newName){
+		if (!newName.isIdentifier)
+			return _name;
+		return _name = newName;
 	}
 	/// Returns: namespace
 	@property Identifier namespace(){
 		return _namespace;
+	}
+	/// ditto
+	@property Identifier namespace(Identifier newNS){
+		if (_namespace)
+			.destroy(_namespace);
+		return _namespace = newNS;
 	}
 	/// Reads from tokens
 	/// 
