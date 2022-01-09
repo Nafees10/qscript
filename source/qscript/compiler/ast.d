@@ -228,7 +228,7 @@ unittest{
 	];
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
-	assert(type.toString == "int[]@[]"); // `(int[]*)[]`
+	assert(type.toString == "int[]@[]");
 }
 
 /// an AST Node
@@ -271,11 +271,8 @@ public:
 	}
 	/// destructor
 	~this(){
-		if (_ident)
-			.destroy(_ident);
+		.destroy(_ident);
 	}
-
-	alias clone = typeof(super).clone;
 	/// visibility
 	@property Visibility visibility(){
 		return _visibility;
@@ -287,6 +284,52 @@ public:
 	/// Returns: identifier, might be null
 	@property Identifier ident(){
 		return _ident;
+	}
+}
+
+/// Expression
+package class ExpressionNode : ASTNode{
+protected:
+	/// Return type of expression, can be void
+	DataType _returnType;
+	/// if this is static (i.e known at compile time)
+	bool _isStatic = false;
+public:
+	/// constructor
+	this(){
+		_returnType = new DataType();
+	}
+	/// destructor
+	~this(){
+		.destroy(_returnType);
+	}
+	/// Returns: return type
+	@property DataType returnType(){
+		return _returnType;
+	}
+	/// Returns: whether this can be evaluated at compile time
+	bool isStatic(){
+		return _isStatic;
+	}
+}
+
+/// Statement
+package class StatementNode : ExpressionNode{
+protected:
+	/// void return type
+	DataType _voidType;
+public:
+	/// constructor
+	this (){
+		_voidType = new DataType(new Identifier("void"));
+	}
+	/// destructor
+	~this (){
+		.destroy(_voidType);
+	}
+	/// return type is always void
+	override @property DataType returnType(){
+		return _voidType;
 	}
 }
 
@@ -320,7 +363,8 @@ public:
 	/// Returns: its index
 	uint defAppend(DefinitionNode node){
 		immutable uint r = cast(uint)_definition.length;
-		node._parent = this;
+		if (node)
+			node._parent = this;
 		_definition ~= node;
 		return r;
 	}
@@ -386,6 +430,8 @@ public:
 	/// Returns: its index
 	int varAppend(string name, ExpressionNode value = null){
 		immutable uint r = cast(uint)_varName.length;
+		if (value)
+			value._parent = this;
 		_varName ~= name;
 		_varValue ~= value;
 		return r;
@@ -464,6 +510,8 @@ public:
 	/// Returns: index
 	uint memberAppend(string name, ExpressionNode value = null){
 		immutable uint r = cast(uint)_memberName.length;
+		if (value)
+			value._parent = this;
 		_memberName ~= name;
 		_memberValue ~= value;
 		return r;
@@ -486,6 +534,7 @@ public:
 	this(string name, string[] argName, DataType[] argType){
 		assert(argName.length == _argType.length, "argName.length doesnt match argType.length");
 		_body = new BlockNode();
+		_body._parent = this;
 		_ident.name = name;
 		_argName = argName.dup;
 		_argType = argType.dup;
@@ -532,52 +581,6 @@ public:
 	}
 }
 
-/// Expression
-package class ExpressionNode : ASTNode{
-protected:
-	/// Return type of expression, can be void
-	DataType _returnType;
-	/// if this is static (i.e known at compile time)
-	bool _isStatic = false;
-public:
-	/// constructor
-	this(){
-		_returnType = new DataType();
-	}
-	/// destructor
-	~this(){
-		.destroy(_returnType);
-	}
-	/// Returns: return type
-	@property DataType returnType(){
-		return _returnType;
-	}
-	/// Returns: whether this can be evaluated at compile time
-	bool isStatic(){
-		return _isStatic;
-	}
-}
-
-/// Statement
-package class StatementNode : ExpressionNode{
-protected:
-	/// void return type
-	DataType _voidType;
-public:
-	/// constructor
-	this (){
-		_voidType = new DataType(new Identifier("void"));
-	}
-	/// destructor
-	~this (){
-		.destroy(_voidType);
-	}
-	/// return type is always void
-	override @property DataType returnType(){
-		return _voidType;
-	}
-}
-
 /// Block
 package class BlockNode : StatementNode{
 protected:
@@ -607,6 +610,8 @@ public:
 	/// Returns: index
 	uint statementAppend(StatementNode node){
 		immutable uint r = cast(uint)_statement.length;
+		if (node)
+			node._parent = this;
 		_statement ~= node;
 		return r;
 	}
