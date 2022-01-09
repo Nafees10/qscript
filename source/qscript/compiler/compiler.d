@@ -18,9 +18,7 @@ package enum Visibility{
 	/// Accessible only inside parent namespace
 	Private,
 	/// Accessible outside namespace as well
-	Public,
-	/// Default
-	DEFAULT = Private
+	Public
 }
 
 /// Stores explanations for CompileError.Type  
@@ -28,6 +26,8 @@ package enum Visibility{
 private string[CompileError.Type] ERROR_EXPLAIN_STRING;
 /// default namespace name
 string DEFAULT_NAMESPACE = "this";
+/// default visibility
+const Visibility DEFAULT_VISIBILITY = Visibility.Private;
 
 /// compilation error
 struct CompileError{
@@ -41,6 +41,8 @@ struct CompileError{
 	uint[2] where;
 	/// details
 	string[] details;
+	/// the final message. set this to `""` if modifying the struct
+	string message;
 	/// constructor
 	this(Type type, uint[2] where = [0,0], string[] details = []){
 		this.type = type;
@@ -49,6 +51,9 @@ struct CompileError{
 	}
 	/// Returns: a string representation of this error
 	string toString(){
+		if (message.length || type !in ERROR_EXPLAIN_STRING ||
+		!ERROR_EXPLAIN_STRING[type].length)
+			return message;
 		char[] errStr;
 		errStr = cast(char[])"line:"~where[0].to!string~','~where[1].to!string~' ';
 		uint i = cast(uint)errStr.length;
@@ -63,6 +68,6 @@ struct CompileError{
 				i++;
 			}
 		}
-		return cast(string)errStr;
+		return message = cast(string)errStr;
 	}
 }
