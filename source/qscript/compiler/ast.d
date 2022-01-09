@@ -10,7 +10,7 @@ debug{import std.stdio;}
 import std.conv : to;
 
 class Identifier{
-private:
+protected:
 	/// name of identifier
 	string _name;
 	/// namespace, if any
@@ -32,9 +32,19 @@ public:
 		_name = name;
 	}
 	/// constructor, both namespace and name
+	/// be aware namespace will be destroyed along with this
 	this (Identifier namespace, string name){
 		_namespace = namespace;
 		_name = name;
+	}
+	/// clone from another Identifier
+	void clone(Identifier from){
+		this.clear();
+		_name = from._name;
+		if (from._namespace){
+			_namespace = new Identifier();
+			_namespace.clone(from._namespace);
+		}
 	}
 	/// clears itself
 	void clear(){
@@ -54,6 +64,8 @@ public:
 		return _name = newName;
 	}
 	/// Returns: namespace
+	/// 
+	/// **it will be destroyed when this is destroyed**
 	@property Identifier namespace(){
 		return _namespace;
 	}
@@ -66,7 +78,8 @@ public:
 		while (index < tokens.length && tokens[index].token.isIdentifier){
 			_name = tokens[index].token;
 			if (index + 2 < tokens.length &&
-			tokens[index + 1].type == TokenType.OpMemberSelect && tokens[index + 2].token.isIdentifier){
+			tokens[index + 1].type == TokenType.OpMemberSelect &&
+			tokens[index + 2].token.isIdentifier){
 				Identifier newNamespace = new Identifier();
 				newNamespace._name = _name;
 				newNamespace._namespace = _namespace;
@@ -89,8 +102,9 @@ public:
 /// 
 unittest{
 	Token[] tok = [
-		Token(TokenType.Identifier,"qscript"),Token(TokenType.OpMemberSelect,"."),Token(TokenType.Identifier,"std"),
-		Token(TokenType.OpMemberSelect,"."),Token(TokenType.Identifier,"io"),Token(TokenType.OpMemberSelect,".")
+		Token(TokenType.Identifier,"qscript"), Token(TokenType.OpMemberSelect,"."),
+		Token(TokenType.Identifier,"std"), Token(TokenType.OpMemberSelect,"."),
+		Token(TokenType.Identifier,"io"), Token(TokenType.OpMemberSelect,".")
 	];
 	Identifier ident = new Identifier();
 	assert(ident.fromTokens(tok) == 5);
@@ -101,11 +115,11 @@ unittest{
 /// Data Type
 class DataType{
 private:
-	/// its identifier (name)
+	/// its identifier (name). not valid if _refTo !is null
 	Identifier _ident = null;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
-	/// reference to type. if this is not null (i.e it is valid), then _name and _type are not valid
+	/// reference to type. if this is not null, then _ident is not valid
 	DataType _refTo = null;
 	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
@@ -113,12 +127,27 @@ public:
 	/// constructor
 	this (){}
 	/// constructor
+	/// be aware ident will be destroyed along with this
 	this(Identifier ident, uint dimensions = 0){
 		this._ident = ident;
 		_dimensions = dimensions;
 	}
 	~this(){
 		this.clear();
+	}
+	/// clone from another DataType
+	void clone(DataType from){
+		this.clear();
+		_dimensions = from._dimensions;
+		_byteCount = from._byteCount;
+		if (from._ident){
+			_ident = new Identifier();
+			_ident.clone(from._ident);
+		}
+		if (from._refTo){
+			_refTo = new DataType();
+			_refTo.clone(from._refTo);
+		}
 	}
 	/// Clears itself
 	void clear(){
@@ -169,17 +198,13 @@ public:
 				if (!_refTo && !_ident)
 					break;
 				DataType refTo = new DataType();
-				refTo._ident = this._ident;
-				refTo._dimensions = this._dimensions;
-				refTo._refTo = this._refTo;
-				refTo._byteCount = this._byteCount;
-				this._ident = null; // so clear doesnt free it
-				this._refTo = null; // same reason
+				refTo.clone(this);
 				this.clear();
 				this._refTo = refTo;
 				index ++;
 			}else if (tokens[index].type == TokenType.IndexOpen){
-				if ((!_ident && !_refTo) || index + 1 >= tokens.length || tokens[index + 1].type != TokenType.IndexClose)
+				if ((!_ident && !_refTo) || index + 1 >= tokens.length ||
+				tokens[index + 1].type != TokenType.IndexClose)
 					break;
 				_dimensions ++;
 				index += 2;
@@ -196,9 +221,10 @@ public:
 }
 /// 
 unittest{
-	Token[] tok = [
-		Token(TokenType.KeywordInt,"int"),Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]"),
-		Token(TokenType.OpRef,"@"),Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]")
+	Token[] tok = [ // int [ ] @ [ ] # array of references, to array of int
+		Token(TokenType.KeywordInt,"int"),Token(TokenType.IndexOpen,"["),
+		Token(TokenType.IndexClose,"]"),Token(TokenType.OpRef,"@"),
+		Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]")
 	];
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
@@ -211,7 +237,7 @@ protected:
 	/// line number and column number
 	uint[2] _location;
 	/// parent node
-	ASTNode _parent;
+	ASTNode _parent = null;
 public:
 	/// Returns: line number
 	@property uint lineno(){
@@ -232,44 +258,71 @@ public:
 }
 
 /// Definition Node (function def, struct def, enum def...)
-package abstract class DefinitionNode : ASTNode{
+package class DefinitionNode : ASTNode{
 protected:
 	/// visibility
-	Visibility _visibility = Visibility.DEFAULT;
+	Visibility _visibility = DEFAULT_VISIBILITY;
 	/// identifier of what is being defined
 	Identifier _ident;
 public:
 	/// constuctor
-	this(){}
+	this(){
+		_ident = new Identifier();
+	}
 	/// destructor
 	~this(){
 		if (_ident)
 			.destroy(_ident);
 	}
+
+	alias clone = typeof(super).clone;
 	/// visibility
 	@property Visibility visibility(){
 		return _visibility;
 	}
-	/// Returns: identifier
+	/// ditto
+	@property Visibility visibility(Visibility newVal){
+		return _visibility = newVal;
+	}
+	/// Returns: identifier, might be null
 	@property Identifier ident(){
 		return _ident;
 	}
 }
 
 /// Namespace Node
-package abstract class NamespaceNode : DefinitionNode{
+package class NamespaceNode : DefinitionNode{
 protected:
 	/// definitions
-	DefinitionNode[] _definitions;
+	DefinitionNode[] _definition;
 public:
 	/// constructor
 	this(){}
 	/// destructor
 	~this(){
-		foreach (def; _definitions)
+		foreach (def; _definition)
 			.destroy(def);
-		if (_ident)
-			.destroy(_ident);
+	}
+	/// count of definitions
+	@property uint defCount(){
+		return cast(uint)_definition.length;
+	}
+	/// Returns: a definition
+	/// 
+	/// Throws: Exception in case index out of bounds
+	DefinitionNode defGet(uint index){
+		if (index >= _definition.length)
+			throw new Exception("index out of bounds");
+		return _definition[index];
+	}
+	/// appends a DefinitionNode
+	/// 
+	/// Returns: its index
+	uint defAppend(DefinitionNode node){
+		immutable uint r = cast(uint)_definition.length;
+		node._parent = this;
+		_definition ~= node;
+		return r;
 	}
 }
 
@@ -278,16 +331,22 @@ package class ScriptNode : NamespaceNode{
 public:
 	/// Returns: script name
 	@property string scriptName(){
+		if (!_ident)
+			return "";
 		return _ident.name;
 	}
 	/// ditto
 	@property string scriptName(string newName){
+		if (!_ident){
+			_ident = new Identifier(newName);
+			return _ident.name;
+		}
 		return _ident.name = newName;
 	}
 }
 
-/// Variable definition
-package class VarDefNode : DefinitionNode{
+/// Variable definition template
+private class GenericVarDefNode(T) : T{
 protected:
 	/// Data type
 	DataType _dataType;
@@ -297,31 +356,39 @@ protected:
 	ExpressionNode[] _varValue;
 public:
 	/// constuctor
-	this(){}
+	this(){
+		_dataType = new DataType();
+	}
 	/// destructor
 	~this(){
-		foreach (node; _varValue){
-			if (node)
-				.destroy(node);
-		}
-		if (_dataType)
-			.destroy(_dataType);
+		foreach (node; _varValue)
+			.destroy(node);
+		.destroy(_dataType);
 	}
 	/// Returns: number of variables defined
 	@property uint varCount(){
 		return cast(uint)_varName.length;
 	}
 	/// Returns: variable name
-	@property string varName(uint index){
+	string varName(uint index){
 		if (index >= _varName.length)
-			throw new Exception("VarDefNode.varName index out of bounds");
+			throw new Exception("index out of bounds");
 		return _varName[index];
 	}
 	/// Returns: variable default value
-	@property ExpressionNode varValue(uint index){
+	ExpressionNode varValue(uint index){
 		if (index >= _varValue.length)
-			throw new Exception("VarDefNode.varValue index out of bounds");
+			throw new Exception("index out of bounds");
 		return _varValue[index];
+	}
+	/// appends a variable
+	/// 
+	/// Returns: its index
+	int varAppend(string name, ExpressionNode value = null){
+		immutable uint r = cast(uint)_varName.length;
+		_varName ~= name;
+		_varValue ~= value;
+		return r;
 	}
 	/// Returns: data type of defined variables
 	@property DataType dataType(){
@@ -329,9 +396,27 @@ public:
 	}
 }
 
+/// variable definition
+alias VarDefNode = GenericVarDefNode!DefinitionNode;
+
+/// Local variable definition
+alias LocalVarDefNode = GenericVarDefNode!StatementNode;
+
 /// Struct definition
 package class StructDefNode : NamespaceNode{
-
+public:
+	/// constructor
+	this(string name){
+		_ident.name = name;
+	}
+	/// Returns: struct name
+	@property string name(){
+		return _ident.name;
+	}
+	/// ditto
+	@property string name(string newName){
+		return _ident.name = newName;
+	}
 }
 
 /// Enum definition
@@ -345,35 +430,43 @@ protected:
 	ExpressionNode[] _memberValue;
 public:
 	/// constructor
-	this(){}
+	this(){
+		_dataType = new DataType();
+	}
 	/// destructor
 	~this(){
-		foreach (node; _memberValue){
-			if (node)
-				.destroy(node);
-		}
-		if (_dataType)
-			.destroy(_dataType);
-	}
-	/// Returns: number of members
-	@property uint memberCount(){
-		return cast(uint)_memberName.length;
+		foreach (node; _memberValue)
+			.destroy(node);
+		.destroy(_dataType);
 	}
 	/// Returns: data type
 	@property DataType dataType(){
 		return _dataType;
 	}
+	/// Returns: number of members
+	@property uint memberCount(){
+		return cast(uint)_memberName.length;
+	}
 	/// Returns: member name
-	@property string memberName(uint index){
+	string memberName(uint index){
 		if (index >= _memberName.length)
 			throw new Exception("EnumDefNode.memberName index out of bounds");
 		return _memberName[index];
 	}
 	/// Returns: member value
-	@property ExpressionNode memberValue(uint index){
+	ExpressionNode memberValue(uint index){
 		if (index >= _memberValue.length)
 			throw new Exception("EnumDefNode.memberValue index out of bounds");
 		return _memberValue[index];
+	}
+	/// appends a member
+	/// 
+	/// Returns: index
+	uint memberAppend(string name, ExpressionNode value = null){
+		immutable uint r = cast(uint)_memberName.length;
+		_memberName ~= name;
+		_memberValue ~= value;
+		return r;
 	}
 }
 
@@ -386,11 +479,61 @@ protected:
 	DataType[] _argType;
 	/// Argument names
 	string[] _argName;
-	
+	/// body
+	BlockNode _body;
+public:
+	/// constructor
+	this(string name, string[] argName, DataType[] argType){
+		assert(argName.length == _argType.length, "argName.length doesnt match argType.length");
+		_body = new BlockNode();
+		_ident.name = name;
+		_argName = argName.dup;
+		_argType = argType.dup;
+	}
+	/// destructor
+	~this(){
+		foreach (type; _argType)
+			.destroy(type);
+		.destroy(_body);
+		.destroy(_returnType);
+	}
+	/// Returns: argument count
+	@property uint argCount(){
+		return cast(uint)_argName.length;
+	}
+	/// Returns: argument name at index
+	/// 
+	/// Throws: Exception if index out of bounds
+	string argName(uint index){
+		if (index >= _argName.length)
+			throw new Exception("index out of bounds");
+		return _argName[index];
+	}
+	/// Returns: argument type at index
+	/// 
+	/// Throws: Exception if index out of bounds
+	DataType argType(uint index){
+		if (index >= _argType.length)
+			throw new Exception("index out of bounds");
+		return _argType[index];
+	}
+	/// append an argument
+	/// 
+	/// Returns: index
+	uint argAppend(string name, DataType type){
+		immutable uint r = cast(uint)_argName.length;
+		_argName ~= name;
+		_argType ~= type;
+		return r;
+	}
+	/// Returns: body
+	@property BlockNode bodyBlock(){
+		return _body;
+	}
 }
 
 /// Expression
-package abstract class ExpressionNode : ASTNode{
+package class ExpressionNode : ASTNode{
 protected:
 	/// Return type of expression, can be void
 	DataType _returnType;
@@ -398,11 +541,16 @@ protected:
 	bool _isStatic = false;
 public:
 	/// constructor
-	this(){}
+	this(){
+		_returnType = new DataType();
+	}
 	/// destructor
 	~this(){
-		if (_returnType)
-			.destroy(_returnType);
+		.destroy(_returnType);
+	}
+	/// Returns: return type
+	@property DataType returnType(){
+		return _returnType;
 	}
 	/// Returns: whether this can be evaluated at compile time
 	bool isStatic(){
@@ -411,6 +559,55 @@ public:
 }
 
 /// Statement
-package abstract class StatementNode : ExpressionNode{
+package class StatementNode : ExpressionNode{
+protected:
+	/// void return type
+	DataType _voidType;
+public:
+	/// constructor
+	this (){
+		_voidType = new DataType(new Identifier("void"));
+	}
+	/// destructor
+	~this (){
+		.destroy(_voidType);
+	}
+	/// return type is always void
+	override @property DataType returnType(){
+		return _voidType;
+	}
+}
 
+/// Block
+package class BlockNode : StatementNode{
+protected:
+	StatementNode[] _statement;
+public:
+	/// constructor
+	this (){}
+	/// destructor
+	~this (){
+		foreach (node; _statement)
+			.destroy(node);
+	}
+	/// Returns: number of statements
+	@property uint statementCount(){
+		return cast(uint)_statement.length;
+	}
+	/// Returns: statement at index
+	/// 
+	/// Throws: Exception if index out of bounds
+	StatementNode statementGet(uint index){
+		if (index >= _statement.length)
+			throw new Exception("index out of bounds");
+		return _statement[index];
+	}
+	/// appends statement
+	/// 
+	/// Returns: index
+	uint statementAppend(StatementNode node){
+		immutable uint r = cast(uint)_statement.length;
+		_statement ~= node;
+		return r;
+	}
 }
