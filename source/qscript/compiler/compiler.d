@@ -25,9 +25,54 @@ package enum Visibility{
 /// `$` character is replaced by a detail that can be specified in CompileError.details
 private string[CompileError.Type] ERROR_EXPLAIN_STRING;
 /// default namespace name
-string DEFAULT_NAMESPACE = "this";
+package const string DEFAULT_NAMESPACE = "this";
 /// default visibility
-const Visibility DEFAULT_VISIBILITY = Visibility.Private;
+package const Visibility DEFAULT_VISIBILITY = Visibility.Private;
+/// Data type name for int
+package const string TYPENAME_INT = "int";
+/// Data type name for float
+package const string TYPENAME_FLOAT = "float";
+/// Data type name for char
+package const string TYPENAME_CHAR = "char";
+/// Data type name for bool
+package const string TYPENAME_BOOL = "bool";
+
+/// unescapes a string. the string must be provided with surrounding quotes stripped
+/// 
+/// Returns: unescaped string
+package char[] strUnscape(string str){
+	uint i, shift;
+	char[] r;
+	r.length = str.length;
+	while (i + shift < str.length && i < r.length){
+		if (str[i + shift] == '\\'){
+			shift ++;
+			if (i + shift < str.length){
+				r[i] = charUnescape(str[i + shift]);
+				r.length --;
+			}
+		}else
+			r[i] = str[i + shift];
+		i ++;
+	}
+	return r;
+}
+/// 
+unittest{
+	string s = "t\\\"bcd\\\"\\t";
+	assert(strEscape(s) == "t\"bcd\"\t", strEscape(s));
+}
+
+/// Returns: unescaped character, for a character `c` when used as `\c`
+package char charUnescape(char c){
+	switch (c){
+		case '\\':	return '\\';
+		case 't':	return '\t';
+		case 'n':	return '\n';
+		case 'b':	return '\b';
+		default:	return c;
+	}
+}
 
 /// compilation error
 struct CompileError{
