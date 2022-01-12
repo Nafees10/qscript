@@ -10,7 +10,7 @@ debug{import std.stdio;}
 import std.conv : to;
 
 class Identifier{
-protected:
+private:
 	/// name of identifier
 	string _name;
 	/// namespace, if any
@@ -164,6 +164,12 @@ public:
 	@property Identifier ident(){
 		return _ident;
 	}
+	/// ditto
+	@property Identifier ident(Identifier newIdent){
+		if (_ident)
+			.destroy(_ident);
+		return _ident = newIdent;
+	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
 		return _dimensions;
@@ -229,6 +235,7 @@ unittest{
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
 	assert(type.toString == "int[]@[]");
+	.destroy (type);
 }
 
 /// an AST Node
@@ -292,8 +299,6 @@ package class ExpressionNode : ASTNode{
 protected:
 	/// Return type of expression, can be void
 	DataType _returnType;
-	/// if this is static (i.e known at compile time)
-	bool _isStatic = false;
 public:
 	/// constructor
 	this(){
@@ -306,10 +311,6 @@ public:
 	/// Returns: return type
 	@property DataType returnType(){
 		return _returnType;
-	}
-	/// Returns: whether this can be evaluated at compile time
-	bool isStatic(){
-		return _isStatic;
 	}
 }
 
@@ -375,16 +376,10 @@ package class ScriptNode : NamespaceNode{
 public:
 	/// Returns: script name
 	@property string scriptName(){
-		if (!_ident)
-			return "";
 		return _ident.name;
 	}
 	/// ditto
 	@property string scriptName(string newName){
-		if (!_ident){
-			_ident = new Identifier(newName);
-			return _ident.name;
-		}
 		return _ident.name = newName;
 	}
 }
@@ -443,10 +438,10 @@ public:
 }
 
 /// variable definition
-alias VarDefNode = GenericVarDefNode!DefinitionNode;
+package alias VarDefNode = GenericVarDefNode!DefinitionNode;
 
 /// Local variable definition
-alias LocalVarDefNode = GenericVarDefNode!StatementNode;
+package alias LocalVarDefNode = GenericVarDefNode!StatementNode;
 
 /// Struct definition
 package class StructDefNode : NamespaceNode{
@@ -533,6 +528,7 @@ public:
 	/// constructor
 	this(string name, string[] argName, DataType[] argType){
 		assert(argName.length == _argType.length, "argName.length doesnt match argType.length");
+		_returnType = new DataType();
 		_body = new BlockNode();
 		_body._parent = this;
 		_ident.name = name;
@@ -545,6 +541,10 @@ public:
 			.destroy(type);
 		.destroy(_body);
 		.destroy(_returnType);
+	}
+	/// Returns: function return type
+	@property DataType returnType(){
+		return _returnType;
 	}
 	/// Returns: argument count
 	@property uint argCount(){
@@ -614,5 +614,310 @@ public:
 			node._parent = this;
 		_statement ~= node;
 		return r;
+	}
+}
+
+/// Function call expression
+package class FunctionCallExp : ExpressionNode{
+protected:
+	/// Identifier of function being called
+	Identifier _ident;
+	/// Arguments of function call
+	ExpressionNode[] _args;
+public:
+	/// constructor
+	this (){
+		_ident = new Identifier();
+	}
+	/// destructor
+	~this (){
+		.destroy(_ident);
+		foreach (arg; _args)
+			.destroy (arg);
+	}
+	/// Returns: function identifier
+	@property Identifier ident(){
+		return _ident;
+	}
+	/// Returns: number of arguments
+	@property uint argCount(){
+		return cast(uint)_args.length;
+	}
+	/// Returns: argument with index
+	/// 
+	/// Throws: Exception if index out of bounds
+	ExpressionNode argGet(uint index){
+		if (index >= _args.length)
+			throw new Exception("index out of bounds");
+		return _args[index];
+	}
+	/// Appends argument
+	/// 
+	/// Returns: index
+	uint argAppend(ExpressionNode arg){
+		immutable uint r = cast(uint)_args.length;
+		arg._parent = this;
+		_args ~= arg;
+		return r;
+	}
+}
+
+/// Binary operator expression
+package class OperatorBin : ExpressionNode{
+protected:
+	/// Operator
+	string _operator;
+	/// Left side operand
+	ExpressionNode _operandL;
+	/// Right side operand
+	ExpressionNode _operandR;
+public:
+	/// constructor
+	this (){}
+	/// destructor
+	~this (){
+		if (_operandL)
+			.destroy(_operandL);
+		if (_operandR)
+			.destroy(_operandR);
+	}
+	/// Operator
+	@property string operator(){
+		return _operator;
+	}
+	/// Left operand
+	@property ExpressionNode operandL(){
+		return _operandL;
+	}
+	/// ditto
+	@property ExpressionNode operandL(ExpressionNode newL){
+		if (_operandL)
+			.destroy (_operandL);
+		return _operandL = newL;
+	}
+	/// Right operand
+	@property ExpressionNode operandR(){
+		return _operandR;
+	}
+	/// ditto
+	@property ExpressionNode operandR(ExpressionNode newR){
+		if (_operandR)
+			.destroy (_operandR);
+		return _operandR = newR;
+	}
+}
+
+/// Unary operator expression
+package class OperatorUn : ExpressionNode{
+protected:
+	/// Operator
+	string _operator;
+	/// Operand
+	ExpressionNode _operand;
+public:
+	/// constructor
+	this (){}
+	/// destructor
+	~this (){
+		if (_operand)
+			.destroy(_operand);
+	}
+	/// Returns: the operator
+	@property string operator(){
+		return _operator;
+	}
+	/// Returns: the operand
+	@property ExpressionNode operand(){
+		return _operand;
+	}
+	/// ditto
+	@property ExpressionNode operand(ExpressionNode newOp){
+		if (_operand)
+			.destroy(_operand);
+		return _operand = newOp;
+	}
+}
+
+/// Integer Literal
+package class LiteralInt : ExpressionNode{
+protected:
+	/// token
+	Token _tok;
+	/// integer value
+	ptrdiff_t _val;
+	/// if value has been updated since _tok was last updated
+	bool _updated = false;
+	/// Reads _val from _tok
+	/// 
+	/// Throws: Exception if invalid format
+	void readVal(){
+		_val = 0;
+		if (_tok.type == TokenType.LiteralInt)
+			_val = _tok.token.to!ptrdiff_t;
+		else if (_tok.type == TokenType.LiteralBinary && _tok.token.length > 2)
+			_val = _tok.token.readBinary();
+		else if (_tok.type == TokenType.LiteralHexadecimal && _tok.token.length > 2)
+			_val = _tok.token.readHexadecimal();
+		else
+			throw new Exception("invalid token to read integer from");
+		_updated = true;
+	}
+public:
+	/// constructor
+	this (){
+		// set return type
+		_returnType.clear();
+		_returnType.ident = new Identifier(TYPENAME_INT);
+	}
+	/// Returns: token
+	@property Token token(){
+		return _tok;
+	}
+	/// ditto
+	@property Token token(Token newTok){
+		_updated = false;
+		return _tok = newTok;
+	}
+	/// Returns: value
+	@property ptrdiff_t value(){
+		if (_updated)
+			return _val;
+		readVal();
+		return _val;
+	}
+}
+
+/// Float literal
+package class LiteralFloat : ExpressionNode{
+protected:
+	/// token
+	Token _tok;
+	/// value
+	float _val;
+	/// if _val updated after changing _tok
+	bool _updated = false;
+	/// reads _val from _tok
+	/// 
+	/// Throws: Exception if invalid format
+	void readVal(){
+		_val = 0;
+		if (_tok.type != TokenType.LiteralFloat)
+			throw new Exception("invalid token to read float from");
+		_updated = true;
+		_val = _tok.token.to!float;
+	}
+public:
+	/// constructor
+	this (){
+		// set return type
+		_returnType.clear();
+		_returnType.ident = new Identifier(TYPENAME_FLOAT);
+	}
+	/// Returns: token
+	@property Token token(){
+		return _tok;
+	}
+	/// ditto
+	@property Token token(Token newTok){
+		_updated = false;
+		return _tok = newTok;
+	}
+	/// Returns: the value
+	@property float value(){
+		if (_updated)
+			return _val;
+		readVal();
+		return _val;
+	}
+}
+
+/// Character Literal
+package class LiteralChar : ExpressionNode{
+protected:
+	/// Token
+	Token _tok;
+	/// value as a character
+	char _val;
+	/// if value is valid
+	bool _updated = false;
+	/// Reads _val from _tok
+	/// 
+	/// Throws: Exception if invalid format
+	void readVal(){
+		if (_tok.type != TokenType.LiteralChar || _tok.token.length < 3)
+			throw new Exception("invalid token to read character from");
+		char[] unesc = strUnscape(_tok.token[1 .. $-1]);
+		if (unesc.length != 1)
+			throw new Exception("character literal should store 1 character");
+		_updated = true;
+		_val = unesc[0];
+	}
+public:
+	/// constructor
+	this (){
+		// set data type
+		_returnType.clear();
+		_returnType.ident = new Identifier(TYPENAME_CHAR);
+	}
+	/// Returns: token
+	@property Token token(){
+		return _tok;
+	}
+	/// ditoo
+	@property Token token(Token newTok){
+		_updated = false;
+		return _tok = newTok;
+	}
+	/// Returns: value
+	@property char value(){
+		if (_updated)
+			return _val;
+		readVal();
+		return _val;
+	}
+}
+
+/// Boolean Literal
+package class LiteralBool : ExpressionNode{
+protected:
+	/// token
+	Token _tok;
+	/// value
+	bool _val;
+	/// if _val updated since last _tok was updated
+	bool _updated = false;
+	/// Reads _val from _literal
+	/// 
+	/// Throws: Exception if invalid format
+	void readVal(){
+		if (_tok.type == TokenType.KeywordTrue)
+			_val = true;
+		else if (_tok.type == TokenType.KeywordFalse)
+			_val = false;
+		else
+			throw new Exception("invalid token to read boolean from");
+		_updated = true;
+	}
+public:
+	this(){
+		// set data type
+		_returnType.clear();
+		_returnType.ident = new Identifier(TYPENAME_BOOL);
+	}
+	/// Returns: token
+	@property Token token(){
+		return _tok;
+	}
+	/// ditto
+	@property Token token(Token newTok){
+		_updated = false;
+		return _tok = newTok;
+	}
+	/// Returns: value
+	@property bool value(){
+		if (_updated)
+			return _val;
+		readVal();
+		return _val;
 	}
 }
