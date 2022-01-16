@@ -846,7 +846,7 @@ protected:
 	void readVal(){
 		if (_tok.type != TokenType.LiteralChar || _tok.token.length < 3)
 			throw new Exception("invalid token to read character from");
-		char[] unesc = strUnscape(_tok.token[1 .. $-1]);
+		char[] unesc = strUnescape(_tok.token[1 .. $-1]);
 		if (unesc.length != 1)
 			throw new Exception("character literal should store 1 character");
 		_updated = true;

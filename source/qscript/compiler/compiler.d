@@ -40,7 +40,7 @@ package const string TYPENAME_BOOL = "bool";
 /// unescapes a string. the string must be provided with surrounding quotes stripped
 /// 
 /// Returns: unescaped string
-package char[] strUnscape(string str){
+package char[] strUnescape(string str){
 	uint i, shift;
 	char[] r;
 	r.length = str.length;
@@ -60,7 +60,7 @@ package char[] strUnscape(string str){
 /// 
 unittest{
 	string s = "t\\\"bcd\\\"\\t";
-	assert(strEscape(s) == "t\"bcd\"\t", strEscape(s));
+	assert(strUnescape(s) == "t\"bcd\"\t", strUnescape(s));
 }
 
 /// Returns: unescaped character, for a character `c` when used as `\c`
