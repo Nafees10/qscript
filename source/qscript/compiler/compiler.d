@@ -59,14 +59,13 @@ package char[] strUnescape(string str){
 }
 /// 
 unittest{
-	string s = "t\\\"bcd\\\"\\t";
-	assert(strUnescape(s) == "t\"bcd\"\t", strUnescape(s));
+	string s = "t\\\"bcd\\\"\\t\\\\";
+	assert(strUnescape(s) == "t\"bcd\"\t\\", strUnescape(s));
 }
 
 /// Returns: unescaped character, for a character `c` when used as `\c`
 package char charUnescape(char c){
 	switch (c){
-		case '\\':	return '\\';
 		case 't':	return '\t';
 		case 'n':	return '\n';
 		case 'b':	return '\b';
