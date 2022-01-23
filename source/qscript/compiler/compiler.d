@@ -24,10 +24,14 @@ package enum Visibility{
 /// Stores explanations for CompileError.Type  
 /// `$` character is replaced by a detail that can be specified in CompileError.details
 private string[CompileError.Type] ERROR_EXPLAIN_STRING;
+/// default script name
+package const string DEFAULT_SCRIPT_NAME = "QSCRIPT_SCRIPT";
 /// default namespace name
 package const string DEFAULT_NAMESPACE = "this";
 /// default visibility
 package const Visibility DEFAULT_VISIBILITY = Visibility.Private;
+/// Data type name for void
+package const string TYPENAME_VOID = "void";
 /// Data type name for int
 package const string TYPENAME_INT = "int";
 /// Data type name for float
