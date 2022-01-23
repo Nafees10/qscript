@@ -287,9 +287,9 @@ ref = @i; # ref is now pointing to i, @i returns the reference to i
 and read like:
 ```
 var int i;
-var int@ ref = @i;
+var int@ ref = @i; # pre @ gets reference
 i = 5;
-writeln("Value of i="~toStr(@ref));
+writeln("Value of i="~toStr(ref@)); # post @ dereferences
 ```
 References are also valid when passed to other functions as arguments, as in the following example:
 ```
@@ -300,7 +300,7 @@ function void main(){
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
 }
 function void setRefTo(int@ ref, int to){
-	@ref = to;
+	ref@ = to;
 }
 ```
 Functions can also return references, except for reference to a local variable.
@@ -412,33 +412,51 @@ Syntax for binary operators is: `A operator B`. The whitespace between operator 
 Syntax for unary operators is: `operator A`. Whitespace between operator and A is not necessary.
 
 Operators are read in this order (higher = evaluated first, otherwise left-to-right):
-1. `.`
-1. `@`, `!`
-2. `*`, `/`, `+`, `-`, `%`, `~`
-3. `==`, `!=`, `>=`, `<=`, `>`, `<`
-4. `&&`, `||`
-5. `=`
+1. `.`, `a[b]`
+1. `@`, `!`, `++`, `--`
+1. `*`, `/`, `+`, `-`, `%`, `~`
+1. `<<`, `>>`
+1. `==`, `!=`, `>=`, `<=`, `>`, `<`
+1. `&&`, `||`, `|`, `&`, `^`
+1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `~=`
 
 ## Operator Functions
-Operators are read as functions, and can be overrided same as functions, and the operands are arguments.
+Operators are read as functions, and can be overrided same as functions, and the operands are arguments.  
 The function associated with each operator is as follows: (`Ta`, `Tb`, `T` refers to data types, of `a`,`b`, or return value)
-| Operator | Function |
+| Operator | Function 								|
 |----------|----------------------------------------|
-| `.`	|	`Tb opMemberSelect(Ta a, char[] name)`	|
-| `@`	|	`@T opRef(T a)`	,	`T opRef(@T a)`		|
-| `!`	|	`bool opBoolNot(T a)`					|
-| `*`	|	`T opMultiply(T a, T b)`				|
-| `/`	|	`T opDivide(T a, T b)`					|
-| `+`	|	`T opAdd(T a, T b)`						|
-| `-`	|	`T opSubtract(T a, T b)`				|
-| `%`	|	`T opMod(T a, T b)`						|
-| `~`	|	`T opConcat(T a, T b)`					|
-| `==`	|	`bool opIsSame(T a, T b)`				|
-| `!=`	|	`bool opIsNotSame(T a, T b)`			|
-| `>=`	|	`bool opIsGreaterOrSame(T a, T b)`		|
-| `<=`	|	`bool opIsSmallerOrSame(T a, T b)`		|
-| `>`	|	`bool opIsGreater(T a, T b)`			|
-| `<`	|	`bool opIsSmaller(T a, T b)`			|
-| `&&`	|	`bool opBoolAnd(T a, T b)`				|
-| `\|\|`|	`bool opBoolOr(T a, T b)`				|
-| `=`	|	`void opAssign(@T a, T b)`				|
+| `.`	|	`T@ opMemberSelect(Ta a, char[] name)`	|
+| `a[b]`|	`T@ opIndexRead(Ta a, Tb b)`			|
+| `@a`	|	`@T opRef(Ta a)`						|
+| `a@`	|	`T opDeref(Ta@ a)`						|
+| `!`	|	`T opBoolNot(Ta a)`						|
+| `a++`	|	`T opIncPost(Ta a)`						|
+| `++a`	|	`T opIncPre(Ta a)`						|
+| `a--`	|	`T opDecPost(Ta a)`						|
+| `--a`	|	`T opDecPre(Ta a)`						|
+| `*`	|	`T opMultiply(Ta a, Tb b)`				|
+| `/`	|	`T opDivide(Ta a, Tb b)`				|
+| `+`	|	`T opAdd(Ta a, Tb b)`					|
+| `-`	|	`T opSubtract(Ta a, Tb b)`				|
+| `%`	|	`T opMod(Ta a, Tb b)`					|
+| `~`	|	`T opConcat(Ta a, Tb b)`				|
+| `<<`	|	`T opBitshiftLeft(Ta a, Tb b)`			|
+| `>>`	|	`T opBitshiftRight(Ta a, Tb b)`			|
+| `==`	|	`T opIsSame(Ta a, Tb b)`				|
+| `!=`	|	`T opIsNotSame(Ta a, Tb b)`				|
+| `>=`	|	`T opIsGreaterOrSame(Ta a, Tb b)`		|
+| `<=`	|	`T opIsSmallerOrSame(Ta a, Tb b)`		|
+| `>`	|	`T opIsGreater(Ta a, Tb b)`				|
+| `<`	|	`T opIsSmaller(Ta a, Tb b)`				|
+| `&&`	|	`T opBoolAnd(Ta a, Tb b)`				|
+| `\|\|`|	`T opBoolOr(Ta a, Tb b)`				|
+| `\|`	|	`T opBinOr(Ta a, Tb b)`					|
+| `&`	|	`T opBinAnd(Ta a, Tb b)`				|
+| `^`	|	`T opBinXor(Ta a, Tb b)`				|
+| `=`	|	`T opAssign(Ta@ a, Tb b)`				|
+| `+=`	|	`T opAddAssign(Ta@ a, Tb b)`			|
+| `-=`	|	`T opSubtractAssign(Ta@ a, Tb b)`		|
+| `*=`	|	`T opMultiplyAssign(Ta@ a, Tb b)`		|
+| `/=`	|	`T opDivideAssign(Ta@ a, Tb b)`			|
+| `%=`	|	`T opModAssign(Ta@ a, Tb b)`			|
+| `~=`	|	`T opConcatAssign(Ta@ a, Tb b)`			|
