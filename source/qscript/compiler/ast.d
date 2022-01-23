@@ -9,95 +9,25 @@ import qscript.compiler.tokens;
 debug{import std.stdio;}
 import std.conv : to;
 
-class Identifier{
-private:
-	/// name of identifier
-	string _name;
-	/// namespace, if any
-	Identifier _namespace = null;
-public:
-	/// constructor
-	this(){}
-	/// destructor
-	~this(){
-		this.clear();
+/// for storing [namespace, namespace, .., parent, .., name]
+alias Identifier = string[];
+
+/// reads tokens into ident
+/// 
+/// Returns: number of tokens read
+package uint fromTokens(ref Identifier ident, Token[] tokens){
+	uint index = 0;
+	if (index < tokens.length && tokens[index].token.isIdentifier){
+		ident = [tokens[index].token];
+		index ++;
+	}else
+		return 0;
+	while (index + 1 < tokens.length && tokens[index].type == TokenType.OpMemberSelect &&
+	tokens[index + 1].token.isIdentifier){
+		ident ~= tokens[index + 1].token;
+		index += 2;
 	}
-	/// constructor, name only
-	this(string name){
-		_name = name;
-	}
-	/// constructor, both namespace and name from string
-	this (string namespace, string name){
-		_namespace = new Identifier(namespace);
-		_name = name;
-	}
-	/// constructor, both namespace and name
-	/// be aware namespace will be destroyed along with this
-	this (Identifier namespace, string name){
-		_namespace = namespace;
-		_name = name;
-	}
-	/// clone from another Identifier
-	void clone(Identifier from){
-		this.clear();
-		_name = from._name;
-		if (from._namespace){
-			_namespace = new Identifier();
-			_namespace.clone(from._namespace);
-		}
-	}
-	/// clears itself
-	void clear(){
-		if (_namespace)
-			.destroy(_namespace);
-		_namespace = null;
-		_name = "";
-	}
-	/// Returns: name
-	@property string name(){
-		return _name;
-	}
-	/// ditto
-	@property string name(string newName){
-		if (!newName.isIdentifier)
-			return _name;
-		return _name = newName;
-	}
-	/// Returns: namespace
-	/// 
-	/// **it will be destroyed when this is destroyed**
-	@property Identifier namespace(){
-		return _namespace;
-	}
-	/// Reads from tokens
-	/// 
-	/// Returns: number of tokens read
-	uint fromTokens(Token[] tokens){
-		uint index = 0;
-		this.clear();
-		while (index < tokens.length && tokens[index].token.isIdentifier){
-			_name = tokens[index].token;
-			if (index + 2 < tokens.length &&
-			tokens[index + 1].type == TokenType.OpMemberSelect &&
-			tokens[index + 2].token.isIdentifier){
-				Identifier newNamespace = new Identifier();
-				newNamespace._name = _name;
-				newNamespace._namespace = _namespace;
-				this._namespace = newNamespace;
-				index += 2;
-			}else{
-				index ++;
-				break;
-			}
-		}
-		return index;
-	}
-	/// Returns: this identifier expressed as a string
-	override string toString(){
-		if (_namespace)
-			return _namespace.toString ~ '.' ~ _name;
-		return _name;
-	}
+	return index;
 }
 /// 
 unittest{
@@ -106,17 +36,24 @@ unittest{
 		Token(TokenType.Identifier,"std"), Token(TokenType.OpMemberSelect,"."),
 		Token(TokenType.Identifier,"io"), Token(TokenType.OpMemberSelect,".")
 	];
-	Identifier ident = new Identifier();
+	Identifier ident;
 	assert(ident.fromTokens(tok) == 5);
 	assert(ident.toString == "qscript.std.io");
-	.destroy(ident);
+}
+
+/// Returns: string representation of Identifier
+package string toString(Identifier ident){
+	string ret;
+	foreach (name; ident[0 .. $ - 1])
+		ret ~= name ~ '.';
+	return ret ~ ident[$-1];
 }
 
 /// Data Type
 class DataType{
 private:
 	/// its identifier (name). not valid if _refTo !is null
-	Identifier _ident = null;
+	Identifier _ident;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
 	/// reference to type. if this is not null, then _ident is not valid
@@ -140,35 +77,25 @@ public:
 		this.clear();
 		_dimensions = from._dimensions;
 		_byteCount = from._byteCount;
-		if (from._ident){
-			_ident = new Identifier();
-			_ident.clone(from._ident);
-		}
 		if (from._refTo){
 			_refTo = new DataType();
 			_refTo.clone(from._refTo);
+		}else{
+			_ident = from._ident.dup;
 		}
 	}
 	/// Clears itself
 	void clear(){
-		if (_ident)
-			.destroy(_ident);
 		if (_refTo)
 			.destroy(_refTo);
-		_ident = null;
+		_ident = [];
 		_refTo = null;
 		_dimensions = 0;
 		_byteCount = 0;
 	}
 	/// Identifier (name) for this type
-	@property Identifier ident(){
+	@property ref Identifier ident(){
 		return _ident;
-	}
-	/// ditto
-	@property Identifier ident(Identifier newIdent){
-		if (_ident)
-			.destroy(_ident);
-		return _ident = newIdent;
 	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
@@ -201,7 +128,7 @@ public:
 		uint index = 0;
 		while (index < tokens.length){
 			if (tokens[index].type == TokenType.OpRef){
-				if (!_refTo && !_ident)
+				if (!_refTo && !_ident.length)
 					break;
 				DataType refTo = new DataType();
 				refTo.clone(this);
@@ -209,20 +136,25 @@ public:
 				this._refTo = refTo;
 				index ++;
 			}else if (tokens[index].type == TokenType.IndexOpen){
-				if ((!_ident && !_refTo) || index + 1 >= tokens.length ||
+				if ((!_ident.length && !_refTo) || index + 1 >= tokens.length ||
 				tokens[index + 1].type != TokenType.IndexClose)
 					break;
 				_dimensions ++;
 				index += 2;
 			}else if (tokens[index].token.isIdentifier){
-				if (_ident)
+				if (_ident.length)
 					break;
-				_ident = new Identifier(tokens[index].token);
+				_ident = [tokens[index].token];
 				index ++;
 			}else
 				break;
 		}
 		return index;
+	}
+	/// == operator
+	bool opBinary(string op : "==")(DataType rhs){
+		return rhs !is null && rhs._dimensions == _dimensions && 
+			(!_refTo || _refTo == rhs._refTo) && (_ident == rhs._ident);
 	}
 }
 /// 
@@ -262,24 +194,25 @@ public:
 	@property uint colno(uint newVal){
 		return _location[1] = newVal;
 	}
+	/// Finds ASTNode for an Identifier
 }
 
 /// Definition Node (function def, struct def, enum def...)
-package class DefinitionNode : ASTNode{
+package abstract class DefinitionNode : ASTNode{
 protected:
 	/// visibility
 	Visibility _visibility = DEFAULT_VISIBILITY;
 	/// identifier of what is being defined
 	Identifier _ident;
+	/// if this is static (available without creating an instance)
+	bool _static;
 public:
 	/// constuctor
 	this(){
-		_ident = new Identifier();
+		_static = false;
 	}
 	/// destructor
-	~this(){
-		.destroy(_ident);
-	}
+	~this(){}
 	/// visibility
 	@property Visibility visibility(){
 		return _visibility;
@@ -288,14 +221,14 @@ public:
 	@property Visibility visibility(Visibility newVal){
 		return _visibility = newVal;
 	}
-	/// Returns: identifier, might be null
-	@property Identifier ident(){
+	/// Returns: identifier
+	@property ref Identifier ident(){
 		return _ident;
 	}
 }
 
 /// Expression
-package class ExpressionNode : ASTNode{
+package abstract class ExpressionNode : ASTNode{
 protected:
 	/// Return type of expression, can be void
 	DataType _returnType;
@@ -315,14 +248,14 @@ public:
 }
 
 /// Statement
-package class StatementNode : ExpressionNode{
+package abstract class StatementNode : ExpressionNode{
 protected:
 	/// void return type
 	DataType _voidType;
 public:
 	/// constructor
 	this (){
-		_voidType = new DataType(new Identifier("void"));
+		_voidType = new DataType([TYPENAME_VOID]);
 	}
 	/// destructor
 	~this (){
@@ -335,7 +268,7 @@ public:
 }
 
 /// Namespace Node
-package class NamespaceNode : DefinitionNode{
+package abstract class NamespaceNode : DefinitionNode{
 protected:
 	/// definitions
 	DefinitionNode[] _definition;
@@ -376,11 +309,15 @@ package class ScriptNode : NamespaceNode{
 public:
 	/// Returns: script name
 	@property string scriptName(){
-		return _ident.name;
+		if (_ident.length)
+			return _ident[$ - 1];
+		return DEFAULT_SCRIPT_NAME;
 	}
 	/// ditto
 	@property string scriptName(string newName){
-		return _ident.name = newName;
+		if (_ident.length)
+			return _ident[$-1] = newName;
+		return (_ident = [newName])[0];
 	}
 }
 
@@ -448,15 +385,19 @@ package class StructDefNode : NamespaceNode{
 public:
 	/// constructor
 	this(string name){
-		_ident.name = name;
+		_ident = [name];
 	}
 	/// Returns: struct name
 	@property string name(){
-		return _ident.name;
+		if (_ident.length)
+			return _ident[$-1];
+		return "";
 	}
 	/// ditto
 	@property string name(string newName){
-		return _ident.name = newName;
+		if (_ident.length)
+			return _ident[$-1] = newName;
+		return (_ident = [newName])[0];
 	}
 }
 
@@ -531,7 +472,7 @@ public:
 		_returnType = new DataType();
 		_body = new BlockNode();
 		_body._parent = this;
-		_ident.name = name;
+		_ident = [name];
 		_argName = argName.dup;
 		_argType = argType.dup;
 	}
@@ -626,17 +567,14 @@ protected:
 	ExpressionNode[] _args;
 public:
 	/// constructor
-	this (){
-		_ident = new Identifier();
-	}
+	this (){}
 	/// destructor
 	~this (){
-		.destroy(_ident);
 		foreach (arg; _args)
 			.destroy (arg);
 	}
 	/// Returns: function identifier
-	@property Identifier ident(){
+	@property ref Identifier ident(){
 		return _ident;
 	}
 	/// Returns: number of arguments
@@ -767,7 +705,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = new Identifier(TYPENAME_INT);
+		_returnType.ident = [TYPENAME_INT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -811,7 +749,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = new Identifier(TYPENAME_FLOAT);
+		_returnType.ident = [TYPENAME_FLOAT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -857,7 +795,7 @@ public:
 	this (){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = new Identifier(TYPENAME_CHAR);
+		_returnType.ident = [TYPENAME_CHAR];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -886,7 +824,7 @@ protected:
 	bool _val;
 	/// if _val updated since last _tok was updated
 	bool _updated = false;
-	/// Reads _val from _literal
+	/// Reads _val from _tok
 	/// 
 	/// Throws: Exception if invalid format
 	void readVal(){
@@ -902,7 +840,7 @@ public:
 	this(){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = new Identifier(TYPENAME_BOOL);
+		_returnType.ident = [TYPENAME_BOOL];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -915,6 +853,50 @@ public:
 	}
 	/// Returns: value
 	@property bool value(){
+		if (_updated)
+			return _val;
+		readVal();
+		return _val;
+	}
+}
+
+/// String literal
+package class LiteralString : ExpressionNode{
+protected:
+	/// token
+	Token _tok;
+	/// value
+	string _val;
+	/// if _val updated after _tok updated
+	bool _updated = false;
+	/// Reads _val from _tok
+	/// 
+	/// Throws: Exception if invalid token
+	void readVal(){
+		if (_tok.type != TokenType.LiteralString || _tok.token.length < 2)
+			throw new Exception("invalid token to read string from");
+		_updated = true;
+		_val = cast(string)strUnescape(_tok.token[1 .. $ - 1]);
+	}
+public:
+	/// constructor
+	this (){
+		// set data type
+		_returnType.clear();
+		_returnType.ident = [TYPENAME_CHAR];
+		_returnType.dimensions = 1;
+	}
+	/// Returns: oken
+	@property Token token(){
+		return _tok;
+	}
+	/// ditto
+	@property Token token(Token newTok){
+		_updated = false;
+		return _tok = newTok;
+	}
+	/// Returns: value
+	@property string value(){
 		if (_updated)
 			return _val;
 		readVal();
