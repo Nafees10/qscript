@@ -51,12 +51,16 @@ enum TokenType : uint{
 	OpMemberSelect		, /// `.` operator
 	OpRef				, /// `@` operator
 	OpNot				, /// `!` operator
+	OpInc				, /// `++` operator
+	OpDec				, /// `--` operator
 	OpMultiply			, /// `*` operator
 	OpDivide			, /// `/` operator
 	OpAdd				, /// `+` operator
 	OpSubtract			, /// `-` operator
 	OpMod				, /// `%` operator
 	OpConcat			, /// `~` operator
+	OpBitshiftLeft		, /// `<<` operator
+	OpBitshiftRight		, /// `>>` operator
 	OpIsSame			, /// `==` operator
 	OpIsNotSame			, /// `!=` operator
 	OpIsGreaterOrSame	, /// `>=` operator
@@ -65,7 +69,19 @@ enum TokenType : uint{
 	OpIsSmaller			, /// `<` operator
 	OpBoolAnd			, /// `&&` operator
 	OpBoolOr			, /// `||` operator
+	OpBinAnd			, /// `&` operator
+	OpBinOr				, /// `|` operator
+	OpBinXor			, /// `^` operator
 	OpAssign			, /// `=` operator
+	OpAddAssign			, /// `+=` operator
+	OpSubtractAssign	, /// `-=` operator
+	OpMultiplyAssign	, /// `*=` operator
+	OpDivideAssign		, /// `/=` operator
+	OpModAssign			, /// `%=` operator
+	OpConcatAssign		, /// `~=` operator
+	OpBinAndAssign		, /// `&=` operator
+	OpBinOrAssign		, /// `|=` operator
+	OpBinXorAssign		, /// `^=` operator
 	BracketOpen			, /// `(`
 	BracketClose		, /// `)`
 	IndexOpen			, /// `[`
@@ -212,6 +228,8 @@ private:
 		_tkGen.addTokenType(TokenType.OpMemberSelect, `.`);
 		_tkGen.addTokenType(TokenType.OpRef, `@`);
 		_tkGen.addTokenType(TokenType.OpNot, `!`);
+		_tkGen.addTokenType(TokenType.OpInc, `++`);
+		_tkGen.addTokenType(TokenType.OpDec, `--`);
 		_tkGen.addTokenType(TokenType.OpMultiply, `*`);
 		_tkGen.addTokenType(TokenType.OpDivide, `/`);
 		_tkGen.addTokenType(TokenType.OpAdd, `+`);
@@ -226,7 +244,19 @@ private:
 		_tkGen.addTokenType(TokenType.OpIsNotSame, `!=`);
 		_tkGen.addTokenType(TokenType.OpBoolAnd, `&&`);
 		_tkGen.addTokenType(TokenType.OpBoolOr, `||`);
+		_tkGen.addTokenType(TokenType.OpBinAnd, `&`);
+		_tkGen.addTokenType(TokenType.OpBinOr, `|`);
+		_tkGen.addTokenType(TokenType.OpBinXor, `^`);
 		_tkGen.addTokenType(TokenType.OpAssign, `=`);
+		_tkGen.addTokenType(TokenType.OpAddAssign, `+=`);
+		_tkGen.addTokenType(TokenType.OpSubtractAssign, `-=`);
+		_tkGen.addTokenType(TokenType.OpMultiplyAssign, `*=`);
+		_tkGen.addTokenType(TokenType.OpDivideAssign, `/=`);
+		_tkGen.addTokenType(TokenType.OpModAssign, `%=`);
+		_tkGen.addTokenType(TokenType.OpConcatAssign, `~=`);
+		_tkGen.addTokenType(TokenType.OpBinAndAssign, `&=`);
+		_tkGen.addTokenType(TokenType.OpBinOrAssign, `|=`);
+		_tkGen.addTokenType(TokenType.OpBinXorAssign, `^=`);
 		_tkGen.addTokenType(TokenType.BracketOpen, `(`);
 		_tkGen.addTokenType(TokenType.BracketClose, `)`);
 		_tkGen.addTokenType(TokenType.IndexOpen, `[`);
