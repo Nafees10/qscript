@@ -75,6 +75,8 @@ public:
 	/// clone from another DataType
 	void clone(DataType from){
 		this.clear();
+		if (!from)
+			return;
 		_dimensions = from._dimensions;
 		_byteCount = from._byteCount;
 		if (from._refTo){
@@ -83,6 +85,19 @@ public:
 		}else{
 			_ident = from._ident.dup;
 		}
+	}
+	/// turn it into a reference of itself
+	void makeRef(){
+		DataType refTo = new DataType();
+		// dont use clone here, that will clone everything, inefficient
+		refTo._ident = _ident;
+		refTo._dimensions = _dimensions;
+		refTo._refTo = _refTo;
+		refTo._byteCount = _byteCount;
+		_ident = null;
+		_dimensions = 0;
+		_refTo = refTo;
+		_byteCount = 0;
 	}
 	/// Clears itself
 	void clear(){
@@ -104,6 +119,16 @@ public:
 	/// ditto
 	@property uint dimensions(uint newDim){
 		return _dimensions = newDim;
+	}
+	/// Data type this is a reference to (or null if this is not a reference)
+	@property DataType refTo(){
+		return _refTo;
+	}
+	/// ditto
+	@property DataType refTo(DataType newT){
+		if (_refTo)
+			.destroy(_refTo);
+		return _refTo = newT;
 	}
 	/// this data as string  
 	/// 
@@ -197,20 +222,16 @@ public:
 	/// Finds ASTNode for an Identifier
 }
 
-/// Definition Node (function def, struct def, enum def...)
-package abstract class DefinitionNode : ASTNode{
+/// Declaration Node (function decl, struct decl, enum decl...)
+package abstract class DeclNode : ASTNode{
 protected:
 	/// visibility
 	Visibility _visibility = DEFAULT_VISIBILITY;
-	/// identifier of what is being defined
+	/// identifier of what is being declared
 	Identifier _ident;
-	/// if this is static (available without creating an instance)
-	bool _static;
 public:
 	/// constuctor
-	this(){
-		_static = false;
-	}
+	this(){}
 	/// destructor
 	~this(){}
 	/// visibility
@@ -255,7 +276,7 @@ protected:
 public:
 	/// constructor
 	this (){
-		_voidType = new DataType([TYPENAME_VOID]);
+		_voidType = new DataType([TYPENAME.VOID]);
 	}
 	/// destructor
 	~this (){
@@ -266,40 +287,178 @@ public:
 		return _voidType;
 	}
 }
+/// Binary operator expression
+package abstract class OperatorBin : ExpressionNode{
+protected:
+	/// Operator
+	string _operator;
+	/// Operator function
+	FuncDeclNode _opFunc;
+	/// Operator function name
+	string _opFuncName;
+	/// Left side operand
+	ExpressionNode _operandL;
+	/// Right side operand
+	ExpressionNode _operandR;
+	/// Called to generate _opFunc
+	void _generateOpFunc(){
+		if (!_operandL || !_operandR)
+			return;
+		if (_opFunc)
+			.destroy(_opFunc);
+		DataType lType = new DataType(), rType = new DataType();
+		lType.clone(_operandL.returnType);
+		rType.clone(_operandR.returnType);
+		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
+	}
+public:
+	/// constructor
+	this (){}
+	/// destructor
+	~this (){
+		if (_opFunc)
+			.destroy(_opFunc);
+		if (_operandL)
+			.destroy(_operandL);
+		if (_operandR)
+			.destroy(_operandR);
+	}
+	/// Operator
+	@property string operator(){
+		return _operator;
+	}
+	/// Operator function 
+	@property FuncDeclNode opFunc(){
+		if (!_opFunc)
+			_generateOpFunc();
+		return _opFunc;
+	}
+	/// Left operand
+	@property ExpressionNode operandL(){
+		return _operandL;
+	}
+	/// ditto
+	@property ExpressionNode operandL(ExpressionNode newL){
+		if (_operandL)
+			.destroy (_operandL);
+		if (_opFunc){
+			.destroy(_opFunc);
+			_opFunc = null;
+		}
+		return _operandL = newL;
+	}
+	/// Right operand
+	@property ExpressionNode operandR(){
+		return _operandR;
+	}
+	/// ditto
+	@property ExpressionNode operandR(ExpressionNode newR){
+		if (_operandR)
+			.destroy (_operandR);
+		if (_opFunc){
+			.destroy(_opFunc);
+			_opFunc = null;
+		}
+		return _operandR = newR;
+	}
+}
+
+/// Unary operator expression
+package abstract class OperatorUn : ExpressionNode{
+protected:
+	/// Operator
+	string _operator;
+	/// Operator function
+	FuncDeclNode _opFunc;
+	/// Operator function name
+	string _opFuncName;
+	/// if this is prefixed 
+	bool _prefix = true;
+	/// Operand
+	ExpressionNode _operand;
+	/// Called to generate _opFunc
+	void _generateOpFunc(){
+		if (!_operand)
+			return;
+		if (_opFunc)
+			.destroy(_opFunc);
+		DataType operandType = new DataType();
+		operandType.clone(_operand.returnType);
+		_opFunc = new FuncDeclNode(null, _opFuncName, [operandType]);
+	}
+public:
+	/// constructor
+	this (){}
+	/// destructor
+	~this (){
+		if (_opFunc)
+			.destroy(_opFunc);
+		if (_operand)
+			.destroy(_operand);
+	}
+	/// Returns: the operator
+	@property string operator(){
+		return _operator;
+	}
+	/// Operator function 
+	@property FuncDeclNode opFunc(){
+		if (!_opFunc)
+			_generateOpFunc();
+		return _opFunc;
+	}
+	/// Returns: true if this is prefixed, false if postfixed
+	@property bool prefix(){
+		return _prefix;
+	}
+	/// Returns: the operand
+	@property ExpressionNode operand(){
+		return _operand;
+	}
+	/// ditto
+	@property ExpressionNode operand(ExpressionNode newOp){
+		if (_operand)
+			.destroy(_operand);
+		if (_opFunc){
+			.destroy(_opFunc);
+			_opFunc = null;
+		}
+		return _operand = newOp;
+	}
+}
 
 /// Namespace Node
-package abstract class NamespaceNode : DefinitionNode{
+package abstract class NamespaceNode : DeclNode{
 protected:
-	/// definitions
-	DefinitionNode[] _definition;
+	/// declarations
+	DeclNode[] _declarations;
 public:
 	/// constructor
 	this(){}
 	/// destructor
 	~this(){
-		foreach (def; _definition)
-			.destroy(def);
+		foreach (dec; _declarations)
+			.destroy(dec);
 	}
-	/// count of definitions
-	@property uint defCount(){
-		return cast(uint)_definition.length;
+	/// count of declaration
+	@property uint declCount(){
+		return cast(uint)_declarations.length;
 	}
-	/// Returns: a definition
+	/// Returns: a declaration
 	/// 
 	/// Throws: Exception in case index out of bounds
-	DefinitionNode defGet(uint index){
-		if (index >= _definition.length)
+	DeclNode declGet(uint index){
+		if (index >= _declarations.length)
 			throw new Exception("index out of bounds");
-		return _definition[index];
+		return _declarations[index];
 	}
-	/// appends a DefinitionNode
+	/// appends a DeclarationNode
 	/// 
 	/// Returns: its index
-	uint defAppend(DefinitionNode node){
-		immutable uint r = cast(uint)_definition.length;
+	uint declAppend(DeclNode node){
+		immutable uint r = cast(uint)_declarations.length;
 		if (node)
 			node._parent = this;
-		_definition ~= node;
+		_declarations ~= node;
 		return r;
 	}
 }
@@ -321,7 +480,7 @@ public:
 	}
 }
 
-/// Variable definition template
+/// Variable declaration template
 private class GenericVarDefNode(T) : T{
 protected:
 	/// Data type
@@ -374,13 +533,13 @@ public:
 	}
 }
 
-/// variable definition
-package alias VarDefNode = GenericVarDefNode!DefinitionNode;
+/// global variable declaration
+package alias GlobVarDefNode = GenericVarDefNode!DeclNode;
 
-/// Local variable definition
+/// Local variable declaration
 package alias LocalVarDefNode = GenericVarDefNode!StatementNode;
 
-/// Struct definition
+/// Struct declaration
 package class StructDefNode : NamespaceNode{
 public:
 	/// constructor
@@ -401,8 +560,8 @@ public:
 	}
 }
 
-/// Enum definition
-package class EnumDefNode : DefinitionNode{
+/// Enum declaration
+package class EnumDefNode : DeclNode{
 protected:
 	/// Base data type
 	DataType _dataType;
@@ -454,42 +613,45 @@ public:
 	}
 }
 
-/// Function definition
-package class FuncDefNode : DefinitionNode{
+/// Function declaration (return type, name, args + arg types)
+package class FuncDeclNode : DeclNode{
 protected:
-	/// Return type
+	/// Returns type
 	DataType _returnType;
 	/// Argument types
 	DataType[] _argType;
 	/// Argument names
 	string[] _argName;
-	/// body
-	BlockNode _body;
 public:
 	/// constructor
-	this(string name, string[] argName, DataType[] argType){
-		assert(argName.length == _argType.length, "argName.length doesnt match argType.length");
-		_returnType = new DataType();
-		_body = new BlockNode();
-		_body._parent = this;
+	this(DataType returnType, string name, DataType[] argType, string[] argName = []){
+		assert(argName.length == 0 || argName.length == _argType.length,
+			"argName.length doesnt match argType.length");
+		_returnType = returnType;
 		_ident = [name];
-		_argName = argName.dup;
 		_argType = argType.dup;
+		if (_argName.length)
+			_argName = argName.dup;
 	}
 	/// destructor
 	~this(){
 		foreach (type; _argType)
 			.destroy(type);
-		.destroy(_body);
 		.destroy(_returnType);
 	}
 	/// Returns: function return type
 	@property DataType returnType(){
 		return _returnType;
 	}
+	/// ditto
+	@property DataType returnType(DataType newT){
+		if (_returnType)
+			.destroy(_returnType);
+		return _returnType = newT;
+	}
 	/// Returns: argument count
 	@property uint argCount(){
-		return cast(uint)_argName.length;
+		return cast(uint)_argType.length;
 	}
 	/// Returns: argument name at index
 	/// 
@@ -510,11 +672,29 @@ public:
 	/// append an argument
 	/// 
 	/// Returns: index
-	uint argAppend(string name, DataType type){
-		immutable uint r = cast(uint)_argName.length;
-		_argName ~= name;
+	uint argAppend(DataType type, string name = null){
+		immutable uint r = cast(uint)_argType.length;
+		if (_argName)
+			_argName ~= name;
 		_argType ~= type;
 		return r;
+	}
+}
+
+/// Function definition
+package class FuncDefNode : FuncDeclNode{
+protected:
+	BlockNode _body;
+public:
+	/// constructor
+	this(DataType returnType, string name, DataType[] argType, string[] argName){
+		super(returnType, name, argType, argName);
+		_body = new BlockNode();
+		_body._parent = this;
+	}
+	/// destructor
+	~this(){
+		.destroy(_body);
 	}
 	/// Returns: body
 	@property BlockNode bodyBlock(){
@@ -600,82 +780,6 @@ public:
 	}
 }
 
-/// Binary operator expression
-package class OperatorBin : ExpressionNode{
-protected:
-	/// Operator
-	string _operator;
-	/// Left side operand
-	ExpressionNode _operandL;
-	/// Right side operand
-	ExpressionNode _operandR;
-public:
-	/// constructor
-	this (){}
-	/// destructor
-	~this (){
-		if (_operandL)
-			.destroy(_operandL);
-		if (_operandR)
-			.destroy(_operandR);
-	}
-	/// Operator
-	@property string operator(){
-		return _operator;
-	}
-	/// Left operand
-	@property ExpressionNode operandL(){
-		return _operandL;
-	}
-	/// ditto
-	@property ExpressionNode operandL(ExpressionNode newL){
-		if (_operandL)
-			.destroy (_operandL);
-		return _operandL = newL;
-	}
-	/// Right operand
-	@property ExpressionNode operandR(){
-		return _operandR;
-	}
-	/// ditto
-	@property ExpressionNode operandR(ExpressionNode newR){
-		if (_operandR)
-			.destroy (_operandR);
-		return _operandR = newR;
-	}
-}
-
-/// Unary operator expression
-package class OperatorUn : ExpressionNode{
-protected:
-	/// Operator
-	string _operator;
-	/// Operand
-	ExpressionNode _operand;
-public:
-	/// constructor
-	this (){}
-	/// destructor
-	~this (){
-		if (_operand)
-			.destroy(_operand);
-	}
-	/// Returns: the operator
-	@property string operator(){
-		return _operator;
-	}
-	/// Returns: the operand
-	@property ExpressionNode operand(){
-		return _operand;
-	}
-	/// ditto
-	@property ExpressionNode operand(ExpressionNode newOp){
-		if (_operand)
-			.destroy(_operand);
-		return _operand = newOp;
-	}
-}
-
 /// Integer Literal
 package class LiteralInt : ExpressionNode{
 protected:
@@ -705,7 +809,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME_INT];
+		_returnType.ident = [TYPENAME.INT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -749,7 +853,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME_FLOAT];
+		_returnType.ident = [TYPENAME.FLOAT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -795,7 +899,7 @@ public:
 	this (){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME_CHAR];
+		_returnType.ident = [TYPENAME.CHAR];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -840,7 +944,7 @@ public:
 	this(){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME_BOOL];
+		_returnType.ident = [TYPENAME.BOOL];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -883,7 +987,7 @@ public:
 	this (){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME_CHAR];
+		_returnType.ident = [TYPENAME.CHAR];
 		_returnType.dimensions = 1;
 	}
 	/// Returns: oken
@@ -901,5 +1005,366 @@ public:
 			return _val;
 		readVal();
 		return _val;
+	}
+}
+
+/// member select operator
+package class OperatorMemberSelect : OperatorBin{
+protected:
+	/// Called to generate _opFunc
+	void _generateOpFunc(){
+		if (!_operandL || !_operandR)
+			return;
+		if (_opFunc)
+			.destroy(_opFunc);
+		DataType lType = new DataType(), rType = new DataType([TYPENAME.CHAR], 1);
+		lType.clone(_operandL.returnType);
+		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
+	}
+public:
+	/// constructor
+	this(){
+		_operator = ".";
+		_opFuncName = "opMemberSelect";
+	}
+}
+/// index read operator
+package class OperatorIndexRead : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "[";
+		_opFuncName = "opIndexRead";
+	}
+}
+/// dereference operator
+package class OperatorDeref : OperatorUn{
+public:
+	/// constructor
+	this (){
+		_operator = "@";
+		_opFuncName = "opDeref";
+		_prefix = false;
+	}
+}
+/// post increment operator
+package class OperatorIncPost : OperatorUn{
+public:
+	/// constructor
+	this(){
+		_operator = "++";
+		_opFuncName = "opIncPost";
+		_prefix = false;
+	}
+}
+/// post decrement operator
+package class OperatorDecPost : OperatorUn{
+public:
+	/// constructor
+	this(){
+		_operator = "--";
+		_opFuncName = "opDecPost";
+		_prefix = false;
+	}
+}
+/// reference operator
+package class OperatorRef : OperatorUn{
+public:
+	/// constructor
+	this (){
+		_operator = "@";
+		_opFuncName = "opRef";
+		_prefix = true;
+	}
+}
+/// boolean not operator
+package class OperatorBoolNot : OperatorUn{
+public:
+	/// constructor
+	this (){
+		_operator = "!";
+		_opFuncName = "opBoolNot";
+		_prefix = true;
+	}
+}
+/// pre increment operator
+package class OperatorIncPre : OperatorUn{
+public:
+	/// constructor
+	this(){
+		_operator = "++";
+		_opFuncName = "opIncPre";
+		_prefix = true;
+	}
+}
+/// pre decrement operator
+package class OperatorDecPre : OperatorUn{
+public:
+	/// constructor
+	this(){
+		_operator = "--";
+		_opFuncName = "opDecPre";
+		_prefix = true;
+	}
+}
+/// multiply operator
+package class OperatorMultiply : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "*";
+		_opFuncName = "opMultiply";
+	}
+}
+/// divide operator
+package class OperatorDivide : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "/";
+		_opFuncName = "opDivide";
+	}
+}
+/// mod operator
+package class OperatorMod : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "%";
+		_opFuncName = "opMod";
+	}
+}
+/// add operator
+package class OperatorAdd : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "+";
+		_opFuncName = "opAdd";
+	}
+}
+/// subtract operator
+package class OperatorSubtract : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "-";
+		_opFuncName = "opSubtract";
+	}
+}
+/// concat operator
+package class OperatorConcat : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "~";
+		_opFuncName = "opConcat";
+	}
+}
+/// bitshift left operator
+package class OperatorBitshiftLeft : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "<<";
+		_opFuncName = "opBitshiftLeft";
+	}
+}
+/// bitshift right operator
+package class OperatorBitshiftRight : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = ">>";
+		_opFuncName = "opBitshiftRight";
+	}
+}
+/// IsSame operator
+package class OperatorIsSame : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "==";
+		_opFuncName = "opIsSame";
+	}
+}
+/// IsNotSame operator
+package class OperatorIsNotSame : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "!=";
+		_opFuncName = "opIsNotSame";
+	}
+}
+/// IsGreaterOrSame operator
+package class OperatorIsGreaterOrSame : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = ">=";
+		_opFuncName = "opIsGreaterOrSame";
+	}
+}
+/// IsSmallerOrSame operator
+package class OperatorIsSmallerOrSame : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "<=";
+		_opFuncName = "opIsSmallerOrSame";
+	}
+}
+/// IsGreater operator
+package class OperatorIsGreater : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = ">";
+		_opFuncName = "opIsGreater";
+	}
+}
+/// IsSmaller operator
+package class OperatorIsSmaller : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "<";
+		_opFuncName = "opIsSmaller";
+	}
+}
+/// Binary And operator
+package class OperatorBinAnd : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "&";
+		_opFuncName = "opBinAnd";
+	}
+}
+/// Binary Or operator
+package class OperatorBinOr : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "|";
+		_opFuncName = "opBinOr";
+	}
+}
+/// Binary Xor operator
+package class OperatorBinXor : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "^";
+		_opFuncName = "opBinXor";
+	}
+}
+/// Boolean And operator
+package class OperatorBoolAnd : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "&&";
+		_opFuncName = "opBoolAnd";
+	}
+}
+/// Boolean Or operator
+package class OperatorBoolOr : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "||";
+		_opFuncName = "opBoolOr";
+	}
+}
+/// Assign operator
+package class OperatorAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "=";
+		_opFuncName = "opAssign";
+	}
+}
+/// Add Assign operator
+package class OperatorAddAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "+=";
+		_opFuncName = "opAssAssign";
+	}
+}
+/// Subtract Assign operator
+package class OperatorSubtractAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "-=";
+		_opFuncName = "opSubtractAssign";
+	}
+}
+/// Multiply Assign operator
+package class OperatorMultiplyAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "*=";
+		_opFuncName = "opMultiplyAssign";
+	}
+}
+/// Divide Assign operator
+package class OperatorDivideAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "/=";
+		_opFuncName = "opDivideAssign";
+	}
+}
+/// Mod Assign operator
+package class OperatorModAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "%=";
+		_opFuncName = "opModAssign";
+	}
+}
+/// Concat Assign operator
+package class OperatorConcatAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "~=";
+		_opFuncName = "opConcatAssign";
+	}
+}
+/// Binary And Assign operator
+package class OperatorBinAndAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "&=";
+		_opFuncName = "opBinAndAssign";
+	}
+}
+/// Binary Or Assign operator
+package class OperatorBinOrAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "|=";
+		_opFuncName = "opBinOrAssign";
+	}
+}
+/// Binary Xor Assign operator
+package class OperatorBinXorAssign : OperatorBin{
+public:
+	/// constructor
+	this(){
+		_operator = "^=";
+		_opFuncName = "opBinXorAssign";
 	}
 }
