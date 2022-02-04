@@ -30,16 +30,15 @@ package const string DEFAULT_SCRIPT_NAME = "QSCRIPT_SCRIPT";
 package const string DEFAULT_NAMESPACE = "this";
 /// default visibility
 package const Visibility DEFAULT_VISIBILITY = Visibility.Private;
-/// Data type name for void
-package const string TYPENAME_VOID = "void";
-/// Data type name for int
-package const string TYPENAME_INT = "int";
-/// Data type name for float
-package const string TYPENAME_FLOAT = "float";
-/// Data type name for char
-package const string TYPENAME_CHAR = "char";
-/// Data type name for bool
-package const string TYPENAME_BOOL = "bool";
+
+/// Data type names
+package enum TYPENAME : string{
+	VOID = "void",
+	INT = "int",
+	FLOAT = "float",
+	CHAR = "char",
+	BOOL = "bool",
+}
 
 /// unescapes a string. the string must be provided with surrounding quotes stripped
 /// 
