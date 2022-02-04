@@ -412,12 +412,15 @@ Syntax for binary operators is: `A operator B`. The whitespace between operator 
 Syntax for unary operators is: `operator A`. Whitespace between operator and A is not necessary.
 
 Operators are read in this order (higher = evaluated first):
-1. `@`, `!`, `++`, `--`
-1. `.`, `a[b]`
-1. `*`, `/`, `+`, `-`, `%`, `~`
+1. `.`, `[`
+1. `a@`, `a++`, `a--`
+1. `@a`, `!a`, `++a`, `--a`
+1. `*`, `/`, `%`
+1. `+`, `-`, `~`
 1. `<<`, `>>`
 1. `==`, `!=`, `>=`, `<=`, `>`, `<`
-1. `&&`, `||`, `&`, `|`, `^`
+1. `&`, `|`, `^`
+1. `&&`, `||`
 1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `~=`, `&=`, `|=`, `^=`
 
 ## Operator Functions
@@ -425,20 +428,20 @@ Operators are read as functions, and can be overrided same as functions, and the
 The function associated with each operator is as follows: (`Ta`, `Tb`, `T` refers to data types, of `a`,`b`, or return value)
 | Operator | Function 								|
 |----------|----------------------------------------|
-| `@a`	|	`T opRef(Ta a)`							|
-| `a@`	|	`T opDeref(Ta@ a)`						|
-| `!`	|	`T opBoolNot(Ta a)`						|
-| `a++`	|	`T opIncPost(Ta a)`						|
-| `++a`	|	`T opIncPre(Ta a)`						|
-| `a--`	|	`T opDecPost(Ta a)`						|
-| `--a`	|	`T opDecPre(Ta a)`						|
 | `.`	|	`T opMemberSelect(Ta a, char[] name)`	|
 | `a[b]`|	`T opIndexRead(Ta a, Tb b)`				|
+| `a@`	|	`T opDeref(Ta a)`						|
+| `a++`	|	`T opIncPost(Ta a)`						|
+| `a--`	|	`T opDecPost(Ta a)`						|
+| `@a`	|	`T opRef(Ta a)`							|
+| `!`	|	`T opBoolNot(Ta a)`						|
+| `++a`	|	`T opIncPre(Ta a)`						|
+| `--a`	|	`T opDecPre(Ta a)`						|
 | `*`	|	`T opMultiply(Ta a, Tb b)`				|
 | `/`	|	`T opDivide(Ta a, Tb b)`				|
+| `%`	|	`T opMod(Ta a, Tb b)`					|
 | `+`	|	`T opAdd(Ta a, Tb b)`					|
 | `-`	|	`T opSubtract(Ta a, Tb b)`				|
-| `%`	|	`T opMod(Ta a, Tb b)`					|
 | `~`	|	`T opConcat(Ta a, Tb b)`				|
 | `<<`	|	`T opBitshiftLeft(Ta a, Tb b)`			|
 | `>>`	|	`T opBitshiftRight(Ta a, Tb b)`			|
@@ -448,18 +451,18 @@ The function associated with each operator is as follows: (`Ta`, `Tb`, `T` refer
 | `<=`	|	`T opIsSmallerOrSame(Ta a, Tb b)`		|
 | `>`	|	`T opIsGreater(Ta a, Tb b)`				|
 | `<`	|	`T opIsSmaller(Ta a, Tb b)`				|
-| `&&`	|	`T opBoolAnd(Ta a, Tb b)`				|
-| `\|\|`|	`T opBoolOr(Ta a, Tb b)`				|
 | `&`	|	`T opBinAnd(Ta a, Tb b)`				|
 | `\|`	|	`T opBinOr(Ta a, Tb b)`					|
 | `^`	|	`T opBinXor(Ta a, Tb b)`				|
-| `=`	|	`T opAssign(Ta@ a, Tb b)`				|
-| `+=`	|	`T opAddAssign(Ta@ a, Tb b)`			|
-| `-=`	|	`T opSubtractAssign(Ta@ a, Tb b)`		|
-| `*=`	|	`T opMultiplyAssign(Ta@ a, Tb b)`		|
-| `/=`	|	`T opDivideAssign(Ta@ a, Tb b)`			|
-| `%=`	|	`T opModAssign(Ta@ a, Tb b)`			|
-| `~=`	|	`T opConcatAssign(Ta@ a, Tb b)`			|
-| `&=`	|	`T opBinAndAssign(Ta@ a, Tb b)`			|
-| `|=`	|	`T opBinOrAssign(Ta@ a, Tb b)`			|
-| `^=`	|	`T opBinXorAssign(Ta@ a, Tb b)`			|
+| `&&`	|	`T opBoolAnd(Ta a, Tb b)`				|
+| `\|\|`|	`T opBoolOr(Ta a, Tb b)`				|
+| `=`	|	`T opAssign(Ta a, Tb b)`				|
+| `+=`	|	`T opAddAssign(Ta a, Tb b)`				|
+| `-=`	|	`T opSubtractAssign(Ta a, Tb b)`		|
+| `*=`	|	`T opMultiplyAssign(Ta a, Tb b)`		|
+| `/=`	|	`T opDivideAssign(Ta a, Tb b)`			|
+| `%=`	|	`T opModAssign(Ta a, Tb b)`				|
+| `~=`	|	`T opConcatAssign(Ta a, Tb b)`			|
+| `&=`	|	`T opBinAndAssign(Ta a, Tb b)`			|
+| `\|=`	|	`T opBinOrAssign(Ta a, Tb b)`			|
+| `^=`	|	`T opBinXorAssign(Ta a, Tb b)`			|
