@@ -22,8 +22,8 @@ package uint fromTokens(ref Identifier ident, Token[] tokens){
 		index ++;
 	}else
 		return 0;
-	while (index + 1 < tokens.length && tokens[index].type == TokenType.OpMemberSelect &&
-	tokens[index + 1].token.isIdentifier){
+	while (index + 1 < tokens.length && tokens[index].type == TokenType.Operator &&
+	tokens[index].token == "." && tokens[index + 1].token.isIdentifier){
 		ident ~= tokens[index + 1].token;
 		index += 2;
 	}
@@ -32,9 +32,9 @@ package uint fromTokens(ref Identifier ident, Token[] tokens){
 /// 
 unittest{
 	Token[] tok = [
-		Token(TokenType.Identifier,"qscript"), Token(TokenType.OpMemberSelect,"."),
-		Token(TokenType.Identifier,"std"), Token(TokenType.OpMemberSelect,"."),
-		Token(TokenType.Identifier,"io"), Token(TokenType.OpMemberSelect,".")
+		Token(TokenType.Identifier,"qscript"), Token(TokenType.Operator,"."),
+		Token(TokenType.Identifier,"std"), Token(TokenType.Operator,"."),
+		Token(TokenType.Identifier,"io"), Token(TokenType.Operator,".")
 	];
 	Identifier ident;
 	assert(ident.fromTokens(tok) == 5);
@@ -152,7 +152,7 @@ public:
 		this.clear();
 		uint index = 0;
 		while (index < tokens.length){
-			if (tokens[index].type == TokenType.OpRef){
+			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
 				if (!_refTo && !_ident.length)
 					break;
 				DataType refTo = new DataType();
@@ -160,7 +160,8 @@ public:
 				this.clear();
 				this._refTo = refTo;
 				index ++;
-			}else if (tokens[index].type == TokenType.IndexOpen){
+			}else if (tokens[index].type == TokenType.Operator &&
+			tokens[index].token == "["){
 				if ((!_ident.length && !_refTo) || index + 1 >= tokens.length ||
 				tokens[index + 1].type != TokenType.IndexClose)
 					break;
@@ -185,9 +186,9 @@ public:
 /// 
 unittest{
 	Token[] tok = [ // int [ ] @ [ ] # array of references, to array of int
-		Token(TokenType.KeywordInt,"int"),Token(TokenType.IndexOpen,"["),
-		Token(TokenType.IndexClose,"]"),Token(TokenType.OpRef,"@"),
-		Token(TokenType.IndexOpen,"["),Token(TokenType.IndexClose,"]")
+		Token(TokenType.KeywordInt,"int"),Token(TokenType.Operator,"["),
+		Token(TokenType.IndexClose,"]"),Token(TokenType.Operator,"@"),
+		Token(TokenType.Operator,"["),Token(TokenType.IndexClose,"]")
 	];
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
@@ -287,13 +288,51 @@ public:
 		return _voidType;
 	}
 }
-/// Binary operator expression
-package abstract class OperatorBin : ExpressionNode{
+
+/// Operator expression
+package abstract class Operator : ExpressionNode{
 protected:
-	/// Operator
+	/// operator
 	string _operator;
-	/// Operator function
+	/// if this comes before a operandA (binary will always be false)
+	bool _prefix;
+	/// priority (higher evaluated first)
+	uint _priority;
+	/// operator function
 	FuncDeclNode _opFunc;
+	/// called to generate _opFunc
+	abstract void _generateOpFunc();
+public:
+	/// constructor
+	this(){}
+	/// destructor
+	~this(){
+		if (_opFunc)
+			.destroy (_opFunc);
+	}
+	/// Operator
+	@property string operator(){
+		return _operator;
+	}
+	/// if this comes before a operandA (binary will always be false)
+	@property bool prefix(){
+		return _prefix;
+	}
+	/// priority (higher -> ealuated first)
+	@property uint priority(){
+		return _priority;
+	}
+	/// Operator function 
+	@property FuncDeclNode opFunc(){
+		if (!_opFunc)
+			_generateOpFunc();
+		return _opFunc;
+	}
+}
+
+/// Binary operator expression
+package abstract class OperatorBin : Operator{
+protected:
 	/// Operator function name
 	string _opFuncName;
 	/// Left side operand
@@ -301,7 +340,7 @@ protected:
 	/// Right side operand
 	ExpressionNode _operandR;
 	/// Called to generate _opFunc
-	void _generateOpFunc(){
+	override void _generateOpFunc(){
 		if (!_operandL || !_operandR)
 			return;
 		if (_opFunc)
@@ -313,25 +352,15 @@ protected:
 	}
 public:
 	/// constructor
-	this (){}
+	this (){
+		_prefix = false;
+	}
 	/// destructor
 	~this (){
-		if (_opFunc)
-			.destroy(_opFunc);
 		if (_operandL)
 			.destroy(_operandL);
 		if (_operandR)
 			.destroy(_operandR);
-	}
-	/// Operator
-	@property string operator(){
-		return _operator;
-	}
-	/// Operator function 
-	@property FuncDeclNode opFunc(){
-		if (!_opFunc)
-			_generateOpFunc();
-		return _opFunc;
 	}
 	/// Left operand
 	@property ExpressionNode operandL(){
@@ -364,20 +393,14 @@ public:
 }
 
 /// Unary operator expression
-package abstract class OperatorUn : ExpressionNode{
-protected:
-	/// Operator
-	string _operator;
-	/// Operator function
-	FuncDeclNode _opFunc;
+package abstract class OperatorUn : Operator{
+protected
 	/// Operator function name
 	string _opFuncName;
-	/// if this is prefixed 
-	bool _prefix = true;
 	/// Operand
 	ExpressionNode _operand;
 	/// Called to generate _opFunc
-	void _generateOpFunc(){
+	override void _generateOpFunc(){
 		if (!_operand)
 			return;
 		if (_opFunc)
@@ -391,24 +414,8 @@ public:
 	this (){}
 	/// destructor
 	~this (){
-		if (_opFunc)
-			.destroy(_opFunc);
 		if (_operand)
 			.destroy(_operand);
-	}
-	/// Returns: the operator
-	@property string operator(){
-		return _operator;
-	}
-	/// Operator function 
-	@property FuncDeclNode opFunc(){
-		if (!_opFunc)
-			_generateOpFunc();
-		return _opFunc;
-	}
-	/// Returns: true if this is prefixed, false if postfixed
-	@property bool prefix(){
-		return _prefix;
 	}
 	/// Returns: the operand
 	@property ExpressionNode operand(){
@@ -1012,7 +1019,7 @@ public:
 package class OperatorMemberSelect : OperatorBin{
 protected:
 	/// Called to generate _opFunc
-	void _generateOpFunc(){
+	override void _generateOpFunc(){
 		if (!_operandL || !_operandR)
 			return;
 		if (_opFunc)
