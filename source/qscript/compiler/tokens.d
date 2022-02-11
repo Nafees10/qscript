@@ -48,43 +48,10 @@ enum TokenType : uint{
 	Identifier			, /// identifier
 	Semicolon			, /// `;`
 	Comma				, /// `,`
-	OpMemberSelect		, /// `.` operator
-	OpRef				, /// `@` operator
-	OpNot				, /// `!` operator
-	OpInc				, /// `++` operator
-	OpDec				, /// `--` operator
-	OpMultiply			, /// `*` operator
-	OpDivide			, /// `/` operator
-	OpAdd				, /// `+` operator
-	OpSubtract			, /// `-` operator
-	OpMod				, /// `%` operator
-	OpConcat			, /// `~` operator
-	OpBitshiftLeft		, /// `<<` operator
-	OpBitshiftRight		, /// `>>` operator
-	OpIsSame			, /// `==` operator
-	OpIsNotSame			, /// `!=` operator
-	OpIsGreaterOrSame	, /// `>=` operator
-	OpIsSmallerOrSame	, /// `<=` operator
-	OpIsGreater			, /// `>` operator
-	OpIsSmaller			, /// `<` operator
-	OpBoolAnd			, /// `&&` operator
-	OpBoolOr			, /// `||` operator
-	OpBinAnd			, /// `&` operator
-	OpBinOr				, /// `|` operator
-	OpBinXor			, /// `^` operator
-	OpAssign			, /// `=` operator
-	OpAddAssign			, /// `+=` operator
-	OpSubtractAssign	, /// `-=` operator
-	OpMultiplyAssign	, /// `*=` operator
-	OpDivideAssign		, /// `/=` operator
-	OpModAssign			, /// `%=` operator
-	OpConcatAssign		, /// `~=` operator
-	OpBinAndAssign		, /// `&=` operator
-	OpBinOrAssign		, /// `|=` operator
-	OpBinXorAssign		, /// `^=` operator
+	Operator			, /// Operator (determined by the actual token)
 	BracketOpen			, /// `(`
 	BracketClose		, /// `)`
-	IndexOpen			, /// `[`
+	//IndexOpen			, /// `[`
 	IndexClose			, /// `]`
 	CurlyOpen			, /// `{`
 	CurlyClose			, /// `}`
@@ -225,41 +192,43 @@ private:
 		});
 		_tkGen.addTokenType(TokenType.Semicolon, `;`);
 		_tkGen.addTokenType(TokenType.Comma, `,`);
-		_tkGen.addTokenType(TokenType.OpMemberSelect, `.`);
-		_tkGen.addTokenType(TokenType.OpRef, `@`);
-		_tkGen.addTokenType(TokenType.OpNot, `!`);
-		_tkGen.addTokenType(TokenType.OpInc, `++`);
-		_tkGen.addTokenType(TokenType.OpDec, `--`);
-		_tkGen.addTokenType(TokenType.OpMultiply, `*`);
-		_tkGen.addTokenType(TokenType.OpDivide, `/`);
-		_tkGen.addTokenType(TokenType.OpAdd, `+`);
-		_tkGen.addTokenType(TokenType.OpSubtract, `-`);
-		_tkGen.addTokenType(TokenType.OpMod, `%`);
-		_tkGen.addTokenType(TokenType.OpConcat, `~`);
-		_tkGen.addTokenType(TokenType.OpIsSmaller, `<`);
-		_tkGen.addTokenType(TokenType.OpIsGreater, `>`);
-		_tkGen.addTokenType(TokenType.OpIsSmallerOrSame, `<=`);
-		_tkGen.addTokenType(TokenType.OpIsGreaterOrSame, `>=`);
-		_tkGen.addTokenType(TokenType.OpIsSame, `==`);
-		_tkGen.addTokenType(TokenType.OpIsNotSame, `!=`);
-		_tkGen.addTokenType(TokenType.OpBoolAnd, `&&`);
-		_tkGen.addTokenType(TokenType.OpBoolOr, `||`);
-		_tkGen.addTokenType(TokenType.OpBinAnd, `&`);
-		_tkGen.addTokenType(TokenType.OpBinOr, `|`);
-		_tkGen.addTokenType(TokenType.OpBinXor, `^`);
-		_tkGen.addTokenType(TokenType.OpAssign, `=`);
-		_tkGen.addTokenType(TokenType.OpAddAssign, `+=`);
-		_tkGen.addTokenType(TokenType.OpSubtractAssign, `-=`);
-		_tkGen.addTokenType(TokenType.OpMultiplyAssign, `*=`);
-		_tkGen.addTokenType(TokenType.OpDivideAssign, `/=`);
-		_tkGen.addTokenType(TokenType.OpModAssign, `%=`);
-		_tkGen.addTokenType(TokenType.OpConcatAssign, `~=`);
-		_tkGen.addTokenType(TokenType.OpBinAndAssign, `&=`);
-		_tkGen.addTokenType(TokenType.OpBinOrAssign, `|=`);
-		_tkGen.addTokenType(TokenType.OpBinXorAssign, `^=`);
+		// operators
+		_tkGen.addTokenType(TokenType.Operator, `.`);
+		_tkGen.addTokenType(TokenType.Operator, `@`);
+		_tkGen.addTokenType(TokenType.Operator, `!`);
+		_tkGen.addTokenType(TokenType.Operator, `++`);
+		_tkGen.addTokenType(TokenType.Operator, `--`);
+		_tkGen.addTokenType(TokenType.Operator, `*`);
+		_tkGen.addTokenType(TokenType.Operator, `/`);
+		_tkGen.addTokenType(TokenType.Operator, `+`);
+		_tkGen.addTokenType(TokenType.Operator, `-`);
+		_tkGen.addTokenType(TokenType.Operator, `%`);
+		_tkGen.addTokenType(TokenType.Operator, `~`);
+		_tkGen.addTokenType(TokenType.Operator, `<`);
+		_tkGen.addTokenType(TokenType.Operator, `>`);
+		_tkGen.addTokenType(TokenType.Operator, `<=`);
+		_tkGen.addTokenType(TokenType.Operator, `>=`);
+		_tkGen.addTokenType(TokenType.Operator, `==`);
+		_tkGen.addTokenType(TokenType.Operator, `!=`);
+		_tkGen.addTokenType(TokenType.Operator, `&&`);
+		_tkGen.addTokenType(TokenType.Operator, `||`);
+		_tkGen.addTokenType(TokenType.Operator, `&`);
+		_tkGen.addTokenType(TokenType.Operator, `|`);
+		_tkGen.addTokenType(TokenType.Operator, `^`);
+		_tkGen.addTokenType(TokenType.Operator, `=`);
+		_tkGen.addTokenType(TokenType.Operator, `+=`);
+		_tkGen.addTokenType(TokenType.Operator, `-=`);
+		_tkGen.addTokenType(TokenType.Operator, `*=`);
+		_tkGen.addTokenType(TokenType.Operator, `/=`);
+		_tkGen.addTokenType(TokenType.Operator, `%=`);
+		_tkGen.addTokenType(TokenType.Operator, `~=`);
+		_tkGen.addTokenType(TokenType.Operator, `&=`);
+		_tkGen.addTokenType(TokenType.Operator, `|=`);
+		_tkGen.addTokenType(TokenType.Operator, `^=`);
+		_tkGen.addTokenType(TokenType.Operator, `[`);
+
 		_tkGen.addTokenType(TokenType.BracketOpen, `(`);
 		_tkGen.addTokenType(TokenType.BracketClose, `)`);
-		_tkGen.addTokenType(TokenType.IndexOpen, `[`);
 		_tkGen.addTokenType(TokenType.IndexClose, `]`);
 		_tkGen.addTokenType(TokenType.CurlyOpen, `{`);
 		_tkGen.addTokenType(TokenType.CurlyClose, `}`);
@@ -282,6 +251,10 @@ public:
 			return uint.max;
 		_tkGen.addTokenType(type, match);
 		return type ++;
+	}
+	/// Adds an operator
+	void addOperator(string op){
+		_tkGen.addTokenType(TokenType.Operator, op);
 	}
 	/// Generates tokens from a source.
 	/// Will write errors locations [line, column] to `errors`
@@ -318,7 +291,7 @@ unittest{
 			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid, TokenType.Whitespace, TokenType.Identifier,
 			TokenType.BracketOpen, TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace, TokenType.Comment,
 			TokenType.Whitespace, TokenType.KeywordReturn, TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
-			TokenType.OpAdd, TokenType.Whitespace, TokenType.LiteralBinary, TokenType.Semicolon, TokenType.Whitespace,
+			TokenType.Operator, TokenType.Whitespace, TokenType.LiteralBinary, TokenType.Semicolon, TokenType.Whitespace,
 			TokenType.Comment, TokenType.Whitespace, TokenType.CurlyClose
 		];
 		foreach (i, token; tokens){
