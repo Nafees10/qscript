@@ -997,7 +997,7 @@ public:
 		_returnType.ident = [TYPENAME.CHAR];
 		_returnType.dimensions = 1;
 	}
-	/// Returns: oken
+	/// Returns: token
 	@property Token token(){
 		return _tok;
 	}
@@ -1033,6 +1033,7 @@ public:
 	this(){
 		_operator = ".";
 		_opFuncName = "opMemberSelect";
+		_priority = 10;
 	}
 }
 /// index read operator
@@ -1042,6 +1043,7 @@ public:
 	this(){
 		_operator = "[";
 		_opFuncName = "opIndexRead";
+		_priority = 10;
 	}
 }
 /// dereference operator
@@ -1052,6 +1054,7 @@ public:
 		_operator = "@";
 		_opFuncName = "opDeref";
 		_prefix = false;
+		_priority = 9;
 	}
 }
 /// post increment operator
@@ -1062,6 +1065,7 @@ public:
 		_operator = "++";
 		_opFuncName = "opIncPost";
 		_prefix = false;
+		_priority = 9;
 	}
 }
 /// post decrement operator
@@ -1072,6 +1076,7 @@ public:
 		_operator = "--";
 		_opFuncName = "opDecPost";
 		_prefix = false;
+		_priority = 9;
 	}
 }
 /// reference operator
@@ -1082,6 +1087,7 @@ public:
 		_operator = "@";
 		_opFuncName = "opRef";
 		_prefix = true;
+		_priority = 8;
 	}
 }
 /// boolean not operator
@@ -1092,6 +1098,7 @@ public:
 		_operator = "!";
 		_opFuncName = "opBoolNot";
 		_prefix = true;
+		_priority = 8;
 	}
 }
 /// pre increment operator
@@ -1102,6 +1109,7 @@ public:
 		_operator = "++";
 		_opFuncName = "opIncPre";
 		_prefix = true;
+		_priority = 8;
 	}
 }
 /// pre decrement operator
@@ -1112,6 +1120,7 @@ public:
 		_operator = "--";
 		_opFuncName = "opDecPre";
 		_prefix = true;
+		_priority = 8;
 	}
 }
 /// multiply operator
@@ -1121,6 +1130,7 @@ public:
 	this(){
 		_operator = "*";
 		_opFuncName = "opMultiply";
+		_priority = 7;
 	}
 }
 /// divide operator
@@ -1130,6 +1140,7 @@ public:
 	this(){
 		_operator = "/";
 		_opFuncName = "opDivide";
+		_priority = 7;
 	}
 }
 /// mod operator
@@ -1139,6 +1150,7 @@ public:
 	this(){
 		_operator = "%";
 		_opFuncName = "opMod";
+		_priority = 7;
 	}
 }
 /// add operator
@@ -1148,6 +1160,7 @@ public:
 	this(){
 		_operator = "+";
 		_opFuncName = "opAdd";
+		_priority = 6;
 	}
 }
 /// subtract operator
@@ -1157,6 +1170,7 @@ public:
 	this(){
 		_operator = "-";
 		_opFuncName = "opSubtract";
+		_priority = 6;
 	}
 }
 /// concat operator
@@ -1166,6 +1180,7 @@ public:
 	this(){
 		_operator = "~";
 		_opFuncName = "opConcat";
+		_priority = 6;
 	}
 }
 /// bitshift left operator
@@ -1175,6 +1190,7 @@ public:
 	this(){
 		_operator = "<<";
 		_opFuncName = "opBitshiftLeft";
+		_priority = 5;
 	}
 }
 /// bitshift right operator
@@ -1184,6 +1200,7 @@ public:
 	this(){
 		_operator = ">>";
 		_opFuncName = "opBitshiftRight";
+		_priority = 5;
 	}
 }
 /// IsSame operator
@@ -1193,6 +1210,7 @@ public:
 	this(){
 		_operator = "==";
 		_opFuncName = "opIsSame";
+		_priority = 4;
 	}
 }
 /// IsNotSame operator
@@ -1202,6 +1220,7 @@ public:
 	this(){
 		_operator = "!=";
 		_opFuncName = "opIsNotSame";
+		_priority = 4;
 	}
 }
 /// IsGreaterOrSame operator
@@ -1211,6 +1230,7 @@ public:
 	this(){
 		_operator = ">=";
 		_opFuncName = "opIsGreaterOrSame";
+		_priority = 4;
 	}
 }
 /// IsSmallerOrSame operator
@@ -1220,6 +1240,7 @@ public:
 	this(){
 		_operator = "<=";
 		_opFuncName = "opIsSmallerOrSame";
+		_priority = 4;
 	}
 }
 /// IsGreater operator
@@ -1229,6 +1250,7 @@ public:
 	this(){
 		_operator = ">";
 		_opFuncName = "opIsGreater";
+		_priority = 4;
 	}
 }
 /// IsSmaller operator
@@ -1238,6 +1260,7 @@ public:
 	this(){
 		_operator = "<";
 		_opFuncName = "opIsSmaller";
+		_priority = 4;
 	}
 }
 /// Binary And operator
@@ -1247,6 +1270,7 @@ public:
 	this(){
 		_operator = "&";
 		_opFuncName = "opBinAnd";
+		_priority = 3;
 	}
 }
 /// Binary Or operator
@@ -1256,6 +1280,7 @@ public:
 	this(){
 		_operator = "|";
 		_opFuncName = "opBinOr";
+		_priority = 3;
 	}
 }
 /// Binary Xor operator
@@ -1265,6 +1290,7 @@ public:
 	this(){
 		_operator = "^";
 		_opFuncName = "opBinXor";
+		_priority = 3;
 	}
 }
 /// Boolean And operator
@@ -1274,6 +1300,7 @@ public:
 	this(){
 		_operator = "&&";
 		_opFuncName = "opBoolAnd";
+		_priority = 2;
 	}
 }
 /// Boolean Or operator
@@ -1283,6 +1310,7 @@ public:
 	this(){
 		_operator = "||";
 		_opFuncName = "opBoolOr";
+		_priority = 2;
 	}
 }
 /// Assign operator
@@ -1292,6 +1320,7 @@ public:
 	this(){
 		_operator = "=";
 		_opFuncName = "opAssign";
+		_priority = 1;
 	}
 }
 /// Add Assign operator
@@ -1301,6 +1330,7 @@ public:
 	this(){
 		_operator = "+=";
 		_opFuncName = "opAssAssign";
+		_priority = 1;
 	}
 }
 /// Subtract Assign operator
@@ -1310,6 +1340,7 @@ public:
 	this(){
 		_operator = "-=";
 		_opFuncName = "opSubtractAssign";
+		_priority = 1;
 	}
 }
 /// Multiply Assign operator
@@ -1319,6 +1350,7 @@ public:
 	this(){
 		_operator = "*=";
 		_opFuncName = "opMultiplyAssign";
+		_priority = 1;
 	}
 }
 /// Divide Assign operator
@@ -1328,6 +1360,7 @@ public:
 	this(){
 		_operator = "/=";
 		_opFuncName = "opDivideAssign";
+		_priority = 1;
 	}
 }
 /// Mod Assign operator
@@ -1337,6 +1370,7 @@ public:
 	this(){
 		_operator = "%=";
 		_opFuncName = "opModAssign";
+		_priority = 1;
 	}
 }
 /// Concat Assign operator
@@ -1346,6 +1380,7 @@ public:
 	this(){
 		_operator = "~=";
 		_opFuncName = "opConcatAssign";
+		_priority = 1;
 	}
 }
 /// Binary And Assign operator
@@ -1355,6 +1390,7 @@ public:
 	this(){
 		_operator = "&=";
 		_opFuncName = "opBinAndAssign";
+		_priority = 1;
 	}
 }
 /// Binary Or Assign operator
@@ -1364,6 +1400,7 @@ public:
 	this(){
 		_operator = "|=";
 		_opFuncName = "opBinOrAssign";
+		_priority = 1;
 	}
 }
 /// Binary Xor Assign operator
@@ -1373,5 +1410,6 @@ public:
 	this(){
 		_operator = "^=";
 		_opFuncName = "opBinXorAssign";
+		_priority = 1;
 	}
 }
