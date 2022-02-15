@@ -164,7 +164,7 @@ struct STRUCT_NAME{
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
 
-Keep in mind that recursive dependency is not possible in structs, as they are allocated on stack, however, you can store reference to any struct in a struct, as reference will be initialised to null.
+Keep in mind that recursive dependency is not possible in structs. However you can have an array of the same type inside the struct, as arrays are initialised to length 0, or a pointer to same type;
 
 QScript does not allow functions as members of structs, only variables can be members.
 
@@ -182,28 +182,37 @@ public function Position getPosition(int x, int y){
 ```
 
 ## Enums
-Enums are always of type `int`, and the value for each member is automatically assigned.  
+Enum can be used to group together constants of the same base data type.  
 Enums are defined like:  
 ```
-enum EnumName{
-	member0,
-	member1,
-	member2
+enum EnumName : int{
+	member0 = 1,
+	member1 = 3,
+	member2 = 3, # same value multiple times is allowed
 }
 ```
 
 * `EnumName` is the name for this enum
+* `int` is the base data type
 
 Example:    
 ```
-public enum ErrorType{
-	FileNotFound,
-	InvalidPath,
-	PermissionDenied
+public enum ErrorType : int{
+	FileNotFound = 1,
+	InvalidPath = 1 << 1, # constant expression is allowed
+	PermissionDenied = 4
 }
 ```
 
-An enum's member's value can be read as: `EnumName.MemberName`.
+An enum's member's value can be read as: `EnumName.MemberName`, using the member selector operator.  
+Enums do not become data types, the following is not allowed:  
+```
+var ErrorType err;
+```
+instead, a variable of the base data type should be created:
+```
+var int err = ErrorType.X;
+```
 
 ---
 
