@@ -25,6 +25,7 @@ enum TokenType : uint{
 	KeywordImport		, /// `import` keyword
 	KeywordFunction		, /// `function` keyword
 	KeywordVar			, /// `var` keyword
+	KeywordRef			, /// `ref` keyword
 	KeywordEnum			, /// `enum` keyword
 	KeywordStruct		, /// `struct` keyword
 	KeywordPrivate		, /// `private` keyword
@@ -153,6 +154,7 @@ private:
 		_tkGen.addTokenType(TokenType.KeywordImport, `import`);
 		_tkGen.addTokenType(TokenType.KeywordFunction, `function`);
 		_tkGen.addTokenType(TokenType.KeywordVar, `var`);
+		_tkGen.addTokenType(TokenType.KeywordRef, `ref`);
 		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`);
 		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`);
 		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`);
