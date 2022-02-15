@@ -65,10 +65,11 @@ Visiblity specifier can apply to:
 # Functions
 ## Function Definition
 ```
-function RETURN_TYPE FUNCTION_NAME (arg0_type arg0, arg1_type arg1){
+function [ref] RETURN_TYPE FUNCTION_NAME ([ref] arg0_type arg0, [ref] arg1_type arg1){
 	# function body
 }
 ```
+* `ref` (optional) will make it so parameters/return is passed by reference not value
 * `RETURN_TYPE` is the return type of this function
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
@@ -254,7 +255,7 @@ someString = [someChar, 'b', 'c'] ; # you could've also done `[someChar] ~ "bc"`
 ```
 
 ## Variable Scope
-Variables and references are only available inside the "scope" they are declared in. In the code below:  
+Variables are only available inside the "scope" they are declared in. In the code below:  
 ```
 var int someGlobalVar;
 public function void main(int count){
@@ -268,11 +269,11 @@ public function void main(int count){
 ```
 Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script, as it is `private`.  
 
-## Reference Declaration
-References can be used to "point" to another variable.
+## Pointer Declaration
+Pointers can be used to store address of another variable.
 They can be declared like:
 ```
-var TYPE@ ref0, ref1, ref3;
+var TYPE@ ptr0, ptr1, ptr3;
 ```
 `TYPE` can be any valid data type, for example:
 ```
@@ -280,39 +281,39 @@ var int@ ptrInt;
 ```
 or:
 ```
-var int[]@ refToIntArray; # this is a reference to array of int
-var int@[] arrayOfRefToInt; # this is an array of reference of int
+var int[]@ ptrToIntArray; # this is a pointer to array of int
+var int@[] arrayOfPtrToInt; # this is an array of pointers-to-int
 ```
 
-references are initliazed to be `null`.
+pointers are initliazed to be `null`.
 
-## Using References
-References can be assigned like:
+## Using Pointers
+Pointers can be assigned like:
 ```
 var int i;
-var int@ ref;
-ref = @i; # ref is now pointing to i, @i returns the reference to i
+var int@ ptr;
+ptr = @i; # ptr is now pointing to i, @i returns the pointer to i
 ```
 and read like:
 ```
 var int i;
-var int@ ref = @i; # pre @ gets reference
+var int@ ptr = @i; # pre@ gets pointer
 i = 5;
-writeln("Value of i="~toStr(ref@)); # post @ dereferences
+writeln("Value of i="~toStr(ptr@)); # post@ dereferences
 ```
-References are also valid when passed to other functions as arguments, as in the following example:
+Pointers are also valid when passed to other functions as arguments, as in the following example:
 ```
 function void main(){
 	var int i;
-	setRefTo(@i, 1024);
+	setPtrTo(@i, 1024);
 	# i is now 1024
 	writeln (toStr(i)); # prints 1024, assuming writeln function exists
 }
-function void setRefTo(int@ ref, int to){
-	ref@ = to;
+function void setPtrTo(int@ ptr, int to){
+	ptr@ = to;
 }
 ```
-Functions can also return references, except for reference to a local variable.
+Functions can also return pointers, and references, except for reference/pointer to a local variable.
 
 ---
 
