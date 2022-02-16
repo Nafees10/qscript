@@ -52,12 +52,12 @@ package string toString(Identifier ident){
 /// Data Type
 class DataType{
 private:
-	/// its identifier (name). not valid if _refTo !is null
+	/// its identifier (name). not valid if _ptrTo !is null
 	Identifier _ident;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
-	/// reference to type. if this is not null, then _ident is not valid
-	DataType _refTo = null;
+	/// pointer to type. if this is not null, then _ident is not valid
+	DataType _ptrTo = null;
 	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
 public:
@@ -79,32 +79,32 @@ public:
 			return;
 		_dimensions = from._dimensions;
 		_byteCount = from._byteCount;
-		if (from._refTo){
-			_refTo = new DataType();
-			_refTo.clone(from._refTo);
+		if (from._ptrTo){
+			_ptrTo = new DataType();
+			_ptrTo.clone(from._ptrTo);
 		}else{
 			_ident = from._ident.dup;
 		}
 	}
-	/// turn it into a reference of itself
-	void makeRef(){
-		DataType refTo = new DataType();
+	/// turn it into a pointer of itself
+	void makePtr(){
+		DataType ptrTo = new DataType();
 		// dont use clone here, that will clone everything, inefficient
-		refTo._ident = _ident;
-		refTo._dimensions = _dimensions;
-		refTo._refTo = _refTo;
-		refTo._byteCount = _byteCount;
+		ptrTo._ident = _ident;
+		ptrTo._dimensions = _dimensions;
+		ptrTo._ptrTo = _ptrTo;
+		ptrTo._byteCount = _byteCount;
 		_ident = null;
 		_dimensions = 0;
-		_refTo = refTo;
+		_ptrTo = ptrTo;
 		_byteCount = 0;
 	}
 	/// Clears itself
 	void clear(){
-		if (_refTo)
-			.destroy(_refTo);
+		if (_ptrTo)
+			.destroy(_ptrTo);
 		_ident = [];
-		_refTo = null;
+		_ptrTo = null;
 		_dimensions = 0;
 		_byteCount = 0;
 	}
@@ -120,23 +120,23 @@ public:
 	@property uint dimensions(uint newDim){
 		return _dimensions = newDim;
 	}
-	/// Data type this is a reference to (or null if this is not a reference)
-	@property DataType refTo(){
-		return _refTo;
+	/// Data type this is a pointer to (or null if this is not a pointer)
+	@property DataType ptrTo(){
+		return _ptrTo;
 	}
 	/// ditto
-	@property DataType refTo(DataType newT){
-		if (_refTo)
-			.destroy(_refTo);
-		return _refTo = newT;
+	@property DataType ptrTo(DataType newT){
+		if (_ptrTo)
+			.destroy(_ptrTo);
+		return _ptrTo = newT;
 	}
 	/// this data as string  
 	/// 
 	/// only use for debug or error reporting. reading back string to DataType is not a thing
 	override string toString(){
 		char[] r;
-		if (_refTo)
-			r = cast(char[])_refTo.toString ~ '@';
+		if (_ptrTo)
+			r = cast(char[])_ptrTo.toString ~ '@';
 		else if (_ident)
 			r = cast(char[])_ident.toString;
 		uint index = cast(uint)r.length;
@@ -153,16 +153,16 @@ public:
 		uint index = 0;
 		while (index < tokens.length){
 			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
-				if (!_refTo && !_ident.length)
+				if (!_ptrTo && !_ident.length)
 					break;
-				DataType refTo = new DataType();
-				refTo.clone(this);
+				DataType ptrTo = new DataType();
+				ptrTo.clone(this);
 				this.clear();
-				this._refTo = refTo;
+				this._ptrTo = ptrTo;
 				index ++;
 			}else if (tokens[index].type == TokenType.Operator &&
 			tokens[index].token == "["){
-				if ((!_ident.length && !_refTo) || index + 1 >= tokens.length ||
+				if ((!_ident.length && !_ptrTo) || index + 1 >= tokens.length ||
 				tokens[index + 1].type != TokenType.IndexClose)
 					break;
 				_dimensions ++;
@@ -180,12 +180,12 @@ public:
 	/// == operator
 	bool opBinary(string op : "==")(DataType rhs){
 		return rhs !is null && rhs._dimensions == _dimensions && 
-			(!_refTo || _refTo == rhs._refTo) && (_ident == rhs._ident);
+			(!_ptrTo || _ptrTo == rhs._ptrTo) && (_ident == rhs._ident);
 	}
 }
 /// 
 unittest{
-	Token[] tok = [ // int [ ] @ [ ] # array of references, to array of int
+	Token[] tok = [ // int [ ] @ [ ] # array of pointers, to array of int
 		Token(TokenType.KeywordInt,"int"),Token(TokenType.Operator,"["),
 		Token(TokenType.IndexClose,"]"),Token(TokenType.Operator,"@"),
 		Token(TokenType.Operator,"["),Token(TokenType.IndexClose,"]")
