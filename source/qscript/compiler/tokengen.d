@@ -6,7 +6,7 @@ import utils.ds;
 debug{import std.stdio;}
 
 /// A token
-package struct Token{
+public struct Token{
 	/// line number and column number
 	uint lineno, colno;
 	/// token type.
@@ -30,10 +30,58 @@ package struct Token{
 	}
 }
 
+/// Matching method
+public struct TokenMatcher{
+	/// token type for this match
+	uint type = uint.max;
+	/// whether to use exact match, will call delegate otherwise
+	bool isExactMatch;
+	union{
+		/// exact matching string
+		string exactMatch;
+		/// delegate for matching. This should return the first number of chars that 
+		/// match. 0 if none
+		uint delegate(string) funcMatch = null;
+	}
+	/// pre-requisite. Only attempt this match these matched.   
+	/// if this exists, it will only try to match with what has already been token-ified
+	int[] prereq;
+	/// constructor
+	this (uint type, string exactMatch){
+		isExactMatch = true;
+		this.type = type;
+		this.exactMatch = exactMatch;
+	}
+	/// ditto
+	this (uint type, uint delegate(string) funcMatch){
+		isExactMatch = false;
+		this.funcMatch = funcMatch;
+	}
+	/// attempt to match
+	uint match(string s){
+		if (prereq.length)
+			return 0; // cannot match, this has not been token-ified
+		if (isExactMatch){
+			if (s.length < exactMatch.length)
+				return 0;
+			return exactMatch.length * (s[0 .. exactMatch.length] == exactMatch);
+		}
+		return funcMatch(s);
+	}
+	/// ditto
+	uint match(Token t){
+		if (prereq.indexOf(t.type) > -1)
+			return 0;
+		if (isExactMatch)
+			return t.token == exactMatch;
+		return funcMatch(t.token) == t.token.length;
+	}
+}
+
 /// a fancy string exploder
 ///
 /// this should probably be moved to my utils package, but it sits here for now
-package class TokenGen{
+public class TokenGen{
 private:
 	string[] _exactMatches;
 	uint[] _exactMatchesTypes;

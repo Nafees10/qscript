@@ -279,6 +279,7 @@ unittest{
 	Token[] tokens = tk.readTokens(
 `function void main(){ # comment
 	return 2 + 0B10; #another comment
+	voidnot
 }`
 		,errors);
 	if (errors.length){
@@ -286,18 +287,23 @@ unittest{
 			writeln(error);
 	}else{
 		const string[] expectedStr = [
-			"function", " ", "void", " ", "main", "(", ")", "{", " ", "# comment", "\n\t", "return", " ", "2", " ",  "+", " ",
-			"0B10", ";", " ", "#another comment", "\n", "}"
+			"function", " ", "void", " ", "main", "(", ")", "{", " ", "# comment",
+			"\n\t", "return", " ", "2", " ",  "+", " ", "0B10", ";", " ",
+			"#another comment", "\n\t", "voidNot", "}"
 		];
 		const uint[] expectedType = [
-			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid, TokenType.Whitespace, TokenType.Identifier,
-			TokenType.BracketOpen, TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace, TokenType.Comment,
-			TokenType.Whitespace, TokenType.KeywordReturn, TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
-			TokenType.Operator, TokenType.Whitespace, TokenType.LiteralBinary, TokenType.Semicolon, TokenType.Whitespace,
-			TokenType.Comment, TokenType.Whitespace, TokenType.CurlyClose
+			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid,
+			TokenType.Whitespace, TokenType.Identifier, TokenType.BracketOpen,
+			TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace,
+			TokenType.Comment, TokenType.Whitespace, TokenType.KeywordReturn,
+			TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
+			TokenType.Operator, TokenType.Whitespace, TokenType.LiteralBinary,
+			TokenType.Semicolon, TokenType.Whitespace, TokenType.Comment,
+			TokenType.Whitespace, TokenType.Identifier, TokenType.CurlyClose
 		];
 		foreach (i, token; tokens){
-			assert (token.token == expectedStr[i] && token.type == expectedType[i], "failed to match at index " ~ i.to!string);
+			assert (token.token == expectedStr[i] && token.type == expectedType[i],
+				"failed to match at index " ~ i.to!string);
 		}
 	}
 	assert(errors.length == 0);
