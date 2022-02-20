@@ -3,6 +3,8 @@ module qscript.compiler.tokengen;
 import utils.misc;
 import utils.ds;
 
+import std.functional : toDelegate;
+
 debug{import std.stdio;}
 
 /// A token
@@ -41,11 +43,11 @@ public struct TokenMatcher{
 		string exactMatch;
 		/// delegate for matching. This should return the first number of chars that 
 		/// match. 0 if none
-		uint delegate(string) funcMatch = null;
+		uint delegate(string) funcMatch;
 	}
 	/// pre-requisite. Only attempt this match these matched.   
 	/// if this exists, it will only try to match with what has already been token-ified
-	int[] prereq;
+	uint[] prereq;
 	/// constructor
 	this (uint type, string exactMatch){
 		isExactMatch = true;
@@ -55,6 +57,7 @@ public struct TokenMatcher{
 	/// ditto
 	this (uint type, uint delegate(string) funcMatch){
 		isExactMatch = false;
+		this.type = type;
 		this.funcMatch = funcMatch;
 	}
 	/// attempt to match
@@ -64,17 +67,18 @@ public struct TokenMatcher{
 		if (isExactMatch){
 			if (s.length < exactMatch.length)
 				return 0;
-			return exactMatch.length * (s[0 .. exactMatch.length] == exactMatch);
+			return cast(uint)
+				(exactMatch.length * (s[0 .. exactMatch.length] == exactMatch));
 		}
 		return funcMatch(s);
 	}
 	/// ditto
 	uint match(Token t){
-		if (prereq.indexOf(t.type) > -1)
+		if (prereq.indexOf(t.type) == -1)
 			return 0;
 		if (isExactMatch)
-			return t.token == exactMatch;
-		return funcMatch(t.token) == t.token.length;
+			return cast(uint)((t.token == exactMatch) * t.token.length);
+		return cast(uint)((funcMatch(t.token) == t.token.length) * t.token.length);
 	}
 }
 
@@ -83,10 +87,8 @@ public struct TokenMatcher{
 /// this should probably be moved to my utils package, but it sits here for now
 public class TokenGen{
 private:
-	string[] _exactMatches;
-	uint[] _exactMatchesTypes;
-	uint function(string)[] _matchFinderFunctions;
-	uint[] _matchFinderTypes;
+	/// token matchers
+	TokenMatcher[] _matchers;
 	
 	/// currently open source code
 	string _source;
@@ -99,26 +101,30 @@ private:
 	Token getToken(string str){
 		Token r;
 		uint maxLen = 0;
-		uint maxType;
-		foreach (i, match; _exactMatches){
-			if (match.length > maxLen && match.length <= str.length && str[0 .. match.length] == match){
-				maxLen = cast(uint)match.length;
-				maxType = _exactMatchesTypes[i];
+		uint maxInd;
+		foreach (i, matcher; _matchers){
+			immutable newLen = matcher.match(str);
+			if (newLen > maxLen){
+				maxLen = newLen;
+				maxInd = cast(uint)i;
 			}
 		}
-		if (!maxLen){
-			foreach (i, matcher; _matchFinderFunctions){
-				const uint len = matcher(str);
-				if (len > maxLen){
-					maxLen = len;
-					maxType = _matchFinderTypes[i];
+		if (!maxLen)
+			return r;
+		r.type = _matchers[maxInd].type;
+		r.token = str[0 .. maxLen];
+		bool modified = false;
+		do{
+			foreach (i, matcher; _matchers){
+				if (matcher.type == r.type)
+					continue;
+				modified = matcher.match(r) == r.token.length;
+				if (modified){
+					r.type = matcher.type;
+					break;
 				}
 			}
-		}
-		if (maxLen){
-			r.type = maxType;
-			r.token = str[0 .. maxLen];
-		}
+		}while (modified);
 		return r;
 	}
 public:
@@ -145,16 +151,22 @@ public:
 		return _errors.length > 0;
 	}
 	/// adds a token type. Exact matches are checked for first
-	void addTokenType(uint type, string match){
-		_exactMatches ~= match;
-		_exactMatchesTypes ~= type;
+	void addTokenType(uint type, string match, uint[] prereq = []){
+		TokenMatcher matcher = TokenMatcher(type, match);
+		matcher.prereq = prereq;
+		_matchers ~= matcher;
 	}
 	/// adds a token type. Token types added this way are checked for after no exact match is found
 	/// 
 	/// The `matchFinder` function should return the number of characters that match from start
-	void addTokenType(uint type, uint function (string) matchFinder){
-		_matchFinderFunctions ~= matchFinder;
-		_matchFinderTypes ~= type;
+	void addTokenType(uint type, uint delegate (string) matchFinder, uint[] prereq = []){
+		TokenMatcher matcher = TokenMatcher(type, matchFinder);
+		matcher.prereq = prereq;
+		_matchers ~= matcher;
+	}
+	/// ditto
+	void addTokenType(uint type, uint function(string) matchFinder, uint[] prereq = []){
+		this.addTokenType(type, toDelegate(matchFinder), prereq);
 	}
 	/// Returns: tokens
 	@property Token[] tokens(){
