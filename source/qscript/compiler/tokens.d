@@ -151,30 +151,30 @@ private:
 			}
 			return cast(uint)str.length;
 		});
-		_tkGen.addTokenType(TokenType.KeywordImport, `import`);
-		_tkGen.addTokenType(TokenType.KeywordFunction, `function`);
-		_tkGen.addTokenType(TokenType.KeywordVar, `var`);
-		_tkGen.addTokenType(TokenType.KeywordRef, `ref`);
-		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`);
-		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`);
-		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`);
-		_tkGen.addTokenType(TokenType.KeywordPublic, `public`);
-		_tkGen.addTokenType(TokenType.KeywordReturn, `return`);
-		_tkGen.addTokenType(TokenType.KeywordThis, `this`);
-		_tkGen.addTokenType(TokenType.KeywordVoid, `void`);
-		_tkGen.addTokenType(TokenType.KeywordInt, `int`);
-		_tkGen.addTokenType(TokenType.KeywordFloat, `float`);
-		_tkGen.addTokenType(TokenType.KeywordChar, `char`);
-		_tkGen.addTokenType(TokenType.KeywordBool, `bool`);
-		_tkGen.addTokenType(TokenType.KeywordTrue, `true`);
-		_tkGen.addTokenType(TokenType.KeywordFalse, `false`);
-		_tkGen.addTokenType(TokenType.KeywordIf, `if`);
-		_tkGen.addTokenType(TokenType.KeywordElse, `else`);
-		_tkGen.addTokenType(TokenType.KeywordWhile, `while`);
-		_tkGen.addTokenType(TokenType.KeywordDo, `do`);
-		_tkGen.addTokenType(TokenType.KeywordFor, `for`);
-		_tkGen.addTokenType(TokenType.KeywordBreak, `break`);
-		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`);
+		_tkGen.addTokenType(TokenType.KeywordImport, `import`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordFunction, `function`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordVar, `var`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordRef, `ref`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordPublic, `public`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordReturn, `return`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordThis, `this`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordVoid, `void`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordInt, `int`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordFloat, `float`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordChar, `char`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordBool, `bool`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordTrue, `true`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordFalse, `false`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordIf, `if`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordElse, `else`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordWhile, `while`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordDo, `do`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordFor, `for`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordBreak, `break`, [TokenType.Identifier]);
+		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`, [TokenType.Identifier]);
 		_tkGen.addTokenType(TokenType.Identifier, function (string str){
 			uint len;
 			while (len < str.length && str[len] == '_')
@@ -279,7 +279,7 @@ unittest{
 	Token[] tokens = tk.readTokens(
 `function void main(){ # comment
 	return 2 + 0B10; #another comment
-	voidnot
+	voidNot
 }`
 		,errors);
 	if (errors.length){
@@ -289,7 +289,7 @@ unittest{
 		const string[] expectedStr = [
 			"function", " ", "void", " ", "main", "(", ")", "{", " ", "# comment",
 			"\n\t", "return", " ", "2", " ",  "+", " ", "0B10", ";", " ",
-			"#another comment", "\n\t", "voidNot", "}"
+			"#another comment", "\n\t", "voidNot", "\n", "}"
 		];
 		const uint[] expectedType = [
 			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid,
@@ -299,7 +299,8 @@ unittest{
 			TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
 			TokenType.Operator, TokenType.Whitespace, TokenType.LiteralBinary,
 			TokenType.Semicolon, TokenType.Whitespace, TokenType.Comment,
-			TokenType.Whitespace, TokenType.Identifier, TokenType.CurlyClose
+			TokenType.Whitespace, TokenType.Identifier, TokenType.Whitespace,
+			TokenType.CurlyClose
 		];
 		foreach (i, token; tokens){
 			assert (token.token == expectedStr[i] && token.type == expectedType[i],
