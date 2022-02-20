@@ -118,7 +118,7 @@ var int someGlobalVar = 5; # global variables are initialized before calling thi
 ```
 `this` function must not return any value.
 
-`this` function's visibility does not matter, as it cannot be called in script.
+`this` function's visibility does not matter, as it cannot be explicitly called.
 
 ## Function Calls
 Function calls can be made liks this:
