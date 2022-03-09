@@ -15,7 +15,7 @@ alias Identifier = string[];
 /// reads tokens into ident
 /// 
 /// Returns: number of tokens read
-package uint fromTokens(ref Identifier ident, Token[] tokens){
+package uint identFromTokens(ref Identifier ident, Token[] tokens){
 	uint index = 0;
 	if (index < tokens.length && tokens[index].token.isIdentifier){
 		ident = [tokens[index].token];
@@ -198,12 +198,21 @@ unittest{
 
 /// an AST Node
 package abstract class ASTNode{
+private:
+	void _errorAdd(CompileError err){
+		if (_parent)
+			_parent._errorAdd(err);
+	}
 protected:
 	/// line number and column number
 	uint[2] _location;
 	/// parent node
 	ASTNode _parent = null;
 public:
+	/// Adds an error
+	final void errorAdd(CompileError err){
+		_errorAdd(err);
+	}
 	/// Returns: line number
 	@property uint lineno(){
 		return _location[0];
@@ -472,7 +481,19 @@ public:
 
 /// Script Node
 package class ScriptNode : NamespaceNode{
+private:
+	override void _errorAdd(CompileError err){
+		if (_errors.length < ERRORS_MAX)
+			_errors ~= err;
+	}
+protected:
+	/// errors occurred
+	CompileError[] _errors;
 public:
+	/// Returns: errors
+	@property CompileError[] errors(){
+		return _errors;
+	}
 	/// Returns: script name
 	@property string scriptName(){
 		if (_ident.length)
@@ -797,8 +818,6 @@ protected:
 	/// if value has been updated since _tok was last updated
 	bool _updated = false;
 	/// Reads _val from _tok
-	/// 
-	/// Throws: Exception if invalid format
 	void readVal(){
 		_val = 0;
 		if (_tok.type == TokenType.LiteralInt)
@@ -808,7 +827,7 @@ protected:
 		else if (_tok.type == TokenType.LiteralHexadecimal && _tok.token.length > 2)
 			_val = _tok.token.readHexadecimal();
 		else
-			throw new Exception("invalid token to read integer from");
+			errorAdd(CompileError(CompileError.Type.Expected, _tok.where, ["int value"]));
 		_updated = true;
 	}
 public:
@@ -846,14 +865,14 @@ protected:
 	/// if _val updated after changing _tok
 	bool _updated = false;
 	/// reads _val from _tok
-	/// 
-	/// Throws: Exception if invalid format
 	void readVal(){
 		_val = 0;
-		if (_tok.type != TokenType.LiteralFloat)
-			throw new Exception("invalid token to read float from");
 		_updated = true;
-		_val = _tok.token.to!float;
+		if (_tok.type != TokenType.LiteralFloat)
+			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
+				["float value"]));
+		else
+			_val = _tok.token.to!float;
 	}
 public:
 	/// constructor
@@ -890,16 +909,18 @@ protected:
 	/// if value is valid
 	bool _updated = false;
 	/// Reads _val from _tok
-	/// 
-	/// Throws: Exception if invalid format
 	void readVal(){
-		if (_tok.type != TokenType.LiteralChar || _tok.token.length < 3)
-			throw new Exception("invalid token to read character from");
+		_updated = true;
+		if (_tok.type != TokenType.LiteralChar || _tok.token.length < 3){
+			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
+				["char value"]));
+			return;
+		}
 		char[] unesc = strUnescape(_tok.token[1 .. $-1]);
 		if (unesc.length != 1)
-			throw new Exception("character literal should store 1 character");
-		_updated = true;
-		_val = unesc[0];
+			errorAdd(CompileError(CompileError.Type.CharLengthInvalid, _tok.where));
+		else
+			_val = unesc[0];
 	}
 public:
 	/// constructor
@@ -936,15 +957,14 @@ protected:
 	/// if _val updated since last _tok was updated
 	bool _updated = false;
 	/// Reads _val from _tok
-	/// 
-	/// Throws: Exception if invalid format
 	void readVal(){
 		if (_tok.type == TokenType.KeywordTrue)
 			_val = true;
 		else if (_tok.type == TokenType.KeywordFalse)
 			_val = false;
 		else
-			throw new Exception("invalid token to read boolean from");
+			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
+				["bool value"]));
 		_updated = true;
 	}
 public:
@@ -981,12 +1001,13 @@ protected:
 	/// if _val updated after _tok updated
 	bool _updated = false;
 	/// Reads _val from _tok
-	/// 
-	/// Throws: Exception if invalid token
 	void readVal(){
-		if (_tok.type != TokenType.LiteralString || _tok.token.length < 2)
-			throw new Exception("invalid token to read string from");
 		_updated = true;
+		if (_tok.type != TokenType.LiteralString || _tok.token.length < 2){
+			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
+				["string value"]));
+			return;
+		}
 		_val = cast(string)strUnescape(_tok.token[1 .. $ - 1]);
 	}
 public:

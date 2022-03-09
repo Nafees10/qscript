@@ -9,7 +9,11 @@ debug{import std.stdio;}
 
 private shared static this(){
 	ERROR_EXPLAIN_STRING = [
+		CompileError.Type.None : null,
 		CompileError.Type.TokenInvalid : "unidentified token, cannot read further",
+		CompileError.Type.Expected : "Expected $",
+		CompileError.Type.ExpectedAFoundB : "Expected $ found $",
+		CompileError.Type.CharLengthInvalid : "Expected 1 character inside ''",
 	];
 }
 
@@ -30,6 +34,8 @@ package const string DEFAULT_SCRIPT_NAME = "QSCRIPT_SCRIPT";
 package const string DEFAULT_NAMESPACE = "this";
 /// default visibility
 package const Visibility DEFAULT_VISIBILITY = Visibility.Private;
+/// maximum number of errors
+package const uint ERRORS_MAX = 20;
 
 /// Data type names
 package enum TYPENAME : string{
@@ -80,10 +86,14 @@ package char charUnescape(char c){
 struct CompileError{
 	/// Possible types of errors
 	enum Type{
-		TokenInvalid,
+		None, /// no error
+		TokenInvalid, /// invalid token found (probably while reading tokens)
+		Expected, /// expected $, but not found
+		ExpectedAFoundB, /// expected A but found B
+		CharLengthInvalid, /// characters inside '' are not 1
 	}
 	/// type of this error
-	Type type;
+	Type type = Type.None;
 	/// `[line number, column number]`
 	uint[2] where;
 	/// details
