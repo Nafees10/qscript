@@ -18,6 +18,10 @@ public struct Token{
 	/// token
 	string token;
 	alias token this;
+	/// [line number, colno]
+	@property uint[2] where(){
+		return [lineno, colno];
+	}
 	/// constructor
 	this(uint lineno, uint colno, uint type, string token){
 		this.lineno = lineno;
