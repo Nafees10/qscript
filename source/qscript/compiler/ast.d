@@ -49,8 +49,40 @@ package string toString(Identifier ident){
 	return ret ~ ident[$-1];
 }
 
+/// an AST Node
+package abstract class ASTNode{
+protected:
+	/// line number and column number
+	uint[2] _location;
+	/// parent node
+	ASTNode _parent = null;
+public:
+	/// Adds an error
+	void errorAdd(CompileError err){
+		if (_parent)
+			_parent.errorAdd(err);
+	}
+	/// Returns: line number
+	@property uint lineno(){
+		return _location[0];
+	}
+	/// ditto
+	@property uint lineno(uint newVal){
+		return _location[0] = newVal;
+	}
+	/// Returns: column number
+	@property uint colno(){
+		return _location[1];
+	}
+	/// ditto
+	@property uint colno(uint newVal){
+		return _location[1] = newVal;
+	}
+	/// Finds ASTNode for an Identifier
+}
+
 /// Data Type
-class DataType{
+class DataType : ASTNode{
 private:
 	/// if it is a ref
 	bool _isRef = false;
@@ -81,6 +113,8 @@ public:
 			return;
 		_dimensions = from._dimensions;
 		_byteCount = from._byteCount;
+		_isRef = from._isRef;
+		_location = from._location;
 		if (from._ptrTo){
 			_ptrTo = new DataType();
 			_ptrTo.clone(from._ptrTo);
@@ -105,6 +139,7 @@ public:
 	void clear(){
 		if (_ptrTo)
 			.destroy(_ptrTo);
+		_location = [0,0];
 		_ident = [];
 		_isRef = false;
 		_ptrTo = null;
@@ -164,9 +199,12 @@ public:
 	uint fromTokens(Token[] tokens){
 		this.clear();
 		uint index = 0;
-		if (index < tokens.length && tokens[index].type == TokenType.KeywordRef){
-			_isRef = true;
-			index ++;
+		if (index < tokens.length){
+			_location = [tokens[index].lineno, tokens[index].colno];
+			if (tokens[index].type == TokenType.KeywordRef){
+				_isRef = true;
+				index ++;
+			}
 		}
 		while (index < tokens.length){
 			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
@@ -192,8 +230,8 @@ public:
 			}else
 				break;
 		}
-		if (_isRef && index == 1){
-			_isRef = false;
+		if ((_isRef && index == 1) || index == 0){
+			this.clear();
 			return 0;
 		}
 		return index;
@@ -221,38 +259,6 @@ unittest{
 	assert(type.fromTokens(tok) == 2);
 	assert(type.toString == "ref int", type.toString);
 	.destroy (type);
-}
-
-/// an AST Node
-package abstract class ASTNode{
-protected:
-	/// line number and column number
-	uint[2] _location;
-	/// parent node
-	ASTNode _parent = null;
-public:
-	/// Adds an error
-	void errorAdd(CompileError err){
-		if (_parent)
-			_parent.errorAdd(err);
-	}
-	/// Returns: line number
-	@property uint lineno(){
-		return _location[0];
-	}
-	/// ditto
-	@property uint lineno(uint newVal){
-		return _location[0] = newVal;
-	}
-	/// Returns: column number
-	@property uint colno(){
-		return _location[1];
-	}
-	/// ditto
-	@property uint colno(uint newVal){
-		return _location[1] = newVal;
-	}
-	/// Finds ASTNode for an Identifier
 }
 
 /// Declaration Node (function decl, struct decl, enum decl...)
