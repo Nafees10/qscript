@@ -37,7 +37,7 @@ unittest{
 		Token(TokenType.Identifier,"io"), Token(TokenType.Operator,".")
 	];
 	Identifier ident;
-	assert(ident.fromTokens(tok) == 5);
+	assert(ident.identFromTokens(tok) == 5);
 	assert(ident.toString == "qscript.std.io");
 }
 
@@ -52,6 +52,8 @@ package string toString(Identifier ident){
 /// Data Type
 class DataType{
 private:
+	/// if it is a ref
+	bool _isRef = false;
 	/// its identifier (name). not valid if _ptrTo !is null
 	Identifier _ident;
 	/// array dimensions (zero if not array)
@@ -104,9 +106,18 @@ public:
 		if (_ptrTo)
 			.destroy(_ptrTo);
 		_ident = [];
+		_isRef = false;
 		_ptrTo = null;
 		_dimensions = 0;
 		_byteCount = 0;
+	}
+	/// if it is a reference to this type
+	@property bool isRef(){
+		return _isRef;
+	}
+	/// ditto
+	@property bool isRef(bool newVal){
+		return _isRef = newVal;
 	}
 	/// Identifier (name) for this type
 	@property ref Identifier ident(){
@@ -135,10 +146,12 @@ public:
 	/// only use for debug or error reporting. reading back string to DataType is not a thing
 	override string toString(){
 		char[] r;
+		if (_isRef)
+			r ~= "ref ";
 		if (_ptrTo)
-			r = cast(char[])_ptrTo.toString ~ '@';
+			r ~= cast(char[])_ptrTo.toString ~ '@';
 		else if (_ident)
-			r = cast(char[])_ident.toString;
+			r ~= cast(char[])_ident.toString;
 		uint index = cast(uint)r.length;
 		r.length += 2*_dimensions;
 		for (; index < r.length; index += 2)
@@ -151,6 +164,10 @@ public:
 	uint fromTokens(Token[] tokens){
 		this.clear();
 		uint index = 0;
+		if (index < tokens.length && tokens[index].type == TokenType.KeywordRef){
+			_isRef = true;
+			index ++;
+		}
 		while (index < tokens.length){
 			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
 				if (!_ptrTo && !_ident.length)
@@ -175,6 +192,10 @@ public:
 			}else
 				break;
 		}
+		if (_isRef && index == 1){
+			_isRef = false;
+			return 0;
+		}
 		return index;
 	}
 	/// == operator
@@ -193,16 +214,17 @@ unittest{
 	DataType type = new DataType();
 	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
 	assert(type.toString == "int[]@[]");
+	type.clear();
+	tok = [
+		Token(TokenType.KeywordRef, "ref"), Token(TokenType.KeywordInt, "int")
+	];
+	assert(type.fromTokens(tok) == 2);
+	assert(type.toString == "ref int", type.toString);
 	.destroy (type);
 }
 
 /// an AST Node
 package abstract class ASTNode{
-private:
-	void _errorAdd(CompileError err){
-		if (_parent)
-			_parent._errorAdd(err);
-	}
 protected:
 	/// line number and column number
 	uint[2] _location;
@@ -210,8 +232,9 @@ protected:
 	ASTNode _parent = null;
 public:
 	/// Adds an error
-	final void errorAdd(CompileError err){
-		_errorAdd(err);
+	void errorAdd(CompileError err){
+		if (_parent)
+			_parent.errorAdd(err);
 	}
 	/// Returns: line number
 	@property uint lineno(){
@@ -481,15 +504,14 @@ public:
 
 /// Script Node
 package class ScriptNode : NamespaceNode{
-private:
-	override void _errorAdd(CompileError err){
-		if (_errors.length < ERRORS_MAX)
-			_errors ~= err;
-	}
 protected:
 	/// errors occurred
 	CompileError[] _errors;
 public:
+	override void errorAdd(CompileError err){
+		if (_errors.length < ERRORS_MAX)
+			_errors ~= err;
+	}
 	/// Returns: errors
 	@property CompileError[] errors(){
 		return _errors;
