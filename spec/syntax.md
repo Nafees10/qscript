@@ -75,6 +75,8 @@ function [ref] RETURN_TYPE FUNCTION_NAME ([ref] arg0_type arg0, [ref] arg1_type 
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
 * more arguments can be added, and are to be separated by a comma.
+
+_Not that the `ref` part of return type is not a property of the function, but rather a part of the data type._
   
 A function without any arguments would be defined like:
 ```
@@ -141,6 +143,8 @@ QScript has these basic data types:
 * `float` - a floating point (same as `float` in DLang)
 * `char` - an 8 bit character
 * `bool` - a `true` or `false` (same as Dlang `bool`)
+* `X@` - pointer to any of the above
+* `ref X` - reference to any of the above
 
 ## `int`
 This can be written as series (or just one) digit(s).  
@@ -151,6 +155,49 @@ Or it can be written as a Hexadecimal literal using the `0x` prefix like:
 the `B` in `0B` or `x` in `0x` is not case sensitive:  
 * `0b1011` is same as `0B1011`
 * `0xFF` is same as `0xff` which is same as `0Xff` or `0XFF`
+
+`int`s are initialised as `0`.
+
+## `float`
+Digits with a single `.` between them is read as a float.  
+`5` is an int, but `5.0` is a float.
+
+`float`s are initialised as `0.0`
+
+## `char`
+This is written by enclosing a single character within a pair of apostrophes:
+`'c'` for example, or `'\t'` tab character.
+
+initialised as ascii code `0`
+
+## `bool`
+A `true` (1) or a `false` (0).  
+While casting from `int`, a non zero value is read as a `true`, zero as `false`.
+
+initialised as `false`
+
+## `X@` pointer
+Pointer data types are written as:  
+* `int@` - a pointer to an integer
+* `SomeStruct@` - a pointer to a data type named `SomeStruct`
+* `int@[]` - an array of pointers-to-integer
+* `int@[]@` - a pointer to an array of pointers of integer
+* `int[]@` - a pointer to an array of integers
+
+pointers are initialised as `null` (0)
+
+## `ref` references
+These are aliases to actual variables.  
+A `ref` cannot be null, and must always be initialised to reference some variable:  
+```
+int i = 0;
+var ref int r = i; # r is now a reference of i
+# r can now be used as if it's an int.
+r = 1;
+writeln(r); # 1
+writeln(i); # 1
+```
+after initialising, a ref cannot be made to reference another variable.
 
 ## Structs
 These can be used to store multiple values of varying or same data types. They are defined like:  
