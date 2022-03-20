@@ -51,11 +51,24 @@ package string toString(Identifier ident){
 
 /// an AST Node
 package abstract class ASTNode{
+private:
+	/// creates identifier
+	void _identConstruct(){
+		if (_parent)
+			_ident = _parent.ident();
+		_ident ~= _name;
+	}
 protected:
 	/// line number and column number
 	uint[2] _location;
 	/// parent node
 	ASTNode _parent = null;
+	/// Identifier
+	Identifier _ident;
+	/// name. Used to construct identifier
+	string _name;
+	/// Returns: all of this node's child nodes
+	abstract @property ASTNode[] _children();
 public:
 	/// Adds an error
 	void errorAdd(CompileError err){
@@ -78,7 +91,43 @@ public:
 	@property uint colno(uint newVal){
 		return _location[1] = newVal;
 	}
-	/// Finds ASTNode for an Identifier
+	/// Identifier (complete, including all namespaces)
+	@property Identifier ident(){
+		if (!_ident.length)
+			_identConstruct();
+		return _ident;
+	}
+	/// name
+	@property string name(){
+		return _name;
+	}
+	/// ditto
+	@property string name(string newName){
+		// go through all children and mess up their identifier so they update their
+		// identifiers later
+		foreach (child; _children)
+			child._ident = [];
+		_ident = [];
+		return _name = newName;
+	}
+	/// Finds ASTNode(s) for an Identifier
+	ASTNode[] find(Identifier toFind){
+		if (!toFind.length)
+			return [];
+		if (toFind[0] != _name){
+			if (!_parent)
+				return [];
+			return _parent.find(toFind);
+		}
+		if (toFind.length == 1)
+			return [this];
+		ASTNode[] ret;
+		foreach (child; _children){
+			if (toFind[1 .. $] == child.ident)
+				ret ~= child;
+		}
+		return ret;
+	}
 }
 
 /// Data Type
@@ -86,22 +135,32 @@ class DataType : ASTNode{
 private:
 	/// if it is a ref
 	bool _isRef = false;
-	/// its identifier (name). not valid if _ptrTo !is null
-	Identifier _ident;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
-	/// pointer to type. if this is not null, then _ident is not valid
+	/// identifier of data type
+	Identifier _typeIdent;
+	/// pointer to type. if this is not null, then _typeIdent is not valid
 	DataType _ptrTo = null;
 	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
+protected:
+	override @property ASTNode[] _children(){
+		if (_ptrTo)
+			return [_ptrTo];
+		return [];
+	}
 public:
 	/// constructor
 	this (){}
 	/// constructor
-	/// be aware ident will be destroyed along with this
-	this(Identifier ident, uint dimensions = 0){
-		this._ident = ident;
+	this(string name, uint dimensions = 0){
 		_dimensions = dimensions;
+		_typeIdent = [name];
+	}
+	/// ditto
+	this(Identifier ident, uint dimensions = 0){
+		_dimensions = dimensions;
+		_typeIdent = ident;
 	}
 	~this(){
 		this.clear();
@@ -119,18 +178,18 @@ public:
 			_ptrTo = new DataType();
 			_ptrTo.clone(from._ptrTo);
 		}else{
-			_ident = from._ident.dup;
+			_typeIdent = from._typeIdent;
 		}
 	}
 	/// turn it into a pointer of itself
 	void makePtr(){
 		DataType ptrTo = new DataType();
 		// dont use clone here, that will clone everything, inefficient
-		ptrTo._ident = _ident;
+		ptrTo._typeIdent = _typeIdent;
 		ptrTo._dimensions = _dimensions;
 		ptrTo._ptrTo = _ptrTo;
 		ptrTo._byteCount = _byteCount;
-		_ident = null;
+		_typeIdent = null;
 		_dimensions = 0;
 		_ptrTo = ptrTo;
 		_byteCount = 0;
@@ -140,7 +199,7 @@ public:
 		if (_ptrTo)
 			.destroy(_ptrTo);
 		_location = [0,0];
-		_ident = [];
+		_typeIdent = [];
 		_isRef = false;
 		_ptrTo = null;
 		_dimensions = 0;
@@ -154,9 +213,13 @@ public:
 	@property bool isRef(bool newVal){
 		return _isRef = newVal;
 	}
-	/// Identifier (name) for this type
-	@property ref Identifier ident(){
-		return _ident;
+	/// Identifier
+	@property ref Identifier typeIdent(){
+		return _typeIdent;
+	}
+	/// ditto
+	@property ref Identifier typeIdent(Identifier newIdent){
+		return _typeIdent = newIdent;
 	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
@@ -185,8 +248,8 @@ public:
 			r ~= "ref ";
 		if (_ptrTo)
 			r ~= cast(char[])_ptrTo.toString ~ '@';
-		else if (_ident)
-			r ~= cast(char[])_ident.toString;
+		else if (_typeIdent)
+			r ~= cast(char[])_typeIdent.toString;
 		uint index = cast(uint)r.length;
 		r.length += 2*_dimensions;
 		for (; index < r.length; index += 2)
@@ -208,7 +271,7 @@ public:
 		}
 		while (index < tokens.length){
 			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
-				if (!_ptrTo && !_ident.length)
+				if (!_ptrTo && !_typeIdent.length)
 					break;
 				DataType ptrTo = new DataType();
 				ptrTo.clone(this);
@@ -217,15 +280,15 @@ public:
 				index ++;
 			}else if (tokens[index].type == TokenType.Operator &&
 			tokens[index].token == "["){
-				if ((!_ident.length && !_ptrTo) || index + 1 >= tokens.length ||
+				if ((!_typeIdent.length && !_ptrTo) || index + 1 >= tokens.length ||
 				tokens[index + 1].type != TokenType.IndexClose)
 					break;
 				_dimensions ++;
 				index += 2;
 			}else if (tokens[index].token.isIdentifier){
-				if (_ident.length)
+				if (_typeIdent.length)
 					break;
-				_ident = [tokens[index].token];
+				_typeIdent = [tokens[index].token];
 				index ++;
 			}else
 				break;
@@ -239,7 +302,7 @@ public:
 	/// == operator
 	bool opBinary(string op : "==")(DataType rhs){
 		return rhs !is null && rhs._dimensions == _dimensions && 
-			(!_ptrTo || _ptrTo == rhs._ptrTo) && (_ident == rhs._ident);
+			(!_ptrTo || _ptrTo == rhs._ptrTo) && (_typeIdent == rhs._typeIdent);
 	}
 }
 /// 
@@ -266,8 +329,6 @@ package abstract class DeclNode : ASTNode{
 protected:
 	/// visibility
 	Visibility _visibility = DEFAULT_VISIBILITY;
-	/// identifier of what is being declared
-	Identifier _ident;
 public:
 	/// constuctor
 	this(){}
@@ -280,10 +341,6 @@ public:
 	/// ditto
 	@property Visibility visibility(Visibility newVal){
 		return _visibility = newVal;
-	}
-	/// Returns: identifier
-	@property ref Identifier ident(){
-		return _ident;
 	}
 }
 
@@ -315,7 +372,7 @@ protected:
 public:
 	/// constructor
 	this (){
-		_voidType = new DataType([TYPENAME.VOID]);
+		_voidType = new DataType(TYPENAME.VOID);
 	}
 	/// destructor
 	~this (){
@@ -600,19 +657,7 @@ package class StructDefNode : NamespaceNode{
 public:
 	/// constructor
 	this(string name){
-		_ident = [name];
-	}
-	/// Returns: struct name
-	@property string name(){
-		if (_ident.length)
-			return _ident[$-1];
-		return "";
-	}
-	/// ditto
-	@property string name(string newName){
-		if (_ident.length)
-			return _ident[$-1] = newName;
-		return (_ident = [newName])[0];
+		this.name = name;
 	}
 }
 
@@ -678,6 +723,10 @@ protected:
 	DataType[] _argType;
 	/// Argument names
 	string[] _argName;
+
+	override @property ASTNode[] _children(){
+		return cast(ASTNode[])_argType ~ _returnType;
+	}
 public:
 	/// constructor
 	this(DataType returnType, string name, DataType[] argType, string[] argName = []){
@@ -762,6 +811,10 @@ public:
 package class BlockNode : StatementNode{
 protected:
 	StatementNode[] _statement;
+
+	override @property ASTNode[] _children(){
+		return cast(ASTNode[])_statement;
+	}
 public:
 	/// constructor
 	this (){}
@@ -797,8 +850,6 @@ public:
 /// Function call expression
 package class FunctionCallExp : ExpressionNode{
 protected:
-	/// Identifier of function being called
-	Identifier _ident;
 	/// Arguments of function call
 	ExpressionNode[] _args;
 public:
@@ -808,10 +859,6 @@ public:
 	~this (){
 		foreach (arg; _args)
 			.destroy (arg);
-	}
-	/// Returns: function identifier
-	@property ref Identifier ident(){
-		return _ident;
 	}
 	/// Returns: number of arguments
 	@property uint argCount(){
@@ -863,7 +910,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME.INT];
+		_returnType.typeIdent = [TYPENAME.INT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -907,7 +954,7 @@ public:
 	this (){
 		// set return type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME.FLOAT];
+		_returnType.typeIdent = [TYPENAME.FLOAT];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -955,7 +1002,7 @@ public:
 	this (){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME.CHAR];
+		_returnType.typeIdent = [TYPENAME.CHAR];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -999,7 +1046,7 @@ public:
 	this(){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME.BOOL];
+		_returnType.typeIdent = [TYPENAME.BOOL];
 	}
 	/// Returns: token
 	@property Token token(){
@@ -1043,7 +1090,7 @@ public:
 	this (){
 		// set data type
 		_returnType.clear();
-		_returnType.ident = [TYPENAME.CHAR];
+		_returnType.typeIdent = [TYPENAME.CHAR];
 		_returnType.dimensions = 1;
 	}
 	/// Returns: token
@@ -1073,7 +1120,7 @@ protected:
 			return;
 		if (_opFunc)
 			.destroy(_opFunc);
-		DataType lType = new DataType(), rType = new DataType([TYPENAME.CHAR], 1);
+		DataType lType = new DataType(), rType = new DataType(TYPENAME.CHAR, 1);
 		lType.clone(_operandL.returnType);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
 	}
