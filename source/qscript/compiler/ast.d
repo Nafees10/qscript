@@ -75,6 +75,10 @@ public:
 		if (_parent)
 			_parent.errorAdd(err);
 	}
+	/// Reads from tokens
+	/// 
+	/// Returns: number of tokens read
+	abstract uint fromToken(Token[]);
 	/// Returns: line number
 	@property uint lineno(){
 		return _location[0];
@@ -259,7 +263,7 @@ public:
 	/// Read from tokens
 	/// 
 	/// Returns: number of tokens read, or 0 if not a type
-	uint fromTokens(Token[] tokens){
+	override uint fromToken(Token[] tokens){
 		this.clear();
 		uint index = 0;
 		if (index < tokens.length){
@@ -313,13 +317,13 @@ unittest{
 		Token(TokenType.Operator,"["),Token(TokenType.IndexClose,"]")
 	];
 	DataType type = new DataType();
-	assert(type.fromTokens(tok) == tok.length, type.fromTokens(tok).to!string);
+	assert(type.fromToken(tok) == tok.length, type.fromToken(tok).to!string);
 	assert(type.toString == "int[]@[]");
 	type.clear();
 	tok = [
 		Token(TokenType.KeywordRef, "ref"), Token(TokenType.KeywordInt, "int")
 	];
-	assert(type.fromTokens(tok) == 2);
+	assert(type.fromToken(tok) == 2);
 	assert(type.toString == "ref int", type.toString);
 	.destroy (type);
 }
