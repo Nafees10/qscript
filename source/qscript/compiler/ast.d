@@ -491,7 +491,7 @@ public:
 
 /// Unary operator expression
 package abstract class OperatorUn : Operator{
-protected
+protected:
 	/// Operator function name
 	string _opFuncName;
 	/// Operand
