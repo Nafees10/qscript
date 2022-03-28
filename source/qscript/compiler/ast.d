@@ -154,8 +154,12 @@ protected:
 		return [];
 	}
 public:
+	/// default constructor, creates void type
+	this (){
+		_typeIdent = [TYPENAME.VOID];
+	}
 	/// constructor
-	this (ref DataType from){
+	this (DataType from){
 		if (!from)
 			return;
 		_dimensions = from._dimensions;
