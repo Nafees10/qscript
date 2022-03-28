@@ -346,11 +346,17 @@ public:
 	}
 }
 
-/// Expression
+/// Expression. By default, it has void return type, so its a statement
 package abstract class ExpressionNode : ASTNode{
 protected:
 	/// Return type of expression, can be void
 	DataType _returnType;
+
+	override @property ASTNode[] _children(){
+		if (_returnType)
+			return [_returnType];
+		return [];
+	}
 public:
 	/// constructor
 	this(){
@@ -363,26 +369,6 @@ public:
 	/// Returns: return type
 	@property DataType returnType(){
 		return _returnType;
-	}
-}
-
-/// Statement
-package abstract class StatementNode : ExpressionNode{
-protected:
-	/// void return type
-	DataType _voidType;
-public:
-	/// constructor
-	this (){
-		_voidType = new DataType(TYPENAME.VOID);
-	}
-	/// destructor
-	~this (){
-		.destroy(_voidType);
-	}
-	/// return type is always void
-	override @property DataType returnType(){
-		return _voidType;
 	}
 }
 
@@ -399,6 +385,12 @@ protected:
 	FuncDeclNode _opFunc;
 	/// called to generate _opFunc
 	abstract void _generateOpFunc();
+	
+	override @property ASTNode[] _children(){
+		if (_opFunc)
+			return [_opFunc];
+		return [];
+	}
 public:
 	/// constructor
 	this(){}
@@ -445,6 +437,15 @@ protected:
 		DataType lType = new DataType(_operandL.returnType), 
 			rType = new DataType(_operandR.returnType);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
+	}
+
+	override @property ASTNode[] _children(){
+		ASTNode[] ret;
+		if (_operandL)
+			ret ~= _operandL;
+		if (_operandR)
+			ret ~= _operandR;
+		return ret;
 	}
 public:
 	/// constructor
@@ -504,6 +505,12 @@ protected
 		DataType operandType = new DataType(_operand.returnType);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [operandType]);
 	}
+
+	override @property ASTNode[] _children(){
+		if (_operand)
+			return [_operand];
+		return [];
+	}
 public:
 	/// constructor
 	this (){}
@@ -533,6 +540,10 @@ package abstract class NamespaceNode : DeclNode{
 protected:
 	/// declarations
 	DeclNode[] _declarations;
+
+	override @property ASTNode[] _children(){
+		return cast(ASTNode[])_declarations;
+	}
 public:
 	/// constructor
 	this(){}
@@ -579,18 +590,6 @@ public:
 	@property CompileError[] errors(){
 		return _errors;
 	}
-	/// Returns: script name
-	@property string scriptName(){
-		if (_ident.length)
-			return _ident[$ - 1];
-		return DEFAULT_SCRIPT_NAME;
-	}
-	/// ditto
-	@property string scriptName(string newName){
-		if (_ident.length)
-			return _ident[$-1] = newName;
-		return (_ident = [newName])[0];
-	}
 }
 
 /// Variable declaration template
@@ -602,6 +601,17 @@ protected:
 	string[] _varName;
 	/// default value, if not null
 	ExpressionNode[] _varValue;
+
+	override @property ASTNode[] _children(){
+		ASTNode[] ret;
+		if (_dataType)
+			ret ~= _dataType;
+		foreach (val; _varValue){
+			if (val)
+				ret ~= val;
+		}
+		return ret;
+	}
 public:
 	/// constuctor
 	this(){
@@ -650,7 +660,7 @@ public:
 package alias GlobVarDefNode = GenericVarDefNode!DeclNode;
 
 /// Local variable declaration
-package alias LocalVarDefNode = GenericVarDefNode!StatementNode;
+package alias LocalVarDefNode = GenericVarDefNode!ExpressionNode;
 
 /// Struct declaration
 package class StructDefNode : NamespaceNode{
@@ -670,6 +680,17 @@ protected:
 	string[] _memberName;
 	/// member values, if not null
 	ExpressionNode[] _memberValue;
+
+	override @property ASTNode[] _children(){
+		ASTNode[] ret;
+		if (_dataType)
+			ret ~= _dataType;
+		foreach (val; _memberValue){
+			if (val)
+				ret ~= val;
+		}
+		return ret;
+	}
 public:
 	/// constructor
 	this(){
@@ -725,7 +746,9 @@ protected:
 	string[] _argName;
 
 	override @property ASTNode[] _children(){
-		return cast(ASTNode[])_argType ~ _returnType;
+		if (_returnType)
+			return cast(ASTNode)_returnType ~ cast(ASTNode[])_argType;
+		return cast(ASTNode[])_argType;
 	}
 public:
 	/// constructor
@@ -733,7 +756,6 @@ public:
 		assert(argName.length == 0 || argName.length == _argType.length,
 			"argName.length doesnt match argType.length");
 		_returnType = returnType;
-		_ident = [name];
 		_argType = argType.dup;
 		if (_argName.length)
 			_argName = argName.dup;
@@ -790,6 +812,12 @@ public:
 package class FuncDefNode : FuncDeclNode{
 protected:
 	BlockNode _body;
+
+	override @property ASTNode[] _children(){
+		if (_body)
+			return [_body];
+		return [];
+	}
 public:
 	/// constructor
 	this(DataType returnType, string name, DataType[] argType, string[] argName){
@@ -808,41 +836,41 @@ public:
 }
 
 /// Block
-package class BlockNode : StatementNode{
+package class BlockNode : ExpressionNode{
 protected:
-	StatementNode[] _statement;
+	ExpressionNode[] _expression;
 
 	override @property ASTNode[] _children(){
-		return cast(ASTNode[])_statement;
+		return cast(ASTNode[])_expression;
 	}
 public:
 	/// constructor
 	this (){}
 	/// destructor
 	~this (){
-		foreach (node; _statement)
+		foreach (node; _expression)
 			.destroy(node);
 	}
-	/// Returns: number of statements
-	@property uint statementCount(){
-		return cast(uint)_statement.length;
+	/// Returns: number of expressions
+	@property uint expressionCount(){
+		return cast(uint)_expression.length;
 	}
-	/// Returns: statement at index
+	/// Returns: expression at index
 	/// 
 	/// Throws: Exception if index out of bounds
-	StatementNode statementGet(uint index){
-		if (index >= _statement.length)
+	ExpressionNode expressionGet(uint index){
+		if (index >= _expression.length)
 			throw new Exception("index out of bounds");
-		return _statement[index];
+		return _expression[index];
 	}
-	/// appends statement
+	/// appends expression
 	/// 
 	/// Returns: index
-	uint statementAppend(StatementNode node){
-		immutable uint r = cast(uint)_statement.length;
+	uint expressionAppend(ExpressionNode node){
+		immutable uint r = cast(uint)_expression.length;
 		if (node)
 			node._parent = this;
-		_statement ~= node;
+		_expression ~= node;
 		return r;
 	}
 }
@@ -850,8 +878,14 @@ public:
 /// Function call expression
 package class FunctionCallExp : ExpressionNode{
 protected:
+	/// Identifier of function to call
+	Identifier _funcIdent;
 	/// Arguments of function call
 	ExpressionNode[] _args;
+
+	override @property ASTNode[] _children(){
+		return cast(ASTNode[])_args;
+	}
 public:
 	/// constructor
 	this (){}
@@ -859,6 +893,14 @@ public:
 	~this (){
 		foreach (arg; _args)
 			.destroy (arg);
+	}
+	/// Returns: Identifier of function to call
+	@property ref Identifier funcIdent(){
+		return _funcIdent;
+	}
+	/// ditto
+	@property ref Identifier funcIdent(Identifier newIdent){
+		return _funcIdent = newIdent;
 	}
 	/// Returns: number of arguments
 	@property uint argCount(){
