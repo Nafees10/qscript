@@ -155,7 +155,18 @@ protected:
 	}
 public:
 	/// constructor
-	this (){}
+	this (ref DataType from){
+		if (!from)
+			return;
+		_dimensions = from._dimensions;
+		_byteCount = from._byteCount;
+		_isRef = from._isRef;
+		_location = from._location;
+		if (from._ptrTo)
+			_ptrTo = new DataType(from._ptrTo);
+		else
+			_typeIdent = from._typeIdent.dup;
+	}
 	/// constructor
 	this(string name, uint dimensions = 0){
 		_dimensions = dimensions;
@@ -169,24 +180,8 @@ public:
 	~this(){
 		this.clear();
 	}
-	/// clone from another DataType
-	void clone(DataType from){
-		this.clear();
-		if (!from)
-			return;
-		_dimensions = from._dimensions;
-		_byteCount = from._byteCount;
-		_isRef = from._isRef;
-		_location = from._location;
-		if (from._ptrTo){
-			_ptrTo = new DataType();
-			_ptrTo.clone(from._ptrTo);
-		}else{
-			_typeIdent = from._typeIdent;
-		}
-	}
 	/// turn it into a pointer of itself
-	void makePtr(){
+	/*void makePtr(){ // Take another look at it later, doesnt look right
 		DataType ptrTo = new DataType();
 		// dont use clone here, that will clone everything, inefficient
 		ptrTo._typeIdent = _typeIdent;
@@ -197,7 +192,7 @@ public:
 		_dimensions = 0;
 		_ptrTo = ptrTo;
 		_byteCount = 0;
-	}
+	}*/
 	/// Clears itself
 	void clear(){
 		if (_ptrTo)
@@ -277,8 +272,7 @@ public:
 			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
 				if (!_ptrTo && !_typeIdent.length)
 					break;
-				DataType ptrTo = new DataType();
-				ptrTo.clone(this);
+				DataType ptrTo = new DataType(this);
 				this.clear();
 				this._ptrTo = ptrTo;
 				index ++;
@@ -444,9 +438,8 @@ protected:
 			return;
 		if (_opFunc)
 			.destroy(_opFunc);
-		DataType lType = new DataType(), rType = new DataType();
-		lType.clone(_operandL.returnType);
-		rType.clone(_operandR.returnType);
+		DataType lType = new DataType(_operandL.returnType), 
+			rType = new DataType(_operandR.returnType);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
 	}
 public:
@@ -504,8 +497,7 @@ protected
 			return;
 		if (_opFunc)
 			.destroy(_opFunc);
-		DataType operandType = new DataType();
-		operandType.clone(_operand.returnType);
+		DataType operandType = new DataType(_operand.returnType);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [operandType]);
 	}
 public:
@@ -1124,8 +1116,8 @@ protected:
 			return;
 		if (_opFunc)
 			.destroy(_opFunc);
-		DataType lType = new DataType(), rType = new DataType(TYPENAME.CHAR, 1);
-		lType.clone(_operandL.returnType);
+		DataType lType = new DataType(_operandL.returnType),
+			rType = new DataType(TYPENAME.CHAR, 1);
 		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
 	}
 public:
