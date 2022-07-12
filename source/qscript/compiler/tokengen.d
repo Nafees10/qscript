@@ -4,6 +4,7 @@ import utils.misc;
 import utils.ds;
 
 import std.functional : toDelegate;
+import std.algorithm : canFind;
 
 debug{import std.stdio;}
 
@@ -228,7 +229,7 @@ public:
 	uint removeByType(uint[] types){
 		uint count, i;
 		while (i + count < _tokens.length){
-			if (types.hasElement(_tokens[i+count].type))
+			if (types.canFind(_tokens[i+count].type))
 				count ++;
 			else{
 				_tokens[i] = _tokens[i+count];

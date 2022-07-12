@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2016-2021 Nafees Hassan
+Copyright (c) 2016-2022 Nafees Hassan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
