@@ -109,7 +109,7 @@ struct CompileError{
 	/// Returns: a string representation of this error
 	string toString(){
 		if (message.length || type !in ERROR_EXPLAIN_STRING ||
-		!ERROR_EXPLAIN_STRING[type].length)
+				!ERROR_EXPLAIN_STRING[type].length)
 			return message;
 		char[] errStr;
 		errStr = cast(char[])"line:"~where[0].to!string~','~where[1].to!string~' ';

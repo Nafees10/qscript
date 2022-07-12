@@ -74,6 +74,8 @@ public:
 	void errorAdd(CompileError err){
 		if (_parent)
 			_parent.errorAdd(err);
+		else
+			throw new Exception(err.toString);
 	}
 	/// Reads from tokens
 	/// 
@@ -388,8 +390,8 @@ protected:
 	
 	override @property ASTNode[] _children(){
 		if (_opFunc)
-			return [_opFunc];
-		return [];
+			return super._children ~ _opFunc;
+		return super._children;
 	}
 public:
 	/// constructor
@@ -445,7 +447,7 @@ protected:
 			ret ~= _operandL;
 		if (_operandR)
 			ret ~= _operandR;
-		return ret;
+		return super._children ~ ret;
 	}
 public:
 	/// constructor
@@ -508,8 +510,8 @@ protected:
 
 	override @property ASTNode[] _children(){
 		if (_operand)
-			return [_operand];
-		return [];
+			return super._children ~ _operand;
+		return super._children;
 	}
 public:
 	/// constructor
@@ -535,13 +537,16 @@ public:
 	}
 }
 
-/// Namespace Node
-package abstract class NamespaceNode : DeclNode{
+/// Script Node
+package abstract class ScriptNode : ASTNode{
 protected:
+	/// errors occurred
+	CompileError[] _errors;
 	/// declarations
 	DeclNode[] _declarations;
 
 	override @property ASTNode[] _children(){
+		// parent class has no children
 		return cast(ASTNode[])_declarations;
 	}
 public:
@@ -574,14 +579,7 @@ public:
 		_declarations ~= node;
 		return r;
 	}
-}
-
-/// Script Node
-package class ScriptNode : NamespaceNode{
-protected:
-	/// errors occurred
-	CompileError[] _errors;
-public:
+	/// error add override
 	override void errorAdd(CompileError err){
 		if (_errors.length < ERRORS_MAX)
 			_errors ~= err;
@@ -592,8 +590,8 @@ public:
 	}
 }
 
-/// Variable declaration template
-private class GenericVarDefNode(T) : T{
+/// Variable declaration
+private class VarDefNode(T = ASTNode) : T if (is (T : ASTNode)){
 protected:
 	/// Data type
 	DataType _dataType;
@@ -657,17 +655,44 @@ public:
 }
 
 /// global variable declaration
-package alias GlobVarDefNode = GenericVarDefNode!DeclNode;
+package alias GlobVarDefNode = VarDefNode!DeclNode;
 
 /// Local variable declaration
-package alias LocalVarDefNode = GenericVarDefNode!ExpressionNode;
+package alias LocalVarDefNode = VarDefNode!ExpressionNode;
 
 /// Struct declaration
-package class StructDefNode : NamespaceNode{
+package class StructDefNode : DeclNode{
+protected:
+	/// Variables.
+	VarDefNode!ASTNode[] _member;
+
+	override @property ASTNode[] _children(){
+		return cast(ASTNode[])_member;
+	}
 public:
 	/// constructor
 	this(string name){
 		this.name = name;
+	}
+	/// Returns: number of members
+	@property uint memberCount(){
+		return cast(uint)_member.length;
+	}
+	/// Returns: member name
+	VarDefNode!ASTNode member(uint index){
+		if (index >= _member.length)
+			throw new Exception("StructDefNode.member index out of bounds");
+		return _member[index];
+	}
+	/// appends a member
+	/// 
+	/// Returns: index
+	uint memberAppend(VarDefNode!ASTNode member){
+		immutable uint r = cast(uint)_member.length;
+		if (member)
+			member._parent = this;
+		_member ~= member;
+		return r;
 	}
 }
 
@@ -815,8 +840,8 @@ protected:
 
 	override @property ASTNode[] _children(){
 		if (_body)
-			return [_body];
-		return [];
+			return super._children ~ _body;
+		return super._children;
 	}
 public:
 	/// constructor
@@ -841,7 +866,7 @@ protected:
 	ExpressionNode[] _expression;
 
 	override @property ASTNode[] _children(){
-		return cast(ASTNode[])_expression;
+		return super._children ~ cast(ASTNode[])_expression;
 	}
 public:
 	/// constructor
@@ -884,7 +909,7 @@ protected:
 	ExpressionNode[] _args;
 
 	override @property ASTNode[] _children(){
-		return cast(ASTNode[])_args;
+		return super._children ~ cast(ASTNode[])_args;
 	}
 public:
 	/// constructor
