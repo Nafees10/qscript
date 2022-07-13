@@ -70,17 +70,6 @@ protected:
 	/// Returns: all of this node's child nodes
 	abstract @property ASTNode[] _children();
 public:
-	/// Adds an error
-	void errorAdd(CompileError err){
-		if (_parent)
-			_parent.errorAdd(err);
-		else
-			throw new Exception(err.toString);
-	}
-	/// Reads from tokens
-	/// 
-	/// Returns: number of tokens read
-	abstract uint fromToken(Token[]);
 	/// Returns: line number
 	@property uint lineno(){
 		return _location[0];
@@ -264,7 +253,7 @@ public:
 	/// Read from tokens
 	/// 
 	/// Returns: number of tokens read, or 0 if not a type
-	override uint fromToken(Token[] tokens){
+	uint fromToken(Token[] tokens){
 		this.clear();
 		uint index = 0;
 		if (index < tokens.length){
@@ -332,10 +321,12 @@ unittest{
 package abstract class DeclNode : ASTNode{
 protected:
 	/// visibility
-	Visibility _visibility = DEFAULT_VISIBILITY;
+	Visibility _visibility;
 public:
 	/// constuctor
-	this(){}
+	this(Visibility visibility = DEFAULT_VISIBILITY){
+		_visibility = visibility;
+	}
 	/// destructor
 	~this(){}
 	/// visibility
@@ -361,8 +352,8 @@ protected:
 	}
 public:
 	/// constructor
-	this(){
-		_returnType = new DataType();
+	this(DataType retType = new DataType()){
+		_returnType = retType;
 	}
 	/// destructor
 	~this(){
@@ -395,7 +386,12 @@ protected:
 	}
 public:
 	/// constructor
-	this(){}
+	this(string operator = null, bool prefix = false, uint priority = 0, DataType retType = new DataType()){
+		_operator = operator;
+		_prefix = prefix;
+		_priority = priority;
+		super(retType);
+	}
 	/// destructor
 	~this(){
 		if (_opFunc)
@@ -409,7 +405,7 @@ public:
 	@property bool prefix(){
 		return _prefix;
 	}
-	/// priority (higher -> ealuated first)
+	/// priority (higher -> evaluated first)
 	@property uint priority(){
 		return _priority;
 	}
@@ -438,7 +434,7 @@ protected:
 			.destroy(_opFunc);
 		DataType lType = new DataType(_operandL.returnType), 
 			rType = new DataType(_operandR.returnType);
-		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
+		_opFunc = new FuncDeclNode(DEFAULT_VISIBILITY, null, _opFuncName, [lType, rType]);
 	}
 
 	override @property ASTNode[] _children(){
@@ -451,8 +447,12 @@ protected:
 	}
 public:
 	/// constructor
-	this (){
-		_prefix = false;
+	this (string operator = null, string opFuncName = null, uint priority = 0,
+			DataType retType = new DataType(), ExpressionNode operandL = null, ExpressionNode operandR = null){
+		super(operator, false, priority, retType);
+		_opFuncName = opFuncName;
+		_operandL = operandL;
+		_operandR = operandR;
 	}
 	/// destructor
 	~this (){
@@ -505,7 +505,7 @@ protected:
 		if (_opFunc)
 			.destroy(_opFunc);
 		DataType operandType = new DataType(_operand.returnType);
-		_opFunc = new FuncDeclNode(null, _opFuncName, [operandType]);
+		_opFunc = new FuncDeclNode(DEFAULT_VISIBILITY, null, _opFuncName, [operandType]);
 	}
 
 	override @property ASTNode[] _children(){
@@ -515,7 +515,12 @@ protected:
 	}
 public:
 	/// constructor
-	this (){}
+	this (string operator = null, bool prefix = false, string opFuncName = null, uint priority = 0,
+			DataType retType = new DataType(), ExpressionNode operand = null){
+		super (operator, prefix, priority, retType);
+		_opFuncName = opFuncName;
+		_operand = operand;
+	}
 	/// destructor
 	~this (){
 		if (_operand)
@@ -540,8 +545,6 @@ public:
 /// Script Node
 package abstract class ScriptNode : ASTNode{
 protected:
-	/// errors occurred
-	CompileError[] _errors;
 	/// declarations
 	DeclNode[] _declarations;
 
@@ -551,7 +554,9 @@ protected:
 	}
 public:
 	/// constructor
-	this(){}
+	this(DeclNode[] declarations){
+		_declarations = declarations.dup;
+	}
 	/// destructor
 	~this(){
 		foreach (dec; _declarations)
@@ -579,15 +584,6 @@ public:
 		_declarations ~= node;
 		return r;
 	}
-	/// error add override
-	override void errorAdd(CompileError err){
-		if (_errors.length < ERRORS_MAX)
-			_errors ~= err;
-	}
-	/// Returns: errors
-	@property CompileError[] errors(){
-		return _errors;
-	}
 }
 
 /// Variable declaration
@@ -612,8 +608,8 @@ protected:
 	}
 public:
 	/// constuctor
-	this(){
-		_dataType = new DataType();
+	this(DataType dataType = new DataType()){
+		_dataType = dataType;
 	}
 	/// destructor
 	~this(){
@@ -671,7 +667,8 @@ protected:
 	}
 public:
 	/// constructor
-	this(string name){
+	this(Visibility visibility = DEFAULT_VISIBILITY, string name = null){
+		super(visibility);
 		this.name = name;
 	}
 	/// Returns: number of members
@@ -718,8 +715,13 @@ protected:
 	}
 public:
 	/// constructor
-	this(){
-		_dataType = new DataType();
+	this(Visibility visibility = DEFAULT_VISIBILITY, string name = null,
+			DataType dataType = new DataType(), string[] memberName = null){
+		super(visibility);
+		_dataType = dataType;
+		_name = name;
+		_memberName = memberName.dup;
+		_memberValue.length = _memberName.length;
 	}
 	/// destructor
 	~this(){
@@ -765,6 +767,8 @@ package class FuncDeclNode : DeclNode{
 protected:
 	/// Returns type
 	DataType _returnType;
+	/// function name
+	string _name;
 	/// Argument types
 	DataType[] _argType;
 	/// Argument names
@@ -777,10 +781,14 @@ protected:
 	}
 public:
 	/// constructor
-	this(DataType returnType, string name, DataType[] argType, string[] argName = []){
+	this(Visibility visibility = DEFAULT_VISIBILITY, DataType returnType = new DataType(),
+			string name = null, DataType[] argType = null, string[] argName = null){
+		
 		assert(argName.length == 0 || argName.length == _argType.length,
 			"argName.length doesnt match argType.length");
+		super(visibility);
 		_returnType = returnType;
+		_name = name;
 		_argType = argType.dup;
 		if (_argName.length)
 			_argName = argName.dup;
@@ -845,8 +853,9 @@ protected:
 	}
 public:
 	/// constructor
-	this(DataType returnType, string name, DataType[] argType, string[] argName){
-		super(returnType, name, argType, argName);
+	this(Visibility visibility = DEFAULT_VISIBILITY, DataType returnType = new DataType(),
+			string name = null, DataType[] argType = null, string[] argName = null){
+		super(visibility, returnType, name, argType, argName);
 		_body = new BlockNode();
 		_body._parent = this;
 	}
@@ -870,7 +879,9 @@ protected:
 	}
 public:
 	/// constructor
-	this (){}
+	this (){
+		super(new DataType()); // void return type
+	}
 	/// destructor
 	~this (){
 		foreach (node; _expression)
@@ -913,7 +924,10 @@ protected:
 	}
 public:
 	/// constructor
-	this (){}
+	this (Identifier funcIdent = null){
+		_funcIdent = funcIdent;
+		super(new DataType()); // return type is unknown for now.
+	}
 	/// destructor
 	~this (){
 		foreach (arg; _args)
@@ -950,233 +964,37 @@ public:
 	}
 }
 
+/// Literal ExpressionNode template
+private class LiteralExpression(T, string typename, uint dim = 0) : ExpressionNode{
+protected:
+	/// value
+	T _val;
+public:
+	/// constructor
+	this (T val = T.init){
+		super (new DataType([typename], dim));
+		_val = val;
+	}
+	/// Returns: value
+	@property T val(){
+		return _val;
+	}
+	/// ditto
+	@property T val(T newVal){
+		return _val = newVal;
+	}
+}
+
 /// Integer Literal
-package class LiteralInt : ExpressionNode{
-protected:
-	/// token
-	Token _tok;
-	/// integer value
-	ptrdiff_t _val;
-	/// if value has been updated since _tok was last updated
-	bool _updated = false;
-	/// Reads _val from _tok
-	void readVal(){
-		_val = 0;
-		if (_tok.type == TokenType.LiteralInt)
-			_val = _tok.token.to!ptrdiff_t;
-		else if (_tok.type == TokenType.LiteralBinary && _tok.token.length > 2)
-			_val = _tok.token.readBinary();
-		else if (_tok.type == TokenType.LiteralHexadecimal && _tok.token.length > 2)
-			_val = _tok.token.readHexadecimal();
-		else
-			errorAdd(CompileError(CompileError.Type.Expected, _tok.where, ["int value"]));
-		_updated = true;
-	}
-public:
-	/// constructor
-	this (){
-		// set return type
-		_returnType.clear();
-		_returnType.typeIdent = [TYPENAME.INT];
-	}
-	/// Returns: token
-	@property Token token(){
-		return _tok;
-	}
-	/// ditto
-	@property Token token(Token newTok){
-		_updated = false;
-		return _tok = newTok;
-	}
-	/// Returns: value
-	@property ptrdiff_t value(){
-		if (_updated)
-			return _val;
-		readVal();
-		return _val;
-	}
-}
-
-/// Float literal
-package class LiteralFloat : ExpressionNode{
-protected:
-	/// token
-	Token _tok;
-	/// value
-	float _val;
-	/// if _val updated after changing _tok
-	bool _updated = false;
-	/// reads _val from _tok
-	void readVal(){
-		_val = 0;
-		_updated = true;
-		if (_tok.type != TokenType.LiteralFloat)
-			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
-				["float value"]));
-		else
-			_val = _tok.token.to!float;
-	}
-public:
-	/// constructor
-	this (){
-		// set return type
-		_returnType.clear();
-		_returnType.typeIdent = [TYPENAME.FLOAT];
-	}
-	/// Returns: token
-	@property Token token(){
-		return _tok;
-	}
-	/// ditto
-	@property Token token(Token newTok){
-		_updated = false;
-		return _tok = newTok;
-	}
-	/// Returns: the value
-	@property float value(){
-		if (_updated)
-			return _val;
-		readVal();
-		return _val;
-	}
-}
-
+package alias LiteralInt = LiteralExpression!(ptrdiff_t, TYPENAME.INT, 0);
+/// Float Literal
+package alias LiteralFloat = LiteralExpression!(double, TYPENAME.FLOAT, 0);
 /// Character Literal
-package class LiteralChar : ExpressionNode{
-protected:
-	/// Token
-	Token _tok;
-	/// value as a character
-	char _val;
-	/// if value is valid
-	bool _updated = false;
-	/// Reads _val from _tok
-	void readVal(){
-		_updated = true;
-		if (_tok.type != TokenType.LiteralChar || _tok.token.length < 3){
-			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
-				["char value"]));
-			return;
-		}
-		char[] unesc = strUnescape(_tok.token[1 .. $-1]);
-		if (unesc.length != 1)
-			errorAdd(CompileError(CompileError.Type.CharLengthInvalid, _tok.where));
-		else
-			_val = unesc[0];
-	}
-public:
-	/// constructor
-	this (){
-		// set data type
-		_returnType.clear();
-		_returnType.typeIdent = [TYPENAME.CHAR];
-	}
-	/// Returns: token
-	@property Token token(){
-		return _tok;
-	}
-	/// ditoo
-	@property Token token(Token newTok){
-		_updated = false;
-		return _tok = newTok;
-	}
-	/// Returns: value
-	@property char value(){
-		if (_updated)
-			return _val;
-		readVal();
-		return _val;
-	}
-}
-
+package alias LiteralChar = LiteralExpression!(char, TYPENAME.CHAR, 0);
 /// Boolean Literal
-package class LiteralBool : ExpressionNode{
-protected:
-	/// token
-	Token _tok;
-	/// value
-	bool _val;
-	/// if _val updated since last _tok was updated
-	bool _updated = false;
-	/// Reads _val from _tok
-	void readVal(){
-		if (_tok.type == TokenType.KeywordTrue)
-			_val = true;
-		else if (_tok.type == TokenType.KeywordFalse)
-			_val = false;
-		else
-			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
-				["bool value"]));
-		_updated = true;
-	}
-public:
-	this(){
-		// set data type
-		_returnType.clear();
-		_returnType.typeIdent = [TYPENAME.BOOL];
-	}
-	/// Returns: token
-	@property Token token(){
-		return _tok;
-	}
-	/// ditto
-	@property Token token(Token newTok){
-		_updated = false;
-		return _tok = newTok;
-	}
-	/// Returns: value
-	@property bool value(){
-		if (_updated)
-			return _val;
-		readVal();
-		return _val;
-	}
-}
-
-/// String literal
-package class LiteralString : ExpressionNode{
-protected:
-	/// token
-	Token _tok;
-	/// value
-	string _val;
-	/// if _val updated after _tok updated
-	bool _updated = false;
-	/// Reads _val from _tok
-	void readVal(){
-		_updated = true;
-		if (_tok.type != TokenType.LiteralString || _tok.token.length < 2){
-			errorAdd(CompileError(CompileError.Type.Expected, _tok.where,
-				["string value"]));
-			return;
-		}
-		_val = cast(string)strUnescape(_tok.token[1 .. $ - 1]);
-	}
-public:
-	/// constructor
-	this (){
-		// set data type
-		_returnType.clear();
-		_returnType.typeIdent = [TYPENAME.CHAR];
-		_returnType.dimensions = 1;
-	}
-	/// Returns: token
-	@property Token token(){
-		return _tok;
-	}
-	/// ditto
-	@property Token token(Token newTok){
-		_updated = false;
-		return _tok = newTok;
-	}
-	/// Returns: value
-	@property string value(){
-		if (_updated)
-			return _val;
-		readVal();
-		return _val;
-	}
-}
+package alias LiteralBool = LiteralExpression!(bool, TYPENAME.BOOL, 0);
+/// String Literal
+package alias LiteralString = LiteralExpression!(string, TYPENAME.CHAR, 1);
 
 /// member select operator
 package class OperatorMemberSelect : OperatorBin{
@@ -1189,14 +1007,12 @@ protected:
 			.destroy(_opFunc);
 		DataType lType = new DataType(_operandL.returnType),
 			rType = new DataType(TYPENAME.CHAR, 1);
-		_opFunc = new FuncDeclNode(null, _opFuncName, [lType, rType]);
+		_opFunc = new FuncDeclNode(DEFAULT_VISIBILITY, null, _opFuncName, [lType, rType]);
 	}
 public:
 	/// constructor
 	this(){
-		_operator = ".";
-		_opFuncName = "opMemberSelect";
-		_priority = 10;
+		super(".", "opMemberSelect", 10);
 	}
 }
 /// index read operator
@@ -1204,9 +1020,7 @@ package class OperatorIndexRead : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "[";
-		_opFuncName = "opIndexRead";
-		_priority = 10;
+		super("[", "opIndexRead", 10);
 	}
 }
 /// dereference operator
@@ -1214,10 +1028,7 @@ package class OperatorDeref : OperatorUn{
 public:
 	/// constructor
 	this (){
-		_operator = "@";
-		_opFuncName = "opDeref";
-		_prefix = false;
-		_priority = 9;
+		super("@", false, "opDeref", 9);
 	}
 }
 /// post increment operator
@@ -1225,10 +1036,7 @@ package class OperatorIncPost : OperatorUn{
 public:
 	/// constructor
 	this(){
-		_operator = "++";
-		_opFuncName = "opIncPost";
-		_prefix = false;
-		_priority = 9;
+		super("++", false, "opIncPost", 9);
 	}
 }
 /// post decrement operator
@@ -1236,10 +1044,7 @@ package class OperatorDecPost : OperatorUn{
 public:
 	/// constructor
 	this(){
-		_operator = "--";
-		_opFuncName = "opDecPost";
-		_prefix = false;
-		_priority = 9;
+		super("--", false, "opDecPost", 9);
 	}
 }
 /// reference operator
@@ -1247,10 +1052,7 @@ package class OperatorRef : OperatorUn{
 public:
 	/// constructor
 	this (){
-		_operator = "@";
-		_opFuncName = "opRef";
-		_prefix = true;
-		_priority = 8;
+		super("@", true, "opRef", 8);
 	}
 }
 /// boolean not operator
@@ -1258,10 +1060,7 @@ package class OperatorBoolNot : OperatorUn{
 public:
 	/// constructor
 	this (){
-		_operator = "!";
-		_opFuncName = "opBoolNot";
-		_prefix = true;
-		_priority = 8;
+		super ("!", true, "opBoolNot", 8);
 	}
 }
 /// pre increment operator
@@ -1269,10 +1068,7 @@ package class OperatorIncPre : OperatorUn{
 public:
 	/// constructor
 	this(){
-		_operator = "++";
-		_opFuncName = "opIncPre";
-		_prefix = true;
-		_priority = 8;
+		super ("++", true, "opIncPre", 8);
 	}
 }
 /// pre decrement operator
@@ -1280,10 +1076,7 @@ package class OperatorDecPre : OperatorUn{
 public:
 	/// constructor
 	this(){
-		_operator = "--";
-		_opFuncName = "opDecPre";
-		_prefix = true;
-		_priority = 8;
+		super ("--", true, "opDecPre", 8);
 	}
 }
 /// multiply operator
@@ -1291,9 +1084,7 @@ package class OperatorMultiply : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "*";
-		_opFuncName = "opMultiply";
-		_priority = 7;
+		super ("*", "opMultiply", 7);
 	}
 }
 /// divide operator
@@ -1301,9 +1092,7 @@ package class OperatorDivide : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "/";
-		_opFuncName = "opDivide";
-		_priority = 7;
+		super ("/", "opDivide", 7);
 	}
 }
 /// mod operator
@@ -1311,9 +1100,7 @@ package class OperatorMod : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "%";
-		_opFuncName = "opMod";
-		_priority = 7;
+		super ("%", "opMod", 7);
 	}
 }
 /// add operator
@@ -1321,9 +1108,7 @@ package class OperatorAdd : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "+";
-		_opFuncName = "opAdd";
-		_priority = 6;
+		super ("+", "opAdd", 6);
 	}
 }
 /// subtract operator
@@ -1331,9 +1116,7 @@ package class OperatorSubtract : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "-";
-		_opFuncName = "opSubtract";
-		_priority = 6;
+		super ("-", "opSubtract", 6);
 	}
 }
 /// concat operator
@@ -1341,9 +1124,7 @@ package class OperatorConcat : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "~";
-		_opFuncName = "opConcat";
-		_priority = 6;
+		super ("~", "opConcat", 6);
 	}
 }
 /// bitshift left operator
@@ -1351,9 +1132,7 @@ package class OperatorBitshiftLeft : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "<<";
-		_opFuncName = "opBitshiftLeft";
-		_priority = 5;
+		super ("<<", "opBitshiftLeft", 5);
 	}
 }
 /// bitshift right operator
@@ -1361,9 +1140,7 @@ package class OperatorBitshiftRight : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = ">>";
-		_opFuncName = "opBitshiftRight";
-		_priority = 5;
+		super (">>", "opBitshiftRight", 5);
 	}
 }
 /// IsSame operator
@@ -1371,9 +1148,7 @@ package class OperatorIsSame : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "==";
-		_opFuncName = "opIsSame";
-		_priority = 4;
+		super ("==", "opIsSame", 4);
 	}
 }
 /// IsNotSame operator
@@ -1381,9 +1156,7 @@ package class OperatorIsNotSame : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "!=";
-		_opFuncName = "opIsNotSame";
-		_priority = 4;
+		super ("!=", "opIsNotSame", 4);
 	}
 }
 /// IsGreaterOrSame operator
@@ -1391,9 +1164,7 @@ package class OperatorIsGreaterOrSame : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = ">=";
-		_opFuncName = "opIsGreaterOrSame";
-		_priority = 4;
+		super (">=", "opIsGreaterOrSame", 4);
 	}
 }
 /// IsSmallerOrSame operator
@@ -1401,9 +1172,7 @@ package class OperatorIsSmallerOrSame : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "<=";
-		_opFuncName = "opIsSmallerOrSame";
-		_priority = 4;
+		super ("<=", "opIsSmallerOrSame", 4);
 	}
 }
 /// IsGreater operator
@@ -1411,9 +1180,7 @@ package class OperatorIsGreater : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = ">";
-		_opFuncName = "opIsGreater";
-		_priority = 4;
+		super (">", "opIsGreater", 4);
 	}
 }
 /// IsSmaller operator
@@ -1421,9 +1188,7 @@ package class OperatorIsSmaller : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "<";
-		_opFuncName = "opIsSmaller";
-		_priority = 4;
+		super ("<", "opIsSmaller", 4);
 	}
 }
 /// Binary And operator
@@ -1431,9 +1196,7 @@ package class OperatorBinAnd : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "&";
-		_opFuncName = "opBinAnd";
-		_priority = 3;
+		super ("&", "opBinAnd", 3);
 	}
 }
 /// Binary Or operator
@@ -1441,9 +1204,7 @@ package class OperatorBinOr : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "|";
-		_opFuncName = "opBinOr";
-		_priority = 3;
+		super ("|", "opBinOr", 3);
 	}
 }
 /// Binary Xor operator
@@ -1451,9 +1212,7 @@ package class OperatorBinXor : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "^";
-		_opFuncName = "opBinXor";
-		_priority = 3;
+		super ("^", "opBinXor", 3);
 	}
 }
 /// Boolean And operator
@@ -1461,9 +1220,7 @@ package class OperatorBoolAnd : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "&&";
-		_opFuncName = "opBoolAnd";
-		_priority = 2;
+		super ("&&", "opBoolAnd", 2);
 	}
 }
 /// Boolean Or operator
@@ -1471,9 +1228,7 @@ package class OperatorBoolOr : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "||";
-		_opFuncName = "opBoolOr";
-		_priority = 2;
+		super ("||", "opBoolOr", 2);
 	}
 }
 /// Assign operator
@@ -1481,9 +1236,7 @@ package class OperatorAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "=";
-		_opFuncName = "opAssign";
-		_priority = 1;
+		super ("=", "opAssign", 1);
 	}
 }
 /// Add Assign operator
@@ -1491,9 +1244,7 @@ package class OperatorAddAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "+=";
-		_opFuncName = "opAssAssign";
-		_priority = 1;
+		super ("+=", "opAddAssign", 1);
 	}
 }
 /// Subtract Assign operator
@@ -1501,9 +1252,7 @@ package class OperatorSubtractAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "-=";
-		_opFuncName = "opSubtractAssign";
-		_priority = 1;
+		super ("-=", "opSubtractAssign", 1);
 	}
 }
 /// Multiply Assign operator
@@ -1511,9 +1260,7 @@ package class OperatorMultiplyAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "*=";
-		_opFuncName = "opMultiplyAssign";
-		_priority = 1;
+		super ("*=", "opMultiplyAssign", 1);
 	}
 }
 /// Divide Assign operator
@@ -1521,9 +1268,7 @@ package class OperatorDivideAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "/=";
-		_opFuncName = "opDivideAssign";
-		_priority = 1;
+		super ("/=", "opDivideAssign", 1);
 	}
 }
 /// Mod Assign operator
@@ -1531,9 +1276,7 @@ package class OperatorModAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "%=";
-		_opFuncName = "opModAssign";
-		_priority = 1;
+		super ("%=", "opModAssign", 1);
 	}
 }
 /// Concat Assign operator
@@ -1541,9 +1284,7 @@ package class OperatorConcatAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "~=";
-		_opFuncName = "opConcatAssign";
-		_priority = 1;
+		super ("~=", "opConcatAssign", 1);
 	}
 }
 /// Binary And Assign operator
@@ -1551,9 +1292,7 @@ package class OperatorBinAndAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "&=";
-		_opFuncName = "opBinAndAssign";
-		_priority = 1;
+		super ("&=", "opBinAndAssign", 1);
 	}
 }
 /// Binary Or Assign operator
@@ -1561,9 +1300,7 @@ package class OperatorBinOrAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "|=";
-		_opFuncName = "opBinOrAssign";
-		_priority = 1;
+		super ("|=", "opBinOrAssign", 1);
 	}
 }
 /// Binary Xor Assign operator
@@ -1571,8 +1308,6 @@ package class OperatorBinXorAssign : OperatorBin{
 public:
 	/// constructor
 	this(){
-		_operator = "^=";
-		_opFuncName = "opBinXorAssign";
-		_priority = 1;
+		super ("^=", "opbinXorAssign", 1);
 	}
 }
