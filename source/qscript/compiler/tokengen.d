@@ -20,7 +20,7 @@ public struct Token{
 	string token;
 	alias token this;
 	/// [line number, colno]
-	@property uint[2] where(){
+	@property uint[2] where() const{
 		return [lineno, colno];
 	}
 	/// constructor
@@ -103,7 +103,7 @@ private:
 	uint[2][] _errors;
 
 	/// Returns: first matching token from a string. type will be `uint.max` in case of no match
-	Token getToken(string str){
+	Token _getToken(string str){
 		Token r;
 		uint maxLen = 0;
 		uint maxInd;
@@ -191,7 +191,7 @@ public:
 		uint lineno;
 		uint lastNewLineIndex;
 		for (uint i = 0; i < _source.length; ){
-			Token token = getToken(_source[i .. $]);
+			Token token = _getToken(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
 			if (token.type == uint.max || !token.length){

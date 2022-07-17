@@ -11,6 +11,7 @@ private shared static this(){
 	ERROR_EXPLAIN_STRING = [
 		CompileError.Type.None : null,
 		CompileError.Type.TokenInvalid : "unidentified token, cannot read further",
+		CompileError.Type.TokenUnexpected : "unexpected token, cannot read further",
 		CompileError.Type.Expected : "Expected $",
 		CompileError.Type.ExpectedAFoundB : "Expected $ found $",
 		CompileError.Type.CharLengthInvalid : "Expected 1 character inside ''",
@@ -88,6 +89,7 @@ struct CompileError{
 	enum Type{
 		None, /// no error
 		TokenInvalid, /// invalid token found (probably while reading tokens)
+		TokenUnexpected, /// unexpected token (probably while generating AST)
 		Expected, /// expected $, but not found
 		ExpectedAFoundB, /// expected A but found B
 		CharLengthInvalid, /// characters inside '' are not 1
@@ -98,8 +100,6 @@ struct CompileError{
 	uint[2] where;
 	/// details
 	string[] details;
-	/// the final message. set this to `""` if modifying the struct
-	string message;
 	/// constructor
 	this(Type type, uint[2] where = [0,0], string[] details = []){
 		this.type = type;
@@ -107,10 +107,9 @@ struct CompileError{
 		this.details = details;
 	}
 	/// Returns: a string representation of this error
-	string toString(){
-		if (message.length || type !in ERROR_EXPLAIN_STRING ||
-				!ERROR_EXPLAIN_STRING[type].length)
-			return message;
+	string toString() const{
+		if (type !in ERROR_EXPLAIN_STRING || !ERROR_EXPLAIN_STRING[type])
+			return null;
 		char[] errStr;
 		errStr = cast(char[])"line:"~where[0].to!string~','~where[1].to!string~' ';
 		uint i = cast(uint)errStr.length;
@@ -125,6 +124,6 @@ struct CompileError{
 				i++;
 			}
 		}
-		return message = cast(string)errStr;
+		return cast(string)errStr;
 	}
 }
