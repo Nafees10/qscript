@@ -1,4 +1,4 @@
-module qscript.compiler.ast;
+module qscript.compiler.astdefs;
 
 import utils.misc;
 import utils.ds;
