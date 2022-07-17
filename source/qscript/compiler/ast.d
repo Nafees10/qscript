@@ -9,8 +9,7 @@ import qscript.compiler.tokens;
 debug{import std.stdio;}
 import std.conv : to;
 
-/// for storing [namespace, namespace, .., parent, .., name]
-alias Identifier = string[];
+import qscript.compiler.astgen : ASTNode, Identifier;
 
 /// reads tokens into ident
 /// 
@@ -42,87 +41,11 @@ unittest{
 }
 
 /// Returns: string representation of Identifier
-package string toString(Identifier ident){
+package string toString(const Identifier ident){
 	string ret;
 	foreach (name; ident[0 .. $ - 1])
 		ret ~= name ~ '.';
 	return ret ~ ident[$-1];
-}
-
-/// an AST Node
-package abstract class ASTNode{
-private:
-	/// creates identifier
-	void _identConstruct(){
-		if (_parent)
-			_ident = _parent.ident();
-		_ident ~= _name;
-	}
-protected:
-	/// line number and column number
-	uint[2] _location;
-	/// parent node
-	ASTNode _parent = null;
-	/// Identifier
-	Identifier _ident;
-	/// name. Used to construct identifier
-	string _name;
-	/// Returns: all of this node's child nodes
-	abstract @property ASTNode[] _children();
-public:
-	/// Returns: line number
-	@property uint lineno(){
-		return _location[0];
-	}
-	/// ditto
-	@property uint lineno(uint newVal){
-		return _location[0] = newVal;
-	}
-	/// Returns: column number
-	@property uint colno(){
-		return _location[1];
-	}
-	/// ditto
-	@property uint colno(uint newVal){
-		return _location[1] = newVal;
-	}
-	/// Identifier (complete, including all namespaces)
-	@property Identifier ident(){
-		if (!_ident.length)
-			_identConstruct();
-		return _ident;
-	}
-	/// name
-	@property string name(){
-		return _name;
-	}
-	/// ditto
-	@property string name(string newName){
-		// go through all children and mess up their identifier so they update their
-		// identifiers later
-		foreach (child; _children)
-			child._ident = [];
-		_ident = [];
-		return _name = newName;
-	}
-	/// Finds ASTNode(s) for an Identifier
-	ASTNode[] find(Identifier toFind){
-		if (!toFind.length)
-			return [];
-		if (toFind[0] != _name){
-			if (!_parent)
-				return [];
-			return _parent.find(toFind);
-		}
-		if (toFind.length == 1)
-			return [this];
-		ASTNode[] ret;
-		foreach (child; _children){
-			if (toFind[1 .. $] == child.ident)
-				ret ~= child;
-		}
-		return ret;
-	}
 }
 
 /// Data Type
@@ -236,7 +159,7 @@ public:
 	/// this data as string  
 	/// 
 	/// only use for debug or error reporting. reading back string to DataType is not a thing
-	override string toString(){
+	override string toString() const{
 		char[] r;
 		if (_isRef)
 			r ~= "ref ";
