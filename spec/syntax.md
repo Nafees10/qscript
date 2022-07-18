@@ -135,6 +135,21 @@ FUNCTION_NAME ();
 In case a function with same argument types and same name is declared in a library and the script, the one 
 declared in the script will be called.
 
+### `()` operator
+The `()` is function call operator, and just like any other operator, it too can be overloaded:  
+```
+struct SomeStruct{
+	var int i;
+}
+function void opFunctionCall(SomeStruct strct, int a){
+	writeln("SomeStruct() called with a = " ~ toString(a));
+}
+function void main(){
+	var SomeStruct s;
+	s(5); # prints: SomeStruct() called with a = 5
+}
+```
+
 ---
 
 # Data Types
@@ -143,8 +158,7 @@ QScript has these basic data types:
 * `float` - a floating point (same as `float` in DLang)
 * `char` - an 8 bit character
 * `bool` - a `true` or `false` (same as Dlang `bool`)
-* `X@` - pointer to any of the above
-* `ref X` - reference to any of the above
+* `ref X` - reference to any of the above (behaves the same as `X` alone would)
 
 ## `int`
 This can be written as series (or just one) digit(s).  
@@ -176,19 +190,9 @@ While casting from `int`, a non zero value is read as a `true`, zero as `false`.
 
 initialised as `false`
 
-## `X@` pointer
-Pointer data types are written as:  
-* `int@` - a pointer to an integer
-* `SomeStruct@` - a pointer to a data type named `SomeStruct`
-* `int@[]` - an array of pointers-to-integer
-* `int@[]@` - a pointer to an array of pointers of integer
-* `int[]@` - a pointer to an array of integers
-
-pointers are initialised as `null` (0)
-
 ## `ref` references
 These are aliases to actual variables.  
-A `ref` cannot be null, and must always be initialised to reference some variable:  
+A `ref` must always be initialised to reference some variable:  
 ```
 int i = 0;
 var ref int r = i; # r is now a reference of i
@@ -212,7 +216,7 @@ struct STRUCT_NAME{
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
 
-Keep in mind that recursive dependency is not possible in structs. However you can have an array of the same type inside the struct, as arrays are initialised to length 0, or a pointer to same type;
+Keep in mind that recursive dependency is not possible in structs. However you can have an array of the same type inside the struct, as arrays are initialised to length 0.
 
 QScript does not allow functions as members of structs, only variables can be members.
 
@@ -233,19 +237,19 @@ public function Position getPosition(int x, int y){
 Enum can be used to group together constants of the same base data type.  
 Enums are defined like:  
 ```
-enum EnumName : int{
+enum int EnumName{
 	member0 = 1,
 	member1 = 3,
 	member2 = 3, # same value multiple times is allowed
 }
 ```
 
-* `EnumName` is the name for this enum
 * `int` is the base data type
+* `EnumName` is the name for this enum
 
-Example:    
+Example:  
 ```
-public enum ErrorType : int{
+public enum int ErrorType{
 	FileNotFound = 1,
 	InvalidPath = 1 << 1, # constant expression is allowed
 	PermissionDenied = 4
@@ -315,52 +319,6 @@ public function void main(int count){
 }
 ```
 Varible `i` and `count` are accessible throughout the function. Variable `j` is accessible only inside the `while` block. Variable `someGlobalVar` is declared outside any function, so it is available to all functions defined _inside_ the script, as it is `private`.  
-
-## Pointer Declaration
-Pointers can be used to store address of another variable.
-They can be declared like:
-```
-var TYPE@ ptr0, ptr1, ptr3;
-```
-`TYPE` can be any valid data type, for example:
-```
-var int@ ptrInt;
-```
-or:
-```
-var int[]@ ptrToIntArray; # this is a pointer to array of int
-var int@[] arrayOfPtrToInt; # this is an array of pointers-to-int
-```
-
-pointers are initliazed to be `null`.
-
-## Using Pointers
-Pointers can be assigned like:
-```
-var int i;
-var int@ ptr;
-ptr = @i; # ptr is now pointing to i, @i returns the pointer to i
-```
-and read like:
-```
-var int i;
-var int@ ptr = @i; # pre@ gets pointer
-i = 5;
-writeln("Value of i="~toStr(ptr@)); # post@ dereferences
-```
-Pointers are also valid when passed to other functions as arguments, as in the following example:
-```
-function void main(){
-	var int i;
-	setPtrTo(@i, 1024);
-	# i is now 1024
-	writeln (toStr(i)); # prints 1024, assuming writeln function exists
-}
-function void setPtrTo(int@ ptr, int to){
-	ptr@ = to;
-}
-```
-Functions can also return pointers, and references, except for reference/pointer to a local variable.
 
 ---
 
@@ -469,9 +427,9 @@ Syntax for binary operators is: `A operator B`. The whitespace between operator 
 Syntax for unary operators is: `operator A`. Whitespace between operator and A is not necessary.
 
 Operators are read in this order (higher = evaluated first):
-1. `.`, `[`
-1. `a@`, `a++`, `a--`
-1. `@a`, `!a`, `++a`, `--a`
+1. `.`, `[`, `(`
+1. `a++`, `a--`
+1. `!a`, `++a`, `--a`
 1. `*`, `/`, `%`
 1. `+`, `-`, `~`
 1. `<<`, `>>`
@@ -487,10 +445,9 @@ The function associated with each operator is as follows: (`Ta`, `Tb`, `T` refer
 |----------|----------------------------------------|
 | `.`	|	`T opMemberSelect(Ta a, char[] name)`	|
 | `a[b]`|	`T opIndexRead(Ta a, Tb b)`				|
-| `a@`	|	`T opDeref(Ta a)`						|
+| `a(..)`|	`T opFunctionCall(Ta a, ..)`			|
 | `a++`	|	`T opIncPost(Ta a)`						|
 | `a--`	|	`T opDecPost(Ta a)`						|
-| `@a`	|	`T opRef(Ta a)`							|
 | `!`	|	`T opBoolNot(Ta a)`						|
 | `++a`	|	`T opIncPre(Ta a)`						|
 | `--a`	|	`T opDecPre(Ta a)`						|
