@@ -55,24 +55,20 @@ private:
 	bool _isRef = false;
 	/// array dimensions (zero if not array)
 	uint _dimensions = 0;
-	/// identifier of data type
-	Identifier _typeIdent;
-	/// pointer to type. if this is not null, then _typeIdent is not valid
-	DataType _ptrTo = null;
+	/// name of data type
+	string _type;
 	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
 protected:
 	override @property ASTNode[] _children(){
-		if (_ptrTo)
-			return [_ptrTo];
-		return [];
+		return null;
 	}
 public:
 	/// default constructor, creates void type
 	this (){
-		_typeIdent = [TYPENAME.VOID];
+		_type = TYPENAME.VOID;
 	}
-	/// constructor
+	/// copy constructor
 	this (DataType from){
 		if (!from)
 			return;
@@ -80,45 +76,21 @@ public:
 		_byteCount = from._byteCount;
 		_isRef = from._isRef;
 		_location = from._location;
-		if (from._ptrTo)
-			_ptrTo = new DataType(from._ptrTo);
-		else
-			_typeIdent = from._typeIdent.dup;
+		_type = from._type;
 	}
 	/// constructor
 	this(string name, uint dimensions = 0){
+		_type = name;
 		_dimensions = dimensions;
-		_typeIdent = [name];
-	}
-	/// ditto
-	this(Identifier ident, uint dimensions = 0){
-		_dimensions = dimensions;
-		_typeIdent = ident;
 	}
 	~this(){
 		this.clear();
 	}
-	/// turn it into a pointer of itself
-	/*void makePtr(){ // Take another look at it later, doesnt look right
-		DataType ptrTo = new DataType();
-		// dont use clone here, that will clone everything, inefficient
-		ptrTo._typeIdent = _typeIdent;
-		ptrTo._dimensions = _dimensions;
-		ptrTo._ptrTo = _ptrTo;
-		ptrTo._byteCount = _byteCount;
-		_typeIdent = null;
-		_dimensions = 0;
-		_ptrTo = ptrTo;
-		_byteCount = 0;
-	}*/
 	/// Clears itself
 	void clear(){
-		if (_ptrTo)
-			.destroy(_ptrTo);
 		_location = [0,0];
-		_typeIdent = [];
+		_type = null;
 		_isRef = false;
-		_ptrTo = null;
 		_dimensions = 0;
 		_byteCount = 0;
 	}
@@ -130,13 +102,13 @@ public:
 	@property bool isRef(bool newVal){
 		return _isRef = newVal;
 	}
-	/// Identifier
-	@property ref Identifier typeIdent(){
-		return _typeIdent;
+	/// type name
+	@property string type(){
+		return _type;
 	}
 	/// ditto
-	@property ref Identifier typeIdent(Identifier newIdent){
-		return _typeIdent = newIdent;
+	@property string type(string newType){
+		return _type = newType;
 	}
 	/// Returns: dimensions, in case array, otherwise 0
 	@property uint dimensions(){
@@ -146,29 +118,17 @@ public:
 	@property uint dimensions(uint newDim){
 		return _dimensions = newDim;
 	}
-	/// Data type this is a pointer to (or null if this is not a pointer)
-	@property DataType ptrTo(){
-		return _ptrTo;
-	}
-	/// ditto
-	@property DataType ptrTo(DataType newT){
-		if (_ptrTo)
-			.destroy(_ptrTo);
-		return _ptrTo = newT;
-	}
 	/// this data as string  
 	/// 
 	/// only use for debug or error reporting. reading back string to DataType is not a thing
 	override string toString() const{
 		char[] r;
 		if (_isRef)
-			r ~= "ref ";
-		if (_ptrTo)
-			r ~= cast(char[])_ptrTo.toString ~ '@';
-		else if (_typeIdent)
-			r ~= cast(char[])_typeIdent.toString;
+			r = cast(char[])"ref " ~ _type;
+		else
+			r = _type.dup;
 		uint index = cast(uint)r.length;
-		r.length += 2*_dimensions;
+		r.length += 2 * _dimensions;
 		for (; index < r.length; index += 2)
 			r[index .. index + 2] = "[]";
 		return cast(string)r;
@@ -179,58 +139,40 @@ public:
 	uint fromToken(Token[] tokens){
 		this.clear();
 		uint index = 0;
-		if (index < tokens.length){
-			_location = [tokens[index].lineno, tokens[index].colno];
-			if (tokens[index].type == TokenType.KeywordRef){
-				_isRef = true;
-				index ++;
-			}
-		}
-		while (index < tokens.length){
-			if (tokens[index].type == TokenType.Operator && tokens[index].token == "@"){
-				if (!_ptrTo && !_typeIdent.length)
-					break;
-				DataType ptrTo = new DataType(this);
-				this.clear();
-				this._ptrTo = ptrTo;
-				index ++;
-			}else if (tokens[index].type == TokenType.Operator &&
-			tokens[index].token == "["){
-				if ((!_typeIdent.length && !_ptrTo) || index + 1 >= tokens.length ||
-				tokens[index + 1].type != TokenType.IndexClose)
-					break;
-				_dimensions ++;
-				index += 2;
-			}else if (tokens[index].token.isIdentifier){
-				if (_typeIdent.length)
-					break;
-				_typeIdent = [tokens[index].token];
-				index ++;
-			}else
-				break;
-		}
-		if ((_isRef && index == 1) || index == 0){
-			this.clear();
+		if (index >= tokens.length || !isIdentifier(tokens[index]))
 			return 0;
+		if (tokens[index].type == TokenType.KeywordRef){
+			index ++;
+			if (index >= tokens.length || !isIdentifier(tokens[index]))
+				return 0;
+			_isRef = true;
+		}
+		_type = tokens[index].token;
+		index ++;
+		while (index + 1 < tokens.length &&
+				tokens[index] == Token(TokenType.Operator, "[") &&
+				tokens[index + 1].type == TokenType.IndexClose){
+			_dimensions ++;
+			index += 2;
 		}
 		return index;
 	}
 	/// == operator
 	bool opBinary(string op : "==")(DataType rhs){
 		return rhs !is null && rhs._dimensions == _dimensions && 
-			(!_ptrTo || _ptrTo == rhs._ptrTo) && (_typeIdent == rhs._typeIdent);
+			_type == rhs._type;
 	}
 }
 /// 
 unittest{
-	Token[] tok = [ // int [ ] @ [ ] # array of pointers, to array of int
-		Token(TokenType.KeywordInt,"int"),Token(TokenType.Operator,"["),
-		Token(TokenType.IndexClose,"]"),Token(TokenType.Operator,"@"),
+	Token[] tok = [ // int [ ] [ ] # array of pointers, to array of int
+		Token(TokenType.KeywordInt,"int"),
+		Token(TokenType.Operator,"["),Token(TokenType.IndexClose,"]"),
 		Token(TokenType.Operator,"["),Token(TokenType.IndexClose,"]")
 	];
 	DataType type = new DataType();
 	assert(type.fromToken(tok) == tok.length, type.fromToken(tok).to!string);
-	assert(type.toString == "int[]@[]");
+	assert(type.toString == "int[][]");
 	type.clear();
 	tok = [
 		Token(TokenType.KeywordRef, "ref"), Token(TokenType.KeywordInt, "int")
@@ -466,7 +408,7 @@ public:
 }
 
 /// Script Node
-package abstract class ScriptNode : ASTNode{
+package class ScriptNode : ASTNode{
 protected:
 	/// declarations
 	DeclNode[] _declarations;
@@ -835,7 +777,7 @@ public:
 }
 
 /// Function call expression
-package class FunctionCallExp : ExpressionNode{
+package class FuncCall : ExpressionNode{
 protected:
 	/// Identifier of function to call
 	Identifier _funcIdent;
@@ -895,7 +837,7 @@ protected:
 public:
 	/// constructor
 	this (T val = T.init){
-		super (new DataType([typename], dim));
+		super (new DataType(typename, dim));
 		_val = val;
 	}
 	/// Returns: value
