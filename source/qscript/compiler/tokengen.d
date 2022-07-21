@@ -35,6 +35,10 @@ public struct Token{
 		this.type = type;
 		this.token = token;
 	}
+	/// == operator
+	bool opBinary(string op : "==")(const Token rhs) const{
+		return type == rhs.type && token == rhs.token;
+	}
 }
 
 /// Matching method
