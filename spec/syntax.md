@@ -63,6 +63,19 @@ Visiblity specifier can apply to:
 * global variables
 
 # Functions
+QScript has first class functions. Functions can be assigned to a variable (of appropriate type), or passed 
+as an argument, they behave as normal variables.
+
+## Function Data Type
+To create a variable that can store a function:
+```
+var function RETURN_TYPE(arg0_type, arg1_type, ..) someFunc;
+```
+following this, the function can be called using the `(..)` operator:
+```
+someFunc(arg0, arg1);
+```
+
 ## Function Definition
 ```
 function [ref] RETURN_TYPE FUNCTION_NAME ([ref] arg0_type arg0, [ref] arg1_type arg1){
@@ -76,13 +89,30 @@ function [ref] RETURN_TYPE FUNCTION_NAME ([ref] arg0_type arg0, [ref] arg1_type 
 * `arg0` is the "name" for first argument
 * more arguments can be added, and are to be separated by a comma.
 
-_Not that the `ref` part of return type is not a property of the function, but rather a part of the data type._
+_Note that the `ref` part of return type is not a property of the function, but rather a part of the data type._
   
 A function without any arguments would be defined like:
 ```
 function TYPE FUNCTION_NAME(){
 	# function body
 }
+```
+
+A function definition is similar to a const function variable:
+```
+function int length(int[] arr){ return arr.length; }
+# is the same as:
+var const function int(int[]) length = function int(int[] arr){ return length; }
+```
+
+## Anonymous Functions
+Anonymous functions can be created using the `function` keyword:
+```
+var function int(char[]) func;
+func = function int(char[] str){
+	return str.length;
+};
+writeln(func("hello")); # prints 5
 ```
 
 ## Returning From Functions
@@ -123,20 +153,16 @@ var int someGlobalVar = 5; # global variables are initialized before calling thi
 `this` function's visibility does not matter, as it cannot be explicitly called.
 
 ## Function Calls
-Function calls can be made liks this:
+Function calls are made through the `()` operator like:
 ```
-FUNCTION_NAME (arg0, arg1);
+funcName(funcArg0, funcArg1, ...);
 ```
-And a function can take more/less than 2 arguments. In case it doesnt take any arguments, it will be called like:
+or in case of no arguments:
 ```
-FUNCTION_NAME ();
+funcName();
 ```
 
-In case a function with same argument types and same name is declared in a library and the script, the one 
-declared in the script will be called.
-
-### `()` operator
-The `()` is function call operator, and just like any other operator, it too can be overloaded:  
+### `()` Overloading
 ```
 struct SomeStruct{
 	var int i;
@@ -150,15 +176,18 @@ function void main(){
 }
 ```
 
+Overloading `()` operator for `function` types is not allowed, as that would break a lot of things.
+
 ---
 
 # Data Types
 QScript has these basic data types:
 * `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
-* `float` - a floating point (same as `float` in DLang)
+* `float` - a floating point (`float` in DLang)
 * `char` - an 8 bit character
-* `bool` - a `true` or `false` (same as Dlang `bool`)
+* `bool` - a `true` or `false` (Dlang `bool`)
 * `ref X` - reference to any of the above (behaves the same as `X` alone would)
+* `const X` - a constant, which must be initialised at time of declaration.
 
 ## `int`
 This can be written as series (or just one) digit(s).  
@@ -202,6 +231,15 @@ writeln(r); # 1
 writeln(i); # 1
 ```
 after initialising, a ref cannot be made to reference another variable.
+
+## `const` variables
+A variable created as a const cannot be modified. It can only be set during declaration:
+```
+var const int i = 5; # valid
+i = 6; # not allowed
+i ++; # not allowed
+writeln(toString(i)); # allowed
+```
 
 ## Structs
 These can be used to store multiple values of varying or same data types. They are defined like:  
