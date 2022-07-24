@@ -1,4 +1,4 @@
-module qscript.compiler.tokengen;
+module qscript.compiler.tokens.tokengen;
 
 import utils.misc;
 import utils.ds;
@@ -9,13 +9,11 @@ import std.algorithm : canFind;
 debug{import std.stdio;}
 
 /// A token
-public struct Token{
+public struct Token(T) if (is (T == enum)){
 	/// line number and column number
 	uint lineno, colno;
-	/// token type.
-	/// 
-	/// `uint.max` is reserved for `invalid/unknown type`
-	uint type = uint.max;
+	/// token type(s)
+	Flags!T type;
 	/// token
 	string token;
 	alias token this;
@@ -38,6 +36,14 @@ public struct Token{
 	/// == operator
 	bool opBinary(string op : "==")(const Token rhs) const{
 		return type == rhs.type && token == rhs.token;
+	}
+	/// ditto
+	bool opBinary(string op : "==")(const T rhs) const{
+		return type.get(rhs);
+	}
+	/// ditto
+	bool opBinary(string op : "==")(const string rhs) const{
+		return token == rhs;
 	}
 }
 
