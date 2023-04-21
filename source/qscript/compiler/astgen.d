@@ -1,7 +1,7 @@
 module qscript.compiler.astgen;
 
 import qscript.compiler.compiler;
-import qscript.compiler.tokengen;
+import qscript.compiler.tokens.tokens;
 
 /// for storing [namespace, namespace, .., parent, .., name]
 alias Identifier = string[];

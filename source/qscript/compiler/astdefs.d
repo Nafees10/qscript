@@ -4,15 +4,15 @@ import utils.misc;
 import utils.ds;
 
 import qscript.compiler.compiler;
-import qscript.compiler.tokens;
+import qscript.compiler.tokens.tokens;
 
-debug{import std.stdio;}
+debug import std.stdio;
 import std.conv : to;
 
 import qscript.compiler.astgen : ASTNode, Identifier;
 
 /// reads tokens into ident
-/// 
+///
 /// Returns: number of tokens read
 package uint identFromTokens(ref Identifier ident, Token[] tokens){
 	uint index = 0;
@@ -21,14 +21,14 @@ package uint identFromTokens(ref Identifier ident, Token[] tokens){
 		index ++;
 	}else
 		return 0;
-	while (index + 1 < tokens.length && tokens[index].type == TokenType.Operator &&
+	while (index + 1 < tokens.length && tokens[index] == TokenType.Operator &&
 	tokens[index].token == "." && tokens[index + 1].token.isIdentifier){
 		ident ~= tokens[index + 1].token;
 		index += 2;
 	}
 	return index;
 }
-/// 
+///
 unittest{
 	Token[] tok = [
 		Token(TokenType.Identifier,"qscript"), Token(TokenType.Operator,"."),
@@ -118,8 +118,8 @@ public:
 	@property uint dimensions(uint newDim){
 		return _dimensions = newDim;
 	}
-	/// this data as string  
-	/// 
+	/// this data as string
+	///
 	/// only use for debug or error reporting. reading back string to DataType is not a thing
 	override string toString() const{
 		char[] r;
@@ -134,7 +134,7 @@ public:
 		return cast(string)r;
 	}
 	/// Read from tokens
-	/// 
+	///
 	/// Returns: number of tokens read, or 0 if not a type
 	uint fromToken(Token[] tokens){
 		this.clear();
@@ -159,11 +159,11 @@ public:
 	}
 	/// == operator
 	bool opBinary(string op : "==")(DataType rhs){
-		return rhs !is null && rhs._dimensions == _dimensions && 
+		return rhs !is null && rhs._dimensions == _dimensions &&
 			_type == rhs._type;
 	}
 }
-/// 
+///
 unittest{
 	Token[] tok = [ // int [ ] [ ] # array of pointers, to array of int
 		Token(TokenType.KeywordInt,"int"),
@@ -243,7 +243,7 @@ protected:
 	FuncDeclNode _opFunc;
 	/// called to generate _opFunc
 	abstract void _generateOpFunc();
-	
+
 	override @property ASTNode[] _children(){
 		if (_opFunc)
 			return super._children ~ _opFunc;
@@ -274,7 +274,7 @@ public:
 	@property uint priority(){
 		return _priority;
 	}
-	/// Operator function 
+	/// Operator function
 	@property FuncDeclNode opFunc(){
 		if (!_opFunc)
 			_generateOpFunc();
@@ -297,7 +297,7 @@ protected:
 			return;
 		if (_opFunc)
 			.destroy(_opFunc);
-		DataType lType = new DataType(_operandL.returnType), 
+		DataType lType = new DataType(_operandL.returnType),
 			rType = new DataType(_operandR.returnType);
 		_opFunc = new FuncDeclNode(DEFAULT_VISIBILITY, null, _opFuncName, [lType, rType]);
 	}
@@ -432,7 +432,7 @@ public:
 		return cast(uint)_declarations.length;
 	}
 	/// Returns: a declaration
-	/// 
+	///
 	/// Throws: Exception in case index out of bounds
 	DeclNode declGet(uint index){
 		if (index >= _declarations.length)
@@ -440,7 +440,7 @@ public:
 		return _declarations[index];
 	}
 	/// appends a DeclarationNode
-	/// 
+	///
 	/// Returns: its index
 	uint declAppend(DeclNode node){
 		immutable uint r = cast(uint)_declarations.length;
@@ -499,7 +499,7 @@ public:
 		return _varValue[index];
 	}
 	/// appends a variable
-	/// 
+	///
 	/// Returns: its index
 	int varAppend(string name, ExpressionNode value = null){
 		immutable uint r = cast(uint)_varName.length;
@@ -547,7 +547,7 @@ public:
 		return _member[index];
 	}
 	/// appends a member
-	/// 
+	///
 	/// Returns: index
 	uint memberAppend(VarDefNode!ASTNode member){
 		immutable uint r = cast(uint)_member.length;
@@ -615,7 +615,7 @@ public:
 		return _memberValue[index];
 	}
 	/// appends a member
-	/// 
+	///
 	/// Returns: index
 	uint memberAppend(string name, ExpressionNode value = null){
 		immutable uint r = cast(uint)_memberName.length;
@@ -648,7 +648,7 @@ public:
 	/// constructor
 	this(Visibility visibility = DEFAULT_VISIBILITY, DataType returnType = new DataType(),
 			string name = null, DataType[] argType = null, string[] argName = null){
-		
+
 		assert(argName.length == 0 || argName.length == _argType.length,
 			"argName.length doesnt match argType.length");
 		super(visibility);
@@ -679,7 +679,7 @@ public:
 		return cast(uint)_argType.length;
 	}
 	/// Returns: argument name at index
-	/// 
+	///
 	/// Throws: Exception if index out of bounds
 	string argName(uint index){
 		if (index >= _argName.length)
@@ -687,7 +687,7 @@ public:
 		return _argName[index];
 	}
 	/// Returns: argument type at index
-	/// 
+	///
 	/// Throws: Exception if index out of bounds
 	DataType argType(uint index){
 		if (index >= _argType.length)
@@ -695,7 +695,7 @@ public:
 		return _argType[index];
 	}
 	/// append an argument
-	/// 
+	///
 	/// Returns: index
 	uint argAppend(DataType type, string name = null){
 		immutable uint r = cast(uint)_argType.length;
@@ -757,7 +757,7 @@ public:
 		return cast(uint)_expression.length;
 	}
 	/// Returns: expression at index
-	/// 
+	///
 	/// Throws: Exception if index out of bounds
 	ExpressionNode expressionGet(uint index){
 		if (index >= _expression.length)
@@ -765,7 +765,7 @@ public:
 		return _expression[index];
 	}
 	/// appends expression
-	/// 
+	///
 	/// Returns: index
 	uint expressionAppend(ExpressionNode node){
 		immutable uint r = cast(uint)_expression.length;
@@ -811,7 +811,7 @@ public:
 		return cast(uint)_args.length;
 	}
 	/// Returns: argument with index
-	/// 
+	///
 	/// Throws: Exception if index out of bounds
 	ExpressionNode argGet(uint index){
 		if (index >= _args.length)
@@ -819,7 +819,7 @@ public:
 		return _args[index];
 	}
 	/// Appends argument
-	/// 
+	///
 	/// Returns: index
 	uint argAppend(ExpressionNode arg){
 		immutable uint r = cast(uint)_args.length;

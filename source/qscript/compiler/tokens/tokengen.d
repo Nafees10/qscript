@@ -6,7 +6,7 @@ import utils.ds;
 import std.functional : toDelegate;
 import std.algorithm : canFind;
 
-debug{import std.stdio;}
+debug import std.stdio;
 
 /// A token
 public struct Token(T) if (is (T == enum)){
@@ -22,15 +22,27 @@ public struct Token(T) if (is (T == enum)){
 		return [lineno, colno];
 	}
 	/// constructor
-	this(uint lineno, uint colno, uint type, string token){
+	this(uint lineno, uint colno, Flags!T type, string token){
 		this.lineno = lineno;
 		this.colno = colno;
 		this.type = type;
 		this.token = token;
 	}
 	/// ditto
-	this(uint type, string token){
+	this(uint lineno, uint colno, T type, string token){
+		this.lineno = lineno;
+		this.colno = colno;
+		this.type.set(type);
+		this.token = token;
+	}
+	/// ditto
+	this(Flags!T type, string token){
 		this.type = type;
+		this.token = token;
+	}
+	/// ditto
+	this(T type, string token){
+		this.type.set(type);
 		this.token = token;
 	}
 	/// == operator
@@ -45,37 +57,52 @@ public struct Token(T) if (is (T == enum)){
 	bool opBinary(string op : "==")(const string rhs) const{
 		return token == rhs;
 	}
+	/// != operator
+	bool opBinary(string op : "!=")(const Token rhs) const{
+		return type != rhs.type || token != rhs.token;
+	}
+	/// ditto
+	bool opBinary(string op : "!=")(const T rhs) const{
+		return !type.get(rhs);
+	}
+	/// ditto
+	bool opBinary(string op : "!=")(const string rhs) const{
+		return token != rhs;
+	}
 }
 
 /// Matching method
-public struct TokenMatcher{
+public struct TokenMatcher(T) if (is(T == enum)){
 	/// token type for this match
-	uint type = uint.max;
+	T type;
 	/// whether to use exact match, will call delegate otherwise
 	bool isExactMatch;
 	union{
 		/// exact matching string
 		string exactMatch;
-		/// delegate for matching. This should return the first number of chars that 
-		/// match. 0 if none
+		/// delegate for matching. This should return the first number of chars
+		/// that match. 0 if none
 		uint delegate(string) funcMatch;
 	}
-	/// pre-requisite. Only attempt this match these matched.   
-	/// if this exists, it will only try to match with what has already been token-ified
-	uint[] prereq;
+	/// pre-requisite. Only attempt this match these matched.
+	/// if this exists, it will only try to match with what has already been
+	/// token-ified
+	T[] prereq;
 	/// constructor
-	this (uint type, string exactMatch){
+	this (T type, string exactMatch){
 		isExactMatch = true;
 		this.type = type;
 		this.exactMatch = exactMatch;
 	}
 	/// ditto
-	this (uint type, uint delegate(string) funcMatch){
+	this (T type, uint delegate(string) funcMatch){
 		isExactMatch = false;
 		this.type = type;
 		this.funcMatch = funcMatch;
 	}
 	/// attempt to match
+	///
+	/// Returns: number of characters matching, starting from index 0
 	uint match(string s){
 		if (prereq.length)
 			return 0; // cannot match, this has not been token-ified
@@ -88,33 +115,38 @@ public struct TokenMatcher{
 		return funcMatch(s);
 	}
 	/// ditto
-	uint match(Token t){
-		if (prereq.indexOf(t.type) == -1)
-			return 0;
-		if (isExactMatch)
-			return cast(uint)((t.token == exactMatch) * t.token.length);
-		return cast(uint)((funcMatch(t.token) == t.token.length) * t.token.length);
+	uint match(Token!T t){
+		foreach (tp; prereq){
+			if (t.type.get(tp)){
+				if (isExactMatch)
+					return cast(uint)
+						((t.token == exactMatch) * t.token.length);
+				return cast(uint)
+					((funcMatch(t.token) == t.token.length) * t.token.length);
+			}
+		}
+		return 0;
 	}
 }
 
 /// a fancy string exploder
 ///
 /// this should probably be moved to my utils package, but it sits here for now
-public class TokenGen{
+public class TokenGen(T) if (is (T == enum)){
 private:
 	/// token matchers
-	TokenMatcher[] _matchers;
-	
+	TokenMatcher!T[] _matchers;
+
 	/// currently open source code
 	string _source;
 	/// the tokens
-	Token[] _tokens;
+	Token!T[] _tokens;
 	/// line number and column number of error(s)
 	uint[2][] _errors;
 
 	/// Returns: first matching token from a string. type will be `uint.max` in case of no match
-	Token _getToken(string str){
-		Token r;
+	Token!T _getToken(string str){
+		Token!T r;
 		uint maxLen = 0;
 		uint maxInd;
 		foreach (i, matcher; _matchers){
@@ -126,16 +158,16 @@ private:
 		}
 		if (!maxLen)
 			return r;
-		r.type = _matchers[maxInd].type;
+		r.type += _matchers[maxInd].type;
 		r.token = str[0 .. maxLen];
 		bool modified = false;
 		do{
 			foreach (i, matcher; _matchers){
-				if (matcher.type == r.type)
+				if (r.type & matcher.type)
 					continue;
 				modified = matcher.match(r) == r.token.length;
 				if (modified){
-					r.type = matcher.type;
+					r.type |= matcher.type;
 					break;
 				}
 			}
@@ -172,7 +204,7 @@ public:
 		_matchers ~= matcher;
 	}
 	/// adds a token type. Token types added this way are checked for after no exact match is found
-	/// 
+	///
 	/// The `matchFinder` function should return the number of characters that match from start
 	void addTokenType(uint type, uint delegate (string) matchFinder, uint[] prereq = []){
 		TokenMatcher matcher = TokenMatcher(type, matchFinder);
@@ -184,7 +216,7 @@ public:
 		this.addTokenType(type, toDelegate(matchFinder), prereq);
 	}
 	/// Returns: tokens
-	@property Token[] tokens(){
+	@property Token!T[] tokens(){
 		return _tokens;
 	}
 	/// clears tokens
@@ -192,19 +224,19 @@ public:
 		_tokens.length = 0;
 	}
 	/// reads source into tokens. Any existing tokens will be cleared.
-	/// 
+	///
 	/// This will try to match regex expressions, and use the first one that matches.
-	/// 
+	///
 	/// Returns: true if done without errors, false if there was error
 	bool readTokens(){
 		this.clear();
 		uint lineno;
 		uint lastNewLineIndex;
 		for (uint i = 0; i < _source.length; ){
-			Token token = _getToken(_source[i .. $]);
+			Token!T token = _getToken(_source[i .. $]);
 			token.lineno = lineno + 1;
 			token.colno = i - lastNewLineIndex;
-			if (token.type == uint.max || !token.length){
+			if (!token){
 				_errors ~= [token.lineno, token.colno];
 				return false;
 			}
@@ -220,7 +252,7 @@ public:
 		return true;
 	}
 	/// Removes tokens that match type
-	/// 
+	///
 	/// Returns: number of tokens removed
 	uint removeByType(uint type){
 		uint count, i;
@@ -250,7 +282,7 @@ public:
 		return count;
 	}
 	/// Replace tokens type by another type
-	/// 
+	///
 	/// Returns: number of tokens replaced
 	uint replaceByType(uint type, uint typeTo){
 		uint count = 0;
@@ -263,7 +295,7 @@ public:
 		return count;
 	}
 	/// Replace tokens type by another type
-	/// 
+	///
 	/// Returns: number of tokens replaced
 	uint replaceByType(uint type, uint typeTo, string token){
 		uint count = 0;
@@ -324,14 +356,14 @@ unittest{
 	});
 	// keyword
 	tkGen.addTokenType(4, "keyword");
-	tkGen.source = 
-"keyword # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv 
+	tkGen.source =
+"keyword # a single line coment fgdger4543terg h \"fsdfdsf\" \\\\gsdgfdv
 \t\t\"tabs > spaces\"/* multi
 line
-comment*/   
+comment*/
  \"another string\"";
 	assert(tkGen.readTokens());
-	Token[] tokens;
+	Token!T[] tokens;
 	string[] tkStrs;
 	uint[] tkTypes;
 	tokens = tkGen.tokens;

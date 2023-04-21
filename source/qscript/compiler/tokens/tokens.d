@@ -1,15 +1,15 @@
-module qscript.compiler.tokens;
+module qscript.compiler.tokens.tokens;
 
 import utils.misc;
 
 import qscript.compiler.compiler;
-import qscript.compiler.tokengen;
+import qscript.compiler.tokens.tokengen;
 
 debug{import std.stdio;}
 version(unittest){import std.stdio, std.conv : to;}
 
 /// A Token
-alias Token = qscript.compiler.tokengen.Token;
+public alias Token = qscript.compiler.tokens.tokengen.Token!TokenType;
 
 /// possible token types
 enum TokenType : uint{
@@ -61,7 +61,7 @@ enum TokenType : uint{
 /// for reading tokens from a qscript source file
 class QScriptTokenGen{
 private:
-	TokenGen _tkGen; /// the actual class used for token gen
+	TokenGen!TokenType _tkGen; /// the actual class used for token gen
 	/// prepares _tkGen with qscript syntax
 	void _prepare(){
 		_tkGen.addTokenType(TokenType.Whitespace, function (string str){
