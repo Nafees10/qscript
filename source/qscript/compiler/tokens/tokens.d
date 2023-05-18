@@ -1,6 +1,7 @@
 module qscript.compiler.tokens.tokens;
 
 import utils.misc;
+import utils.ds;
 
 import qscript.compiler.compiler;
 import qscript.compiler.tokens.tokengen;
@@ -12,50 +13,51 @@ version(unittest){import std.stdio, std.conv : to;}
 public alias Token = qscript.compiler.tokens.tokengen.Token!TokenType;
 
 /// possible token types
-enum TokenType : uint{
-	Whitespace			, /// whitespace
-	Comment				, /// single line comment
+enum TokenType{
+	Custom						, /// custom type
+	Whitespace				, /// whitespace
+	Comment						, /// single line comment
 	CommentMultiline	, /// multiline comment
-	LiteralInt			, /// integer literal
-	LiteralFloat		, /// float literal
-	LiteralString		, /// string literal
-	LiteralChar			, /// char literal
-	LiteralHexadecimal	, /// hexadecimal literal
-	LiteralBinary		, /// binary literal
-	KeywordImport		, /// `import` keyword
+	LiteralInt				, /// integer literal
+	LiteralFloat			, /// float literal
+	LiteralString			, /// string literal
+	LiteralChar				, /// char literal
+	LiteralHexadecimal, /// hexadecimal literal
+	LiteralBinary			, /// binary literal
+	KeywordImport			, /// `import` keyword
 	KeywordFunction		, /// `function` keyword
-	KeywordVar			, /// `var` keyword
-	KeywordRef			, /// `ref` keyword
-	KeywordEnum			, /// `enum` keyword
-	KeywordStruct		, /// `struct` keyword
+	KeywordVar				, /// `var` keyword
+	KeywordRef				, /// `ref` keyword
+	KeywordEnum				, /// `enum` keyword
+	KeywordStruct			, /// `struct` keyword
 	KeywordPrivate		, /// `private` keyword
-	KeywordPublic		, /// `public` keyword
-	KeywordReturn		, /// `return` keyword
-	KeywordThis			, /// `this` keyword
-	KeywordVoid			, /// `void` keyword
-	KeywordInt			, /// `int` keyword
-	KeywordFloat		, /// `float` keyword
-	KeywordChar			, /// `char` keyword
-	KeywordBool			, /// `bool` keyword
-	KeywordTrue			, /// `true` keyword
-	KeywordFalse		, /// `false` keyword
-	KeywordIf			, /// `if` keyword
-	KeywordElse			, /// `else` keyword
-	KeywordWhile		, /// `while` keyword
-	KeywordDo			, /// `do` keyword
-	KeywordFor			, /// `for` keyword
-	KeywordBreak		, /// `break` keyword
+	KeywordPublic			, /// `public` keyword
+	KeywordReturn			, /// `return` keyword
+	KeywordThis				, /// `this` keyword
+	KeywordVoid				, /// `void` keyword
+	KeywordInt				, /// `int` keyword
+	KeywordFloat			, /// `float` keyword
+	KeywordChar				, /// `char` keyword
+	KeywordBool				, /// `bool` keyword
+	KeywordTrue				, /// `true` keyword
+	KeywordFalse			, /// `false` keyword
+	KeywordIf					, /// `if` keyword
+	KeywordElse				, /// `else` keyword
+	KeywordWhile			, /// `while` keyword
+	KeywordDo					, /// `do` keyword
+	KeywordFor				, /// `for` keyword
+	KeywordBreak			, /// `break` keyword
 	KeywordContinue		, /// `continue` keyword
-	Identifier			, /// identifier
-	Semicolon			, /// `;`
-	Comma				, /// `,`
-	Operator			, /// Operator (determined by the actual token)
-	BracketOpen			, /// `(`
-	BracketClose		, /// `)`
-	//IndexOpen			, /// `[`
-	IndexClose			, /// `]`
-	CurlyOpen			, /// `{`
-	CurlyClose			, /// `}`
+	Identifier				, /// identifier
+	Semicolon					, /// `;`
+	Comma							, /// `,`
+	Operator					, /// Operator (determined by the actual token)
+	BracketOpen				, /// `(`
+	BracketClose			, /// `)`
+	IndexOpen					, /// `[`
+	IndexClose				, /// `]`
+	CurlyOpen					, /// `{`
+	CurlyClose				, /// `}`
 }
 
 /// for reading tokens from a qscript source file
@@ -151,35 +153,37 @@ private:
 			}
 			return cast(uint)str.length;
 		});
-		_tkGen.addTokenType(TokenType.KeywordImport, `import`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordFunction, `function`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordVar, `var`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordRef, `ref`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordPublic, `public`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordReturn, `return`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordThis, `this`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordVoid, `void`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordInt, `int`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordFloat, `float`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordChar, `char`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordBool, `bool`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordTrue, `true`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordFalse, `false`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordIf, `if`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordElse, `else`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordWhile, `while`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordDo, `do`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordFor, `for`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordBreak, `break`, [TokenType.Identifier]);
-		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`, [TokenType.Identifier]);
+		Flags!TokenType preReq;
+		preReq += TokenType.Identifier;
+		_tkGen.addTokenType(TokenType.KeywordImport, `import`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordFunction, `function`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordVar, `var`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordRef, `ref`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordPublic, `public`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordReturn, `return`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordThis, `this`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordVoid, `void`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordInt, `int`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordFloat, `float`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordChar, `char`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordBool, `bool`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordTrue, `true`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordFalse, `false`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordIf, `if`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordElse, `else`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordWhile, `while`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordDo, `do`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordFor, `for`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordBreak, `break`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`, preReq);
 		_tkGen.addTokenType(TokenType.Identifier, function (string str){
 			uint len;
 			while (len < str.length && str[len] == '_')
 				len ++;
-			if (len == 0 && 
+			if (len == 0 &&
 				(str[len] < 'a' || str[len] > 'z') &&
 				(str[len] < 'A' || str[len] > 'Z'))
 				return 0;
@@ -238,21 +242,15 @@ private:
 public:
 	/// constructor
 	this(){
-		_tkGen = new TokenGen();
+		_tkGen = new TokenGen!TokenType();
 		_prepare();
 	}
 	~this(){
 		.destroy(_tkGen);
 	}
-	/// Adds a token type with a match.
-	/// 
-	/// Returns: token type, or uint.max in case of error
-	uint addToken(string match){
-		static uint type = TokenType.max + 1;
-		if (type == uint.max)
-			return uint.max;
-		_tkGen.addTokenType(type, match);
-		return type ++;
+	/// Adds a token type with a match to TokenType.Custom
+	void addToken(string match){
+		_tkGen.addTokenType(TokenType.Custom, match);
 	}
 	/// Adds an operator
 	void addOperator(string op){
@@ -260,7 +258,7 @@ public:
 	}
 	/// Generates tokens from a source.
 	/// Will write errors locations [line, column] to `errors`
-	/// 
+	///
 	/// Returns: tokens
 	Token[] readTokens(string source, ref uint[2][] errors){
 		Token[] r;
@@ -291,7 +289,7 @@ unittest{
 			"\n\t", "return", " ", "2", " ",  "+", " ", "0B10", ";", " ",
 			"#another comment", "\n\t", "voidNot", "\n", "}"
 		];
-		const uint[] expectedType = [
+		const TokenType[] expectedType = [
 			TokenType.KeywordFunction, TokenType.Whitespace, TokenType.KeywordVoid,
 			TokenType.Whitespace, TokenType.Identifier, TokenType.BracketOpen,
 			TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace,
@@ -303,31 +301,10 @@ unittest{
 			TokenType.CurlyClose
 		];
 		foreach (i, token; tokens){
-			assert (token.token == expectedStr[i] && token.type == expectedType[i],
+			assert (token.token == expectedStr[i] && token.type[expectedType[i]],
 				"failed to match at index " ~ i.to!string);
 		}
 	}
 	assert(errors.length == 0);
 	.destroy(tk);
-}
-
-// functions for further reading tokens
-
-/// Returns: true if a string passes as an identifier
-bool isIdentifier(string str){
-	uint len;
-	while (len < str.length && str[len] == '_')
-		len ++;
-	if (len == 0 && 
-		(str[len] < 'a' || str[len] > 'z') &&
-		(str[len] < 'A' || str[len] > 'Z'))
-		return false;
-	for (; len < str.length; len ++){
-		const char ch = str[len];
-		if ((ch < '0' || ch > '9') &&
-			(ch < 'a' || ch > 'z') &&
-			(ch < 'A' || ch > 'Z') && ch != '_')
-			return false;
-	}
-	return true;
 }
