@@ -5,48 +5,11 @@ import utils.ds;
 
 import qscript.compiler.compiler;
 import qscript.compiler.tokens.tokens;
+import qscript.compiler.astgen;
 
 debug import std.stdio;
 import std.conv : to;
 
-import qscript.compiler.astgen : ASTNode, Identifier;
-
-/// reads tokens into ident
-///
-/// Returns: number of tokens read
-package uint identFromTokens(ref Identifier ident, Token[] tokens){
-	uint index = 0;
-	if (index < tokens.length && tokens[index].token.isIdentifier){
-		ident = [tokens[index].token];
-		index ++;
-	}else
-		return 0;
-	while (index + 1 < tokens.length && tokens[index] == TokenType.Operator &&
-	tokens[index].token == "." && tokens[index + 1].token.isIdentifier){
-		ident ~= tokens[index + 1].token;
-		index += 2;
-	}
-	return index;
-}
-///
-unittest{
-	Token[] tok = [
-		Token(TokenType.Identifier,"qscript"), Token(TokenType.Operator,"."),
-		Token(TokenType.Identifier,"std"), Token(TokenType.Operator,"."),
-		Token(TokenType.Identifier,"io"), Token(TokenType.Operator,".")
-	];
-	Identifier ident;
-	assert(ident.identFromTokens(tok) == 5);
-	assert(ident.toString == "qscript.std.io");
-}
-
-/// Returns: string representation of Identifier
-package string toString(const Identifier ident){
-	string ret;
-	foreach (name; ident[0 .. $ - 1])
-		ret ~= name ~ '.';
-	return ret ~ ident[$-1];
-}
 
 /// Data Type
 class DataType : ASTNode{
@@ -60,7 +23,7 @@ private:
 	/// number of bytes that will be occupied, 0 if unknown
 	uint _byteCount = 0;
 protected:
-	override @property ASTNode[] _children(){
+	override @property const(ASTNode)[] _children() const {
 		return null;
 	}
 public:

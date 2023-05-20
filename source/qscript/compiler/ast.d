@@ -9,11 +9,11 @@ import qscript.compiler.astdefs;
 class QScriptASTGen{
 private:
 	/// the ASTGen to be used under the hood
-	ASTGen _gen;
+	//ASTGen _gen;
 	/// prepares _gen for qscript syntax
 	void _prepare(){
 		/// TODO
 	}
 protected:
-	
+
 }
