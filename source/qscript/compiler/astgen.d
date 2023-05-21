@@ -42,25 +42,6 @@ public:
 	@property string name(string newName){
 		return _name = newName;
 	}
-
-	/// Finds ASTNode(s) for an Identifier
-	final const (ASTNode)[] find(string[] toFind) const {
-		if (!toFind.length)
-			return [];
-		if (toFind[0] != _name){
-			if (!_parent)
-				return [];
-			return _parent.find(toFind);
-		}
-		if (toFind.length == 1)
-			return [this];
-		const (ASTNode)[] ret;
-		foreach (const ASTNode child; _children){
-			if (toFind[1] == child._name)
-				ret ~= child.find(toFind[1 .. $]);
-		}
-		return ret;
-	}
 }
 
 /// Factory function for an ASTNode
@@ -68,7 +49,7 @@ public:
 /// Params:
 /// * tokens
 /// * starting index (should be modified to point to token after last token this read)
-/// * ASTGen, which calls it
+/// * ASTGen, caller
 ///
 /// Returns:
 /// ASTNode generated, or null
@@ -78,15 +59,35 @@ alias ASTFactoryFunc = ASTNode delegate(Token[], ref uint, ASTGen);
 class ASTGen{
 private:
 	/// AST Node factory functions, with hook (token type) as key
-	ASTFactoryFunc[uint] _factories;
+	ASTFactoryFunc[] _factories;
 	/// tokens
 	Token[] _source;
+	/// seek index
+	uint _seek;
 	/// Errors
 	CompileError[] _errors;
+
 public:
-	/// constructor
-	this(){}
-	~this(){}
+	/// Source
+	@property Token[] source(){
+		return _source;
+	}
+	/// ditto
+	@property Token[] source(Token[] newVal){
+		return _source = newVal;
+	}
+
+	/// Seek index
+	@property uint seek() const {
+		return _seek;
+	}
+
+	/// resets errors & seek
+	void reset(){
+		_seek = 0;
+		_errors.length = 0;
+	}
+
 	/// adds a factory
 	///
 	/// Returns: true if done, false if hook already used
@@ -96,18 +97,12 @@ public:
 		_factories[hook] = fact;
 		return true;
 	}
+
 	/// Returns: true if a factory exists for a hook
 	bool factoryExists(uint hook){
 		return (hook in _factories) !is null;
 	}
-	/// Source
-	@property Token[] source(){
-		return _source;
-	}
-	/// ditto
-	@property Token[] source(Token[] newVal){
-		return _source = newVal;
-	}
+
 	/// Generates ASTNodes (starting at index, default 0)
 	///
 	/// Returns: generated ASTNodes
@@ -129,19 +124,23 @@ public:
 		}
 		return ret;
 	}
+
 	/// Adds an error
 	void errorAdd(CompileError err){
 		// just append, use the errorsSort to sort
 		_errors ~= err;
 	}
+
 	/// Sorts errors, by line number, and col number
 	void errorsSort(){
 		// TODO implement
 	}
+
 	/// Returns: errors
 	@property CompileError[] errors(){
 		return _errors;
 	}
+
 	/// Returns: true if there are any errors
 	@property bool error(){
 		return _errors.length != 0;
