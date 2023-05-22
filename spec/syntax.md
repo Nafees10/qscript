@@ -717,7 +717,7 @@ The function associated with each operator is as follows:
 | Operators | Function																|
 |-----------|-----------------------------------------|
 | `.`				|	`T opMemberSelect(Ta a, char[] name)`		|
-| `a[b]`		|	`T opIndex(Ta a, Tb b)`							|
+| `a[b]`		|	`T opIndex(Ta a, Tb b)`									|
 | `a(..)`		|	`T opFnCall(Ta a, ..)`									|
 | `a++`			|	`T opIncPost(Ta a)`											|
 | `a--`			|	`T opDecPost(Ta a)`											|
