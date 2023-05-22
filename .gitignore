@@ -7,6 +7,7 @@ dub.selections.json
 lib*.a
 *.bcode
 *-test-default
+*.pdf
 sample
 /ast.json
 /qscript
