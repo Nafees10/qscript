@@ -1,14 +1,19 @@
+Note: this is currently WIP and not finalised
+
+TODO: reorganize the sections in this
+
 # QScript Syntax
 
 # Comments
-Comments can be added using the `#` character. Anything following a `#` is
-ignored by compiler as a comment.
+Comments can be added using the `#` character or `//`.
+Anything following a `#` or `//` is ignored by compiler as a comment.
 
 For example:
 
 ```
 # a comment
-fn void main(){ # This is a comment
+// another comment
+fn main(){ # This is a comment
 	# This also is a comment
 }
 ```
@@ -28,46 +33,73 @@ comment
 
 ---
 
-# Importing libraries
-Libraries can provide function and/or data types. Importing a library named
-`math` and `stdio` would be done like:
+# Loading external scripts/libraries
+The `load` keyword can be used to create an instance of an existing script.
+A script is similar to a struct:
 
 ```
-import math, stdio;
+debug.qscript:
+	var string prefix = "debug: ";
+	pub var auto log = (string msg) -> { ... };
+
+main.qscript:
+	var auto logger = load debug;
+	pub var auto this = () -> {
+		logger.log("started");
+	};
 ```
-Or:
+
+is equivalent to:
+
 ```
-import math;
-import stdio;
+main.qscript:
+	struct SomeInaccessibleType{
+		var string prefix = "debug: ";
+		pub var auto log = (string msg) -> { ... };
+	}
+
+	var SomeInaccessibleType logger;
+	fn this(){
+		logger.log("started");
+	}
+```
+
+In the first case, the `load debug` statement creates an instance of the
+`debug.qscript` script, and returns it.
+
+assigning a "namespace" of sorts as shown above is not necessary, a library can
+be loaded so that its symbols become accessible as global symbols:
+
+```
+load debug;
+```
+
+This will create an instance of debug and merge it's symbols with current
+script.
+
+Similarly, a script can be loaded and all it's public symbols made public:
+
+```
+pub load debug;
 ```
 
 ---
 
 # Visibility
-QScript has these visibility specifiers:
+All script members are by default private, and only accessible inside the
+script.
 
-* `private` - Only accessible from within script.
-* `public` - Accessible from outside when this script is loaded as a library.
-
-By default, all declarations are `private`.
-
-These can be written right before any declaration like:
+The `pub` keyword can be prefixed to make a member public:
 
 ```
-private fn void somePrivateFunction(int arg){
+fn somePrivateFunction(int arg){
 	# body of private function
 }
-public struct SomeStruct{
-	var int someInt, someOtherInt;
+pub struct SomeStruct{
+	var int someInt, someOtherInt; # these data members are private
+	pub var int x; # this is public
 }
 ```
-
-Visiblity specifier can apply to:
-
-* structs
-* enums
-* functions
-* global variables
 
 # Functions
 QScript has first class functions. Functions can be assigned to a variable
@@ -79,6 +111,8 @@ To create a variable that can store a function:
 
 ```
 var fn RETURN_TYPE(arg0_type, arg1_type, ..) someFunc;
+// or
+var auto someFunc = someExistingFunction; // assignmment necessary here
 ```
 
 following this, the function can be called using the `(..)` operator:
@@ -87,18 +121,28 @@ following this, the function can be called using the `(..)` operator:
 someFunc(arg0, arg1);
 ```
 
+The Function Data Type is a reference data type, annotating it with a `ref` is
+not necessary, and not allowed.
+
 ## Function Definition
 ```
-fn [ref] RETURN_TYPE FUNCTION_NAME(
+[pub] fn [ref] [RETURN_TYPE] FUNCTION_NAME(
 		[ref] arg0_type arg0,
 		[ref] arg1_type arg1){
 	# function body
 }
+// or
+[pub] var auto FUNCTION_NAME = (
+		[ref] arg0_type arg0,
+		[ref] arg1_type arg1) -> [RETURN_TYPE]{
+	# function body
+};
 ```
 
+* `pub` (optional) will make the function public
 * `ref` (optional) will make it so parameters/return is passed by reference not
 	value
-* `RETURN_TYPE` is the return type of this function
+* `RETURN_TYPE` (optional) is the return type of this function.
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
@@ -106,38 +150,40 @@ fn [ref] RETURN_TYPE FUNCTION_NAME(
 
 _Note that the `ref` part of return type is not a property of the function,
 but rather a part of the return data type._
-  
+
 A function without any arguments would be defined like:
 ```
-fn TYPE FUNCTION_NAME(){
+fn [TYPE] FUNCTION_NAME(){
 	# function body
 }
-```
-
-A function definition is similar to a const function variable:
-
-```
-fn int length(int[] arr){
-	return arr.length;
-}
-# is the same as:
-var const fn int(int[]) length = fn int(int[] arr){
-	return arr.length;
-}
+# or
+var auto FUNCTION_NAME = () -> TYPE{
+	# function body
+};
 ```
 
 ## Anonymous Functions
-Anonymous functions can be created using the `fn` keyword:
 ```
-writeln(fn int(char[] str){
-		return str.length;
-	}("hello")); # prints 5
+fn int sumXTimes(int x, fn int(int) func){
+	var int i = 0;
+	var sum
+	while (i < x)
+		sum += func(i ++);
+	return sum;
+}
+sumXTimes(5, (num) -> num * 5);
+# is equivalent to:
+sumXTimes(5, (int num) -> {return num * 5;});
+# is equivalent to:
+fn mul5(int num){ return num * 5; }
+sumXTimes(5, mul5);
 ```
 
 ## Returning From Functions
 A return statement can be used to return a value from the function. The type of
 the return value, and the return type of the function must match.
 A return statement is written as following:
+
 ```
 return RETURN_VALUE;
 ```
@@ -153,49 +199,34 @@ fn int someFunction(){
 }
 ```
 
-In case of functions of type void, `return;` can be used to terminate execution,
-like:
+In case of functions that return nothing, `return;` can be used to terminate
+execution, like:
 
 ```
-fn void main(){
+fn main(){
 	# ..
 	return;
 	# anything below wont be executed
 }
 ```
 
-## `this` Function
-Each script can have 1 `this` function. It will be called before any other
-function in the scipt is called i.e: the `this` function can be used to
-initialize the script.
-
-`this` function is defined like:
-```
-fn void this(){
-	# code to be executed when script is loaded
-	writeln(someGlobalVar); # prints 5
-	someGlobalVar = 0;
-}
-var int someGlobalVar = 5; # global variables are initialized before this()
-```
-
-`this` function must not return any value.
-
-`this` function's visibility does not matter, as it cannot be explicitly called.
-
 ## Function Calls
 Function calls are made through the `()` operator like:
+
 ```
 fnName(funcArg0, funcArg1, ...);
 ```
+
 or in case of no arguments:
+
 ```
 fnName();
 ```
 
-The first argument to a function call can also be passed as:
+The first argument to a function call can also be passed using the `.` operator:
+
 ```
-fn square(int i){
+fn int square(int i){
 	return i * i;
 }
 fn main(){
@@ -205,15 +236,38 @@ fn main(){
 }
 ```
 
+### Member Functions
+
+The `.` operator is also used to call member functions of a struct:
+
+```
+struct Position{
+	pub var int x = 0, y = 0;
+	pub fn flipXY(){
+		var int temp = x;
+		x = y;
+		y = temp;
+		writeln("scoped call");
+	}
+}
+fn flipXY(ref Position pos){
+	writeln("global called");
+}
+
+Position pos;
+pos.flipXY(); # prints "scoped call"
+```
+
 ### `()` Overloading
+
 ```
 struct SomeStruct{
 	var int i;
 }
-fn void opFnCall(SomeStruct strct, int a){
+fn opFnCall(SomeStruct strct, int a){
 	writeln("SomeStruct() called with a = " ~ toString(a));
 }
-fn void main(){
+fn main(){
 	var SomeStruct s;
 	s(5); # prints: SomeStruct() called with a = 5
 }
@@ -222,16 +276,21 @@ fn void main(){
 Overloading `()` operator for `function` types is not allowed, as that would
 break a lot of things.
 
+See Operator Overloading section for more details
+
 ---
 
 # Data Types
 QScript has these basic data types:
+
 * `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
 * `double` - a floating point (`double` in DLang)
 * `char` - an 8 bit character
 * `bool` - a `true` or `false` (Dlang `bool`)
+* `auto` - in above examples, `auto` can be substituted for `X` in cases where
+	inline assignment occers and compiler is able to detect intended type.
 * `ref X` - reference to any of the above (behaves the same as `X` alone would)
-* `const X` - a constant, which must be initialised at time of declaration.
+* `fn ...(...)` - a Function Data Type (see above)
 
 ## `int`
 This can be written as series (or just one) digit(s).
@@ -252,12 +311,14 @@ Digits with a single `.` between them is read as a double.
 
 ## `char`
 This is written by enclosing a single character within a pair of apostrophes:
+
 `'c'` for example, or `'\t'` tab character.
 
 initialised as ascii code `0`
 
 ## `bool`
-A `true` (1) or a `false` (0).  
+A `true` (1) or a `false` (0).
+
 While casting from `int`, a non zero value is read as a `true`, zero as `false`.
 
 initialised as `false`
@@ -277,16 +338,15 @@ writeln(i); # 1
 
 after initialising, a ref cannot be made to reference another variable.
 
-## `const` variables
-A variable created as a const cannot be modified. It can only be set during
-declaration:
+## `auto` variables
+The `auto` keyword can be combined with others in the following order:
 
 ```
-var const int i = 5; # valid
-i = 6; # not allowed
-i ++; # not allowed
-writeln(toString(i)); # allowed
+var [ref] auto
 ```
+
+This is necessary since the `auto` detection will not pick up whether it should
+be made `ref`
 
 ## Structs
 These can be used to store multiple values of varying or same data types.
@@ -295,13 +355,16 @@ They are defined like:
 
 ```
 struct STRUCT_NAME{
-	var DATA_TYPE1 NAME1;
-	var DATA_TYPE2 NAME2;
+	[pub] var DATA_TYPE1 NAME1;
+	[pub] var DATA_TYPE2 NAME2;
+	[pub] var auto print1 = () -> writeln(NAME1);
+	[pub] fn print2(){ writeln(NAME2); }
 }
 ```
 
 * `STRUCT_NAME` is the name of this struct. This must be unique within the
 	script.
+* `pub` should be prefixed to members to make them publically accessible
 * `DATA_TYPE1` is the data type for the first value.
 * `NAME1` is the name for the first value
 
@@ -309,19 +372,21 @@ Keep in mind that recursive dependency is not possible in structs. However you
 can have an array of the same type inside the struct, as arrays are initialised
 to length 0.
 
-QScript does not allow functions as members of structs, only variables can be
-members.
+### `this` constructor
+Similar to scripts, structs have a constructor that is called after initialising
+variables:
 
-An example usage of a struct would be:  
 ```
-public struct Position{
-	var int x, y;
-}
-public fn Position getPosition(int x, int y){
-	Position pos;
-	pos.x = x;
-	pos.y = y;
-	return pos;
+struct Position{
+	var int x = 0, y = 0;
+	pub this(){
+		writeln("constructed 0,0");
+	}
+	pub this(int x, int y){
+		this.x = x;
+		this.y = y;
+		writeln("constructed with values");
+	}
 }
 ```
 
@@ -329,6 +394,7 @@ public fn Position getPosition(int x, int y){
 Enum can be used to group together constants of the same base data type.
 
 Enums are defined like:
+
 ```
 enum int EnumName{
 	member0 = 1,
@@ -340,10 +406,11 @@ enum int EnumName{
 * `int` is the base data type
 * `EnumName` is the name for this enum
 
-Example:  
+Example:
+
 ```
 public enum int ErrorType{
-	FileNotFound = 1,
+	FileNotFound = 1, # default value is first one
 	InvalidPath = 1 << 1, # constant expression is allowed
 	PermissionDenied = 4
 }
@@ -352,10 +419,12 @@ public enum int ErrorType{
 An enum's member's value can be read as: `EnumName.MemberName`, using the
 member selector operator.
 
-Enums do not become data types:
+Enums act as data types:
+
 ```
-var ErrorType err; # WRONG
-var int err = ErrorType.FileNotFound; # Valid
+var ErrorType err; # initialised to FileNotFound
+// or
+var auto err = ErrorType.FileNotFound;
 ```
 
 ---
@@ -364,15 +433,18 @@ var int err = ErrorType.FileNotFound; # Valid
 
 ## Variable Declaration
 Variables can be declared like:
+
 ```
-var TYPE var0, var1, var2;
+var [ref] TYPE var0, var1, var2;
 ```
+
 * `TYPE` is the data type of the variables, it can be a `char`, `int`,
 	`float`, `bool`, or an array of those types: `int[]`, or `int[][]`...
 * `var0`, `var1`, `var2` are the names of the variables. There can be more/less
 	than 3, and are to be separated by a comma.
 
 Value assignment can also be done in the variable declaration statement like:
+
 ```
 var int var0 = 12, var1 = 24;
 ```
@@ -380,23 +452,28 @@ var int var0 = 12, var1 = 24;
 ## Variable Assignment
 
 Variables can be assigned a value like:
+
 ```
 VAR = VALUE;
 ```
+
 the data type of `VAR` and `VALUE` must match, or be implicitle castable.
-  
+
 In case the `VAR` is an array, then it's individual elements can be modified:
+
 ```
 VAR[ INDEX ] = VALUE;
 ```
+
 * `VAR` is the name of the var/array
 * `INDEX` , in case `VAR` is an array, is the index of the element to assign a
 	value to
 * `VALUE` is the value to assign
 
 And in a case like this, `VAR[INDEX]` must have the same data type as `VALUE`.
-  
+
 In case you want to modify the whole array, it can be done like:
+
 ```
 var char someChar = 'a';
 var char[] someString;
@@ -404,10 +481,12 @@ someString = [someChar, 'b', 'c'] ; # you could've also done [someChar] ~ "bc"
 ```
 
 ## Variable Scope
-Variables are only available inside the "scope" they are declared in. In the code below:  
+Variables are only available inside the "scope" they are declared in.
+In the code below:
+
 ```
 var int someGlobalVar;
-public fn void main(int count){
+public fn main(int count){
 	var int i = 0;
 	while (i < count){
 		var int j;
@@ -416,6 +495,7 @@ public fn void main(int count){
 	}
 }
 ```
+
 Varible `i` and `count` are accessible throughout the function. Variable `j` is
 accessible only inside the `while` block. Variable `someGlobalVar` is declared
 outside any function, so it is available to all functions defined _inside_ the
@@ -431,6 +511,7 @@ the one declared in the script will be preferred.
 
 # If Statements
 If statements are written like:
+
 ```
 if (CONDITION){
 	# some code
@@ -438,17 +519,22 @@ if (CONDITION){
 	# some (other?) code
 }
 ```
+
 The `else` part is not required. If `CONDITION` is `false`, then, if the else
 exists, it's executed, if `CONDITION` is `true`, then `# some code` is executed.
+
 It is not necessary that the `# some code` or the `# some (other?) code` be in
 a block. In case only one statement is to be executed, it can be written like:
+
 ```
 if (CONDITION)
 	# some code, single statement
 else
 	# some other code, single statement
 ```
+
 Indentation is not necessary, it can be written like:
+
 ```
 if (CONDITION)
 # some code, single statement
@@ -457,7 +543,8 @@ else
 ```
 
 ## Nested If Statements
-If statements can also be nested inside other if statements, like:  
+If statements can also be nested inside other if statements, like:
+
 ```
 if (CONDITION)
 	if (OTHER_CONDITION)
@@ -472,44 +559,88 @@ else
 
 # Loops
 
-QScript curently has the following types of loops:
-
 ## While:
 
 While loops are written like:
+
 ```
 while (CONDITION){
 	# some code in a loop
 }
 ```
+
 As long as `CONDITION` is `true`, `# some code in a loop` is executed. And just
 like if statements, while loops can also be nested
 
 ## Do While:
 
 Do while loops are writen like:
+
 ```
 do{
-    # some code in a loop
+	# some code in a loop
 }while (CONDITION);
 ```
+
 First the code is executed, then if the condition is `true`, it's executed
 again.
 
-## For:
+## Foreach:
+
+Foreach loops use `iterators` to iterate over members of a value:
 
 ```
-for (INIT_STATEMENT; CONDITION; INCREMENT_STATEMENT){
-    # some code in a loop
+foreach (ITERATOR_VALUE, VALUE; CONTAINER){
+	# do stuff
+	writeln("value at " ~ ITERATOR_VALUE.toString() ~ " is " ~ VALUE.toString());
 }
 ```
-First, the `INIT_STATEMENT` is executed, right before starting the loop. This
-is executed only once. Then if `CONDITION` is `true`, the loop body is
-executed, then `INCREMENT_STATEMENT` is executed, this is repeated, until
-condition is false.
 
-Unlike other languages (like D), the `INIT_STATEMENT`, `CONDITION`, and
-`INCREMENT_STATEMENT` all must be present.
+Arrays already have iterators and can be used:
+
+```
+var int[] bunchOfNumbers = getABunchOfNumbers();
+foreach (i, number; bunchOfNumbers)
+	writeln(i.toString() ~ "th number is " ~ number.toString());
+```
+
+### Iterator:
+
+A container struct can implement iterator by offering the following
+functionality:
+
+```
+struct Container{
+	struct Position{
+		pub fn opIncPre(){ ... }
+	}
+	pub fn ref int opIndex([ref] Position pos) { ... }
+	pub fn Position iteratorStart(){ ... }
+	pub fn bool iteratorValid([ref] Position pos){ ... }
+}
+```
+
+For a container to be iteratable, the following needs to be valid:
+
+* `container.iteratorStart()` should return `something`
+* `container.iteratorValid(something)` should return true if something is valid
+* `container[something]` should return element, or a ref to it to allow writing
+* `++something` should move the `something` to next element
+
+For example, a simple array iteration would be implemented like:
+
+```
+struct ArrayInt{
+	pub var int[] array;
+	pub fn ref int opIndex(int index){
+		return array[index];
+	}
+	pub fn int iteratorStart(){ return 0; }
+	pub fn int iteratorValid(int index){
+		return index >= 0 && index < array.length;
+	}
+}
+```
 
 ## Break & Continue
 A `break;` statement can be used to exit a loop at any point, and a `continue;`
@@ -526,6 +657,7 @@ Syntax for unary operators is: `operator A`. Whitespace between operator and A
 is not necessary.
 
 Operators are read in this order (higher = evaluated first):
+
 1. `.`, `[`, `(`
 1. `a++`, `a--`
 1. `!a`, `++a`, `--a`
@@ -537,16 +669,55 @@ Operators are read in this order (higher = evaluated first):
 1. `&&`, `||`
 1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `~=`, `&=`, `|=`, `^=`
 
-## Operator Functions
-Operators are read as functions, and can be overrided same as functions, and
-the operands are arguments.
+## Operator Overloading
+Operators are read as functions, and can be overrided same as functions.
+
+Binary operators are translated as:
+
+```
+a + b;
+// translated to
+a.opAdd(b);
+```
+
+And unary operators are translated as:
+
+```
+a ++;
+// translated to
+a.opIncPost();
+```
+
+The operands for such functions should ideally be `ref`, however it is not
+necessary.
+
+As such, `opAdd` and `opIncPost` for a (assuming it to be of type struct A) can
+be overloaded in following ways:
+
+### Member Function
+```
+struct A{
+	pub fn opAdd(ref A right){ ... }
+	pub fn opIncPost(){ ... }
+}
+```
+
+### Global Scope Function
+```
+fn opAdd(ref A left, ref A right) { ... }
+fn opIncPost(ref A operand) { ... }
+```
+
+### Operator Functions
 
 The function associated with each operator is as follows:
+
 (`Ta`, `Tb`, `T` refers to data types, of `a`,`b`, or return value)
+
 | Operators | Function																|
 |-----------|-----------------------------------------|
 | `.`				|	`T opMemberSelect(Ta a, char[] name)`		|
-| `a[b]`		|	`T opIndexRead(Ta a, Tb b)`							|
+| `a[b]`		|	`T opIndex(Ta a, Tb b)`							|
 | `a(..)`		|	`T opFnCall(Ta a, ..)`									|
 | `a++`			|	`T opIncPost(Ta a)`											|
 | `a--`			|	`T opDecPost(Ta a)`											|
@@ -590,6 +761,7 @@ function call.
 This function is used to evaluate the `>=`, `<=`, `>`, and `<` operators.
 
 It should return only one of these values:
+
 * `-1` - a is less than b
 * `0` - a is equal to b
 * `1` - a is greater than b
