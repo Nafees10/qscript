@@ -807,35 +807,35 @@ The comparison operators are translated as follows:
 
 # Conditional Compilation
 
-## Static If
+## `$if`
 
-The `static if` can be used to determine which branch of code to compile:
+The `$if` can be used to determine which branch of code to compile:
 
 ```
-static if (someCompileTimeValue){
+$if (someCompileTimeValue){
 	writeln("someCompileTimeValue was true at compile time");
 }else{
 	writeln("was not");
 }
 ```
 
-## Static Foreach
+## `$foreach`
 
-`static foreach` iterates over a container that is available at compile time,
+`$foreach` iterates over a container that is available at compile time,
 and copies its body for each element:
 
 ```
 # this loop will not exist at runtime
-static foreach (num; [0, 5, 4, 2]){
+$foreach (num; [0, 5, 4, 2]){
 	writeln(num.toString());
 }
 ```
 
-Since a `static foreach` will copy it's body, it will result in redefinition
+Since a `$foreach` will copy it's body, it will result in redefinition
 errors if any definitions are made inside. To avoid, do:
 
 ```
-static foreach (num; [0, 5, 4, 2]){{
+$foreach (num; [0, 5, 4, 2]){{
 	enum square = num * num;
 	writeln(square.toString());
 }}
@@ -892,6 +892,8 @@ template sum(T){
 
 Calling a function template can be done as:
 ```
+var int c = sum<int>(5, 10);
+// or
 var int c = sum(5, 10);
 ```
 QScript is able to determine what value to use for `T`
@@ -928,27 +930,31 @@ alias PositionContinuous = Position<double>;
 
 ## Traits
 
-These are smybols that the compiler will replace at compile time.
-They are written with a `%` prefixed:
+Compiler directives, written as:
 
 ```
-%traitName(...)
+$traitName(...)
 ```
 
-* `%fnIsStatic(symbol)` - true if a symbol is static function
-* `%fnRetType(symbol)` - return type of a function
-* `%fnArgs(symbol)` - array of names of function arguments
-* `%fnArgType(symbol, name)` - argument type of argument with name in function
-* `%members(symbol)` - string array, names of accessible members inside of a
+* `assert(condition, error)` - Emits error as a compiler error if !condition
+* `fnIsStatic(symbol)` - true if a symbol is static function
+* `fnRetType(symbol)` - return type of a function
+* `fnArgs(symbol)` - array of names of function arguments
+* `fnArgType(symbol, name)` - argument type of argument with name in function
+* `members(symbol)` - string array, names of accessible members inside of a
 	symbol. Works for structs and enums.
-* `%member(symbol, nameStr)` - returns member with name=nameStr in symbol.
+* `member(symbol, nameStr)` - returns member with name=nameStr in symbol.
 	Works for structs and enums.
-* `%canCast(s1, s2)` - whether s1 is castable to s2
-* `%typeOf(symbol)` - data type of a symbol
-* `%isRef(symbol)` - true if a data type is reference
-* `%isFn(symbol)` - true if a symbol is a function
-* `%isStruct(symbol)` - true if a symbol is a struct
-* `%isEnum(symbol)` - true if a symbol is an enum
-* `%isVar(symbol)` - true if a symbol is a variable
-* `%isPub(symbol)` - true if a symbol is public
-* ``
+* `canCast(s1, s2)` - whether s1 is castable to s2
+* `typeOf(symbol)` - data type of a symbol
+* `isRef(symbol)` - true if a data type is reference
+* `isTemplate(symbol)` - true if a symbol is a template
+* `isFn(symbol)` - true if a symbol is a function
+* `isFnTemplate(symbol)` - true if a symbol is a function template
+* `isStruct(symbol)` - true if a symbol is a struct
+* `isStructTemplate(symbol)` - true if a symbol is a struct template
+* `isEnum(symbol)` - true if a symbol is an enum
+* `isEnumTemplate(symbol)` - true if a symbol is an enum template
+* `isVar(symbol)` - true if a symbol is a variable
+* `isVarTemplate(symbol)` - true if a symbol is a variable template
+* `isPub(symbol)` - true if a symbol is public
