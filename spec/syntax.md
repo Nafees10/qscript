@@ -904,11 +904,11 @@ Templates can be used on compile time constants:
 
 ```
 template TypeName(T){
-	static if (T is int)
+	$if (T is int)
 		enum string TypeName = "int";
-	else static if (T is double)
+	else $if (T is double)
 		enum string TypeName = "double";
-	else static if (T is char[])
+	else $if (T is char[])
 		enum string TypeName = "string";
 	else
 		enum string TypeName = "weird type";
