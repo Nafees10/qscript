@@ -2,7 +2,7 @@ Note: this is currently WIP and not finalised
 
 TODO: reorganize the sections in this
 
-# QScript Syntax
+# QScript Language Reference
 
 # Comments
 Comments can be added using the `#` character or `//`.
@@ -348,7 +348,9 @@ var [ref] auto
 This is necessary since the `auto` detection will not pick up whether it should
 be made `ref`
 
-## Structs
+---
+
+# Structs
 These can be used to store multiple values of varying or same data types.
 
 They are defined like:
@@ -372,7 +374,7 @@ Keep in mind that recursive dependency is not possible in structs. However you
 can have an array of the same type inside the struct, as arrays are initialised
 to length 0.
 
-### `this` constructor
+## `this` constructor
 Similar to scripts, structs have a constructor that is called after initialising
 variables:
 
@@ -390,7 +392,9 @@ struct Position{
 }
 ```
 
-## Enums
+---
+
+# Enums
 Enum can be used to group together constants of the same base data type.
 
 Enums are defined like:
@@ -425,6 +429,30 @@ Enums act as data types:
 var ErrorType err; # initialised to FileNotFound
 // or
 var auto err = ErrorType.FileNotFound;
+```
+
+## Compile Time Constants
+
+The `enum` keyword can be used to create constants that are evaluated compile
+time as follows:
+
+```
+enum int U8MASK = (1 << 4) - 1; # evaluated at compile time
+```
+
+---
+
+# Aliases
+
+`alias` keyword can be used to enable using alternative identifiers to access
+something:
+
+```
+struct Position{ # struct is private
+	pub int x, y;
+}
+
+pub alias Coordinate = Position; # Coordinate is publically accessible
 ```
 
 ---
@@ -708,7 +736,7 @@ fn opAdd(ref A left, ref A right) { ... }
 fn opIncPost(ref A operand) { ... }
 ```
 
-### Operator Functions
+## Operator Functions
 
 The function associated with each operator is as follows:
 
@@ -774,3 +802,153 @@ The comparison operators are translated as follows:
 |	`a <= b`		| `opCmp(a, b) !is 1`				|
 |	`a > b`			| `opCmp(a, b) is 1`				|
 |	`a < b`			| `opCmp(a, b) is -1`				|
+
+---
+
+# Conditional Compilation
+
+## Static If
+
+The `static if` can be used to determine which branch of code to compile:
+
+```
+static if (someCompileTimeValue){
+	writeln("someCompileTimeValue was true at compile time");
+}else{
+	writeln("was not");
+}
+```
+
+## Static Foreach
+
+`static foreach` iterates over a container that is available at compile time,
+and copies its body for each element:
+
+```
+# this loop will not exist at runtime
+static foreach (num; [0, 5, 4, 2]){
+	writeln(num.toString());
+}
+```
+
+Since a `static foreach` will copy it's body, it will result in redefinition
+errors if any definitions are made inside. To avoid, do:
+
+```
+static foreach (num; [0, 5, 4, 2]){{
+	enum square = num * num;
+	writeln(square.toString());
+}}
+```
+
+---
+
+# Metaprogramming
+
+## Templates
+
+A template can be declared using the `template` keyword followed by name and a
+tuple of template parameters:
+
+```
+// an overly complicated way to create global variables of a type
+template globVar(T){
+	var T globVar;
+}
+fn int getSquare(int x){ return x * x; }
+template square(int x){
+	enum int square = getSquare(x); # function call will be made at compile time
+}
+```
+
+Since the template results in a variable with the same identifier as the
+template itself, the resulting variable will replace the template whereever
+initialised:
+
+```
+globVar<int> = 5;
+writeln(globVar<int>); # prints 5
+writeln(square<5>); # prints 25
+```
+
+## Functions
+
+Function templates are defined as regular functions with an extra tuple for
+template parameters:
+
+```
+fn T sum(T)(T a, T b){
+	return a + b;
+}
+// or
+var auto sum = (T)(T a, T b) -> a + b;
+// both of these are the same as:
+template sum(T){
+	fn T sum(T a, T b){
+		return a + b;
+	}
+}
+```
+
+Calling a function template can be done as:
+```
+var int c = sum(5, 10);
+```
+QScript is able to determine what value to use for `T`
+
+## Enums
+
+Templates can be used on compile time constants:
+
+```
+template TypeName(T){
+	static if (T is int)
+		enum string TypeName = "int";
+	else static if (T is double)
+		enum string TypeName = "double";
+	else static if (T is char[])
+		enum string TypeName = "string";
+	else
+		enum string TypeName = "weird type";
+}
+fn bool typeIsSupported(T)(){
+	return TypeName<T> != "weird type";
+}
+```
+
+## Structs
+
+```
+struct Position(T){
+	var T x, y;
+}
+alias PositionDiscrete = Position<int>;
+alias PositionContinuous = Position<double>;
+```
+
+## Traits
+
+These are smybols that the compiler will replace at compile time.
+They are written with a `%` prefixed:
+
+```
+%traitName(...)
+```
+
+* `%fnIsStatic(symbol)` - true if a symbol is static function
+* `%fnRetType(symbol)` - return type of a function
+* `%fnArgs(symbol)` - array of names of function arguments
+* `%fnArgType(symbol, name)` - argument type of argument with name in function
+* `%members(symbol)` - string array, names of accessible members inside of a
+	symbol. Works for structs and enums.
+* `%member(symbol, nameStr)` - returns member with name=nameStr in symbol.
+	Works for structs and enums.
+* `%canCast(s1, s2)` - whether s1 is castable to s2
+* `%typeOf(symbol)` - data type of a symbol
+* `%isRef(symbol)` - true if a data type is reference
+* `%isFn(symbol)` - true if a symbol is a function
+* `%isStruct(symbol)` - true if a symbol is a struct
+* `%isEnum(symbol)` - true if a symbol is an enum
+* `%isVar(symbol)` - true if a symbol is a variable
+* `%isPub(symbol)` - true if a symbol is public
+* ``
