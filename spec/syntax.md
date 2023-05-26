@@ -843,9 +843,7 @@ $foreach (num; [0, 5, 4, 2]){{
 
 ---
 
-# Metaprogramming
-
-## Templates
+# Templates
 
 A template can be declared using the `template` keyword followed by name and a
 tuple of template parameters:
@@ -859,6 +857,9 @@ fn int getSquare(int x){ return x * x; }
 template square(int x){
 	enum int square = getSquare(x); # function call will be made at compile time
 }
+template sum(T x, T y, T){
+	T sum = x + y;
+}
 ```
 
 Since the template results in a variable with the same identifier as the
@@ -866,9 +867,10 @@ template itself, the resulting variable will replace the template whereever
 initialised:
 
 ```
-globVar<int> = 5;
-writeln(globVar<int>); # prints 5
-writeln(square<5>); # prints 25
+globVar!int = 5;
+writeln(globVar!int); # prints 5
+writeln(square!5); # prints 25
+writeln(sum!(5.5 + 2)); # prints 7.5
 ```
 
 ## Functions
@@ -892,7 +894,7 @@ template sum(T){
 
 Calling a function template can be done as:
 ```
-var int c = sum<int>(5, 10);
+var int c = sum!int(5, 10);
 // or
 var int c = sum(5, 10);
 ```
@@ -914,7 +916,7 @@ template TypeName(T){
 		enum string TypeName = "weird type";
 }
 fn bool typeIsSupported(T)(){
-	return TypeName<T> != "weird type";
+	return TypeName!T != "weird type";
 }
 ```
 
@@ -924,11 +926,13 @@ fn bool typeIsSupported(T)(){
 struct Position(T){
 	var T x, y;
 }
-alias PositionDiscrete = Position<int>;
-alias PositionContinuous = Position<double>;
+alias PositionDiscrete = Position!int;
+alias PositionContinuous = Position!double;
 ```
 
-## Traits
+---
+
+# Traits
 
 Compiler directives, written as:
 
