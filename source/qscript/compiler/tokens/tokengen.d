@@ -3,7 +3,6 @@ module qscript.compiler.tokens.tokengen;
 import utils.misc;
 import utils.ds;
 
-import std.functional : toDelegate;
 import std.algorithm;
 import std.traits;
 
@@ -76,7 +75,7 @@ public struct Match{
 	private bool exactMatch;
 	union{
 		string matchStr;
-		uint delegate(string) funcMatch;
+		uint function(string) funcMatch;
 	}
 
 	/// attempt to match
@@ -97,14 +96,9 @@ public struct Match{
 		this.matchStr = match;
 	}
 
-	this (uint delegate(string) match){
-		this.exactMatch = false;
-		this.funcMatch = match;
-	}
-
 	this(uint function(string) match){
 		this.exactMatch = false;
-		this.funcMatch = toDelegate(match);
+		this.funcMatch = match;
 	}
 }
 
@@ -155,7 +149,7 @@ private:
 				matches += member;
 			}
 		}}
-		if (maxLen && maxLen < str.length)
+		if (maxLen && maxLen <= str.length)
 			return Token!T(matches, str[0 .. maxLen]);
 		return Token!T.init;
 	}
@@ -189,8 +183,8 @@ public:
 	/// Throws: TokenizerException
 	Token!T next(){
 		Token!T token = _getToken(_source[_seek .. $]);
-		token.lineno = lineno + 1;
-		token.colno = _seek - lastNewLineIndex;
+		token.lineno = _lineno + 1;
+		token.colno = _seek - _lastNewlineIndex;
 		if (!token)
 			throw new TokenizerException(token.lineno, token.colno);
 		// increment _lineno if needed
@@ -207,5 +201,41 @@ public:
 
 ///
 unittest{
-	// TODO
+	static uint idenfifyWhitespace(string str){
+		uint ret = 0;
+		while (ret < str.length && (str[ret] == ' ' || str[ret] == '\n'))
+			ret ++;
+		return ret;
+	}
+
+	static uint identifyWord(string str){
+		foreach (i, c; str){
+			if (c < 'a' || c > 'z')
+				return cast(uint)i;
+			if (i + 1 == str.length)
+				return cast(uint)i + 1;
+		}
+		return 0;
+	}
+
+	enum Type{
+		@Match(`keyword`)						Keyword,
+		@Match(&idenfifyWhitespace)	Whitespace,
+		@Match(&identifyWord)				Word
+	}
+
+	auto tokenizer = new Tokenizer!Type(`  keyword word`);
+	Token!Type[] tokens;
+	while (!tokenizer.end)
+		tokens ~= tokenizer.next;
+
+	assert (tokens.length = 4);
+	assert(tokens[0].type.get!(Type.Whitespace));
+
+	assert(tokens[1].type.get!(Type.Keyword));
+	assert(tokens[1].type.get!(Type.Word));
+
+	assert(tokens[2].type.get!(Type.Whitespace));
+
+	assert(tokens[3].type.get!(Type.Word));
 }
