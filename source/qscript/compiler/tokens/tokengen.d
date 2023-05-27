@@ -155,7 +155,7 @@ private:
 	}
 
 public:
-	this (string source){
+	this (string source = null){
 		this._source = source;
 	}
 
@@ -201,7 +201,7 @@ public:
 
 ///
 unittest{
-	static uint idenfifyWhitespace(string str){
+	static uint identifyWhitespace(string str){
 		uint ret = 0;
 		while (ret < str.length && (str[ret] == ' ' || str[ret] == '\n'))
 			ret ++;
