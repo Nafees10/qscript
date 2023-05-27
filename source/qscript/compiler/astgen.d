@@ -2,7 +2,7 @@ module qscript.compiler.astgen;
 
 import qscript.compiler.compiler;
 import qscript.compiler.tokens.tokens;
-
+/*
 /// an AST Node
 package abstract class ASTNode{
 protected:
@@ -145,4 +145,4 @@ public:
 	@property bool error(){
 		return _errors.length != 0;
 	}
-}
+}*/

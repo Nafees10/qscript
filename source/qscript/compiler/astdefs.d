@@ -1,5 +1,5 @@
 module qscript.compiler.astdefs;
-
+/*
 import utils.misc;
 import utils.ds;
 
@@ -1138,4 +1138,4 @@ public:
 	this(){
 		super ("^=", "opbinXorAssign", 1);
 	}
-}
+}*/
