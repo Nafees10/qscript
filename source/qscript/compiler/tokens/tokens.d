@@ -24,20 +24,22 @@ enum TokenType{
 	LiteralChar				, /// char literal
 	LiteralHexadecimal, /// hexadecimal literal
 	LiteralBinary			, /// binary literal
-	KeywordImport			, /// `import` keyword
-	KeywordFunction		, /// `function` keyword
+	KeywordTemplate		, /// `template` keyword
+	KeywordLoad				, /// `load` keyword
+	KeywordAlias			, /// `alias` keyword
+	KeywordFn					, /// `fn` keyword
 	KeywordVar				, /// `var` keyword
 	KeywordRef				, /// `ref` keyword
 	KeywordEnum				, /// `enum` keyword
 	KeywordStruct			, /// `struct` keyword
-	KeywordPrivate		, /// `private` keyword
-	KeywordPublic			, /// `public` keyword
+	KeywordPub				, /// `pub` keyword
 	KeywordReturn			, /// `return` keyword
 	KeywordThis				, /// `this` keyword
-	KeywordVoid				, /// `void` keyword
+	KeywordAuto				, /// `auto` keyword
 	KeywordInt				, /// `int` keyword
 	KeywordFloat			, /// `float` keyword
 	KeywordChar				, /// `char` keyword
+	KeywordString			, /// `string` keyword
 	KeywordBool				, /// `bool` keyword
 	KeywordTrue				, /// `true` keyword
 	KeywordFalse			, /// `false` keyword
@@ -45,11 +47,14 @@ enum TokenType{
 	KeywordElse				, /// `else` keyword
 	KeywordWhile			, /// `while` keyword
 	KeywordDo					, /// `do` keyword
-	KeywordFor				, /// `for` keyword
+	KeywordForeach		, /// `foreach` keyword
 	KeywordBreak			, /// `break` keyword
 	KeywordContinue		, /// `continue` keyword
+	KeywordIs					, /// `is` keyword
+	KeywordNotIs			, /// `!is` keyword
 	Identifier				, /// identifier
 	Semicolon					, /// `;`
+	Arrow							, /// `->`
 	Comma							, /// `,`
 	Operator					, /// Operator (determined by the actual token)
 	BracketOpen				, /// `(`
@@ -58,6 +63,9 @@ enum TokenType{
 	IndexClose				, /// `]`
 	CurlyOpen					, /// `{`
 	CurlyClose				, /// `}`
+	Trait							, /// `$xyz`
+	StaticIf					, /// `$if`
+	StaticForeach			, /// `$foreach`
 }
 
 /// for reading tokens from a qscript source file
@@ -74,7 +82,8 @@ private:
 			return cast(uint)(str.length);
 		});
 		_tkGen.addTokenType(TokenType.Comment, function (string str){
-			if (!str.length || str[0] != '#')
+			if ((!str.length || str[0] != '#') ||
+					(str.length < 2 || str[0 .. 2] != "//"))
 				return cast(uint)0;
 			foreach (index, ch; str[1 .. $]){
 				if (ch == '\n')
@@ -155,20 +164,21 @@ private:
 		});
 		Flags!TokenType preReq;
 		preReq += TokenType.Identifier;
-		_tkGen.addTokenType(TokenType.KeywordImport, `import`, preReq);
-		_tkGen.addTokenType(TokenType.KeywordFunction, `function`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordLoad, `load`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordAlias, `alias`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordFn, `fn`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordVar, `var`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordRef, `ref`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordEnum, `enum`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordStruct, `struct`, preReq);
-		_tkGen.addTokenType(TokenType.KeywordPrivate, `private`, preReq);
-		_tkGen.addTokenType(TokenType.KeywordPublic, `public`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordPub, `pub`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordReturn, `return`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordThis, `this`, preReq);
-		_tkGen.addTokenType(TokenType.KeywordVoid, `void`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordAuto, `auto`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordInt, `int`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordFloat, `float`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordChar, `char`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordString, `string`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordBool, `bool`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordTrue, `true`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordFalse, `false`, preReq);
@@ -176,9 +186,11 @@ private:
 		_tkGen.addTokenType(TokenType.KeywordElse, `else`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordWhile, `while`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordDo, `do`, preReq);
-		_tkGen.addTokenType(TokenType.KeywordFor, `for`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordForeach, `foreach`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordBreak, `break`, preReq);
 		_tkGen.addTokenType(TokenType.KeywordContinue, `continue`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordIs, `is`, preReq);
+		_tkGen.addTokenType(TokenType.KeywordNotIs, `!is`); // no preReq here
 		_tkGen.addTokenType(TokenType.Identifier, function (string str){
 			uint len;
 			while (len < str.length && str[len] == '_')
@@ -195,32 +207,34 @@ private:
 					return len;
 			}
 			return cast(uint)str.length;
-		});
+			});
 		_tkGen.addTokenType(TokenType.Semicolon, `;`);
+		_tkGen.addTokenType(TokenType.Arrow, `->`);
 		_tkGen.addTokenType(TokenType.Comma, `,`);
 		// operators
 		_tkGen.addTokenType(TokenType.Operator, `.`);
-		_tkGen.addTokenType(TokenType.Operator, `@`);
 		_tkGen.addTokenType(TokenType.Operator, `!`);
 		_tkGen.addTokenType(TokenType.Operator, `++`);
 		_tkGen.addTokenType(TokenType.Operator, `--`);
 		_tkGen.addTokenType(TokenType.Operator, `*`);
 		_tkGen.addTokenType(TokenType.Operator, `/`);
+		_tkGen.addTokenType(TokenType.Operator, `%`);
 		_tkGen.addTokenType(TokenType.Operator, `+`);
 		_tkGen.addTokenType(TokenType.Operator, `-`);
-		_tkGen.addTokenType(TokenType.Operator, `%`);
 		_tkGen.addTokenType(TokenType.Operator, `~`);
+		_tkGen.addTokenType(TokenType.Operator, `<<`);
+		_tkGen.addTokenType(TokenType.Operator, `>>`);
 		_tkGen.addTokenType(TokenType.Operator, `<`);
 		_tkGen.addTokenType(TokenType.Operator, `>`);
 		_tkGen.addTokenType(TokenType.Operator, `<=`);
 		_tkGen.addTokenType(TokenType.Operator, `>=`);
 		_tkGen.addTokenType(TokenType.Operator, `==`);
 		_tkGen.addTokenType(TokenType.Operator, `!=`);
-		_tkGen.addTokenType(TokenType.Operator, `&&`);
-		_tkGen.addTokenType(TokenType.Operator, `||`);
 		_tkGen.addTokenType(TokenType.Operator, `&`);
 		_tkGen.addTokenType(TokenType.Operator, `|`);
 		_tkGen.addTokenType(TokenType.Operator, `^`);
+		_tkGen.addTokenType(TokenType.Operator, `&&`);
+		_tkGen.addTokenType(TokenType.Operator, `||`);
 		_tkGen.addTokenType(TokenType.Operator, `=`);
 		_tkGen.addTokenType(TokenType.Operator, `+=`);
 		_tkGen.addTokenType(TokenType.Operator, `-=`);
@@ -232,12 +246,19 @@ private:
 		_tkGen.addTokenType(TokenType.Operator, `|=`);
 		_tkGen.addTokenType(TokenType.Operator, `^=`);
 		_tkGen.addTokenType(TokenType.Operator, `[`);
+		_tkGen.addTokenType(TokenType.Operator, `(`);
 
 		_tkGen.addTokenType(TokenType.BracketOpen, `(`);
 		_tkGen.addTokenType(TokenType.BracketClose, `)`);
 		_tkGen.addTokenType(TokenType.IndexClose, `]`);
 		_tkGen.addTokenType(TokenType.CurlyOpen, `{`);
 		_tkGen.addTokenType(TokenType.CurlyClose, `}`);
+
+		_tkGen.addTokenType(TokenType.Trait, function(string str){
+				if (str.length < 2 || str[1] == ' ' || str[1] == '\t' || str[1] == '\n')
+					return 0;
+				return 0;
+			});
 	}
 public:
 	/// constructor
