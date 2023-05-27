@@ -26,7 +26,7 @@ package enum Visibility{
 	Public
 }
 
-/// Stores explanations for CompileError.Type  
+/// Stores explanations for CompileError.Type
 /// `$` character is replaced by a detail that can be specified in CompileError.details
 private string[CompileError.Type] ERROR_EXPLAIN_STRING;
 /// default script name
@@ -40,7 +40,6 @@ package const uint ERRORS_MAX = 20;
 
 /// Data type names
 package enum TYPENAME : string{
-	VOID = "void",
 	INT = "int",
 	FLOAT = "float",
 	CHAR = "char",
@@ -48,7 +47,7 @@ package enum TYPENAME : string{
 }
 
 /// unescapes a string. the string must be provided with surrounding quotes stripped
-/// 
+///
 /// Returns: unescaped string
 package char[] strUnescape(string str){
 	uint i, shift;
@@ -67,7 +66,7 @@ package char[] strUnescape(string str){
 	}
 	return r;
 }
-/// 
+///
 unittest{
 	string s = "t\\\"bcd\\\"\\t\\\\";
 	assert(strUnescape(s) == "t\"bcd\"\t\\", strUnescape(s));
@@ -117,7 +116,8 @@ struct CompileError{
 		foreach (detail; details){
 			while (i < errStr.length){
 				if (errStr[i] == '$'){
-					errStr = errStr[0 .. i] ~ detail ~ (i + 1 < errStr.length ? errStr[i + 1 .. $] : []);
+					errStr = errStr[0 .. i] ~ detail ~
+						(i + 1 < errStr.length ? errStr[i + 1 .. $] : []);
 					i += detail.length;
 					break;
 				}
