@@ -1,9 +1,5 @@
 module qscript.compiler.tokens.tokens;
 
-import utils.misc;
-import utils.ds;
-
-import qscript.compiler.compiler;
 import qscript.compiler.tokens.tokengen;
 
 debug import std.stdio;

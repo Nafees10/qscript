@@ -1,6 +1,5 @@
 module qscript.compiler.tokens.tokengen;
 
-import utils.misc;
 import utils.ds;
 
 import std.algorithm;
