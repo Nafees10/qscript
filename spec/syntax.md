@@ -265,7 +265,7 @@ struct SomeStruct{
 	var int i;
 }
 fn opFnCall(SomeStruct strct, int a){
-	writeln("SomeStruct() called with a = " ~ toString(a));
+	writeln("SomeStruct() called with a = " + toString(a));
 }
 fn main(){
 	var SomeStruct s;
@@ -505,7 +505,7 @@ In case you want to modify the whole array, it can be done like:
 ```
 var char someChar = 'a';
 var char[] someString;
-someString = [someChar, 'b', 'c'] ; # you could've also done [someChar] ~ "bc"
+someString = [someChar, 'b', 'c'] ; # you could've also done someChar + "bc"
 ```
 
 ## Variable Scope
@@ -620,7 +620,7 @@ Foreach loops use `iterators` to iterate over members of a value:
 ```
 for (ITERATOR_VALUE, VALUE; CONTAINER){
 	# do stuff
-	writeln("value at " ~ ITERATOR_VALUE.toString() ~ " is " ~ VALUE.toString());
+	writeln("value at " + ITERATOR_VALUE.toString() + " is " + VALUE.toString());
 }
 ```
 
@@ -629,7 +629,7 @@ Arrays already have iterators and can be used:
 ```
 var int[] bunchOfNumbers = getABunchOfNumbers();
 for (i, number; bunchOfNumbers)
-	writeln(i.toString() ~ "th number is " ~ number.toString());
+	writeln(i.toString() + "th number is " + number.toString());
 ```
 
 ### Iterator:
@@ -690,12 +690,12 @@ Operators are read in this order (higher = evaluated first):
 1. `a++`, `a--`
 1. `!a`, `++a`, `--a`
 1. `*`, `/`, `%`
-1. `+`, `-`, `~`
+1. `+`, `-`
 1. `<<`, `>>`
 1. `==`, `!=`, `>=`, `<=`, `>`, `<`, `is`, `!is`
 1. `&`, `|`, `^`
 1. `&&`, `||`
-1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `~=`, `&=`, `|=`, `^=`
+1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`
 
 ## Operator Overloading
 Operators are read as functions, and can be overrided same as functions.
@@ -757,7 +757,6 @@ The function associated with each operator is as follows:
 | `%`				|	`T opMod(Ta a, Tb b)`										|
 | `+`				|	`T opAdd(Ta a, Tb b)`										|
 | `-`				|	`T opSubtract(Ta a, Tb b)`							|
-| `~`				|	`T opConcat(Ta a, Tb b)`								|
 | `<<`			|	`T opBitshiftLeft(Ta a, Tb b)`					|
 | `>>`			|	`T opBitshiftRight(Ta a, Tb b)`					|
 | `==`			|	`int opCmp(Ta a, Tb b)`									|
@@ -777,7 +776,6 @@ The function associated with each operator is as follows:
 | `*=`			|	`T opMultiplyAssign(Ta a, Tb b)`				|
 | `/=`			|	`T opDivideAssign(Ta a, Tb b)`					|
 | `%=`			|	`T opModAssign(Ta a, Tb b)`							|
-| `~=`			|	`T opConcatAssign(Ta a, Tb b)`					|
 | `&=`			|	`T opBinAndAssign(Ta a, Tb b)`					|
 | `\|=`			|	`T opBinOrAssign(Ta a, Tb b)`						|
 | `^=`			|	`T opBinXorAssign(Ta a, Tb b)`					|
@@ -867,11 +865,13 @@ template itself, the resulting variable will replace the template whereever
 initialised:
 
 ```
-globVar!int = 5;
-writeln(globVar!int); # prints 5
-writeln(square!5); # prints 25
-writeln(sum!(5.5 + 2)); # prints 7.5
+globVar(int) = 5;
+writeln(globVar(int)); # prints 5
+writeln(square(5)); # prints 25
+writeln(sum(5.5 + 2)); # prints 7.5
 ```
+
+As shown above, templates are initialised similar to a function call
 
 ## Functions
 
@@ -894,7 +894,7 @@ template sum(T){
 
 Calling a function template can be done as:
 ```
-var int c = sum!int(5, 10);
+var int c = sum(int)(5, 10);
 // or
 var int c = sum(5, 10);
 ```
