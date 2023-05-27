@@ -1,148 +1,101 @@
 module qscript.compiler.astgen;
 
-import qscript.compiler.compiler;
 import qscript.compiler.tokens.tokens;
-/*
+
+import core.vararg;
+import std.traits;
+import std.json;
+import std.string;
+import std.array;
+import std.stdio;
+import std.conv : to;
+
 /// an AST Node
-package abstract class ASTNode{
-protected:
-	/// line number and column number
-	uint[2] _location;
-	/// parent node
-	ASTNode _parent = null;
-	/// name
-	string _name;
-
-	abstract @property const(ASTNode)[] _children() const;
-
+public class ASTNode{
 public:
-	/// Returns: line number
-	@property uint lineno() const {
-		return _location[0];
-	}
-	/// ditto
-	@property uint lineno(uint newVal){
-		return _location[0] = newVal;
-	}
+	Token token;
+	ASTNode[] children;
 
-	/// Returns: column number
-	@property uint colno() const {
-		return _location[1];
-	}
-	/// ditto
-	@property uint colno(uint newVal){
-		return _location[1] = newVal;
-	}
-
-	/// name
-	@property string name() const {
-		return _name;
-	}
-	/// ditto
-	@property string name(string newName){
-		return _name = newName;
+	JSONValue toJSON(){
+		JSONValue ret;
+		ret["token"] = token.token;
+		string type;
+		foreach (member; EnumMembers!TokenType){
+			if (!token.type[member])
+				continue;
+			type ~= member.to!string ~ ", ";
+		}
+		if (type.length)
+			ret["type"] = type.chomp(", ");
+		JSONValue[] sub;
+		foreach (child; children)
+			sub ~= child.toJSON;
+		if (sub.length)
+			ret["children"] = sub;
+		return ret;
 	}
 }
 
-/// Factory function for an ASTNode
-///
-/// Params:
-/// * tokens
-/// * starting index (should be modified to point to token after last token this read)
-/// * ASTGen, caller
-///
-/// Returns:
-/// ASTNode generated, or null
-alias ASTFactoryFunc = ASTNode delegate(Token[], ref uint, ASTGen);
-
-/// AST Generator
-class ASTGen{
-private:
-	/// AST Node factory functions, with hook (token type) as key
-	ASTFactoryFunc[] _factories;
-	/// tokens
-	Token[] _source;
-	/// seek index
-	uint _seek;
-	/// Errors
-	CompileError[] _errors;
-
-public:
-	/// Source
-	@property Token[] source(){
-		return _source;
+struct MatchUnit{
+	bool isToken = false;
+	union{
+		MatchType matchType;
+		TokenType tokenType;
 	}
-	/// ditto
-	@property Token[] source(Token[] newVal){
-		return _source = newVal;
-	}
+}
 
-	/// Seek index
-	@property uint seek() const {
-		return _seek;
+MatchUnit[] match(string grammar)(){
+	enum string[] matchStr = grammar.split(" ");
+	MatchUnit[] ret;
+	ret.length = matchStr.length;
+	static foreach (i, str; matchStr){
+		static if (str[0] == '/'){
+			ret[i].matchType = __traits(getMember, MatchType, str[1 .. $]);
+		}else{
+			ret[i].tokenType = __traits(getMember, TokenType, str[0 .. $]);
+			ret[i].isToken = true;
+		}
 	}
+	return ret;
+}
 
-	/// resets errors & seek
-	void reset(){
-		_seek = 0;
-		_errors.length = 0;
-	}
+enum MatchType{
+	Expression,
+}
 
-	/// adds a factory
-	///
-	/// Returns: true if done, false if hook already used
-	bool factoryAdd(uint hook, ASTFactoryFunc fact){
-		if (hook in _factories || !fact)
-			return false;
-		_factories[hook] = fact;
-		return true;
-	}
-
-	/// Returns: true if a factory exists for a hook
-	bool factoryExists(uint hook){
-		return (hook in _factories) !is null;
-	}
-
-	/// Generates ASTNodes (starting at index, default 0)
-	///
-	/// Returns: generated ASTNodes
-	ASTNode[] generate(uint index = 0){
-		if (index >= _source.length)
-			return null;
-		ASTNode[] ret;
-		for (; index < _source.length; index ++){
-			immutable Token tok = _source[index];
-			ASTFactoryFunc* func = tok.type in _factories;
-			ASTNode node;
-			if (func)
-				node = (*func)(_source, index, this);
-			if (!node){
-				errorAdd(CompileError(CompileError.Type.TokenUnexpected, tok.where));
-				return ret;
-			}
-			ret ~= node;
+struct Matchers{
+	@(MatchType.Expression)
+	@match!`LiteralInt` @match!`/Expression OperatorAdd /Expression`
+	static ASTNode matchExpr(Token[] tokens){
+		ASTNode ret = new ASTNode;
+		if (tokens.length == 1){
+			ret.token = tokens[0];
+		}else{
+			ret.token = tokens[1];
+			ret.children = [matchExpr([tokens[0]]), matchExpr([tokens[2]])];
 		}
 		return ret;
 	}
+}
 
-	/// Adds an error
-	void errorAdd(CompileError err){
-		// just append, use the errorsSort to sort
-		_errors ~= err;
+unittest{
+	import qscript.compiler.tokens.tokengen : Tokenizer;
+	auto tokenizer = new Tokenizer!TokenType(`5 + 3`);
+	Token[] tokens;
+	while (!tokenizer.end)
+		tokens ~= tokenizer.next;
+	// remove whitespace
+	uint shift, i;
+	while (i + shift < tokens.length){
+		if (tokens[i + shift].type[TokenType.Whitespace]){
+			shift ++;
+			continue;
+		}
+		if (shift)
+			tokens[i] = tokens[i + shift];
+		i ++;
 	}
+	tokens.length = i;
 
-	/// Sorts errors, by line number, and col number
-	void errorsSort(){
-		// TODO implement
-	}
-
-	/// Returns: errors
-	@property CompileError[] errors(){
-		return _errors;
-	}
-
-	/// Returns: true if there are any errors
-	@property bool error(){
-		return _errors.length != 0;
-	}
-}*/
+	writeln(Matchers.matchExpr(tokens).toJSON.toPrettyString);
+}
