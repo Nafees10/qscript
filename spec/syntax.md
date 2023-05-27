@@ -618,7 +618,7 @@ again.
 Foreach loops use `iterators` to iterate over members of a value:
 
 ```
-foreach (ITERATOR_VALUE, VALUE; CONTAINER){
+for (ITERATOR_VALUE, VALUE; CONTAINER){
 	# do stuff
 	writeln("value at " ~ ITERATOR_VALUE.toString() ~ " is " ~ VALUE.toString());
 }
@@ -628,7 +628,7 @@ Arrays already have iterators and can be used:
 
 ```
 var int[] bunchOfNumbers = getABunchOfNumbers();
-foreach (i, number; bunchOfNumbers)
+for (i, number; bunchOfNumbers)
 	writeln(i.toString() ~ "th number is " ~ number.toString());
 ```
 
@@ -819,23 +819,23 @@ $if (someCompileTimeValue){
 }
 ```
 
-## `$foreach`
+## `$for`
 
-`$foreach` iterates over a container that is available at compile time,
+`$for` iterates over a container that is available at compile time,
 and copies its body for each element:
 
 ```
 # this loop will not exist at runtime
-$foreach (num; [0, 5, 4, 2]){
+$for (num; [0, 5, 4, 2]){
 	writeln(num.toString());
 }
 ```
 
-Since a `$foreach` will copy it's body, it will result in redefinition
+Since a `$for` will copy it's body, it will result in redefinition
 errors if any definitions are made inside. To avoid, do:
 
 ```
-$foreach (num; [0, 5, 4, 2]){{
+$for (num; [0, 5, 4, 2]){{
 	enum square = num * num;
 	writeln(square.toString());
 }}
