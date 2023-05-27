@@ -220,7 +220,7 @@ unittest{
 
 	enum Type{
 		@Match(`keyword`)						Keyword,
-		@Match(&idenfifyWhitespace)	Whitespace,
+		@Match(&identifyWhitespace)	Whitespace,
 		@Match(&identifyWord)				Word
 	}
 
