@@ -1,4 +1,4 @@
-module qscript.compiler.tokens.tokengen;
+module qscript.base.tokens;
 
 import utils.ds;
 

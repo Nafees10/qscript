@@ -1,4 +1,4 @@
-module qscript.compiler.compiler;
+module qscript.compiler;
 
 import utils.misc;
 import utils.ds;

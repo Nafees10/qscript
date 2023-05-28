@@ -1,11 +1,11 @@
-module qscript.compiler.tokens.tokens;
+module qscript.tokens;
 
-import qscript.compiler.tokens.tokengen;
+import qscript.base.tokens;
 
 debug import std.stdio;
 
 /// A Token
-public alias Token = qscript.compiler.tokens.tokengen.Token!TokenType;
+public alias Token = qscript.base.tokens.Token!TokenType;
 
 /// possible token types
 enum TokenType{

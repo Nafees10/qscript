@@ -1,10 +1,10 @@
-module qscript.compiler.astdefs;
-
+module qscript.ast;
+/*
 import utils.misc;
 import utils.ds;
 
-import qscript.compiler.compiler;
-import qscript.compiler.tokens.tokens;
+import qscript.compiler;
+import qscript.tokens.tokens;
 import qscript.compiler.astgen;
 
 debug import std.stdio;
@@ -370,4 +370,4 @@ public:
 /// Binary Xor Assign operator
 package class OperatorBinXorAssign : OperatorBin{
 public:
-}
+}*/
