@@ -4,6 +4,7 @@ import utils.ds;
 
 import std.algorithm;
 import std.traits;
+import std.conv : to;
 
 debug import std.stdio;
 
@@ -16,10 +17,7 @@ public struct Token(T) if (is (T == enum)){
 	/// token
 	string token;
 	alias token this;
-	/// [line number, colno]
-	@property uint[2] where() const{
-		return [lineno, colno];
-	}
+
 	/// constructor
 	this(uint lineno, uint colno, Flags!T type, string token){
 		this.lineno = lineno;
@@ -27,6 +25,7 @@ public struct Token(T) if (is (T == enum)){
 		this.type = type;
 		this.token = token;
 	}
+
 	/// ditto
 	this(uint lineno, uint colno, T type, string token){
 		this.lineno = lineno;
@@ -34,16 +33,29 @@ public struct Token(T) if (is (T == enum)){
 		this.type.set(type);
 		this.token = token;
 	}
+
 	/// ditto
 	this(Flags!T type, string token){
 		this.type = type;
 		this.token = token;
 	}
+
 	/// ditto
 	this(T type, string token){
 		this.type.set(type);
 		this.token = token;
 	}
+
+	string toString() const {
+		string ret = "{";
+		foreach (member; EnumMembers!T){
+			if (type[member])
+				ret ~= member.to!string ~ ", ";
+		}
+		ret ~= "`" ~ token ~ "`}";
+		return ret;
+	}
+
 	/// == operator
 	bool opBinary(string op : "==")(const Token rhs) const{
 		return type == rhs.type && token == rhs.token;
