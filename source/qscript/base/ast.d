@@ -6,6 +6,7 @@ import std.traits;
 import std.json;
 import std.string;
 import std.array;
+import std.algorithm;
 import std.uni : isWhite;
 import std.stdio;
 import std.conv : to;
@@ -56,19 +57,53 @@ public ASTNode!T match(T, M)(ref Token!T[] tokens) if (
 /// Tries to match tokens with a specific matching expression
 ///
 /// Returns: ASTNode if done, false if not
-public ASTNode!T match(T, M, alias matcher)(ref Token!T[] tokens)
+/*public ASTNode!T match(T, M)(ref Token!T[] tokens)
 		if (is(T == enum) && is(M == enum) && typeof(matcher) == ASTMatch!(T, M)){
 	return null;
-}
+}*/
 
-/// ASTMatch[] associated with an enum M TODO make it private
-public template Matchers(T, M) if (is(M == enum) && is(T == enum)){
+/// ASTMatch[] associated with an enum M
+private template Matchers(T, M) if (is(M == enum) && is(T == enum)){
 	enum auto Matchers = readMatchers();
 	private ASTMatch!(T, M)[] readMatchers() pure {
 		ASTMatch!(T, M)[] ret;
 		static foreach (sym; getSymbolsByUDA!(M, string)){
 			static foreach (match; getUDAs!(sym, string)){
 				ret ~= parseASTMatch!(T, M, sym, match);
+				static if (hasUDA!(sym, KeyMatch))
+					ret[$ - 1].isKey = true;
+			}
+		}
+		return ret;
+	}
+}
+
+/// ASTMatch[] associated with a specific member in enum M
+private template Matchers(T, M, M sym) if (is(M == enum) && is(T == enum)){
+	enum auto Matchers = readMatchers();
+	private ASTMatch!(T, M)[] readMatchers() pure {
+		ASTMatch!(T, M)[] ret;
+		static foreach (matcher; Matchers!(T, M)){
+			static if (matcher.type == sym){
+				ret ~= matcher;
+				static if (hasUDA!(sym, KeyMatch))
+					ret[$ - 1].isKey = true;
+			}
+		}
+		return ret;
+	}
+}
+
+/// ASTMatch[] associated with a specific member in enum M, excluding those at
+/// specific indexes
+private template Matchers(T, M, M sym, uint[] exclude)
+		if (is(M == enum) && is(T == enum)){
+	enum auto Matchers = readMatchers();
+	private ASTMatch!(T, M)[] readMatchers() pure {
+		ASTMatch!(T, M)[] ret;
+		static foreach (i, matcher; Matchers!(T, M)){
+			static if (matcher.type == sym && !exclude.canFind(i)){
+				ret ~= matcher;
 				static if (hasUDA!(sym, KeyMatch))
 					ret[$ - 1].isKey = true;
 			}
