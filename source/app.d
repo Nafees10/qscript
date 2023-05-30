@@ -7,40 +7,38 @@ import qscript.base.tokens;
 
 enum TokenType{
 	@Match((string str) => str.length && str[0] >= 'a' && str[0] <= 'z') Var,
-	@Match(`*`) Mul,
-	@Match(`/`) Div,
-	@Match(`+`) Add,
-	@Match(`-`) Sub,
-	@Match(`->`) Arrow,
+	@Match("*") Mul,
+	@Match("/") Div,
+	@Match("+") Add,
+	@Match("-") Sub,
+	@Match("->") Arrow,
 }
 
 enum MatchType{
-	@(`Var`) @(`/ExpressionP0`) @(`/ExpressionP0 -Mul /ExpressionP0`)
+	@("Var") @("/ExpressionP0 -Mul /ExpressionP0")
 		ExpressionP0,
 
-	@(`/ExpressionP0`) @(`/ExpressionP1 -Add /ExpressionP1`)
+	@("/ExpressionP0") @("/ExpressionP1 -Add /ExpressionP1")
 		ExpressionP1,
 
-	@(`/ExpressionP1`)
+	@("/ExpressionP1")
 		Expression,
 
-	@(`Var -Arrow /Expression`)
+	@("Var -Arrow /Expression")
 		Function
-}
+} // a->x+y/x
 
 alias Tokenizer = qscript.base.tokens.Tokenizer!TokenType;
 alias Token = qscript.base.tokens.Token!TokenType;
 
 version(unittest){}else
 void main(){
-	enum a = Matchers!(TokenType, MatchType)[0];
-	//match!(TokenType, MatchType, a)();
-
-	Tokenizer tokMaker = new Tokenizer(`x->x+y/x`);
+	Tokenizer tokMaker = new Tokenizer("x->x+y/x");
 	Token[] tokens;
-	writeln("tokens:");
+	write("tokens: ");
 	while (!tokMaker.end){
 		tokens ~= tokMaker.next;
-		tokens[$-1].writeln();
+		writef!"%s "(tokens[$ - 1]);
 	}
+	writeln;
 }
