@@ -6,12 +6,12 @@ import qscript.base.ast;
 import qscript.base.tokens;
 
 enum TokenType{
-	@((string str) => str.length && str[0] >= 'a' && str[0] <= 'z') Var,
-	@(`*`) Mul,
-	@(`/`) Div,
-	@(`+`) Add,
-	@(`-`) Sub,
-	@(`->`) Arrow,
+	@Match((string str) => str.length && str[0] >= 'a' && str[0] <= 'z') Var,
+	@Match(`*`) Mul,
+	@Match(`/`) Div,
+	@Match(`+`) Add,
+	@Match(`-`) Sub,
+	@Match(`->`) Arrow,
 }
 
 enum MatchType{
@@ -33,11 +33,14 @@ alias Token = qscript.base.tokens.Token!TokenType;
 
 version(unittest){}else
 void main(){
+	enum a = Matchers!(TokenType, MatchType)[0];
+	//match!(TokenType, MatchType, a)();
+
 	Tokenizer tokMaker = new Tokenizer(`x->x+y/x`);
 	Token[] tokens;
-	while (!tokMaker.end)
+	writeln("tokens:");
+	while (!tokMaker.end){
 		tokens ~= tokMaker.next;
-
-	foreach (token; tokens)
-		writeln(token);
+		tokens[$-1].writeln();
+	}
 }

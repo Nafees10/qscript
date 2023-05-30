@@ -43,19 +43,28 @@ public:
 /// this should usually be terminators, like semicolon, comma, bracket ends etc
 enum KeyMatch;
 
-/// matches tokens to patterns from M enum
-public ASTNode!T match(M, T)(Token!T[] tokens) if (
+/// parses tokens using a M match type enum.
+///
+/// Returns: ASTNode, or null
+public ASTNode!T match(T, M)(ref Token!T[] tokens) if (
 		is(T == enum) && is(M == enum)){
 	ASTNode!T ret;
-	// TODO do the thing
+
 	return ret;
 }
 
-/// match tokens from string
-private template ASTMatches(M, T) if (is(M == enum) && is(T == enum)){
-	enum auto ASTMatches = readASTMatches();
+/// Tries to match tokens with a specific matching expression
+///
+/// Returns: ASTNode if done, false if not
+public ASTNode!T match(T, M, alias matcher)(ref Token!T[] tokens)
+		if (is(T == enum) && is(M == enum) && typeof(matcher) == ASTMatch!(T, M)){
+	return null;
+}
 
-	private ASTMatch!(T, M)[] readASTMatches() pure {
+/// ASTMatch[] associated with an enum M TODO make it private
+public template Matchers(T, M) if (is(M == enum) && is(T == enum)){
+	enum auto Matchers = readMatchers();
+	private ASTMatch!(T, M)[] readMatchers() pure {
 		ASTMatch!(T, M)[] ret;
 		static foreach (sym; getSymbolsByUDA!(M, string)){
 			static foreach (match; getUDAs!(sym, string)){
@@ -68,12 +77,13 @@ private template ASTMatches(M, T) if (is(M == enum) && is(T == enum)){
 	}
 }
 
+/// Matching expression for a single match type
 private struct ASTMatch(T, M){
 	struct Unit{
 		bool isTok = false;
 		union{
-			M mat;
 			T tok;
+			M mat;
 		}
 
 		this(M mat){
@@ -93,12 +103,12 @@ private struct ASTMatch(T, M){
 	}
 
 	uint rootInd;
-	Unit[] matches;
+	Unit[] units;
 	M type;
 	bool isKey = false;
 
-	this(Unit[] matches, M type, uint rootInd = 0, bool isKey = false){
-		this.matches = matches;
+	this(Unit[] units, M type, uint rootInd = 0, bool isKey = false){
+		this.units = units;
 		this.type = type;
 		this.rootInd = rootInd;
 		this.isKey = isKey;
@@ -106,9 +116,9 @@ private struct ASTMatch(T, M){
 
 	string toString() const {
 		string ret = (isKey ? "#/" : "/") ~ type.to!string ~ " - > ";
-		if (matches.length)
-			ret ~= (rootInd == 0 ? "-" : null) ~ matches[0].toString;
-		foreach (i, unit; matches[1 .. $])
+		if (units.length)
+			ret ~= (rootInd == 0 ? "-" : null) ~ units[0].toString;
+		foreach (i, unit; units[1 .. $])
 			ret ~= (rootInd == i + 1 ? " -" : " ") ~ unit.toString();
 		return ret;
 	}
