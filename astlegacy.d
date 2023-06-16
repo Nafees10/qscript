@@ -40,10 +40,6 @@ public:
 	}
 }
 
-/// Tag a match type as being a key match (not to backtrack before it)
-/// this should usually be terminators, like semicolon, comma, bracket ends etc
-enum KeyMatch;
-
 /// parses tokens using a M match type enum.
 ///
 /// Returns: ASTNode, or null
