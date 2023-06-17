@@ -137,12 +137,14 @@ public:
 }
 
 /// Fancy string exploder
-public class Tokenizer(T) if (is (T == enum)){
+public struct Tokenizer(T) if (is (T == enum)){
 private:
 	string _source;
 	uint _seek;
 	uint _lineno;
 	uint _lastNewlineIndex;
+
+	Token!T _next;
 
 	/// match a token
 	static Token!T _getToken(string str){
@@ -165,39 +167,19 @@ private:
 		return Token!T.init;
 	}
 
-public:
-	this (string source = null){
-		this._source = source;
-	}
-
-	/// resets seek
-	void resetSeek(){
-		_seek = 0;
-		_lineno = 0;
-		_lastNewlineIndex = 0;
-	}
-
-	/// Sets source string
-	@property string source(string src){
-		resetSeek();
-		return _source = src;
-	}
-
-	@property bool end() const  {
-		return _seek >= _source.length;
-	}
-
 	/// Parses next token. This will throw if called after all tokens been read
 	///
 	/// Returns: Token
 	///
 	/// Throws: TokenizerException
-	Token!T next(){
+	void _parseNext(){
 		Token!T token = _getToken(_source[_seek .. $]);
 		token.lineno = _lineno + 1;
 		token.colno = _seek - _lastNewlineIndex;
-		if (!token)
+		if (!token){
+			_seek = uint.max;
 			throw new TokenizerException(token.lineno, token.colno);
+		}
 		// increment _lineno if needed
 		foreach (i, c; _source[_seek .. _seek + token.length]){
 			if (c == '\n'){
@@ -206,8 +188,31 @@ public:
 			}
 		}
 		_seek += token.length;
-		return token;
+		_next = token;
 	}
+
+public:
+	@disable this();
+	this (string source){
+		this._source = source;
+		_next = _getToken(source[_seek .. $]);
+	}
+
+	bool empty(){
+		return _seek >= _source.length && !_next;
+	}
+
+	void popFront(){
+		if (_seek < _source.length)
+			_parseNext;
+		else
+			_next = Token!T.init;
+	}
+
+	Token!T front(){
+		return _next;
+	}
+
 }
 
 ///
@@ -235,10 +240,9 @@ unittest{
 		@Match(&identifyWord)				Word
 	}
 
-	auto tokenizer = new Tokenizer!Type(`  keyword word`);
 	Token!Type[] tokens;
-	while (!tokenizer.end)
-		tokens ~= tokenizer.next;
+	foreach (token; Tokenizer!Type(`  keyword word`))
+		tokens ~= token;
 
 	assert (tokens.length == 4);
 	assert(tokens[0].type.get!(Type.Whitespace));
