@@ -1,7 +1,8 @@
 module app;
 
 import std.stdio,
-			 std.file;
+			 std.file,
+			 std.algorithm.iteration;
 
 import qscript.ast,
 			 qscript.tokens,
@@ -9,9 +10,11 @@ import qscript.ast,
 
 version(unittest){}else
 void main(){
-	Tokenizer tokMaker = new Tokenizer(cast(string)read("sample"));
 	Token[] tokens;
 	write("tokens: ");
+	foreach (token; Tokenizer(cast(string)read("sample")).
+			filter(a => !a.type.get!(TokenType.Whitespace))){
+	}
 	while (!tokMaker.end){
 		try{
 			tokens ~= tokMaker.next;
@@ -25,6 +28,7 @@ void main(){
 	writeln(tokens);
 
 	Node rootNode;
-	rootNode = read(tokens);
+	uint i;
+	rootNode = read(tokens, i);
 	writeln(rootNode.toJSON.toPrettyString);
 }
