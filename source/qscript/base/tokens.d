@@ -195,7 +195,7 @@ public:
 	@disable this();
 	this (string source){
 		this._source = source;
-		_next = _getToken(source[_seek .. $]);
+		_parseNext;
 	}
 
 	bool empty(){
