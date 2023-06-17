@@ -6,6 +6,27 @@ debug import std.stdio;
 
 /// A Token
 public alias Token = qscript.base.tokens.Token!TokenType;
+/// Tokenizer
+public alias Tokenizer = qscript.base.tokens.Tokenizer!TokenType;
+
+/// removes whitespace tokens
+void whitespaceRemove(ref Token[] tokens){
+	uint i = 0, shift = 0;
+	while (i + shift < tokens.length){
+		auto tok = tokens[i + shift];
+		if (tok.type.get!(TokenType.Whitespace) ||
+				tok.type.get!(TokenType.Comment) ||
+				tok.type.get!(TokenType.CommentMultiline)){
+			++ shift;
+			continue;
+		}
+
+		if (shift)
+			tokens[i] = tok;
+		++ i;
+	}
+	tokens.length -= shift;
+}
 
 /// possible token types
 enum TokenType{
@@ -18,75 +39,74 @@ enum TokenType{
 	@Match(&identifyLiteralChar)						LiteralChar,
 	@Match(&identifyLiteralHexadecimal)			LiteralHexadecimal,
 	@Match(&identifyLiteralBinary)					LiteralBinary,
-	@Match(`template`)											KeywordTemplate,
-	@Match(`load`)													KeywordLoad,
-	@Match(`alias`)													KeywordAlias,
-	@Match(`fn`)														KeywordFn,
-	@Match(`var`)														KeywordVar,
-	@Match(`ref`)														KeywordRef,
-	@Match(`enum`)													KeywordEnum,
-	@Match(`struct`)												KeywordStruct,
-	@Match(`pub`)														KeywordPub,
-	@Match(`return`)												KeywordReturn,
-	@Match(`this`)													KeywordThis,
-	@Match(`auto`)													KeywordAuto,
-	@Match(`int`)														KeywordInt,
-	@Match(`float`)													KeywordFloat,
-	@Match(`char`)													KeywordChar,
-	@Match(`string`)												KeywordString,
-	@Match(`bool`)													KeywordBool,
-	@Match(`true`)													KeywordTrue,
-	@Match(`false`)													KeywordFalse,
-	@Match(`if`)														KeywordIf,
-	@Match(`else`)													KeywordElse,
-	@Match(`while`)													KeywordWhile,
-	@Match(`do`)														KeywordDo,
-	@Match(`for`)														KeywordForeach,
-	@Match(`break`)													KeywordBreak,
-	@Match(`continue`)											KeywordContinue,
-	@Match(`is`)														KeywordIs,
-	@Match(`!is`)														KeywordNotIs,
+	@Match(`template`)											Template,
+	@Match(`load`)													Load,
+	@Match(`alias`)													Alias,
+	@Match(`fn`)														Fn,
+	@Match(`var`)														Var,
+	@Match(`ref`)														Ref,
+	@Match(`enum`)													Enum,
+	@Match(`struct`)												Struct,
+	@Match(`pub`)														Pub,
+	@Match(`return`)												Return,
+	@Match(`this`)													This,
+	@Match(`auto`)													Auto,
+	@Match(`int`)														Int,
+	@Match(`float`)													Float,
+	@Match(`char`)													Char,
+	@Match(`string`)												String,
+	@Match(`bool`)													Bool,
+	@Match(`true`)													True,
+	@Match(`false`)													False,
+	@Match(`if`)														If,
+	@Match(`else`)													Else,
+	@Match(`while`)													While,
+	@Match(`do`)														Do,
+	@Match(`for`)														For,
+	@Match(`break`)													Break,
+	@Match(`continue`)											Continue,
+	@Match(`is`)														Is,
+	@Match(`!is`)														NotIs,
+	@Match(`null`)													Null,
 	@Match(&identifyIdentifier)							Identifier,
 	@Match(`;`)															Semicolon,
 	@Match(`->`)														Arrow,
 	@Match(`,`)															Comma,
-	@Match(`.`)															OperatorDot,
-	@Match(`[`)															OperatorIndex,
-	@Match(`(`)															OperatorFnCall,
-	@Match(`++`)														OperatorInc,
-	@Match(`--`)														OperatorDec,
-	@Match(`!`)															OperatorNot,
-	@Match(`*`)															OperatorMul,
-	@Match(`/`)															OperatorDiv,
-	@Match(`%`)															OperatorMod,
-	@Match(`+`)															OperatorAdd,
-	@Match(`-`)															OperatorSub,
-	@Match(`~`)															OperatorCat,
-	@Match(`<<`)														OperatorLShift,
-	@Match(`>>`)														OperatorRShift,
-	@Match(`==`)														OperatorEquals,
-	@Match(`!=`)														OperatorNotEquals,
-	@Match(`>=`)														OperatorGreaterEquals,
-	@Match(`<=`)														OperatorSmallerEquals,
-	@Match(`>`)															OperatorGreater,
-	@Match(`<`)															OperatorSmaller,
-	@Match(`is`)														OperatorIs,
-	@Match(`!is`)														OperatorNotIs,
-	@Match(`&`)															OperatorBinAnd,
-	@Match(`|`)															OperatorBinOr,
-	@Match(`^`)															OperatorBinXor,
-	@Match(`&&`)														OperatorBoolAnd,
-	@Match(`||`)														OperatorBoolOr,
-	@Match(`=`)															OperatorAssign,
-	@Match(`+=`)														OperatorAddAssign,
-	@Match(`-=`)														OperatorSubAssign,
-	@Match(`*`)															OperatorMulAssign,
-	@Match(`/=`)														OperatorDivAssign,
-	@Match(`%=`)														OperatorModAssign,
-	@Match(`~=`)														OperatorCatAssign,
-	@Match(`&=`)														OperatorBinAndAssign,
-	@Match(`|=`)														OperatorBinOrAssign,
-	@Match(`^=`)														OperatorBinXorAssign,
+	@Match(`.`)															OpDot,
+	@Match(`[`)															OpIndex,
+	@Match(`(`)															OpFnCall,
+	@Match(`++`)														OpInc,
+	@Match(`--`)														OpDec,
+	@Match(`!`)															OpNot,
+	@Match(`*`)															OpMul,
+	@Match(`/`)															OpDiv,
+	@Match(`%`)															OpMod,
+	@Match(`+`)															OpAdd,
+	@Match(`-`)															OpSub,
+	@Match(`<<`)														OpLShift,
+	@Match(`>>`)														OpRShift,
+	@Match(`==`)														OpEquals,
+	@Match(`!=`)														OpNotEquals,
+	@Match(`>=`)														OpGreaterEquals,
+	@Match(`<=`)														OpLesserEquals,
+	@Match(`>`)															OpGreater,
+	@Match(`<`)															OpLesser,
+	@Match(`is`)														OpIs,
+	@Match(`!is`)														OpNotIs,
+	@Match(`&`)															OpBinAnd,
+	@Match(`|`)															OpBinOr,
+	@Match(`^`)															OpBinXor,
+	@Match(`&&`)														OpBoolAnd,
+	@Match(`||`)														OpBoolOr,
+	@Match(`=`)															OpAssign,
+	@Match(`+=`)														OpAddAssign,
+	@Match(`-=`)														OpSubAssign,
+	@Match(`*=`)														OpMulAssign,
+	@Match(`/=`)														OpDivAssign,
+	@Match(`%=`)														OpModAssign,
+	@Match(`&=`)														OpBinAndAssign,
+	@Match(`|=`)														OpBinOrAssign,
+	@Match(`^=`)														OpBinXorAssign,
 	@Match(`(`)															BracketOpen,
 	@Match(`)`)															BracketClose,
 	@Match(`[`)															IndexOpen,
@@ -95,7 +115,12 @@ enum TokenType{
 	@Match(`}`)															CurlyClose,
 	@Match(&identifyTrait)									Trait,
 	@Match(`$if`)														StaticIf,
-	@Match(`$for`)													StaticForeach,
+	@Match(`$for`)													StaticFor,
+	@Match(`$fn`)														TemplateFn,
+	@Match(`$struct`)												TemplateStruct,
+	@Match(`$enum`)													TemplateEnum,
+	@Match(`$var`)													TemplateVar,
+	@Match(`$alias`)												TemplateAlias
 }
 
 private uint identifyWhitespace(string str){
@@ -231,7 +256,7 @@ return 2 + 0B10; #another comment
 voidNot
 }`;
 	Token[] tokens;
-	auto tokenizer = new Tokenizer!TokenType(source);
+	auto tokenizer = new Tokenizer(source);
 
 	while (!tokenizer.end)
 		tokens ~= tokenizer.next;
@@ -242,12 +267,12 @@ voidNot
 		"#another comment", "\n", "voidNot", "\n", "}"
 	];
 	const TokenType[] expectedType = [
-		TokenType.KeywordFn, TokenType.Whitespace,
+		TokenType.Fn, TokenType.Whitespace,
 		TokenType.Identifier, TokenType.BracketOpen,
 		TokenType.BracketClose, TokenType.CurlyOpen, TokenType.Whitespace,
-		TokenType.Comment, TokenType.Whitespace, TokenType.KeywordReturn,
+		TokenType.Comment, TokenType.Whitespace, TokenType.Return,
 		TokenType.Whitespace, TokenType.LiteralInt, TokenType.Whitespace,
-		TokenType.OperatorAdd, TokenType.Whitespace, TokenType.LiteralBinary,
+		TokenType.OpAdd, TokenType.Whitespace, TokenType.LiteralBinary,
 		TokenType.Semicolon, TokenType.Whitespace, TokenType.Comment,
 		TokenType.Whitespace, TokenType.Identifier, TokenType.Whitespace,
 		TokenType.CurlyClose

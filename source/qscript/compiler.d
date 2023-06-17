@@ -4,37 +4,16 @@ import utils.misc;
 import utils.ds;
 
 import std.conv : to;
+import std.traits;
 
-debug{import std.stdio;}
+import qscript.tokens;
 
-private shared static this(){
-	ERROR_EXPLAIN_STRING = [
-		CompileError.Type.None : null,
-		CompileError.Type.TokenInvalid : "unidentified token, cannot read further",
-		CompileError.Type.TokenUnexpected : "unexpected token, cannot read further",
-		CompileError.Type.Expected : "Expected $",
-		CompileError.Type.ExpectedAFoundB : "Expected $ found $",
-		CompileError.Type.CharLengthInvalid : "Expected 1 character inside ''",
-	];
-}
+debug import std.stdio;
 
-/// Visibility specifiers
-package enum Visibility{
-	/// Accessible only inside parent namespace
-	Private,
-	/// Accessible outside namespace as well
-	Public
-}
-
-/// Stores explanations for CompileError.Type
-/// `$` character is replaced by a detail that can be specified in CompileError.details
-private string[CompileError.Type] ERROR_EXPLAIN_STRING;
 /// default script name
 package const string DEFAULT_SCRIPT_NAME = "QSCRIPT_SCRIPT";
 /// default namespace name
 package const string DEFAULT_NAMESPACE = "this";
-/// default visibility
-package const Visibility DEFAULT_VISIBILITY = Visibility.Private;
 /// maximum number of errors
 package const uint ERRORS_MAX = 20;
 
@@ -83,47 +62,70 @@ package char charUnescape(char c){
 }
 
 /// compilation error
-struct CompileError{
-	/// Possible types of errors
-	enum Type{
-		None, /// no error
-		TokenInvalid, /// invalid token found (probably while reading tokens)
-		TokenUnexpected, /// unexpected token (probably while generating AST)
-		Expected, /// expected $, but not found
-		ExpectedAFoundB, /// expected A but found B
-		CharLengthInvalid, /// characters inside '' are not 1
-	}
-	/// type of this error
-	Type type = Type.None;
-	/// `[line number, column number]`
-	uint[2] where;
-	/// details
-	string[] details;
-	/// constructor
-	this(Type type, uint[2] where = [0,0], string[] details = []){
-		this.type = type;
-		this.where = where;
-		this.details = details;
-	}
-	/// Returns: a string representation of this error
-	string toString() const{
-		if (type !in ERROR_EXPLAIN_STRING || !ERROR_EXPLAIN_STRING[type])
-			return null;
-		char[] errStr;
-		errStr = cast(char[])"line:"~where[0].to!string~','~where[1].to!string~' ';
-		uint i = cast(uint)errStr.length;
-		errStr ~= ERROR_EXPLAIN_STRING[type];
-		foreach (detail; details){
-			while (i < errStr.length){
-				if (errStr[i] == '$'){
-					errStr = errStr[0 .. i] ~ detail ~
-						(i + 1 < errStr.length ? errStr[i + 1 .. $] : []);
-					i += detail.length;
-					break;
-				}
-				i++;
-			}
+/// Possible types of errors
+enum ErrorType{
+	@("")																						None,
+	@("unidentified token, cannot read further")		TokenInvalid,
+	@("unexpected token, cannot read further")			TokenUnexpected,
+	@("Expected $")																	Expected,
+	@("Expected $ found $")													ExpectedAFoundB,
+	@("Expected 1 character inside ''")							CharLengthInvalid,
+	@("Unexpected end of file")											UnexpectedEOF,
+}
+
+/// error explain format string
+private string errorExplainFormat(ErrorType type){
+	switch (type){
+		static foreach (member; EnumMembers!ErrorType){
+			case member:
+				return getUDAs!(member, string)[0];
 		}
-		return cast(string)errStr;
+		default:
+			return null;
+	}
+}
+
+/// construct error explanation string
+string errorExplainStr(ErrorType type, uint line, uint col, string[] details){
+	string format = errorExplainFormat(type);
+	if (format is null)
+		return null;
+	char[] errStr;
+	errStr = cast(char[])"line:" ~ line.to!string ~ ',' ~ col.to!string ~ ' ';
+	uint i = cast(uint)errStr.length;
+	errStr ~= format;
+
+	foreach (detail; details){
+		while (i < errStr.length){
+			if (errStr[i] == '$'){
+				errStr = errStr[0 .. i] ~ detail ~
+					(i + 1 < errStr.length ? errStr[i + 1 .. $] : []);
+				i += detail.length;
+				break;
+			}
+			i++;
+		}
+	}
+	return cast(string)errStr;
+}
+
+class CompileError : Exception{
+	ErrorType type = ErrorType.None;
+	uint line, col;
+
+	/// constructor
+	this(ErrorType type, uint line, uint col, string[] details = []){
+		this.type = type;
+		this.line = line;
+		this.col = col;
+		super(errorExplainStr(type, line, col, details));
+	}
+
+	/// ditto
+	this(ErrorType type, Token tok, string[] details = []){
+		this.type = type;
+		this.line = tok.lineno;
+		this.col = tok.colno;
+		super(errorExplainStr(type, line, col, details));
 	}
 }

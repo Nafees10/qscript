@@ -122,7 +122,7 @@ public:
 	this(uint lineno, uint colno){
 		_lineno = lineno;
 		_colno = colno;
-		super("Unexpected token");
+		super(_lineno.to!string ~ "," ~ _colno.to!string ~ ": Unexpected token");
 	}
 
 	/// Line number where error occurred
@@ -240,7 +240,7 @@ unittest{
 	while (!tokenizer.end)
 		tokens ~= tokenizer.next;
 
-	assert (tokens.length = 4);
+	assert (tokens.length == 4);
 	assert(tokens[0].type.get!(Type.Whitespace));
 
 	assert(tokens[1].type.get!(Type.Keyword));
