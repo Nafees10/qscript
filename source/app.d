@@ -12,23 +12,19 @@ version(unittest){}else
 void main(){
 	Token[] tokens;
 	write("tokens: ");
-	foreach (token; Tokenizer(cast(string)read("sample")).
-			filter(a => !a.type.get!(TokenType.Whitespace))){
-	}
-	while (!tokMaker.end){
-		try{
-			tokens ~= tokMaker.next;
-		}catch (Exception e){
-			writeln(tokens);
-			writefln!"\n%s"(e.msg);
-			return;
-		}
-	}
-	whitespaceRemove(tokens);
-	writeln(tokens);
+
+	// tokenize file
+	foreach (token; Tokenizer(cast(string)read("sample.txt")).filter!(
+				a => !a.type.get!(TokenType.Whitespace) &&
+				!a.type.get!(TokenType.Comment) &&
+				!a.type.get!(TokenType.CommentMultiline)))
+		tokens ~= token;
 
 	Node rootNode;
 	uint i;
 	rootNode = read(tokens, i);
-	writeln(rootNode.toJSON.toPrettyString);
+	if (rootNode)
+		writeln(rootNode.toJSON.toPrettyString);
+	else
+		writeln("root is null");
 }
