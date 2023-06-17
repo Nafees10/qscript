@@ -83,6 +83,9 @@ Similarly, a script can be loaded and all it's public symbols made public:
 pub load debug;
 ```
 
+if a script/library is `load`-ed multiple times, instance is created only once,
+succeeding `load`s return the same instance.
+
 ---
 
 # Visibility
@@ -325,13 +328,16 @@ initialised as `false`
 
 ## `ref` references
 These are aliases to actual variables.
-A `ref` must always be initialised to reference some variable:
+a `ref` is initialised to be `null`, and can be pointed to some data using the
+`->` operator.
 
 ```
 int i = 0;
-var ref int r = i; # r is now a reference of i
+var ref int r; // initialised to null
+if (r is null)
+	writeln("r is null");
+r -> i;
 # r can now be used as if it's an int.
-r = 1;
 writeln(r); # 1
 writeln(i); # 1
 ```
@@ -381,10 +387,10 @@ variables:
 ```
 struct Position{
 	var int x = 0, y = 0;
-	pub this(){
+	pub fn this(){
 		writeln("constructed 0,0");
 	}
-	pub this(int x, int y){
+	pub fn this(int x, int y){
 		this.x = x;
 		this.y = y;
 		writeln("constructed with values");
@@ -879,12 +885,10 @@ Function templates are defined as regular functions with an extra tuple for
 template parameters:
 
 ```
-fn T sum(T)(T a, T b){
+$fn bool sum(T)(T a, T b){
 	return a + b;
 }
 // or
-var auto sum = (T)(T a, T b) -> a + b;
-// both of these are the same as:
 template sum(T){
 	fn T sum(T a, T b){
 		return a + b;
@@ -896,9 +900,10 @@ Calling a function template can be done as:
 ```
 var int c = sum(int)(5, 10);
 // or
-var int c = sum(5, 10);
+var int c = sum(5, 10); // only if declared as $fn bool sym(T)(T a, T b)
 ```
-QScript is able to determine what value to use for `T`
+QScript is able to determine what value to use for `T`, only if the former
+declaration (`$fn bool sym(T)(T a, T b)`) is used.
 
 ## Enums
 
@@ -915,19 +920,28 @@ template TypeName(T){
 	else
 		enum string TypeName = "weird type";
 }
+// or
+$enum string TypeName(T) = doSomethingAtCompileTime();
+
 fn bool typeIsSupported(T)(){
-	return TypeName!T != "weird type";
+	return TypeName(T) != "weird type";
 }
 ```
 
 ## Structs
 
 ```
-struct Position(T){
+$struct Position(T){
 	var T x, y;
 }
-alias PositionDiscrete = Position!int;
-alias PositionContinuous = Position!double;
+// or
+template Position(T){
+	struct Position{
+		var T x, y;
+	}
+}
+alias PositionDiscrete = Position(int);
+alias PositionContinuous = Position(double);
 ```
 
 ---
