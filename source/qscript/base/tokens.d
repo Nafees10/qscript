@@ -145,6 +145,7 @@ private:
 	uint _lastNewlineIndex;
 
 	Token!T _next;
+	bool _empty;
 
 	/// match a token
 	static Token!T _getToken(string str){
@@ -189,24 +190,25 @@ private:
 		}
 		_seek += token.length;
 		_next = token;
+		if (_seek >= _source.length)
+			_empty = true;
 	}
 
 public:
 	@disable this();
 	this (string source){
 		this._source = source;
+		_empty = false;
 		_parseNext;
 	}
 
 	bool empty(){
-		return _seek >= _source.length && !_next;
+		return _seek >= _source.length && _empty;
 	}
 
 	void popFront(){
 		if (_seek < _source.length)
 			_parseNext;
-		else
-			_next = Token!T.init;
 	}
 
 	Token!T front(){
