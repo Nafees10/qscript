@@ -167,7 +167,16 @@ private:
 	///
 	/// Throws: TokenizerException
 	void _parseNext(){
-		_next = _getToken;
+		while (_seek < _source.length){
+			auto prev = _seek;
+			_next = _getToken;
+			if (!(_next.type & _ignore))
+				break;
+			if (prev == _seek)
+				throw new TokenizerException(_next.lineno, _next.colno);
+		}
+		if (_next.type & _ignore)
+			_empty = true;
 	}
 
 public:
@@ -186,11 +195,7 @@ public:
 	void popFront(){
 		if (_seek >= _source.length)
 			_empty = true;
-		while (_seek < _source.length){
-			_parseNext;
-			if (!(_next.type & _ignore))
-				break;
-		}
+		_parseNext;
 	}
 
 	Token!T front(){
