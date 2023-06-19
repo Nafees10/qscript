@@ -2,6 +2,8 @@ module qscript.tokens;
 
 import qscript.base.tokens;
 
+import utils.ds;
+
 debug import std.stdio;
 
 /// A Token
@@ -256,10 +258,10 @@ return 2 + 0B10; #another comment
 voidNot
 }`;
 	Token[] tokens;
-	auto tokenizer = new Tokenizer(source);
+	auto tokenizer = Tokenizer(source, Flags!TokenType());
 
-	while (!tokenizer.end)
-		tokens ~= tokenizer.next;
+	foreach (token; tokenizer)
+		tokens ~= token;
 
 	const string[] expectedStr = [
 		"fn", " ", "main", "(", ")", "{", " ", "# comment",

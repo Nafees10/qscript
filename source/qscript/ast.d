@@ -48,10 +48,11 @@ private template ReadFunction(NodeType type){
 	BuilderFunc getReadFunction(){
 		static if (__traits(hasMember, qscript.ast, "read" ~ type.to!string)){
 			auto fn = &__traits(getMember, qscript.ast, "read" ~ type.to!string);
-			static if (is(typeof(fn) == BuilderFunc))
+			static if (is(typeof(fn) == BuilderFunc)){
 				return fn;
-			else
+			}else{
 				return null;
+			}
 		}else{
 			return null;
 		}
@@ -62,14 +63,14 @@ private template ReadFunction(NodeType type){
 ///
 /// Returns: true if matched
 private bool expect(TokenType type)(Tokenizer toks){
-	return !toks.empty && !toks.front.type.get!type;
+	return !toks.empty && toks.front.type.get!type;
 }
 
 /// Checks if token at front is matching type. Pops it if matching
 ///
 /// Returns: true if matched
 private bool expectPop(TokenType type)(Tokenizer toks){
-	if (!toks.empty && !toks.front.type.get!type){
+	if (!toks.empty && toks.front.type.get!type){
 		toks.popFront;
 		return true;
 	}
@@ -96,7 +97,7 @@ Node read(NodeType type)(ref Tokenizer toks){
 /// Will increment index to skip tokens consumed
 ///
 /// Returns: Node or null
-Node read(ref Tokenizer toks){
+public Node read(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
@@ -219,7 +220,7 @@ private Node readScript(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readPub(Tokenizer toks, NodeType context){
+private Node readPub(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.Pub))
 		throw new CompileError(ErrorType.Expected, toks.front, ["pub"]);
 	Node ret = new Node;
@@ -230,7 +231,7 @@ private Node readPub(Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplate(Tokenizer toks, NodeType context){
+private Node readTemplate(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.Template))
 		throw new CompileError(ErrorType.Expected, toks.front, ["template"]);
 	Node ret = new Node;
@@ -244,7 +245,7 @@ private Node readTemplate(Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateFn(Tokenizer toks, NodeType context){
+private Node readTemplateFn(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.Template))
 		throw new CompileError(ErrorType.Expected, toks.front, ["$fn"]);
 	Node ret = new Node;
@@ -261,7 +262,7 @@ private Node readTemplateFn(Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateEnum(Tokenizer toks, NodeType context){
+private Node readTemplateEnum(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.TemplateEnum))
 		throw new CompileError(ErrorType.Expected, toks.front, ["$enum"]);
 	Node ret = new Node;
@@ -298,7 +299,7 @@ private Node readTemplateEnum(Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateStruct(Tokenizer toks, NodeType context){
+private Node readTemplateStruct(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.TemplateStruct))
 		throw new CompileError(ErrorType.Expected, toks.front, ["$struct"]);
 	Node ret = new Node;
@@ -314,12 +315,42 @@ private Node readTemplateStruct(Tokenizer toks, NodeType context){
 	toks.popFront;
 	while (true){
 		ret.children ~= toks.read; // and hope its a declaration?
-		//static if // TODO continue from here
+		if (toks.expectPop!(TokenType.CurlyClose))
+			break;
 	}
+	return ret;
+}
+
+private Node readTemplateVar(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.TemplateVar))
+		throw new CompileError(ErrorType.Expected, toks.front, ["$var"]);
+	Node ret;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.DataType)
+	];
+
+	// now read ident paramlist optional( OpAssign Expr) [Comma or Semicolon]
+	while (true){
+		Node varNode = toks.read!(NodeType.Identifier);
+		varNode.children = [
+			toks.read!(NodeType.ParamList)
+		];
+		if (toks.expectPop!(TokenType.OpAssign))
+			varNode.children ~= toks.read!(NodeType.Identifier);
+
+		if (toks.expectPop!(TokenType.Comma))
+			continue;
+		if (toks.expectPop!(TokenType.Semicolon))
+			break;
+	}
+	return ret;
 }
 
 /// reads `foo = bar`
-private Node readNamedValue(Tokenizer toks, NodeType context){
+private Node readNamedValue(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	Node name = toks.read!(NodeType.Identifier);
 	if (toks.expect!(TokenType.OpAssign))
@@ -333,7 +364,7 @@ private Node readNamedValue(Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readIntLiteral(Tokenizer toks, NodeType context){
+private Node readIntLiteral(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.LiteralInt) &&
 			!toks.expect!(TokenType.LiteralBinary) &&
 			!toks.expect!(TokenType.LiteralHexadecimal))

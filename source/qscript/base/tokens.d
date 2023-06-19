@@ -19,36 +19,14 @@ public struct Token(T) if (is (T == enum)){
 	alias token this;
 
 	/// constructor
-	this(uint lineno, uint colno, Flags!T type, string token){
-		this.lineno = lineno;
-		this.colno = colno;
-		this.type = type;
-		this.token = token;
-	}
-
-	/// ditto
-	this(uint lineno, uint colno, T type, string token){
-		this.lineno = lineno;
-		this.colno = colno;
-		this.type.set(type);
-		this.token = token;
-	}
-
-	/// ditto
 	this(Flags!T type, string token){
 		this.type = type;
 		this.token = token;
 	}
 
-	/// ditto
-	this(T type, string token){
-		this.type.set(type);
-		this.token = token;
-	}
-
 	string toString() const {
 		string ret = "{";
-		foreach (member; EnumMembers!T){
+		static foreach (member; EnumMembers!T){
 			if (type[member])
 				ret ~= member.to!string ~ ", ";
 		}
@@ -144,28 +122,43 @@ private:
 	uint _lineno;
 	uint _lastNewlineIndex;
 
+	Flags!T _ignore;
 	Token!T _next;
 	bool _empty;
 
 	/// match a token
-	static Token!T _getToken(string str){
+	Token!T _getToken(){
 		Flags!T matches;
 		uint maxLen;
+		string str = _source[_seek .. $];
 		static foreach (member; EnumMembers!T){{
 			uint localMaxLen = 0;
 			static foreach (matcher; getUDAs!(member, Match))
 				localMaxLen = max(localMaxLen, matcher.match(str));
 			if (localMaxLen > maxLen){
-				matches = false; // just found a bigger match, previous not valid now
-				matches += member;
 				maxLen = localMaxLen;
+				matches.set(false);
+				matches.set!member(true);
 			}else if (maxLen && localMaxLen == maxLen){
-				matches += member;
+				matches.set!member(true);
 			}
 		}}
-		if (maxLen && maxLen <= str.length)
-			return Token!T(matches, str[0 .. maxLen]);
-		return Token!T.init;
+		if (!maxLen || maxLen > str.length)
+			throw new TokenizerException(_lineno + 1, _seek - _lastNewlineIndex);
+		auto ret = Token!T(matches, str[0 .. maxLen]);
+
+		// figure out line number etc
+		ret.lineno = _lineno + 1;
+		ret.colno = _seek - _lastNewlineIndex;
+		// increment _lineno if needed
+		foreach (i, c; _source[_seek .. _seek + ret.length]){
+			if (c == '\n'){
+				_lastNewlineIndex = cast(uint)i + _seek;
+				_lineno ++;
+			}
+		}
+		_seek += ret.length;
+		return ret;
 	}
 
 	/// Parses next token. This will throw if called after all tokens been read
@@ -174,41 +167,30 @@ private:
 	///
 	/// Throws: TokenizerException
 	void _parseNext(){
-		Token!T token = _getToken(_source[_seek .. $]);
-		token.lineno = _lineno + 1;
-		token.colno = _seek - _lastNewlineIndex;
-		if (!token){
-			_seek = uint.max;
-			throw new TokenizerException(token.lineno, token.colno);
-		}
-		// increment _lineno if needed
-		foreach (i, c; _source[_seek .. _seek + token.length]){
-			if (c == '\n'){
-				_lastNewlineIndex = cast(uint)i + _seek;
-				_lineno ++;
-			}
-		}
-		_seek += token.length;
-		_next = token;
-		if (_seek >= _source.length)
-			_empty = true;
+		_next = _getToken;
 	}
 
 public:
 	@disable this();
-	this (string source){
+	this (string source, Flags!T ignore){
 		this._source = source;
-		_empty = false;
+		this._ignore = ignore;
+		_empty = _source.length == 0;
 		_parseNext;
 	}
 
 	bool empty(){
-		return _seek >= _source.length && _empty;
+		return _empty;
 	}
 
 	void popFront(){
-		if (_seek < _source.length)
+		if (_seek >= _source.length)
+			_empty = true;
+		while (_seek < _source.length){
 			_parseNext;
+			if (!(_next.type & _ignore))
+				break;
+		}
 	}
 
 	Token!T front(){
@@ -243,7 +225,8 @@ unittest{
 	}
 
 	Token!Type[] tokens;
-	foreach (token; Tokenizer!Type(`  keyword word`))
+	auto range = Tokenizer!Type(`  keyword word`, Flags!Type());
+	foreach (token; range)
 		tokens ~= token;
 
 	assert (tokens.length == 4);

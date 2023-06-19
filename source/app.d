@@ -4,25 +4,23 @@ import std.stdio,
 			 std.file,
 			 std.algorithm.iteration;
 
+import utils.ds;
+
 import qscript.ast,
 			 qscript.tokens,
 			 qscript.compiler;
 
 version(unittest){}else
 void main(){
-	Token[] tokens;
-	write("tokens: ");
-
 	// tokenize file
-	foreach (token; Tokenizer(cast(string)read("sample.txt")).filter!(
-				a => !a.type.get!(TokenType.Whitespace) &&
-				!a.type.get!(TokenType.Comment) &&
-				!a.type.get!(TokenType.CommentMultiline)))
-		tokens ~= token;
+	Flags!TokenType ignore;
+	ignore |= TokenType.Whitespace;
+	ignore |= TokenType.Comment;
+	ignore |= TokenType.CommentMultiline;
+	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
 	Node rootNode;
-	uint i;
-	rootNode = read(tokens, i);
+	rootNode = read(range);
 	if (rootNode)
 		writeln(rootNode.toJSON.toPrettyString);
 	else
