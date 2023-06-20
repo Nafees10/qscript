@@ -15,10 +15,9 @@ import utils.ds;
 public class Node{
 public:
 	Token token;
-	Node[] children;
 	NodeType type;
 
-	JSONValue toJSON(){
+	abstract JSONValue toJSON(){
 		JSONValue ret;
 		ret["token"] = token.token;
 		ret["type"] = type.to!string;
@@ -38,6 +37,26 @@ public:
 		return ret;
 	}
 }
+
+/*public class ScriptNode : Node{
+public:
+	DeclNode[] declarations;
+}
+
+abstract class DeclNode : Node{}
+
+class TemplateDeclNode{
+public:
+	DeclNode[] declarations;
+}
+
+class TemplateFnNode : Node{
+public:
+	ParamListNode templateParams;
+	FunctionNode fn;
+}
+
+class*/ // TODO complete this mess
 
 /// ASTNode builder function type
 private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
@@ -320,7 +339,7 @@ private Node readTemplate(ref Tokenizer toks, NodeType context){
 }
 
 private Node readTemplateFn(ref Tokenizer toks, NodeType context){
-	if (!toks.expect!(TokenType.Template))
+	if (!toks.expect!(TokenType.TemplateFn))
 		throw new CompileError(ErrorType.Expected, toks.front, ["$fn"]);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -421,6 +440,164 @@ private Node readTemplateVar(ref Tokenizer toks, NodeType context){
 			break;
 	}
 	return ret;
+}
+
+private Node readTemplateAlias(ref Tokenizer toks, NodeType context){
+	if (!toks.expectPop!(TokenType.TemplateAlias))
+		throw new CompileError(ErrorType.Expected, toks.front, ["$alias"]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.Identifier),
+		toks.read!(NodeType.ParamList),
+		null // will replace it with what comes after opEquals
+	];
+	if (!toks.expectPop!(TokenType.OpAssign))
+		throw new CompileError(ErrorType.Expected, toks.front, ["="]);
+	ret.children[$ - 1] = toks.read; // read whatever
+	// expect a semicolon
+	if (!toks.expectPop!(TokenType.Semicolon))
+		throw new CompileError(ErrorType.Expected, toks.front, ["semicolon"]);
+	return ret;
+}
+
+private Node readFn(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.Fn))
+		throw new CompileError(ErrorType.Expected, toks.front, ["fn"]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.DataType),
+		toks.read!(NodeType.Identifier),
+		toks.read!(NodeType.ParamList),
+		toks.read!(NodeType.Statement)
+	];
+	return ret;
+}
+
+private Node readVar(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.Var))
+		throw new CompileError(ErrorType.Expected, toks.front, ["var"]);
+	Node ret;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.DataType)
+	];
+
+	// now read ident optional( OpAssign Expr) [Comma or Semicolon]
+	while (true){
+		Node varNode = toks.read!(NodeType.Identifier);
+		if (toks.expectPop!(TokenType.OpAssign))
+			varNode.children = [toks.read!(NodeType.Identifier)];
+
+		if (toks.expectPop!(TokenType.Comma))
+			continue;
+		if (toks.expectPop!(TokenType.Semicolon))
+			break;
+	}
+	return ret;
+}
+
+private Node readStruct(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.Struct))
+		throw new CompileError(ErrorType.Expected, toks.front, ["struct"]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.Identifier),
+	];
+	if (!toks.expect!(TokenType.CurlyOpen))
+		throw new CompileError(ErrorType.Expected, toks.front, ["{"]);
+	toks.popFront;
+	while (true){
+		ret.children ~= toks.read; // and hope its a declaration?
+		if (toks.expectPop!(TokenType.CurlyClose))
+			break;
+	}
+	return ret;
+}
+
+private Node readEnum(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.Enum))
+		throw new CompileError(ErrorType.Expected, toks.front, ["enum"]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.DataType),
+		toks.read!(NodeType.Identifier),
+	];
+	if (toks.expectPop!(TokenType.OpAssign)){
+		// single OpAssign
+		ret.children ~= toks.read!(NodeType.Expr);
+		// expect a semicolon
+		if (!toks.expectPop!(TokenType.Semicolon))
+			throw new CompileError(ErrorType.Expected, toks.front, ["semicolon"]);
+		return ret;
+	}
+	// multiple values
+	if (!toks.expectPop!(TokenType.CurlyOpen))
+		throw new CompileError(ErrorType.Expected, toks.front, ["{"]);
+
+	while (true){
+		ret.children ~= toks.read!(NodeType.NamedValue);
+		if (toks.expectPop!(TokenType.CurlyClose))
+			break;
+		if (!toks.expectPop!(TokenType.Comma))
+			throw new CompileError(ErrorType.Expected, toks.front, ["comma"]);
+	}
+	return ret;
+}
+
+private Node readAlias(ref Tokenizer toks, NodeType context){
+	if (!toks.expectPop!(TokenType.Alias))
+		throw new CompileError(ErrorType.Expected, toks.front, ["alias"]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	ret.children = [
+		toks.read!(NodeType.Identifier),
+		null // will replace it with what comes after opEquals
+	];
+	if (!toks.expectPop!(TokenType.OpAssign))
+		throw new CompileError(ErrorType.Expected, toks.front, ["="]);
+	ret.children[$ - 1] = toks.read; // read whatever
+	// expect a semicolon
+	if (!toks.expectPop!(TokenType.Semicolon))
+		throw new CompileError(ErrorType.Expected, toks.front, ["semicolon"]);
+	return ret;
+}
+
+private Node readDataType(ref Tokenizer toks, NodeType context){
+	Node ret = new Node;
+	// maybe its a ref?
+	if (toks.expect!(TokenType.Ref)){
+		// ref not allowed if context is already DataType, ref of ref is very bad
+		if (context == NodeType.DataType)
+			throw new CompileError(ErrorType.ExpectedAFoundB, toks.front, [
+					"Data Type", "ref"
+			]);
+		ret.token = toks.front;
+		toks.popFront;
+		ret.children = [
+			toks.read!(NodeType.DataType)
+		];
+		return ret;
+	}
+
+	ret.children = [
+		toks.read!(NodeType.Expr) // TODO continue from here
+	];
 }
 
 /// reads `foo = bar`
