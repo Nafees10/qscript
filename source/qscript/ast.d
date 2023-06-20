@@ -46,16 +46,13 @@ private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 private template ReadFunction(NodeType type){
 	enum ReadFunction = getReadFunction();
 	BuilderFunc getReadFunction(){
-		static if (__traits(hasMember, qscript.ast, "read" ~ type.to!string)){
-			auto fn = &__traits(getMember, qscript.ast, "read" ~ type.to!string);
-			static if (is(typeof(fn) == BuilderFunc)){
-				return fn;
-			}else{
-				return null;
+		BuilderFunc ret = null;
+		static foreach (sym; EnumMembers!NodeType){
+			static if (type == sym && hasUDA!(sym, Builder)){
+				ret = getUDAs!(sym, Builder)[0].builder;
 			}
-		}else{
-			return null;
 		}
+		return ret;
 	}
 }
 
@@ -115,6 +112,14 @@ public Node read(ref Tokenizer toks){
 	return null;
 }
 
+/// UDA for Builder function
+private struct Builder{
+	BuilderFunc builder;
+	this (BuilderFunc builder){
+		this.builder = builder;
+	}
+}
+
 /// UDA for hook in token type
 private struct Hook{
 	TokenType hook;
@@ -125,88 +130,157 @@ private struct Hook{
 
 /// Node types
 public enum NodeType{
-																		Script,
-	@Hook(TokenType.Pub)							Pub,
+	@Builder(&readScript)								Script,
+	@Builder(&readPub)
+		@Hook(TokenType.Pub)							Pub,
 
-	@Hook(TokenType.Template)					Template,
-	@Hook(TokenType.TemplateFn)				TemplateFn,
-	@Hook(TokenType.TemplateEnum)			TemplateEnum,
-	@Hook(TokenType.TemplateStruct)		TemplateStruct,
-	@Hook(TokenType.TemplateVar)			TemplateVar,
-	@Hook(TokenType.TemplateAlias)		TemplateAlias,
-	@Hook(TokenType.Fn)								Fn,
-	@Hook(TokenType.Var)							Var,
-	@Hook(TokenType.Struct)						Struct,
-	@Hook(TokenType.Enum)							Enum,
-	@Hook(TokenType.Alias)						Alias,
+	@Builder(&readTemplate)
+		@Hook(TokenType.Template)					Template,
+	@Builder(&readTemplateFn)
+		@Hook(TokenType.TemplateFn)				TemplateFn,
+	@Builder(&readTemplateEnum)
+		@Hook(TokenType.TemplateEnum)			TemplateEnum,
+	@Builder(&readTemplateStruct)
+		@Hook(TokenType.TemplateStruct)		TemplateStruct,
+	@Builder(&readTemplateVar)
+		@Hook(TokenType.TemplateVar)			TemplateVar,
+	@Builder(&readTemplateAlias)
+		@Hook(TokenType.TemplateAlias)		TemplateAlias,
+	@Builder(&readFn)
+		@Hook(TokenType.Fn)								Fn,
+	@Builder(&readVar)
+		@Hook(TokenType.Var)							Var,
+	@Builder(&readStruct)
+		@Hook(TokenType.Struct)						Struct,
+	@Builder(&readEnum)
+		@Hook(TokenType.Enum)							Enum,
+	@Builder(&readAlias)
+		@Hook(TokenType.Alias)						Alias,
 
-																		DataType,
-																		ParamList,
-																		NamedValue,
+	@Builder(&readDataType)							DataType,
+	@Builder(&readParamList)						ParamList,
+	@Builder(&readNamedValue)						NamedValue,
 
-																		Statement,
-	@Hook(TokenType.If)								IfStatement,
-	@Hook(TokenType.StaticIf)					StaticIfStatement,
-	@Hook(TokenType.While)						WhileStatement,
-	@Hook(TokenType.Do)								DoWhileStatement,
-	@Hook(TokenType.For)							ForStatement,
-	@Hook(TokenType.StaticFor)				StaticForStatement,
-	@Hook(TokenType.Break)						BreakStatement,
-	@Hook(TokenType.Continue)					ContinueStatement,
-	@Hook(TokenType.CurlyOpen)				Block,
+	@Builder(&readStatement)						Statement,
+	@Builder(&readIfStatement)
+		@Hook(TokenType.If)								IfStatement,
+	@Builder(&readStaticIfStatement)
+		@Hook(TokenType.StaticIf)					StaticIfStatement,
+	@Builder(&readWhileStatement)
+		@Hook(TokenType.While)						WhileStatement,
+	@Builder(&readDoWhileStatement)
+		@Hook(TokenType.Do)								DoWhileStatement,
+	@Builder(&readForStatement)
+		@Hook(TokenType.For)							ForStatement,
+	@Builder(&readStaticForStatement)
+		@Hook(TokenType.StaticFor)				StaticForStatement,
+	@Builder(&readBreakStatement)
+		@Hook(TokenType.Break)						BreakStatement,
+	@Builder(&readContinueStatement)
+		@Hook(TokenType.Continue)					ContinueStatement,
+	@Builder(&readBlock)
+		@Hook(TokenType.CurlyOpen)				Block,
 
-	@Hook(TokenType.Identifier)				Identifier,
-	@Hook(TokenType.LiteralInt)
+	@Builder(&readIdentifier)
+		@Hook(TokenType.Identifier)				Identifier,
+	@Builder(&readLiteralInt)
+		@Hook(TokenType.LiteralInt)
 		@Hook(TokenType.LiteralHexadecimal)
-		@Hook(TokenType.LiteralBinary)	IntLiteral,
-	@Hook(TokenType.LiteralFloat)			FloatLiteral,
-	@Hook(TokenType.LiteralString)		StringLiteral,
-	@Hook(TokenType.LiteralChar)			CharLiteral,
-	@Hook(TokenType.Null)							NullLiteral,
-	@Hook(TokenType.True)							TrueLiteral,
-	@Hook(TokenType.False)						FalseLiteral,
-																		Expr,
+		@Hook(TokenType.LiteralBinary)		IntLiteral,
+	@Builder(&readFloatLiteral)
+		@Hook(TokenType.LiteralFloat)			FloatLiteral,
+	@Builder(&readStringLiteral)
+		@Hook(TokenType.LiteralString)		StringLiteral,
+	@Builder(&readCharLiteral)
+		@Hook(TokenType.LiteralChar)			CharLiteral,
+	@Builder(&readNullLiteral)
+		@Hook(TokenType.Null)							NullLiteral,
+	@Builder(&readTrueLiteral)
+		@Hook(TokenType.True)							TrueLiteral,
+	@Builder(&readFalseLiteral)
+		@Hook(TokenType.False)						FalseLiteral,
+	@Builder(&readExpr)									Expr,
 
-	@Hook(TokenType.Load)							LoadExpr,
-	@Hook(TokenType.Arrow)						ArrowExpr,
-	@Hook(TokenType.OpDot)						DotOp,
-	@Hook(TokenType.OpIndex)					OpIndex,
-	@Hook(TokenType.OpFnCall)					OpCall,
-	@Hook(TokenType.OpInc)						OpPreInc,
-	@Hook(TokenType.OpInc)						OpPostInc,
-	@Hook(TokenType.OpDec)						OpPreDec,
-	@Hook(TokenType.OpDec)						OpPostDec,
-	@Hook(TokenType.OpNot)						OpNot,
-	@Hook(TokenType.OpMul)						OpMul,
-	@Hook(TokenType.OpDiv)						OpDiv,
-	@Hook(TokenType.OpMod)						OpMod,
-	@Hook(TokenType.OpAdd)						OpAdd,
-	@Hook(TokenType.OpSub)						OpSub,
-	@Hook(TokenType.OpLShift)					OpLShift,
-	@Hook(TokenType.OpRShift)					OpRShift,
-	@Hook(TokenType.OpEquals)					OpEquals,
-	@Hook(TokenType.OpNotEquals)			OpNotEquals,
-	@Hook(TokenType.OpGreaterEquals)	OpGreaterEquals,
-	@Hook(TokenType.OpLesserEquals)		OpLesserEquals,
-	@Hook(TokenType.OpGreater)				OpGreater,
-	@Hook(TokenType.OpLesser)					OpLesser,
-	@Hook(TokenType.OpIs)							OpIs,
-	@Hook(TokenType.OpNotIs)					OpNotIs,
-	@Hook(TokenType.OpBinAnd)					OpBinAnd,
-	@Hook(TokenType.OpBinOr)					OpBinOr,
-	@Hook(TokenType.OpBinXor)					OpBinXor,
-	@Hook(TokenType.OpBoolAnd)				OpBoolAnd,
-	@Hook(TokenType.OpBoolOr)					OpBoolOr,
-	@Hook(TokenType.OpAssign)					OpAssign,
-	@Hook(TokenType.OpAddAssign)			OpAddAssign,
-	@Hook(TokenType.OpSubAssign)			OpSubAssign,
-	@Hook(TokenType.OpMulAssign)			OpMulAssign,
-	@Hook(TokenType.OpDivAssign)			OpDivAssign,
-	@Hook(TokenType.OpModAssign)			OpModAssign,
-	@Hook(TokenType.OpSubAssign)			OpBinAndAssign,
-	@Hook(TokenType.OpBinOrAssign)		OpBinOrAssign,
-	@Hook(TokenType.OpBinXorAssign)		OpBinXorAssign,
-	@Hook(TokenType.Trait)						Trait
+	@Builder(&readLoadExpr)
+		@Hook(TokenType.Load)							LoadExpr,
+	@Builder(&readArrowExpr)
+		@Hook(TokenType.Arrow)						ArrowExpr,
+	@Builder(&readDotOp)
+		@Hook(TokenType.OpDot)						DotOp,
+	@Builder(&readOpIndex)
+		@Hook(TokenType.OpIndex)					OpIndex,
+	@Builder(&readOpCall)
+		@Hook(TokenType.OpFnCall)					OpCall,
+	@Builder(&readOpPreInc)
+		@Hook(TokenType.OpInc)						OpPreInc,
+	@Builder(&readOpPostInc)
+		@Hook(TokenType.OpInc)						OpPostInc,
+	@Builder(&readOpPreDec)
+		@Hook(TokenType.OpDec)						OpPreDec,
+	@Builder(&readOpPostDec)
+		@Hook(TokenType.OpDec)						OpPostDec,
+	@Builder(&readOpNot)
+		@Hook(TokenType.OpNot)						OpNot,
+	@Builder(&readOpMul)
+		@Hook(TokenType.OpMul)						OpMul,
+	@Builder(&readOpDiv)
+		@Hook(TokenType.OpDiv)						OpDiv,
+	@Builder(&readOpMod)
+		@Hook(TokenType.OpMod)						OpMod,
+	@Builder(&readOpAdd)
+		@Hook(TokenType.OpAdd)						OpAdd,
+	@Builder(&readOpSub)
+		@Hook(TokenType.OpSub)						OpSub,
+	@Builder(&readOpLShift)
+		@Hook(TokenType.OpLShift)					OpLShift,
+	@Builder(&readOpRShift)
+		@Hook(TokenType.OpRShift)					OpRShift,
+	@Builder(&readOpEquals)
+		@Hook(TokenType.OpEquals)					OpEquals,
+	@Builder(&readOpNotEquals)
+		@Hook(TokenType.OpNotEquals)			OpNotEquals,
+	@Builder(&readOpGreaterEquals)
+		@Hook(TokenType.OpGreaterEquals)	OpGreaterEquals,
+	@Builder(&readOpLesserEquals)
+		@Hook(TokenType.OpLesserEquals)		OpLesserEquals,
+	@Builder(&readOpGreater)
+		@Hook(TokenType.OpGreater)				OpGreater,
+	@Builder(&readOpLesser)
+		@Hook(TokenType.OpLesser)					OpLesser,
+	@Builder(&readOpIs)
+		@Hook(TokenType.OpIs)							OpIs,
+	@Builder(&readOpNotIs)
+		@Hook(TokenType.OpNotIs)					OpNotIs,
+	@Builder(&readOpBinAnd)
+		@Hook(TokenType.OpBinAnd)					OpBinAnd,
+	@Builder(&readOpBinOr)
+		@Hook(TokenType.OpBinOr)					OpBinOr,
+	@Builder(&readOpBinXor)
+		@Hook(TokenType.OpBinXor)					OpBinXor,
+	@Builder(&readOpBoolAnd)
+		@Hook(TokenType.OpBoolAnd)				OpBoolAnd,
+	@Builder(&readOpBoolOr)
+		@Hook(TokenType.OpBoolOr)					OpBoolOr,
+	@Builder(&readOpAssign)
+		@Hook(TokenType.OpAssign)					OpAssign,
+	@Builder(&readOpAddAssign)
+		@Hook(TokenType.OpAddAssign)			OpAddAssign,
+	@Builder(&readOpSubAssign)
+		@Hook(TokenType.OpSubAssign)			OpSubAssign,
+	@Builder(&readOpMulAssign)
+		@Hook(TokenType.OpMulAssign)			OpMulAssign,
+	@Builder(&readOpDivAssign)
+		@Hook(TokenType.OpDivAssign)			OpDivAssign,
+	@Builder(&readOpModAssign)
+		@Hook(TokenType.OpModAssign)			OpModAssign,
+	@Builder(&readOpBinAndAssign)
+		@Hook(TokenType.OpSubAssign)			OpBinAndAssign,
+	@Builder(&readOpBinOrAssign)
+		@Hook(TokenType.OpBinOrAssign)		OpBinOrAssign,
+	@Builder(&readOpBinXorAssign)
+		@Hook(TokenType.OpBinXorAssign)		OpBinXorAssign,
+	@Builder(&readTrait)
+		@Hook(TokenType.Trait)						Trait
 }
 
 private Node readScript(ref Tokenizer toks, NodeType context){
