@@ -91,7 +91,7 @@ string errorExplainStr(ErrorType type, uint line, uint col, string[] details){
 	if (format is null)
 		return null;
 	char[] errStr;
-	errStr = cast(char[])"line:" ~ line.to!string ~ ',' ~ col.to!string ~ ' ';
+	errStr = cast(char[]) line.to!string ~ ',' ~ col.to!string ~ ':';
 	uint i = cast(uint)errStr.length;
 	errStr ~= format;
 
