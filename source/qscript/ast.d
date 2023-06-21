@@ -560,7 +560,7 @@ private Node readFn(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
-
+	// TODO handle no-return-type functions too
 	ret.children = [
 		toks.read!(NodeType.DataType),
 		toks.read!(NodeType.Identifier),
