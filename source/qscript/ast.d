@@ -239,7 +239,7 @@ public enum NodeType{
 		@Hook(TokenType.True)							TrueLiteral,
 	@Builder(&readFalseLiteral)
 		@Hook(TokenType.False)						FalseLiteral,
-	@Builder(&readExpr)									Expr,
+	@Builder(&readExpression)						Expression,
 
 	@Builder(&readLoadExpr)
 		@Hook(TokenType.Load)							LoadExpr,
@@ -424,7 +424,7 @@ private Node readTemplateEnum(ref Tokenizer toks, NodeType context){
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	if (toks.expectPop!(TokenType.OpAssign)){
 		// single OpAssign
-		ret.children ~= toks.read!(NodeType.Expr);
+		ret.children ~= toks.read!(NodeType.Expression);
 		// expect a semicolon
 		if (!toks.expectPop!(TokenType.Semicolon))
 			throw new CompileError(ErrorType.Expected, toks.front, [
@@ -816,7 +816,41 @@ private Node readNamedValue(ref Tokenizer toks, NodeType context){
 }
 
 private Node readStatement(ref Tokenizer toks, NodeType context){
-
+	// a statement can be a declaration, or some predefined statement,
+	// or an expression
+	Node ret = new Node;
+	ret.token = toks.front;
+	try{
+		auto branch = toks; // branch out
+		ret.children = [branch.read!(NodeType.Declaration)];
+		toks = branch; // merge back in
+		return ret;
+	}catch (CompileError){}
+	try{
+		auto branch = toks;
+		ret.children = [branch.read!([
+				NodeType.IfStatement,
+				NodeType.StaticIfStatement,
+				NodeType.WhileStatement,
+				NodeType.DoWhileStatement,
+				NodeType.ForStatement,
+				NodeType.StaticForStatement,
+				NodeType.BreakStatement,
+				NodeType.ContinueStatement,
+				NodeType.Block,
+		])];
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+	try{
+		auto branch = toks;
+		ret.children = [branch.read!(NodeType.Expression)];
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+	throw new CompileError(ErrorType.Expected, toks.front, [
+			NodeType.Statement.to!string
+	]);
 }
 
 private Node readIntLiteral(ref Tokenizer toks, NodeType context){
