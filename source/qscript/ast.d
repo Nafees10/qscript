@@ -179,7 +179,9 @@ public enum NodeType{
 	@Builder(&readDataType)							DataType,
 	@Builder(&readIndexBracketPair)			IndexBracketPair,
 	@Builder(&readTemplateParamList)		TemplateParamList,
+	@Builder(&readTemplateParam)				TemplateParam,
 	@Builder(&readParamList)						ParamList,
+	@Builder(&readParam)								Param,
 	@Builder(&readNamedValue)						NamedValue,
 
 	@Builder(&readStatement)						Statement,
@@ -647,12 +649,39 @@ private Node readTemplateParamList(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
-	// each param can be:
-	// Identifier
-	// DataType Identifier
 	while (!toks.expectPop!(TokenType.BracketClose)){
-		auto range = toks; // branch
+		ret.children ~= read!(NodeType.TemplateParam);
 	}
+	return ret;
+}
+
+private Node readTemplateParam(ref Tokenizer toks, NodeType context){
+	// can be:
+	// DataType Identifier
+	// Identifier
+	auto branch = toks;
+	try{
+		Node ret = branch.read!(NodeType.DataType);
+		ret.children = [
+			branch.read!(NodeType.Identifier)
+		];
+		if (!branch.expectPop!(TokenType.Comma) &&
+				!branch.expect!(TokenType.BracketClose))
+			throw CompileError(ErrorType.Expected, branch.front, ["comma"]);
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+
+	branch = toks;
+	try{
+		Node ret = branch.read!(NodeType.Identifier);
+		if (!branch.expectPop!(TokenType.Comma) &&
+				!branch.expect!(TokenType.BracketClose))
+			throw CompileError(ErrorType.Expected, branch.front, ["comma"]);
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+	throw new CompileError(ErrorType.Expected, toks.front, ["Parameter"]);
 }
 
 private Node readParamList(ref Tokenizer toks, NodeType context){
@@ -660,12 +689,39 @@ private Node readParamList(ref Tokenizer toks, NodeType context){
 		throw new CompileError(ErrorType.Expected, toks.front, ["("]);
 	Node ret = new Node;
 	ret.token = toks.front;
-	// each param can be either of:
+	while (!toks.expectPop!(TokenType.BracketClose)){
+		ret.children ~= read!(NodeType.Param);
+	}
+	return ret;
+}
+
+private Node readParam(ref Tokenizer toks, NodeType context){
+	// can be:
 	// DataType Identifier
 	// DataType
-	while (!toks.expectPop!(TokenType.BracketClose)){
-		auto range = toks; // branch // TODO continue from here
-	}
+	auto branch = toks;
+	try{
+		Node ret = branch.read!(NodeType.DataType);
+		ret.children = [
+			branch.read!(NodeType.Identifier)
+		];
+		if (!branch.expectPop!(TokenType.Comma) &&
+				!branch.expect!(TokenType.BracketClose))
+			throw CompileError(ErrorType.Expected, branch.front, ["comma"]);
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+
+	branch = toks;
+	try{
+		Node ret = branch.read!(NodeType.DataType);
+		if (!branch.expectPop!(TokenType.Comma) &&
+				!branch.expect!(TokenType.BracketClose))
+			throw CompileError(ErrorType.Expected, branch.front, ["comma"]);
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+	throw new CompileError(ErrorType.Expected, toks.front, ["Parameter"]);
 }
 
 /// reads `foo = bar`
