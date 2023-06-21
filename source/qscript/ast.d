@@ -572,7 +572,7 @@ private Node readFn(ref Tokenizer toks, NodeType context){
 
 private Node readVar(ref Tokenizer toks, NodeType context){
 	toks.expectThrow!(TokenType.Var);
-	Node ret;
+	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
 
