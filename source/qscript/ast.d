@@ -177,6 +177,7 @@ public enum NodeType{
 		@Hook(TokenType.Alias)						Alias,
 
 	@Builder(&readDataType)							DataType,
+	@Builder(&readIndexBracketPair)			IndexBracketPair,
 	@Builder(&readParamList)						ParamList,
 	@Builder(&readNamedValue)						NamedValue,
 
@@ -595,9 +596,62 @@ private Node readDataType(ref Tokenizer toks, NodeType context){
 		return ret;
 	}
 
-	ret.children = [
-		toks.read!(NodeType.Expr) // TODO continue from here
-	];
+	if (toks.expect!(TokenType.Auto)){ // maybe its auto?
+		ret.token = toks.front;
+		toks.popFront;
+		return ret; // auto cannot have [] at end, so just return here
+	}else if (toks.expect!(TokenType.Fn)){ // maybe its a fn?
+		ret.token = toks.front;
+		toks.popFront;
+		ret.children = [
+			toks.read!(TokenType.DataType), // return type
+			toks.read!(TokenType.ParamList)
+		];
+	}else if (toks.expect!(TokenType.Int) || // or a primitive type
+			toks.expect!(TokenType.Float) ||
+			toks.expect!(TokenType.Bool) ||
+			toks.expect!(TokenType.String) ||
+			toks.expect!(TokenType.Char)){
+		ret.token = toks.front;
+		toks.popFront;
+	}else{ // fine! its an expression
+		ret.token = toks.front; // just a dummy
+		ret.children = [
+			read!(NodeType.Expr)
+		];
+	}
+
+	// now maybe it has bunch of [] making it an array
+	while (toks.expect!(TokenType.IndexOpen)){
+		ret.children ~= toks.read!(NodeType.IndexBracketPair);
+	}
+	return ret;
+}
+
+private Node readIndexBracketPair(ref Tokenizer toks, NodeType context){
+	Node ret = new Node;
+	if (!toks.expect!(TokenType.IndexOpen))
+		throw new CompileError(ErrorType.Expected, toks.front, ["[]"]);
+	ret.token = toks.front;
+	toks.popFront;
+	if (!toks.expect!(TokenType.IndexClose))
+		throw new CompileError(ErrorType.Expected, toks.front, ["[]"]);
+	toks.popFront;
+	return ret;
+}
+
+private Node readParamList(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.BracketOpen))
+		throw new CompileError(ErrorType.Expected, toks.front, ["("]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	// each param can be either of:
+	// DataType Identifier
+	// DataType
+	// Identifier
+	while (!toks.expectPop!(TokenType.BracketClose)){
+		auto range = toks; // branch // TODO continue from here
+	}
 }
 
 /// reads `foo = bar`
