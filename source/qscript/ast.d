@@ -584,7 +584,7 @@ private Node readVar(ref Tokenizer toks, NodeType context){
 	while (true){
 		Node varNode = toks.read!(NodeType.Identifier);
 		if (toks.expectPop!(TokenType.OpAssign))
-			varNode.children = [toks.read!(NodeType.Identifier)];
+			varNode.children = [toks.read!(NodeType.Expression)];
 		ret.children ~= varNode;
 
 		if (toks.expectPop!(TokenType.Comma))
