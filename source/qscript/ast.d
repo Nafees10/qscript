@@ -178,6 +178,7 @@ public enum NodeType{
 
 	@Builder(&readDataType)							DataType,
 	@Builder(&readIndexBracketPair)			IndexBracketPair,
+	@Builder(&readTemplateParamList)		TemplateParamList,
 	@Builder(&readParamList)						ParamList,
 	@Builder(&readNamedValue)						NamedValue,
 
@@ -333,7 +334,7 @@ private Node readTemplate(ref Tokenizer toks, NodeType context){
 	toks.popFront;
 
 	ret.children = [
-		toks.read!(NodeType.ParamList),
+		toks.read!(NodeType.TemplateParamList),
 		toks.read!(NodeType.Statement)
 	];
 	return ret;
@@ -349,7 +350,7 @@ private Node readTemplateFn(ref Tokenizer toks, NodeType context){
 	ret.children = [
 		toks.read!(NodeType.DataType),
 		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.ParamList),
+		toks.read!(NodeType.TemplateParamList),
 		toks.read!(NodeType.ParamList),
 		toks.read!(NodeType.Statement)
 	];
@@ -366,7 +367,7 @@ private Node readTemplateEnum(ref Tokenizer toks, NodeType context){
 	ret.children = [
 		toks.read!(NodeType.DataType),
 		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.ParamList)
+		toks.read!(NodeType.TemplateParamList)
 	];
 	// from here on, there can be a block, or a single OpAssign
 	if (toks.empty)
@@ -402,7 +403,7 @@ private Node readTemplateStruct(ref Tokenizer toks, NodeType context){
 
 	ret.children = [
 		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.ParamList)
+		toks.read!(NodeType.TemplateParamList)
 	];
 	if (!toks.expect!(TokenType.CurlyOpen))
 		throw new CompileError(ErrorType.Expected, toks.front, ["{"]);
@@ -430,7 +431,7 @@ private Node readTemplateVar(ref Tokenizer toks, NodeType context){
 	while (true){
 		Node varNode = toks.read!(NodeType.Identifier);
 		varNode.children = [
-			toks.read!(NodeType.ParamList)
+			toks.read!(NodeType.TemplateParamList)
 		];
 		if (toks.expectPop!(TokenType.OpAssign))
 			varNode.children ~= toks.read!(NodeType.Identifier);
@@ -452,7 +453,7 @@ private Node readTemplateAlias(ref Tokenizer toks, NodeType context){
 
 	ret.children = [
 		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.ParamList),
+		toks.read!(NodeType.TemplateParamList),
 		null // will replace it with what comes after opEquals
 	];
 	if (!toks.expectPop!(TokenType.OpAssign))
@@ -640,6 +641,20 @@ private Node readIndexBracketPair(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
+private Node readTemplateParamList(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.BracketOpen))
+		throw new CompileError(ErrorType.Expected, toks.front, ["("]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	// each param can be:
+	// Identifier
+	// DataType Identifier
+	while (!toks.expectPop!(TokenType.BracketClose)){
+		auto range = toks; // branch
+	}
+}
+
 private Node readParamList(ref Tokenizer toks, NodeType context){
 	if (!toks.expect!(TokenType.BracketOpen))
 		throw new CompileError(ErrorType.Expected, toks.front, ["("]);
@@ -648,7 +663,6 @@ private Node readParamList(ref Tokenizer toks, NodeType context){
 	// each param can be either of:
 	// DataType Identifier
 	// DataType
-	// Identifier
 	while (!toks.expectPop!(TokenType.BracketClose)){
 		auto range = toks; // branch // TODO continue from here
 	}
