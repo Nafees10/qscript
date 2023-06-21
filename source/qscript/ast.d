@@ -5,7 +5,8 @@ import std.json,
 			 std.conv,
 			 std.string,
 			 std.stdio,
-			 std.functional;
+			 std.functional,
+			 std.algorithm;
 
 import qscript.compiler,
 			 qscript.tokens;
@@ -17,8 +18,9 @@ public class Node{
 public:
 	Token token;
 	NodeType type;
+	Node[] children;
 
-	abstract JSONValue toJSON(){
+	JSONValue toJSON(){
 		JSONValue ret;
 		ret["token"] = token.token;
 		ret["type"] = type.to!string;
@@ -43,8 +45,8 @@ public:
 private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 
 /// Returns: Flags constructed from array
-private template Flags(T, T[] vals) if (is(T == enum)){
-	enum Flags = getFlags;
+private template FlagsFromArray(T, T[] vals) if (is(T == enum)){
+	enum FlagsFromArray = getFlags;
 	Flags!T getFlags(){
 		Flags!T ret;
 		static foreach (val; vals)
@@ -77,7 +79,7 @@ private bool expect(TokenType type)(ref Tokenizer toks){
 private bool expect(TokenType[] types)(ref Tokenizer toks){
 	if (toks.empty)
 		return false;
-	enum Flags!TokenType match = Flags!(TokenType, types);
+	enum Flags!TokenType match = FlagsFromArray!(TokenType, types);
 	return cast(bool)(match & toks.front.type);
 }
 
@@ -86,7 +88,7 @@ private bool expect(TokenType[] types)(ref Tokenizer toks){
 /// Throws: CompileError if not matching
 private void expectThrow(TokenType type)(ref Tokenizer toks){
 	if (!toks.expect!type)
-		throw new CompileError(Error.Expected, toks.front, [type.to!string]);
+		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
 }
 
 /// ditto
@@ -94,14 +96,23 @@ private void expectThrow(TokenType[] types)(ref Tokenizer toks){
 	if (toks.expect!types)
 		return;
 	enum valsStr = types.map!(a => a.to!string).join(" or ");
-	throw new CompileError(ErrorType.Expected, toks.front, valsStr);
+	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// Checks if token at front is matching type. Pops it if matching
 ///
 /// Returns: true if matched
 private bool expectPop(TokenType type)(ref Tokenizer toks){
-	if (!toks.empty && toks.front.type.get!type){
+	if (toks.expect!type){
+		toks.popFront;
+		return true;
+	}
+	return false;
+}
+
+/// ditto
+private bool expectPop(TokenType[] types)(ref Tokenizer toks){
+	if (toks.expect!types){
 		toks.popFront;
 		return true;
 	}
@@ -113,7 +124,7 @@ private bool expectPop(TokenType type)(ref Tokenizer toks){
 /// Throws: CompileError if not matching
 private void expectPopThrow(TokenType type)(ref Tokenizer toks){
 	if (!toks.expectPop!type)
-		throw new CompileError(Error.Expected, toks.front, [type.to!string]);
+		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
 }
 
 /// ditto
@@ -122,17 +133,6 @@ private void expectPopThrow(TokenType[] types)(ref Tokenizer toks){
 		return;
 	enum valsStr = types.map!(a => a.to!string).join(" or ");
 	throw new CompileError(ErrorType.Expected, toks.front, valsStr);
-}
-
-/// Checks if token at front is matching type. Pops it if matching
-///
-/// Throws: CompileError if not matching
-private bool expectPopThrow(TokenType type)(ref Tokenizer toks){
-	if (!toks.empty && toks.front.type.get!type){
-		toks.popFront;
-		return true;
-	}
-	return false;
 }
 
 /// Tries to read a specific type of node from tokens
@@ -146,7 +146,8 @@ Node read(NodeType type)(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto func = ReadFunction!type;
-	static assert(func !is null, "No build function for " ~ type.to!string);
+	static assert(ReadFunction!type !is null,
+			"No build function for " ~ type.to!string);
 
 	NodeType prevContext = context;
 	context = type;
@@ -169,10 +170,10 @@ Node read(NodeType[] types)(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
-	auto branch = toks;
 	static foreach (member; types){
 		static foreach (Hook hook; getUDAs!(member, Hook)){
 			if (type.get!(hook.hook)){
+				auto branch = toks;
 				auto ret = branch.read!member;
 				if (ret !is null){
 					toks = branch;
@@ -284,7 +285,7 @@ public enum NodeType{
 
 	@Builder(&readIdentifier)
 		@Hook(TokenType.Identifier)				Identifier,
-	@Builder(&readLiteralInt)
+	@Builder(&readIntLiteral)
 		@Hook(TokenType.LiteralInt)
 		@Hook(TokenType.LiteralHexadecimal)
 		@Hook(TokenType.LiteralBinary)		IntLiteral,
@@ -296,14 +297,20 @@ public enum NodeType{
 		@Hook(TokenType.LiteralChar)			CharLiteral,
 	@Builder(&readNullLiteral)
 		@Hook(TokenType.Null)							NullLiteral,
-	@Builder(&readTrueLiteral)
-		@Hook(TokenType.True)							TrueLiteral,
-	@Builder(&readFalseLiteral)
-		@Hook(TokenType.False)						FalseLiteral,
+	@Builder(&readBoolLiteral)
+		@Hook(TokenType.True)
+		@Hook(TokenType.False)						BoolLiteral,
+
+	@Builder(&readArgList)							ArgList,
+
+	@Builder(&readTrait)
+		@Hook(TokenType.Trait)						Trait,
+
 	@Builder(&readExpression)						Expression,
 
 	@Builder(&readLoadExpr)
 		@Hook(TokenType.Load)							LoadExpr,
+	/* TODO implement these
 	@Builder(&readArrowExpr)
 		@Hook(TokenType.Arrow)						ArrowExpr,
 	@Builder(&readDotOp)
@@ -380,8 +387,7 @@ public enum NodeType{
 		@Hook(TokenType.OpBinOrAssign)		OpBinOrAssign,
 	@Builder(&readOpBinXorAssign)
 		@Hook(TokenType.OpBinXorAssign)		OpBinXorAssign,
-	@Builder(&readTrait)
-		@Hook(TokenType.Trait)						Trait
+	*/
 }
 
 private Node readScript(ref Tokenizer toks, NodeType context){
@@ -618,7 +624,7 @@ private Node readEnum(ref Tokenizer toks, NodeType context){
 	];
 	if (toks.expectPop!(TokenType.OpAssign)){
 		// single OpAssign
-		ret.children ~= toks.read!(NodeType.Expr);
+		ret.children ~= toks.read!(NodeType.Expression);
 		toks.expectPopThrow!(TokenType.Semicolon); // expect a semicolon
 		return ret;
 	}
@@ -675,8 +681,8 @@ private Node readDataType(ref Tokenizer toks, NodeType context){
 		ret.token = toks.front;
 		toks.popFront;
 		ret.children = [
-			toks.read!(TokenType.DataType), // return type
-			toks.read!(TokenType.ParamList)
+			toks.read!(NodeType.DataType), // return type
+			toks.read!(NodeType.ParamList)
 		];
 	}else if (toks.expect!(TokenType.Int) || // or a primitive type
 			toks.expect!(TokenType.Float) ||
@@ -688,7 +694,7 @@ private Node readDataType(ref Tokenizer toks, NodeType context){
 	}else{ // fine! its an expression
 		ret.token = toks.front; // just a dummy
 		ret.children = [
-			read!(NodeType.Expr)
+			toks.read!(NodeType.Expression)
 		];
 	}
 
@@ -714,7 +720,7 @@ private Node readTemplateParamList(ref Tokenizer toks, NodeType context){
 	ret.token = toks.front;
 	toks.popFront;
 	while (!toks.expectPop!(TokenType.BracketClose)){
-		ret.children ~= read!(NodeType.TemplateParam);
+		ret.children ~= toks.read!(NodeType.TemplateParam);
 	}
 	return ret;
 }
@@ -751,7 +757,7 @@ private Node readParamList(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	while (!toks.expectPop!(TokenType.BracketClose))
-		ret.children ~= read!(NodeType.Param);
+		ret.children ~= toks.read!(NodeType.Param);
 	return ret;
 }
 
@@ -791,7 +797,7 @@ private Node readNamedValue(ref Tokenizer toks, NodeType context){
 	toks.popFront;
 	ret.children = [
 		name,
-		toks.read!(NodeType.Expr)
+		toks.read!(NodeType.Expression)
 	];
 	return ret;
 }
@@ -881,12 +887,12 @@ private Node readDoWhileStatement(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
-	toks.children = [
+	ret.children = [
 		toks.read!(NodeType.Statement),
 		null // fill later with condition expression
 	];
 	toks.expectPopThrow!(TokenType.While);
-	toks.children[$ - 1] = toks.read!(NodeType.Expression);
+	ret.children[$ - 1] = toks.read!(NodeType.Expression);
 	toks.expectPopThrow!(TokenType.Semicolon); // expect a semicolon
 	return ret;
 }
@@ -896,16 +902,188 @@ private Node readForStatement(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
-	//if (!expectPop!(TokenType.BracketOpen))
+
+	toks.expectPopThrow!(TokenType.BracketOpen);
+	Node node = toks.read!(NodeType.Identifier);
+	if (toks.expectPop!(TokenType.Comma)){
+		ret.children ~= node; // iteration counter
+		node = toks.read!(NodeType.Identifier);
+	}
+	ret.children ~= node; // iteration element
+
+	toks.expectPopThrow!(TokenType.Semicolon);
+	ret.children ~= toks.read!(NodeType.Expression); // range
+
+	toks.expectPopThrow!(TokenType.BracketClose);
+	ret.children ~= toks.read!(NodeType.Statement); // loop body
+	return ret;
 }
 
-private Node readIntLiteral(ref Tokenizer toks, NodeType context){
-	if (!toks.expect!(TokenType.LiteralInt) &&
-			!toks.expect!(TokenType.LiteralBinary) &&
-			!toks.expect!(TokenType.LiteralHexadecimal))
-		throw new CompileError(ErrorType.Expected, toks.front, ["int literal"]);
+private Node readStaticForStatement(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.StaticFor);
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
+
+	toks.expectPopThrow!(TokenType.BracketOpen);
+	Node node = toks.read!(NodeType.Identifier);
+	if (toks.expectPop!(TokenType.Comma)){
+		ret.children ~= node; // iteration counter
+		node = toks.read!(NodeType.Identifier);
+	}
+	ret.children ~= node; // iteration element
+
+	toks.expectPopThrow!(TokenType.Semicolon);
+	ret.children ~= toks.read!(NodeType.Expression); // range
+
+	toks.expectPopThrow!(TokenType.BracketClose);
+	ret.children ~= toks.read!(NodeType.Statement); // loop body
+	return ret;
+}
+
+private Node readBreakStatement(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Break);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	toks.expectPopThrow!(TokenType.Semicolon);
+	return ret;
+}
+
+private Node readContinueStatement(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Continue);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	toks.expectPopThrow!(TokenType.Semicolon);
+	return ret;
+}
+
+private Node readBlock(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.CurlyOpen);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	while (true){
+		if (toks.expectPop!(TokenType.CurlyClose))
+			break;
+		ret.children ~= toks.read!(NodeType.Statement);
+	}
+	return ret;
+}
+
+private Node readIdentifier(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Identifier);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readIntLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!([
+		TokenType.LiteralInt,
+		TokenType.LiteralBinary,
+		TokenType.LiteralHexadecimal
+	]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readFloatLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.LiteralFloat);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readStringLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.LiteralString);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readCharLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.LiteralChar);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readNullLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Null);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readBoolLiteral(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!([
+			TokenType.True,
+			TokenType.False
+	]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret;
+}
+
+private Node readArgList(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.BracketOpen);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	if (toks.expectPop!(TokenType.BracketClose))
+		return ret;
+
+	while (true){
+		ret.children ~= toks.read!(NodeType.Expression);
+		if (toks.expectPop!(TokenType.BracketClose))
+			break;
+		toks.expectPopThrow!(TokenType.Comma);
+	}
+	return ret;
+}
+
+private Node readTrait(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Trait);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	ret.children = [
+		toks.read!(NodeType.ArgList)
+	];
+	return ret;
+}
+
+private Node readExpression(ref Tokenizer toks, NodeType context){
+	// HACK stub
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	return ret; // TODO implement readExpression
+}
+
+private Node readLoadExpr(ref Tokenizer toks, NodeType context){
+	toks.expectThrow!(TokenType.Load);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+
+	toks.expectPopThrow!(TokenType.BracketOpen);
+	while (true){
+		ret.children ~= toks.read!(NodeType.Identifier);
+		if (toks.expectPop!(TokenType.BracketClose))
+			break;
+		toks.expectPopThrow!(TokenType.OpDot);
+	}
 	return ret;
 }
