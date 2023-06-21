@@ -19,9 +19,6 @@ void main(){
 	ignore |= TokenType.CommentMultiline;
 	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
-	foreach (token; range)
-		writeln(token);
-
 	Node rootNode;
 	rootNode = read(range);
 	if (rootNode)
