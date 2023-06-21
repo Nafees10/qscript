@@ -43,7 +43,7 @@ debug.qscript:
 	pub var auto log = (string msg) -> { ... };
 
 main.qscript:
-	var auto logger = load debug;
+	var auto logger = load(debug);
 	pub var auto this = () -> {
 		logger.log("started");
 	};
@@ -64,14 +64,14 @@ main.qscript:
 	}
 ```
 
-In the first case, the `load debug` statement creates an instance of the
+In the first case, the `load(debug)` statement creates an instance of the
 `debug.qscript` script, and returns it.
 
 assigning a "namespace" of sorts as shown above is not necessary, a library can
 be loaded so that its symbols become accessible as global symbols:
 
 ```
-load debug;
+load(debug);
 ```
 
 This will create an instance of debug and merge it's symbols with current
@@ -80,7 +80,7 @@ script.
 Similarly, a script can be loaded and all it's public symbols made public:
 
 ```
-pub load debug;
+pub load(debug);
 ```
 
 if a script/library is `load`-ed multiple times, instance is created only once,
