@@ -1,6 +1,0 @@
-function void main{
-	int[] array = [1, 2, 3, 4];
-	for (int i = 0; i < length(array); i = i + 1;){
-		writeln (toStr(array[i]));
-	}
-}
