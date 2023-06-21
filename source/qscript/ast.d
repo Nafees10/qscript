@@ -42,6 +42,17 @@ public:
 /// ASTNode builder function type
 private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 
+/// Returns: Flags constructed from array
+private template Flags(T, T[] vals) if (is(T == enum)){
+	enum Flags = getFlags;
+	Flags!T getFlags(){
+		Flags!T ret;
+		static foreach (val; vals)
+			ret |= val;
+		return ret;
+	}
+}
+
 /// read function for a NodeType
 private template ReadFunction(NodeType type){
 	enum ReadFunction = getReadFunction();
@@ -59,14 +70,64 @@ private template ReadFunction(NodeType type){
 /// Checks if token at front is matching type.
 ///
 /// Returns: true if matched
-private bool expect(TokenType type)(Tokenizer toks){
+private bool expect(TokenType type)(ref Tokenizer toks){
 	return !toks.empty && toks.front.type.get!type;
+}
+/// ditto
+private bool expect(TokenType[] types)(ref Tokenizer toks){
+	if (toks.empty)
+		return false;
+	enum Flags!TokenType match = Flags!(TokenType, types);
+	return cast(bool)(match & toks.front.type);
+}
+
+/// Checks if token at front is matching type.
+///
+/// Throws: CompileError if not matching
+private void expectThrow(TokenType type)(ref Tokenizer toks){
+	if (!toks.expect!type)
+		throw new CompileError(Error.Expected, toks.front, [type.to!string]);
+}
+
+/// ditto
+private void expectThrow(TokenType[] types)(ref Tokenizer toks){
+	if (toks.expect!types)
+		return;
+	enum valsStr = types.map!(a => a.to!string).join(" or ");
+	throw new CompileError(ErrorType.Expected, toks.front, valsStr);
 }
 
 /// Checks if token at front is matching type. Pops it if matching
 ///
 /// Returns: true if matched
-private bool expectPop(TokenType type)(Tokenizer toks){
+private bool expectPop(TokenType type)(ref Tokenizer toks){
+	if (!toks.empty && toks.front.type.get!type){
+		toks.popFront;
+		return true;
+	}
+	return false;
+}
+
+/// Checks if token at front is matching type.
+///
+/// Throws: CompileError if not matching
+private void expectPopThrow(TokenType type)(ref Tokenizer toks){
+	if (!toks.expectPop!type)
+		throw new CompileError(Error.Expected, toks.front, [type.to!string]);
+}
+
+/// ditto
+private void expectPopThrow(TokenType[] types)(ref Tokenizer toks){
+	if (toks.expectPop!types)
+		return;
+	enum valsStr = types.map!(a => a.to!string).join(" or ");
+	throw new CompileError(ErrorType.Expected, toks.front, valsStr);
+}
+
+/// Checks if token at front is matching type. Pops it if matching
+///
+/// Throws: CompileError if not matching
+private bool expectPopThrow(TokenType type)(ref Tokenizer toks){
 	if (!toks.empty && toks.front.type.get!type){
 		toks.popFront;
 		return true;
@@ -354,6 +415,7 @@ private Node readDeclaration(ref Tokenizer toks, NodeType context){
 	ret.children = [
 		toks.read!([
 				NodeType.Pub,
+				NodeType.LoadExpr,
 				NodeType.Template,
 				NodeType.TemplateFn,
 				NodeType.TemplateEnum,
@@ -804,7 +866,7 @@ private Node readParam(ref Tokenizer toks, NodeType context){
 private Node readNamedValue(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	Node name = toks.read!(NodeType.Identifier);
-	if (toks.expect!(TokenType.OpAssign))
+	if (!toks.expect!(TokenType.OpAssign))
 		throw new CompileError(ErrorType.Expected, toks.front, ["="]);
 	ret.token = toks.front;
 	toks.popFront;
@@ -828,7 +890,8 @@ private Node readStatement(ref Tokenizer toks, NodeType context){
 	}catch (CompileError){}
 	try{
 		auto branch = toks;
-		ret.children = [branch.read!([
+		ret.children = [
+			branch.read!([
 				NodeType.IfStatement,
 				NodeType.StaticIfStatement,
 				NodeType.WhileStatement,
@@ -838,7 +901,8 @@ private Node readStatement(ref Tokenizer toks, NodeType context){
 				NodeType.BreakStatement,
 				NodeType.ContinueStatement,
 				NodeType.Block,
-		])];
+			])
+		];
 		toks = branch;
 		return ret;
 	}catch (CompileError){}
@@ -851,6 +915,91 @@ private Node readStatement(ref Tokenizer toks, NodeType context){
 	throw new CompileError(ErrorType.Expected, toks.front, [
 			NodeType.Statement.to!string
 	]);
+}
+
+private Node readIfStatement(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.If))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.If.to!string
+		]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	ret.children = [
+		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Statement)
+	];
+	if (toks.expectPop!(TokenType.Else))
+		ret.children ~= toks.read!(NodeType.Statement);
+	return ret;
+}
+
+private Node readStaticIfStatement(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.StaticIf))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.StaticIf.to!string
+		]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	ret.children = [
+		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Statement)
+	];
+	if (toks.expectPop!(TokenType.Else))
+		ret.children ~= toks.read!(NodeType.Statement);
+	return ret;
+}
+
+private Node readWhileStatement(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.While))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.While.to!string
+		]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	ret.children = [
+		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Statement)
+	];
+	return ret;
+}
+
+private Node readDoWhileStatement(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.Do))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.Do.to!string
+		]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	toks.children = [
+		toks.read!(NodeType.Statement),
+		null // fill later with condition expression
+	];
+	if (!toks.expectPop!(TokenType.While))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.While.to!string
+		]);
+	toks.children[$ - 1] = toks.read!(NodeType.Expression);
+	// expect a semicolon
+	if (!toks.expectPop!(TokenType.Semicolon))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.Semicolon.to!string
+		]);
+	return ret;
+}
+
+private Node readForStatement(ref Tokenizer toks, NodeType context){
+	if (!toks.expect!(TokenType.For))
+		throw new CompileError(ErrorType.Expected, toks.front, [
+				TokenType.For.to!string
+		]);
+	Node ret = new Node;
+	ret.token = toks.front;
+	toks.popFront;
+	if (!expectPop!(TokenType.BracketOpen))
 }
 
 private Node readIntLiteral(ref Tokenizer toks, NodeType context){
