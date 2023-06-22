@@ -69,6 +69,53 @@ private template ReadFunction(NodeType type){
 	}
 }
 
+/// Precedence (if none found, default is 0)
+private template PrecedenceOf(NodeType type){
+	enum PrecedenceOf = getPrecedenceOf;
+	private uint getPrecedenceOf(){
+		uint ret;
+		static foreach (node; EnumMembers!NodeType){
+			static if (node == type){
+				static if (hasUDA!(node, Precedence))
+					ret = getUDAs!(node, Precedence)[0].precedence;
+			}
+		}
+		return ret;
+	}
+}
+
+/// if a node type is a operator
+private template IsOperator(NodeType type){
+	enum IsOperator = isOperator;
+	private bool isOperator(){
+		bool ret = false;
+		static foreach (node; EnumMembers!NodeType){
+			static if (node == type){
+				ret = ret ||
+					hasUDA!(node, BinOp) ||
+					hasUDA!(node, PreOp) ||
+					hasUDA!(node, PostOp);
+			}
+		}
+		return ret;
+	}
+}
+
+/// Operators that have a precedence equal to or greater
+private template OfPrecedence(uint p){
+	enum OfPrecedence = getOfPrecedence;
+	private NodeType[] getOfPrecedence(){
+		NodeType[] ret;
+		static foreach (node; EnumMembers!NodeType){
+			static if (IsOperator!node){
+				static if (PrecedenceOf!node >= p)
+					ret ~= node;
+			}
+		}
+		return ret;
+	}
+}
+
 /// Checks if token at front is matching type.
 ///
 /// Returns: true if matched
@@ -224,6 +271,21 @@ private struct Hook{
 		this.hook = hook;
 	}
 }
+
+/// UDA for precedence. greater number is first
+private struct Precedence{
+	uint precedence;
+	this(uint precedence){
+		this.precedence = precedence;
+	}
+}
+
+/// UDA for Binary Operator
+enum BinOp;
+/// UDA for Unary Pre Operator
+enum PreOp;
+/// UDA for Unary Post Operator
+enum PostOp;
 
 /// Node types
 public enum NodeType{
@@ -1076,7 +1138,6 @@ private Node readTrait(ref Tokenizer toks, NodeType context){
 }
 
 private Node readExpression(ref Tokenizer toks, NodeType context){
-	// HACK stub
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
