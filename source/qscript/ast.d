@@ -152,10 +152,6 @@ private Flags!NodeType getPostOps(){
 	return ret;
 }
 
-/// Unary Prefix operators
-private enum PreOps = getPreOps;
-private NodeType[]
-
 /// Checks if token at front is matching type.
 ///
 /// Returns: true if matched
