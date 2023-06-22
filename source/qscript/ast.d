@@ -44,6 +44,9 @@ public:
 /// ASTNode builder function type
 private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 
+/// ASTNode builder function type for Binary and Postfix unary operators
+private alias OpPostBuilderFunc = Node function(ref Tokenizer, Node, NodeType);
+
 /// Returns: Flags constructed from array
 private template FlagsFromArray(T, T[] vals) if (is(T == enum)){
 	enum FlagsFromArray = getFlags;
@@ -115,6 +118,43 @@ private template OfPrecedence(uint p){
 		return ret;
 	}
 }
+
+/// Binary Operators
+private enum BinOps = getBinOps;
+private Flags!NodeType getBinOps(){
+	NodeType[] ret;
+	static foreach (type; EnumMembers!NodeType){
+		static if (hasUDA!(type, BinOp))
+			ret ~= type;
+	}
+	return ret;
+}
+
+/// Unary prefix operators
+private enum PreOps = getPreOps;
+private Flags!NodeType getPreOps(){
+	NodeType[] ret;
+	static foreach (type; EnumMembers!NodeType){
+		static if (hasUDA!(type, PreOp))
+			ret ~= type;
+	}
+	return ret;
+}
+
+/// Unary postfix operators
+private enum PostOps = getPostOps;
+private Flags!NodeType getPostOps(){
+	NodeType[] ret;
+	static foreach (type; EnumMembers!NodeType){
+		static if (hasUDA!(type, PostOp))
+			ret ~= type;
+	}
+	return ret;
+}
+
+/// Unary Prefix operators
+private enum PreOps = getPreOps;
+private NodeType[]
 
 /// Checks if token at front is matching type.
 ///
@@ -258,9 +298,20 @@ public Node read(ref Tokenizer toks){
 
 /// UDA for Builder function
 private struct Builder{
-	BuilderFunc builder;
+	bool isOpPost;
+	union{
+		BuilderFunc builder;
+		OpPostBuilderFunc opBuilder;
+	}
+
+	@disable this();
 	this (BuilderFunc builder){
 		this.builder = builder;
+		this.isOpPost = false;
+	}
+	this (OpPostBuilderFunc opBuilder){
+		this.opBuilder = opBuilder;
+		this.isOpPost = true;
 	}
 }
 
@@ -371,85 +422,175 @@ public enum NodeType{
 	@Builder(&readExpression)						Expression,
 
 	@Builder(&readLoadExpr)
+		@Precedence(110)
+		@PreOp
 		@Hook(TokenType.Load)							LoadExpr,
-	/* TODO implement these
+	@Builder(&readBracketExpr)
+		@Precedence(110)
+		@PreOp
+		@Hook(TokenType.BracketOpen)			BracketExpr,
+
 	@Builder(&readArrowExpr)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.Arrow)						ArrowExpr,
 	@Builder(&readDotOp)
+		@Precedence(100)
+		@BinOp
 		@Hook(TokenType.OpDot)						DotOp,
 	@Builder(&readOpIndex)
+		@Precedence(100)
+		@BinOp
 		@Hook(TokenType.OpIndex)					OpIndex,
 	@Builder(&readOpCall)
+		@Precedence(100)
+		@BinOp
 		@Hook(TokenType.OpFnCall)					OpCall,
-	@Builder(&readOpPreInc)
-		@Hook(TokenType.OpInc)						OpPreInc,
+
 	@Builder(&readOpPostInc)
+		@Precedence(90)
+		@PostOp
 		@Hook(TokenType.OpInc)						OpPostInc,
-	@Builder(&readOpPreDec)
-		@Hook(TokenType.OpDec)						OpPreDec,
 	@Builder(&readOpPostDec)
+		@Precedence(80)
+		@PostOp
 		@Hook(TokenType.OpDec)						OpPostDec,
+
+	@Builder(&readOpPreInc)
+		@Precedence(90)
+		@PreOp
+		@Hook(TokenType.OpInc)						OpPreInc,
+	@Builder(&readOpPreDec)
+		@Precedence(80)
+		@PreOp
+		@Hook(TokenType.OpDec)						OpPreDec,
 	@Builder(&readOpNot)
+		@Precedence(80)
+		@PreOp
 		@Hook(TokenType.OpNot)						OpNot,
+
 	@Builder(&readOpMul)
+		@Precedence(70)
+		@BinOp
 		@Hook(TokenType.OpMul)						OpMul,
 	@Builder(&readOpDiv)
+		@Precedence(70)
+		@BinOp
 		@Hook(TokenType.OpDiv)						OpDiv,
 	@Builder(&readOpMod)
+		@Precedence(70)
+		@BinOp
 		@Hook(TokenType.OpMod)						OpMod,
+
 	@Builder(&readOpAdd)
+		@Precedence(60)
+		@BinOp
 		@Hook(TokenType.OpAdd)						OpAdd,
 	@Builder(&readOpSub)
+		@Precedence(60)
+		@BinOp
 		@Hook(TokenType.OpSub)						OpSub,
+
 	@Builder(&readOpLShift)
+		@Precedence(50)
+		@BinOp
 		@Hook(TokenType.OpLShift)					OpLShift,
 	@Builder(&readOpRShift)
+		@Precedence(50)
+		@BinOp
 		@Hook(TokenType.OpRShift)					OpRShift,
+
 	@Builder(&readOpEquals)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpEquals)					OpEquals,
 	@Builder(&readOpNotEquals)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpNotEquals)			OpNotEquals,
 	@Builder(&readOpGreaterEquals)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpGreaterEquals)	OpGreaterEquals,
 	@Builder(&readOpLesserEquals)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpLesserEquals)		OpLesserEquals,
 	@Builder(&readOpGreater)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpGreater)				OpGreater,
 	@Builder(&readOpLesser)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpLesser)					OpLesser,
 	@Builder(&readOpIs)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpIs)							OpIs,
 	@Builder(&readOpNotIs)
+		@Precedence(40)
+		@BinOp
 		@Hook(TokenType.OpNotIs)					OpNotIs,
+
 	@Builder(&readOpBinAnd)
+		@Precedence(30)
+		@BinOp
 		@Hook(TokenType.OpBinAnd)					OpBinAnd,
 	@Builder(&readOpBinOr)
+		@Precedence(30)
+		@BinOp
 		@Hook(TokenType.OpBinOr)					OpBinOr,
 	@Builder(&readOpBinXor)
+		@Precedence(30)
+		@BinOp
 		@Hook(TokenType.OpBinXor)					OpBinXor,
+
 	@Builder(&readOpBoolAnd)
+		@Precedence(20)
+		@BinOp
 		@Hook(TokenType.OpBoolAnd)				OpBoolAnd,
 	@Builder(&readOpBoolOr)
+		@Precedence(20)
+		@BinOp
 		@Hook(TokenType.OpBoolOr)					OpBoolOr,
+
 	@Builder(&readOpAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpAssign)					OpAssign,
 	@Builder(&readOpAddAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpAddAssign)			OpAddAssign,
 	@Builder(&readOpSubAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpSubAssign)			OpSubAssign,
 	@Builder(&readOpMulAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpMulAssign)			OpMulAssign,
 	@Builder(&readOpDivAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpDivAssign)			OpDivAssign,
 	@Builder(&readOpModAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpModAssign)			OpModAssign,
 	@Builder(&readOpBinAndAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpSubAssign)			OpBinAndAssign,
 	@Builder(&readOpBinOrAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpBinOrAssign)		OpBinOrAssign,
 	@Builder(&readOpBinXorAssign)
+		@Precedence(10)
+		@BinOp
 		@Hook(TokenType.OpBinXorAssign)		OpBinXorAssign,
-	*/
 }
 
 private Node readScript(ref Tokenizer toks, NodeType context){
@@ -921,7 +1062,7 @@ private Node readIfStatement(ref Tokenizer toks, NodeType context){
 	ret.token = toks.front;
 	toks.popFront;
 	ret.children = [
-		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Expression), // TODO maybe change to BracketExpr?
 		toks.read!(NodeType.Statement)
 	];
 	if (toks.expectPop!(TokenType.Else))
@@ -935,7 +1076,7 @@ private Node readStaticIfStatement(ref Tokenizer toks, NodeType context){
 	ret.token = toks.front;
 	toks.popFront;
 	ret.children = [
-		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Expression), // TODO maybe change to BracketExpr?
 		toks.read!(NodeType.Statement)
 	];
 	if (toks.expectPop!(TokenType.Else))
@@ -949,7 +1090,7 @@ private Node readWhileStatement(ref Tokenizer toks, NodeType context){
 	ret.token = toks.front;
 	toks.popFront;
 	ret.children = [
-		toks.read!(NodeType.Expression),
+		toks.read!(NodeType.Expression), // TODO maybe change to BracketExpr?
 		toks.read!(NodeType.Statement)
 	];
 	return ret;
@@ -965,7 +1106,7 @@ private Node readDoWhileStatement(ref Tokenizer toks, NodeType context){
 		null // fill later with condition expression
 	];
 	toks.expectPopThrow!(TokenType.While);
-	ret.children[$ - 1] = toks.read!(NodeType.Expression);
+	ret.children[$ - 1] = toks.read!(NodeType.Expression); // TODO BracketExpr?
 	toks.expectPopThrow!(TokenType.Semicolon); // expect a semicolon
 	return ret;
 }
