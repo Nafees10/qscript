@@ -560,7 +560,17 @@ private Node readFn(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
-	// TODO handle no-return-type functions too
+	try{
+		auto branch = toks;
+		ret.children = [
+			branch.read!(NodeType.Identifier),
+			branch.read!(NodeType.ParamList),
+			branch.read!(NodeType.Statement)
+		];
+		toks = branch;
+		return ret;
+	}catch (CompileError){}
+
 	ret.children = [
 		toks.read!(NodeType.DataType),
 		toks.read!(NodeType.Identifier),
