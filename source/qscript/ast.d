@@ -6,7 +6,8 @@ import std.json,
 			 std.string,
 			 std.stdio,
 			 std.functional,
-			 std.algorithm;
+			 std.algorithm,
+			 std.meta;
 
 import qscript.compiler,
 			 qscript.tokens;
@@ -58,98 +59,67 @@ private template FlagsFromArray(T, T[] vals) if (is(T == enum)){
 	}
 }
 
-/// read function for a NodeType
-private template ReadFunction(NodeType type){
-	enum ReadFunction = getReadFunction();
-	BuilderFunc getReadFunction(){
-		BuilderFunc ret = null;
-		static foreach (sym; EnumMembers!NodeType){
-			static if (type == sym && hasUDA!(sym, Builder)){
-				ret = getUDAs!(sym, Builder)[0].builder;
-			}
-		}
-		return ret;
-	}
-}
-
 /// Precedence (if none found, default is 0)
-private template PrecedenceOf(NodeType type){
-	enum PrecedenceOf = getPrecedenceOf;
-	private uint getPrecedenceOf(){
-		uint ret;
-		static foreach (node; EnumMembers!NodeType){
-			static if (node == type){
-				static if (hasUDA!(node, Precedence))
-					ret = getUDAs!(node, Precedence)[0].precedence;
-			}
-		}
-		return ret;
-	}
-}
+private enum PrecedenceOf(alias type) = hasUDA!(type, Precedence)
+	? getUDAs!(type, Precedence)[0]
+	: 0;
 
 /// if a node type is a operator
-private template IsOperator(NodeType type){
-	enum IsOperator = isOperator;
-	private bool isOperator(){
-		bool ret = false;
-		static foreach (node; EnumMembers!NodeType){
-			static if (node == type){
-				ret = ret ||
-					hasUDA!(node, BinOp) ||
-					hasUDA!(node, PreOp) ||
-					hasUDA!(node, PostOp);
-			}
-		}
-		return ret;
+private enum IsOperator(alias type) =
+	IsBinOp!type ||
+	IsPostOp!type ||
+	IsPreOp!type;
+
+/// if a node type is a binary operator
+private enum IsBinOp(alias type) = hasUDA!(type, BinOp);
+/// if a node type is a unary prefix operator
+private enum IsPreOp(alias type) = hasUDA!(type, PreOp);
+/// if a node type is a unary postfix operator
+private enum IsPostOp(alias type) = hasUDA!(type, PostOp);
+
+/// Operators that have a precedence equal to or greater
+private template HigherPrecedOps(uint p){
+	enum HigherPrecedOps = AliasSeq!();
+	static foreach (type; EnumMembers!NodeType){
+		static if (PrecedenceOf!type >= p)
+			HigherPrecedOps = AliasSeq!(HigherPrecedOps, type);
 	}
 }
 
-/// Operators that have a precedence equal to or greater
-private template OfPrecedence(uint p){
-	enum OfPrecedence = getOfPrecedence;
-	private NodeType[] getOfPrecedence(){
-		NodeType[] ret;
-		static foreach (node; EnumMembers!NodeType){
-			static if (IsOperator!node){
-				static if (PrecedenceOf!node >= p)
-					ret ~= node;
-			}
-		}
-		return ret;
+/// ditto
+private template HigherPrecedOps(alias type){
+	enum HigherPrecedOps = AliasSeq!();
+	static foreach (member; EnumMembers!NodeType){
+		static if (PrecedenceOf!member >= PrecedenceOf!type)
+			HigherPrecedOps = AliasSeq!(HigherPrecedOps, member);
 	}
 }
 
 /// Binary Operators
-private enum BinOps = getBinOps;
-private Flags!NodeType getBinOps(){
-	NodeType[] ret;
+private template BinOps(){
+	enum BinOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, BinOp))
-			ret ~= type;
+			BinOps = AliasSeq!(BinOps, type);
 	}
-	return ret;
 }
 
-/// Unary prefix operators
-private enum PreOps = getPreOps;
-private Flags!NodeType getPreOps(){
-	NodeType[] ret;
+/// Unary Prefix Operators
+private template PreOps(){
+	enum PreOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, PreOp))
-			ret ~= type;
+			PreOps = AliasSeq!(PreOps, type);
 	}
-	return ret;
 }
 
-/// Unary postfix operators
-private enum PostOps = getPostOps;
-private Flags!NodeType getPostOps(){
-	NodeType[] ret;
+/// Unary Prefix Operators
+private template PostOps(){
+	enum PostOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, PostOp))
-			ret ~= type;
+			PostOps = AliasSeq!(PostOps, type);
 	}
-	return ret;
 }
 
 /// Checks if token at front is matching type.
@@ -224,13 +194,15 @@ private void expectPopThrow(TokenType[] types)(ref Tokenizer toks){
 /// Returns: Node
 ///
 /// Throws: CompileError if node was going to be null
-Node read(NodeType type)(ref Tokenizer toks){
+Node read(alias type)(ref Tokenizer toks) if (
+		is(typeof(type) == NodeType) &&
+		hasUDA!(type, Builder) &&
+		!getUDAs!(type, Builder)[0].isOpPost){
 	static NodeType context = NodeType.Script;
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
-	auto func = ReadFunction!type;
-	static assert(ReadFunction!type !is null,
-			"No build function for " ~ type.to!string);
+	enum func = getUDAs!(type, Builder)[0].builder;
+	static assert(func !is null, "No build function for " ~ type.to!string);
 
 	NodeType prevContext = context;
 	context = type;
@@ -415,22 +387,19 @@ public enum NodeType{
 	@Builder(&readTrait)
 		@Hook(TokenType.Trait)						Trait,
 
-	@Builder(&readExpression)						Expression,
+	@Builder(&readExpression)
+		@Hook(TokenType.BracketOpen)			Expression,
 
 	@Builder(&readLoadExpr)
 		@Precedence(110)
 		@PreOp
 		@Hook(TokenType.Load)							LoadExpr,
-	@Builder(&readBracketExpr)
-		@Precedence(110)
-		@PreOp
-		@Hook(TokenType.BracketOpen)			BracketExpr,
 
-	@Builder(&readArrowExpr)
+	@Builder(&readArrowFunc)
 		@Precedence(10)
 		@BinOp
-		@Hook(TokenType.Arrow)						ArrowExpr,
-	@Builder(&readDotOp)
+		@Hook(TokenType.BracketOpen)			ArrowFunc,
+	@Builder(&readBinOp)
 		@Precedence(100)
 		@BinOp
 		@Hook(TokenType.OpDot)						DotOp,
@@ -443,160 +412,160 @@ public enum NodeType{
 		@BinOp
 		@Hook(TokenType.OpFnCall)					OpCall,
 
-	@Builder(&readOpPostInc)
+	@Builder(&readPostOp)
 		@Precedence(90)
 		@PostOp
 		@Hook(TokenType.OpInc)						OpPostInc,
-	@Builder(&readOpPostDec)
+	@Builder(&readPostOp)
 		@Precedence(80)
 		@PostOp
 		@Hook(TokenType.OpDec)						OpPostDec,
 
-	@Builder(&readOpPreInc)
+	@Builder(&readPreOp)
 		@Precedence(90)
 		@PreOp
 		@Hook(TokenType.OpInc)						OpPreInc,
-	@Builder(&readOpPreDec)
+	@Builder(&readPreOp)
 		@Precedence(80)
 		@PreOp
 		@Hook(TokenType.OpDec)						OpPreDec,
-	@Builder(&readOpNot)
+	@Builder(&readPreOp)
 		@Precedence(80)
 		@PreOp
 		@Hook(TokenType.OpNot)						OpNot,
 
-	@Builder(&readOpMul)
+	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
 		@Hook(TokenType.OpMul)						OpMul,
-	@Builder(&readOpDiv)
+	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
 		@Hook(TokenType.OpDiv)						OpDiv,
-	@Builder(&readOpMod)
+	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
 		@Hook(TokenType.OpMod)						OpMod,
 
-	@Builder(&readOpAdd)
+	@Builder(&readBinOp)
 		@Precedence(60)
 		@BinOp
 		@Hook(TokenType.OpAdd)						OpAdd,
-	@Builder(&readOpSub)
+	@Builder(&readBinOp)
 		@Precedence(60)
 		@BinOp
 		@Hook(TokenType.OpSub)						OpSub,
 
-	@Builder(&readOpLShift)
+	@Builder(&readBinOp)
 		@Precedence(50)
 		@BinOp
 		@Hook(TokenType.OpLShift)					OpLShift,
-	@Builder(&readOpRShift)
+	@Builder(&readBinOp)
 		@Precedence(50)
 		@BinOp
 		@Hook(TokenType.OpRShift)					OpRShift,
 
-	@Builder(&readOpEquals)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpEquals)					OpEquals,
-	@Builder(&readOpNotEquals)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpNotEquals)			OpNotEquals,
-	@Builder(&readOpGreaterEquals)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpGreaterEquals)	OpGreaterEquals,
-	@Builder(&readOpLesserEquals)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpLesserEquals)		OpLesserEquals,
-	@Builder(&readOpGreater)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpGreater)				OpGreater,
-	@Builder(&readOpLesser)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpLesser)					OpLesser,
-	@Builder(&readOpIs)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpIs)							OpIs,
-	@Builder(&readOpNotIs)
+	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
 		@Hook(TokenType.OpNotIs)					OpNotIs,
 
-	@Builder(&readOpBinAnd)
+	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
 		@Hook(TokenType.OpBinAnd)					OpBinAnd,
-	@Builder(&readOpBinOr)
+	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
 		@Hook(TokenType.OpBinOr)					OpBinOr,
-	@Builder(&readOpBinXor)
+	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
 		@Hook(TokenType.OpBinXor)					OpBinXor,
 
-	@Builder(&readOpBoolAnd)
+	@Builder(&readBinOp)
 		@Precedence(20)
 		@BinOp
 		@Hook(TokenType.OpBoolAnd)				OpBoolAnd,
-	@Builder(&readOpBoolOr)
+	@Builder(&readBinOp)
 		@Precedence(20)
 		@BinOp
 		@Hook(TokenType.OpBoolOr)					OpBoolOr,
 
-	@Builder(&readOpAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpAssign)					OpAssign,
-	@Builder(&readOpAddAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpAddAssign)			OpAddAssign,
-	@Builder(&readOpSubAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpSubAssign)			OpSubAssign,
-	@Builder(&readOpMulAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpMulAssign)			OpMulAssign,
-	@Builder(&readOpDivAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpDivAssign)			OpDivAssign,
-	@Builder(&readOpModAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpModAssign)			OpModAssign,
-	@Builder(&readOpBinAndAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpSubAssign)			OpBinAndAssign,
-	@Builder(&readOpBinOrAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpBinOrAssign)		OpBinOrAssign,
-	@Builder(&readOpBinXorAssign)
+	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
 		@Hook(TokenType.OpBinXorAssign)		OpBinXorAssign,
 }
 
-private Node readScript(ref Tokenizer toks, NodeType context){
+private Node readScript(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	while (!toks.empty)
 		ret.children ~= toks.read!(NodeType.Declaration);
 	return ret;
 }
 
-private Node readPub(ref Tokenizer toks, NodeType context){
+private Node readPub(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Pub);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -606,7 +575,7 @@ private Node readPub(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readDeclaration(ref Tokenizer toks, NodeType context){
+private Node readDeclaration(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	ret.children = [
 		toks.read!([
@@ -628,7 +597,7 @@ private Node readDeclaration(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplate(ref Tokenizer toks, NodeType context){
+private Node readTemplate(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Template);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -641,7 +610,7 @@ private Node readTemplate(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateFn(ref Tokenizer toks, NodeType context){
+private Node readTemplateFn(ref Tokenizer toks, NodeType){
 	toks.expect!(TokenType.TemplateFn);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -657,7 +626,7 @@ private Node readTemplateFn(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateEnum(ref Tokenizer toks, NodeType context){
+private Node readTemplateEnum(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.TemplateEnum);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -691,7 +660,7 @@ private Node readTemplateEnum(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateStruct(ref Tokenizer toks, NodeType context){
+private Node readTemplateStruct(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.TemplateStruct);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -710,7 +679,7 @@ private Node readTemplateStruct(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateVar(ref Tokenizer toks, NodeType context){
+private Node readTemplateVar(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.TemplateVar);
 	Node ret;
 	ret.token = toks.front;
@@ -737,7 +706,7 @@ private Node readTemplateVar(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateAlias(ref Tokenizer toks, NodeType context){
+private Node readTemplateAlias(ref Tokenizer toks, NodeType){
 	toks.expectPopThrow!(TokenType.TemplateAlias);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -754,7 +723,7 @@ private Node readTemplateAlias(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readFn(ref Tokenizer toks, NodeType context){
+private Node readFn(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Fn);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -779,7 +748,7 @@ private Node readFn(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readVar(ref Tokenizer toks, NodeType context){
+private Node readVar(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Var);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -804,7 +773,7 @@ private Node readVar(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readStruct(ref Tokenizer toks, NodeType context){
+private Node readStruct(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Struct);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -822,7 +791,7 @@ private Node readStruct(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readEnum(ref Tokenizer toks, NodeType context){
+private Node readEnum(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Enum);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -849,7 +818,7 @@ private Node readEnum(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readAlias(ref Tokenizer toks, NodeType context){
+private Node readAlias(ref Tokenizer toks, NodeType){
 	toks.expectPopThrow!(TokenType.Alias);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -915,7 +884,7 @@ private Node readDataType(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readIndexBracketPair(ref Tokenizer toks, NodeType context){
+private Node readIndexBracketPair(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	toks.expectThrow!(TokenType.IndexOpen);
 	ret.token = toks.front;
@@ -924,7 +893,7 @@ private Node readIndexBracketPair(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateParamList(ref Tokenizer toks, NodeType context){
+private Node readTemplateParamList(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.BracketOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -935,7 +904,7 @@ private Node readTemplateParamList(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTemplateParam(ref Tokenizer toks, NodeType context){
+private Node readTemplateParam(ref Tokenizer toks, NodeType){
 	// can be:
 	// DataType Identifier
 	// Identifier
@@ -962,7 +931,7 @@ private Node readTemplateParam(ref Tokenizer toks, NodeType context){
 	return null; // and cause read to throw CompileError
 }
 
-private Node readParamList(ref Tokenizer toks, NodeType context){
+private Node readParamList(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.BracketOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -971,7 +940,7 @@ private Node readParamList(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readParam(ref Tokenizer toks, NodeType context){
+private Node readParam(ref Tokenizer toks, NodeType){
 	// can be:
 	// DataType Identifier
 	// DataType
@@ -999,7 +968,7 @@ private Node readParam(ref Tokenizer toks, NodeType context){
 }
 
 /// reads `foo = bar`
-private Node readNamedValue(ref Tokenizer toks, NodeType context){
+private Node readNamedValue(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	Node name = toks.read!(NodeType.Identifier);
 	toks.expectThrow!(TokenType.OpAssign);
@@ -1012,7 +981,7 @@ private Node readNamedValue(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readStatement(ref Tokenizer toks, NodeType context){
+private Node readStatement(ref Tokenizer toks, NodeType){
 	// a statement can be a declaration, or some predefined statement,
 	// or an expression
 	Node ret = new Node;
@@ -1052,7 +1021,7 @@ private Node readStatement(ref Tokenizer toks, NodeType context){
 	return null;
 }
 
-private Node readIfStatement(ref Tokenizer toks, NodeType context){
+private Node readIfStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.If);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1066,7 +1035,7 @@ private Node readIfStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readStaticIfStatement(ref Tokenizer toks, NodeType context){
+private Node readStaticIfStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.StaticIf);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1080,7 +1049,7 @@ private Node readStaticIfStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readWhileStatement(ref Tokenizer toks, NodeType context){
+private Node readWhileStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.While);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1092,7 +1061,7 @@ private Node readWhileStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readDoWhileStatement(ref Tokenizer toks, NodeType context){
+private Node readDoWhileStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Do);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1107,7 +1076,7 @@ private Node readDoWhileStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readForStatement(ref Tokenizer toks, NodeType context){
+private Node readForStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.For);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1129,7 +1098,7 @@ private Node readForStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readStaticForStatement(ref Tokenizer toks, NodeType context){
+private Node readStaticForStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.StaticFor);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1151,7 +1120,7 @@ private Node readStaticForStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readBreakStatement(ref Tokenizer toks, NodeType context){
+private Node readBreakStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Break);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1160,7 +1129,7 @@ private Node readBreakStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readContinueStatement(ref Tokenizer toks, NodeType context){
+private Node readContinueStatement(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Continue);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1169,7 +1138,7 @@ private Node readContinueStatement(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readBlock(ref Tokenizer toks, NodeType context){
+private Node readBlock(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.CurlyOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1183,7 +1152,7 @@ private Node readBlock(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readIdentifier(ref Tokenizer toks, NodeType context){
+private Node readIdentifier(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Identifier);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1191,7 +1160,7 @@ private Node readIdentifier(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readIntLiteral(ref Tokenizer toks, NodeType context){
+private Node readIntLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!([
 		TokenType.LiteralInt,
 		TokenType.LiteralBinary,
@@ -1203,7 +1172,7 @@ private Node readIntLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readFloatLiteral(ref Tokenizer toks, NodeType context){
+private Node readFloatLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.LiteralFloat);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1211,7 +1180,7 @@ private Node readFloatLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readStringLiteral(ref Tokenizer toks, NodeType context){
+private Node readStringLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.LiteralString);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1219,7 +1188,7 @@ private Node readStringLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readCharLiteral(ref Tokenizer toks, NodeType context){
+private Node readCharLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.LiteralChar);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1227,7 +1196,7 @@ private Node readCharLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readNullLiteral(ref Tokenizer toks, NodeType context){
+private Node readNullLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Null);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1235,7 +1204,7 @@ private Node readNullLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readBoolLiteral(ref Tokenizer toks, NodeType context){
+private Node readBoolLiteral(ref Tokenizer toks, NodeType){
 	toks.expectThrow!([
 			TokenType.True,
 			TokenType.False
@@ -1246,7 +1215,7 @@ private Node readBoolLiteral(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readArgList(ref Tokenizer toks, NodeType context){
+private Node readArgList(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.BracketOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1263,7 +1232,7 @@ private Node readArgList(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readTrait(ref Tokenizer toks, NodeType context){
+private Node readTrait(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Trait);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1274,14 +1243,14 @@ private Node readTrait(ref Tokenizer toks, NodeType context){
 	return ret;
 }
 
-private Node readExpression(ref Tokenizer toks, NodeType context){
+private Node readExpression(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
 	return ret; // TODO implement readExpression
 }
 
-private Node readLoadExpr(ref Tokenizer toks, NodeType context){
+private Node readLoadExpr(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Load);
 	Node ret = new Node;
 	ret.token = toks.front;
@@ -1293,6 +1262,33 @@ private Node readLoadExpr(ref Tokenizer toks, NodeType context){
 		if (toks.expectPop!(TokenType.BracketClose))
 			break;
 		toks.expectPopThrow!(TokenType.OpDot);
+	}
+	return ret;
+}
+
+private Node readArrowFunc(ref Tokenizer toks, NodeType){
+	toks.expectThrow!(TokenType.BracketOpen);
+	Node ret = new Node;
+	ret.children = [
+		toks.read!(NodeType.ParamList)
+	];
+	// now the arrow
+	toks.expectThrow!(TokenType.Arrow);
+	toks.token = toks.front;
+	toks.popFront;
+	// now maybe a datatype?
+	auto branch = toks;
+	try{
+		ret.children ~= branch.read!(NodeType.DataType);
+		toks = branch;
+	}catch (CompileError){}
+	// and now the expression part, or a block
+	branch = toks;
+	try{
+		ret.children ~= branch.read!(NodeType.Block);
+		toks = branch;
+	}catch (CompileError){
+		ret.children ~= toks.read!(NodeType.Expression);
 	}
 	return ret;
 }
