@@ -701,7 +701,7 @@ Operators are read in this order (higher = evaluated first):
 7. `==`, `!=`, `>=`, `<=`, `>`, `<`, `is`, `!is`
 8. `&`, `|`, `^`
 9. `&&`, `||`
-1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`
+1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `->`
 
 ## Operator Overloading
 Operators are read as functions, and can be overrided same as functions.
