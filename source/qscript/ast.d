@@ -72,7 +72,7 @@ private template JoinStringOf(string Jstr, Vals...){
 	private string getJoinStringOf(){
 		string ret;
 		static foreach (i, val; Vals){
-			ret ~= val.stringof;
+			ret ~= val.to!string;
 			static if (i + 1 < Vals.length)
 				ret ~= Jstr;
 		}
@@ -81,9 +81,26 @@ private template JoinStringOf(string Jstr, Vals...){
 }
 
 /// Precedence (if none found, default is 0)
-private enum PrecedenceOf(alias type) = hasUDA!(type, Precedence)
-	? getUDAs!(type, Precedence)[0]
-	: 0;
+private template PrecedenceOf(alias type){
+	enum PrecedenceOf = getPrecedenceOf();
+	private uint getPrecedenceOf(){
+		static if (hasUDA!(type, Precedence))
+			return getUDAs!(type, Precedence)[0].precedence;
+		else
+			return 0;
+	}
+}
+
+/// Returns: precedence of a NodeType, or 0
+private uint precedenceOf(NodeType type){
+	switch (type){
+		static foreach(member; EnumMembers!NodeType){
+			case member:
+				return PrecedenceOf!member;
+		}
+		default: return 0;
+	}
+}
 
 /// if a node type is a operator
 private enum IsOperator(alias type) =
@@ -114,6 +131,16 @@ private template HigherPrecedOps(alias type){
 		static if (PrecedenceOf!member >= PrecedenceOf!type)
 			HigherPrecedOps = AliasSeq!(HigherPrecedOps, member);
 	}
+}
+
+/// ditto
+private NodeType[] higherPrecedOps(uint p){
+	NodeType[] ret;
+	static foreach (member; EnumMembers!NodeType){
+		if (PrecedenceOf!member >= p)
+			ret ~= member;
+	}
+	return ret;
 }
 
 /// AliasSeq of TokenType of Hooks for given NodeTypes AliasSeq
@@ -189,12 +216,11 @@ private bool expectPop(Types...)(ref Tokenizer toks){
 private void expectPopThrow(Types...)(ref Tokenizer toks){
 	if (toks.expectPop!Types)
 		return;
-	enum valsStr = JoinStringOf!(" or ", Types);
+	enum string valsStr = JoinStringOf!(" or ", Types);
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// Tries to read a specific type of node from tokens
-/// Will increment index to skip tokens consumed
 ///
 /// Returns: Node
 ///
@@ -223,14 +249,13 @@ Node read(alias type)(ref Tokenizer toks) if (
 }
 
 /// Tries to read node from one of specific types, based on hook
-/// Will increment index to skip tokens consumed
 ///
 /// Returns: Node, or null
-Node read(NodeType[] types)(ref Tokenizer toks){
+Node read(Types...)(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
-	static foreach (member; types){
+	static foreach (member; Types){
 		static foreach (tokType; getUDAs!(member, TokenType)){
 			if (type.get!(tokType)){
 				auto branch = toks;
@@ -242,12 +267,11 @@ Node read(NodeType[] types)(ref Tokenizer toks){
 			}
 		}
 	}
-	enum valsStr = types.map!(a => a.to!string).join(" or ");
+	enum string valsStr = JoinStringOf!(" or ", Types);
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// Tries to read token into node based off of token type hook
-/// Will increment index to skip tokens consumed
 ///
 /// Returns: Node or null
 public Node read(ref Tokenizer toks){
@@ -579,7 +603,7 @@ private Node readPub(ref Tokenizer toks, NodeType){
 private Node readDeclaration(ref Tokenizer toks, NodeType){
 	Node ret = new Node;
 	ret.children = [
-		toks.read!([
+		toks.read!(
 				NodeType.Pub,
 				NodeType.LoadExpr,
 				NodeType.Template,
@@ -593,7 +617,7 @@ private Node readDeclaration(ref Tokenizer toks, NodeType){
 				NodeType.Struct,
 				NodeType.Var,
 				NodeType.Alias,
-		])
+		)
 	];
 	return ret;
 }
@@ -997,7 +1021,7 @@ private Node readStatement(ref Tokenizer toks, NodeType){
 	try{
 		auto branch = toks;
 		ret.children = [
-			branch.read!([
+			branch.read!(
 				NodeType.IfStatement,
 				NodeType.StaticIfStatement,
 				NodeType.WhileStatement,
@@ -1007,7 +1031,7 @@ private Node readStatement(ref Tokenizer toks, NodeType){
 				NodeType.BreakStatement,
 				NodeType.ContinueStatement,
 				NodeType.Block,
-			])
+			)
 		];
 		toks = branch;
 		return ret;
@@ -1244,12 +1268,25 @@ private Node readTrait(ref Tokenizer toks, NodeType){
 	return ret;
 }
 
-private Node readExpression(ref Tokenizer toks, NodeType){
+private Node readExpression(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
 	ret.token = toks.front;
-	// TODO check if front ignore precedence
-	toks.popFront;
-	return ret; // TODO implement readExpression
+	if (toks.expectPop!(TokenType.BracketOpen, TokenType.IndexOpen)){
+		// so we know which closing bracket to expect
+		bool isIndexBracket = ret.token.type.get!(TokenType.IndexOpen);
+		ret.children = [
+			toks.read!(NodeType.Expression) // recurse, and forget precedence
+		];
+		// expect closing bracket
+		if (isIndexBracket)
+			toks.expectPopThrow!(TokenType.IndexClose);
+		else
+			toks.expectPopThrow!(TokenType.BracketClose);
+		return ret;
+	}
+	const uint precedence = precedenceOf(context);
+	NodeType[] stopAt = higherPrecedOps(precedence); // types of higher precedence
+	return ret;
 }
 
 private Node readLoadExpr(ref Tokenizer toks, NodeType){
