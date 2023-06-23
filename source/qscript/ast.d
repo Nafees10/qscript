@@ -49,12 +49,33 @@ private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 private alias OpPostBuilderFunc = Node function(ref Tokenizer, Node, NodeType);
 
 /// Returns: Flags constructed from array
-private template FlagsFromArray(T, T[] vals) if (is(T == enum)){
-	enum FlagsFromArray = getFlags;
+private template FlagsFromAliasSeq(Vals...) if (
+		Vals.length > 0 &&
+		is(typeof(Vals[0]) == enum)){
+	enum FlagsFromAliasSeq = getFlags;
+	alias T = typeof(Vals[0]);
 	Flags!T getFlags(){
 		Flags!T ret;
-		static foreach (val; vals)
+		static foreach (val; Vals){
+			static if (!is(typeof(val) == T))
+				static assert(false, "Vals not all of same type: " ~
+						typeof(val).stringof ~ " != " ~ T.stringof);
 			ret |= val;
+		}
+		return ret;
+	}
+}
+
+/// stringof's all other template parameters, and joins with a string
+private template JoinStringOf(string Jstr, Vals...){
+	enum JoinStringOf = getJoinStringOf;
+	private string getJoinStringOf(){
+		string ret;
+		static foreach (i, val; Vals){
+			ret ~= val.stringof;
+			static if (i + 1 < Vals.length)
+				ret ~= Jstr;
+		}
 		return ret;
 	}
 }
@@ -125,47 +146,28 @@ private template PostOps(){
 /// Checks if token at front is matching type.
 ///
 /// Returns: true if matched
-private bool expect(TokenType type)(ref Tokenizer toks){
-	return !toks.empty && toks.front.type.get!type;
-}
-/// ditto
-private bool expect(TokenType[] types)(ref Tokenizer toks){
+private bool expect(Types...)(ref Tokenizer toks){
 	if (toks.empty)
 		return false;
-	enum Flags!TokenType match = FlagsFromArray!(TokenType, types);
+	enum Flags!TokenType match = FlagsFromAliasSeq!Types;
 	return cast(bool)(match & toks.front.type);
 }
 
 /// Checks if token at front is matching type.
 ///
 /// Throws: CompileError if not matching
-private void expectThrow(TokenType type)(ref Tokenizer toks){
-	if (!toks.expect!type)
-		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
-}
-
-/// ditto
-private void expectThrow(TokenType[] types)(ref Tokenizer toks){
-	if (toks.expect!types)
+private void expectThrow(Types...)(ref Tokenizer toks){
+	if (toks.expect!Types)
 		return;
-	enum valsStr = types.map!(a => a.to!string).join(" or ");
+	enum valsStr = JoinStringOf!(" or ", Types);
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// Checks if token at front is matching type. Pops it if matching
 ///
 /// Returns: true if matched
-private bool expectPop(TokenType type)(ref Tokenizer toks){
-	if (toks.expect!type){
-		toks.popFront;
-		return true;
-	}
-	return false;
-}
-
-/// ditto
-private bool expectPop(TokenType[] types)(ref Tokenizer toks){
-	if (toks.expect!types){
+private bool expectPop(Types...)(ref Tokenizer toks){
+	if (toks.expect!Types){
 		toks.popFront;
 		return true;
 	}
@@ -175,17 +177,11 @@ private bool expectPop(TokenType[] types)(ref Tokenizer toks){
 /// Checks if token at front is matching type.
 ///
 /// Throws: CompileError if not matching
-private void expectPopThrow(TokenType type)(ref Tokenizer toks){
-	if (!toks.expectPop!type)
-		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
-}
-
-/// ditto
-private void expectPopThrow(TokenType[] types)(ref Tokenizer toks){
-	if (toks.expectPop!types)
+private void expectPopThrow(Types...)(ref Tokenizer toks){
+	if (toks.expectPop!Types)
 		return;
-	enum valsStr = types.map!(a => a.to!string).join(" or ");
-	throw new CompileError(ErrorType.Expected, toks.front, valsStr);
+	enum valsStr = JoinStringOf!(" or ", Types);
+	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// Tries to read a specific type of node from tokens
@@ -251,12 +247,15 @@ public Node read(ref Tokenizer toks){
 	auto type = toks.front.type;
 	auto branch = toks;
 	static foreach (member; EnumMembers!NodeType){
-		static foreach (Hook hook; getUDAs!(member, Hook)){
-			if (type.get!(hook.hook)){
-				auto ret = branch.read!member;
-				if (ret !is null){
-					toks = branch;
-					return ret;
+		static if (hasUDA!(member, Builder) &&
+				!getUDAs!(member, Builder)[0].isOpPost){
+			static foreach (Hook hook; getUDAs!(member, Hook)){
+				if (type.get!(hook.hook)){
+					auto ret = branch.read!(member);
+					if (ret !is null){
+						toks = branch;
+						return ret;
+					}
 				}
 			}
 		}
@@ -267,7 +266,7 @@ public Node read(ref Tokenizer toks){
 /// UDA for Builder function
 private struct Builder{
 	bool isOpPost;
-	union{
+	struct{
 		BuilderFunc builder;
 		OpPostBuilderFunc opBuilder;
 	}
@@ -1161,11 +1160,11 @@ private Node readIdentifier(ref Tokenizer toks, NodeType){
 }
 
 private Node readIntLiteral(ref Tokenizer toks, NodeType){
-	toks.expectThrow!([
+	toks.expectThrow!(
 		TokenType.LiteralInt,
 		TokenType.LiteralBinary,
 		TokenType.LiteralHexadecimal
-	]);
+	);
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
@@ -1205,10 +1204,10 @@ private Node readNullLiteral(ref Tokenizer toks, NodeType){
 }
 
 private Node readBoolLiteral(ref Tokenizer toks, NodeType){
-	toks.expectThrow!([
+	toks.expectThrow!(
 			TokenType.True,
 			TokenType.False
-	]);
+	);
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
@@ -1274,7 +1273,7 @@ private Node readArrowFunc(ref Tokenizer toks, NodeType){
 	];
 	// now the arrow
 	toks.expectThrow!(TokenType.Arrow);
-	toks.token = toks.front;
+	ret.token = toks.front;
 	toks.popFront;
 	// now maybe a datatype?
 	auto branch = toks;
@@ -1291,4 +1290,25 @@ private Node readArrowFunc(ref Tokenizer toks, NodeType){
 		ret.children ~= toks.read!(NodeType.Expression);
 	}
 	return ret;
+}
+
+private Node readBinOp(ref Tokenizer toks, Node a, NodeType context){
+	// must be a binary operator
+	return null; // TODO implement this
+}
+
+private Node readPreOp(ref Tokenizer toks, NodeType context){
+	return null; // TODO implement this
+}
+
+private Node readPostOp(ref Tokenizer toks, Node a, NodeType context){
+	return null; // TODO implement this
+}
+
+private Node readOpCall(ref Tokenizer toks, Node a, NodeType context){
+	return null; // TODO implement this
+}
+
+private Node readOpIndex(ref Tokenizer toks, Node a, NodeType context){
+	return null; // TODO implement this
 }
