@@ -1270,7 +1270,7 @@ private Node readTrait(ref Tokenizer toks, NodeType){
 
 private Node readExpression(ref Tokenizer toks, NodeType context){
 	Node ret = new Node;
-	ret.token = toks.front;
+	// no token set for ret
 	if (toks.expectPop!(TokenType.BracketOpen, TokenType.IndexOpen)){
 		// so we know which closing bracket to expect
 		bool isIndexBracket = ret.token.type.get!(TokenType.IndexOpen);
@@ -1285,7 +1285,8 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 		return ret;
 	}
 	const uint precedence = precedenceOf(context);
-	NodeType[] stopAt = higherPrecedOps(precedence); // types of higher precedence
+	// stop when next operator is of lower precedence
+
 	return ret;
 }
 
