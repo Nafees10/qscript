@@ -117,7 +117,7 @@ private enum IsPostOp(alias type) = hasUDA!(type, PostOp);
 
 /// Operators that have a precedence equal to or greater
 private template HigherPrecedOps(uint p){
-	enum HigherPrecedOps = AliasSeq!();
+	alias HigherPrecedOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (PrecedenceOf!type >= p)
 			HigherPrecedOps = AliasSeq!(HigherPrecedOps, type);
@@ -126,7 +126,7 @@ private template HigherPrecedOps(uint p){
 
 /// ditto
 private template HigherPrecedOps(alias type){
-	enum HigherPrecedOps = AliasSeq!();
+	alias HigherPrecedOps = AliasSeq!();
 	static foreach (member; EnumMembers!NodeType){
 		static if (PrecedenceOf!member >= PrecedenceOf!type)
 			HigherPrecedOps = AliasSeq!(HigherPrecedOps, member);
@@ -220,37 +220,37 @@ private void expectPopThrow(Types...)(ref Tokenizer toks){
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
-/// Tries to read a specific type of node from tokens
+/// current context (NodeType of calling function)
+private NodeType _context = NodeType.Script;
+
+/// Tries to read a specific type(s) of node from tokens.
+/// Works for regular Nodes, and Prefix Unary Operators
 ///
 /// Returns: Node
 ///
-/// Throws: CompileError if node was going to be null
+/// Throws: CompileError on error
 Node read(alias type)(ref Tokenizer toks) if (
 		is(typeof(type) == NodeType) &&
 		hasUDA!(type, Builder) &&
 		!getUDAs!(type, Builder)[0].isOpPost){
-	static NodeType context = NodeType.Script;
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	enum func = getUDAs!(type, Builder)[0].builder;
 	static assert(func !is null, "No build function for " ~ type.to!string);
 
-	NodeType prevContext = context;
-	context = type;
+	NodeType prevContext = _context;
+	_context = type;
 	auto branch = toks;
-	auto ret = func(branch, context);
-	context = prevContext;
+	auto ret = func(branch, prevContext);
+	_context = prevContext;
 	if (ret is null)
 		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
-
 	ret.type = type;
 	toks = branch;
 	return ret;
 }
 
-/// Tries to read node from one of specific types, based on hook
-///
-/// Returns: Node, or null
+/// ditto
 Node read(Types...)(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
@@ -260,6 +260,54 @@ Node read(Types...)(ref Tokenizer toks){
 			if (type.get!(tokType)){
 				auto branch = toks;
 				auto ret = branch.read!member;
+				if (ret !is null){
+					toks = branch;
+					return ret;
+				}
+			}
+		}
+	}
+	enum string valsStr = JoinStringOf!(" or ", Types);
+	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
+}
+
+/// Tries to read a specific type of node from tokens.
+/// Works for Binary and Postfix Unary Operators
+///
+/// Returns: Node
+///
+/// Throws: CompileError on error
+Node read(alias type)(ref Tokenizer toks, Node a) if (
+		is(typeof(type) == NodeType) &&
+		hasUDA!(type, Builder) &&
+		getUDAs!(type, Builder)[0].isOpPost){
+	if (toks.empty)
+		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
+	enum func = getUDAs!(type, Builder)[0].opBuilder;
+	static assert(func !is null, "No build function for " ~ type.to!string);
+
+	NodeType prevContext = _context;
+	_context = type;
+	auto branch = toks;
+	auto ret = func(branch, a, prevContext);
+	_context = prevContext;
+	if (ret is null)
+		throw new CompileError(ErrorType.Expected, toks.front, [type.to!string]);
+	ret.type = type;
+	toks = branch;
+	return ret;
+}
+
+/// ditto
+Node read(Types...)(ref Tokenizer toks, Node a){
+	if (toks.empty)
+		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
+	auto type = toks.front.type;
+	static foreach (member; Types){
+		static foreach (tokType; getUDAs!(member, TokenType)){
+			if (type.get!(tokType)){
+				auto branch = toks;
+				auto ret = branch.read!member(a);
 				if (ret !is null){
 					toks = branch;
 					return ret;
@@ -388,6 +436,7 @@ public enum NodeType{
 	@Builder(&readBlock)
 		@(TokenType.CurlyOpen)				Block,
 
+	@Builder(&readExprUnit)					ExprUnit,
 	@Builder(&readIdentifier)
 		@(TokenType.Identifier)				Identifier,
 	@Builder(&readIntLiteral)
@@ -1177,6 +1226,22 @@ private Node readBlock(ref Tokenizer toks, NodeType){
 	return ret;
 }
 
+private Node readExprUnit(ref Tokenizer toks, NodeType){
+	Node ret = new Node;
+	ret.children = [
+		toks.read!(
+				NodeType.Identifier,
+				NodeType.IntLiteral,
+				NodeType.FloatLiteral,
+				NodeType.StringLiteral,
+				NodeType.CharLiteral,
+				NodeType.NullLiteral,
+				NodeType.BoolLiteral
+				)
+	];
+	return ret;
+}
+
 private Node readIdentifier(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.Identifier);
 	Node ret = new Node;
@@ -1269,9 +1334,10 @@ private Node readTrait(ref Tokenizer toks, NodeType){
 }
 
 private Node readExpression(ref Tokenizer toks, NodeType context){
-	Node ret = new Node;
-	// no token set for ret
-	if (toks.expectPop!(TokenType.BracketOpen, TokenType.IndexOpen)){
+	if (toks.expect!(TokenType.BracketOpen, TokenType.IndexOpen)){
+		Node ret = new Node;
+		ret.token = toks.front;
+		toks.popFront;
 		// so we know which closing bracket to expect
 		bool isIndexBracket = ret.token.type.get!(TokenType.IndexOpen);
 		ret.children = [
@@ -1284,9 +1350,21 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 			toks.expectPopThrow!(TokenType.BracketClose);
 		return ret;
 	}
-	const uint precedence = precedenceOf(context);
-	// stop when next operator is of lower precedence
 
+	// read at least 1 expression, stop when next operator is of lower precedence
+	Node ret = toks.read!(NodeType.ExprUnit);
+	while (!toks.empty){
+		bool repeat = true;
+		try{
+			auto branch = toks;
+			Switch: switch (context){
+			}
+		}catch(CompileError){
+			repeat = false;
+		}
+		if (!repeat)
+			break;
+	}
 	return ret;
 }
 
