@@ -66,6 +66,14 @@ private template FlagsFromAliasSeq(Vals...) if (
 	}
 }
 
+/// ditto
+private Flags!NodeType flagsFromVals(TokenType[] vals){
+	Flags!NodeType ret;
+	foreach (val; vals)
+		ret |= val;
+	return ret;
+}
+
 /// stringof's all other template parameters, and joins with a string
 private template JoinStringOf(string Jstr, Vals...){
 	enum JoinStringOf = getJoinStringOf;
@@ -102,45 +110,13 @@ private uint precedenceOf(NodeType type){
 	}
 }
 
-/// if a node type is a operator
-private enum IsOperator(alias type) =
-	IsBinOp!type ||
-	IsPostOp!type ||
-	IsPreOp!type;
-
-/// if a node type is a binary operator
-private enum IsBinOp(alias type) = hasUDA!(type, BinOp);
-/// if a node type is a unary prefix operator
-private enum IsPreOp(alias type) = hasUDA!(type, PreOp);
-/// if a node type is a unary postfix operator
-private enum IsPostOp(alias type) = hasUDA!(type, PostOp);
-
-/// Operators that have a precedence equal to or greater
-private template HigherPrecedOps(uint p){
-	alias HigherPrecedOps = AliasSeq!();
-	static foreach (type; EnumMembers!NodeType){
-		static if (PrecedenceOf!type >= p)
-			HigherPrecedOps = AliasSeq!(HigherPrecedOps, type);
+/// subset that have a precedence equal to or greater
+private template HigherPreced(uint P, Ops...){
+	alias HigherPreced = AliasSeq!();
+	static foreach (node; Ops){
+		static if (PrecedenceOf!node >= P)
+			HigherPreced = AliasSeq!(HigherPreced, node);
 	}
-}
-
-/// ditto
-private template HigherPrecedOps(alias type){
-	alias HigherPrecedOps = AliasSeq!();
-	static foreach (member; EnumMembers!NodeType){
-		static if (PrecedenceOf!member >= PrecedenceOf!type)
-			HigherPrecedOps = AliasSeq!(HigherPrecedOps, member);
-	}
-}
-
-/// ditto
-private NodeType[] higherPrecedOps(uint p){
-	NodeType[] ret;
-	static foreach (member; EnumMembers!NodeType){
-		if (PrecedenceOf!member >= p)
-			ret ~= member;
-	}
-	return ret;
 }
 
 /// AliasSeq of TokenType of Hooks for given NodeTypes AliasSeq
@@ -152,29 +128,29 @@ private template Hooks(Types...){
 	}
 }
 
-/// Binary Operators NodeTypes
-private template BinOps(){
+/// Binary Operators NodeTypes with Precedence >= P
+private template BinOps(uint P){
 	alias BinOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
-		static if (hasUDA!(type, BinOp))
+		static if (hasUDA!(type, BinOp) && PrecedenceOf!type >= P)
 			BinOps = AliasSeq!(BinOps, type);
 	}
 }
 
-/// Unary Prefix Operators
-private template PreOps(){
+/// Unary Prefix Operators with Precedence >= P
+private template PreOps(uint P){
 	alias PreOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
-		static if (hasUDA!(type, PreOp))
+		static if (hasUDA!(type, PreOp) && PrecedenceOf!type >= P)
 			PreOps = AliasSeq!(PreOps, type);
 	}
 }
 
-/// Unary Prefix Operators
-private template PostOps(){
+/// Unary Prefix Operators with Precedence >= P
+private template PostOps(uint p){
 	alias PostOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
-		static if (hasUDA!(type, PostOp))
+		static if (hasUDA!(type, PostOp) && PrecedenceOf!type >= P)
 			PostOps = AliasSeq!(PostOps, type);
 	}
 }
@@ -1351,21 +1327,13 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 		return ret;
 	}
 
-	// read at least 1 expression, stop when next operator is of lower precedence
-	Node ret = toks.read!(NodeType.ExprUnit);
-	while (!toks.empty){
-		bool repeat = true;
-		try{
-			auto branch = toks;
-			Switch: switch (context){
-			}
-		}catch(CompileError){
-			repeat = false;
-		}
-		if (!repeat)
-			break;
-	}
-	return ret;
+	do{
+		auto front = toks.front;
+		// maybe its a prefix unary op?
+
+	}while (!toks.empty);
+
+	return null;
 }
 
 private Node readLoadExpr(ref Tokenizer toks, NodeType){
