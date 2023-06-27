@@ -6,7 +6,7 @@ import std.stdio,
 
 import utils.ds;
 
-import qscript.ast,
+import qscript.parser,
 			 qscript.tokens,
 			 qscript.compiler;
 

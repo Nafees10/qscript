@@ -1,4 +1,4 @@
-module qscript.ast;
+module qscript.parser;
 
 import std.json,
 			 std.traits,
@@ -14,7 +14,7 @@ import qscript.compiler,
 
 import utils.ds;
 
-/// A simple AST Node
+/// A Node
 public class Node{
 public:
 	Token token;
@@ -42,10 +42,10 @@ public:
 	}
 }
 
-/// ASTNode builder function type
+/// Node builder function type
 private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 
-/// ASTNode builder function type for Binary and Postfix unary operators
+/// Node builder function type for Binary and Postfix unary operators
 private alias OpPostBuilderFunc = Node function(ref Tokenizer, Node, NodeType);
 
 /// Returns: Flags constructed from AliasSeq
