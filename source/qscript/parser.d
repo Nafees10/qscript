@@ -7,7 +7,8 @@ import std.json,
 			 std.stdio,
 			 std.functional,
 			 std.algorithm,
-			 std.meta;
+			 std.meta,
+			 std.array;
 
 import qscript.compiler,
 			 qscript.tokens;
@@ -67,8 +68,8 @@ private template FlagsFromAliasSeq(Vals...) if (
 }
 
 /// ditto
-private Flags!NodeType flagsFromVals(TokenType[] vals){
-	Flags!NodeType ret;
+private Flags!TokenType flagsFromVals(TokenType[] vals){
+	Flags!TokenType ret;
 	foreach (val; vals)
 		ret |= val;
 	return ret;
@@ -110,6 +111,14 @@ private uint precedenceOf(NodeType type){
 	}
 }
 
+/// All precedences
+private template Precedences(){
+	alias Precedences = AliasSeq!();
+	static foreach (member; EnumMembers!NodeType)
+		Precedences = AliasSeq!(Precedences, member);
+	Precedences = NoDuplicates!Precedences;
+}
+
 /// subset that have a precedence equal to or greater
 private template HigherPreced(uint P, Ops...){
 	alias HigherPreced = AliasSeq!();
@@ -117,6 +126,11 @@ private template HigherPreced(uint P, Ops...){
 		static if (PrecedenceOf!node >= P)
 			HigherPreced = AliasSeq!(HigherPreced, node);
 	}
+}
+
+/// ditto
+private NodeType[] higherPreced(uint p, NodeType[] ops){
+	return ops.filter!(a => a.precedenceOf >= p).array;
 }
 
 /// AliasSeq of TokenType of Hooks for given NodeTypes AliasSeq
@@ -129,7 +143,7 @@ private template Hooks(Types...){
 }
 
 /// Binary Operators NodeTypes with Precedence >= P
-private template BinOps(uint P){
+private template BinOps(uint P = 0){
 	alias BinOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, BinOp) && PrecedenceOf!type >= P)
@@ -138,7 +152,7 @@ private template BinOps(uint P){
 }
 
 /// Unary Prefix Operators with Precedence >= P
-private template PreOps(uint P){
+private template PreOps(uint P = 0){
 	alias PreOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, PreOp) && PrecedenceOf!type >= P)
@@ -147,7 +161,7 @@ private template PreOps(uint P){
 }
 
 /// Unary Prefix Operators with Precedence >= P
-private template PostOps(uint p){
+private template PostOps(uint P = 0){
 	alias PostOps = AliasSeq!();
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, PostOp) && PrecedenceOf!type >= P)
@@ -247,6 +261,25 @@ Node read(Types...)(ref Tokenizer toks){
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
+/// ditto
+Node read(uint P, Types...)(ref Tokenizer toks){
+	return toks.read!(HigherPreced!(P, Types));
+}
+
+/// ditto
+Node read(Types...)(ref Tokenizer toks, uint p){
+	switch (p){
+		static foreach (precedence; Precedences!()){
+			case precedence:
+				return toks.read!(precedence, Types);
+		}
+		default:
+			throw new CompileError(ErrorType.Expected, toks.front, [
+					JoinStringOf!(" or ", Types)
+			]);
+	}
+}
+
 /// Tries to read a specific type of node from tokens.
 /// Works for Binary and Postfix Unary Operators
 ///
@@ -293,6 +326,25 @@ Node read(Types...)(ref Tokenizer toks, Node a){
 	}
 	enum string valsStr = JoinStringOf!(" or ", Types);
 	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
+}
+
+/// ditto
+Node read(uint P, Types...)(ref Tokenizer toks, Node a){
+	return toks.read!(HigherPreced!(P, Types));
+}
+
+/// ditto
+Node read(Types...)(ref Tokenizer toks, Node a, uint p){
+	switch (p){
+		static foreach (precedence; Precedences!()){
+			case precedence:
+				return toks.read!(precedence, Types)(a);
+		}
+		default:
+			throw new CompileError(ErrorType.Expected, toks.front, [
+					JoinStringOf!(" or ", Types)
+			]);
+	}
 }
 
 /// Tries to read token into node based off of token type hook
@@ -1392,7 +1444,7 @@ private Node readOpCall(ref Tokenizer toks, Node a, NodeType context){
 }
 
 private Node readOpIndex(ref Tokenizer toks, Node a, NodeType context){
-	toks.expectThrow!(TokenType.BracketOpen);
+	toks.expectThrow!(TokenType.IndexOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
@@ -1409,6 +1461,7 @@ private Node readBinOp(ref Tokenizer toks, Node a, NodeType context){
 	toks.expectThrow!(Hooks!(BinOps!())); // must be a binary operator
 	Node ret = new Node;
 	ret.token = toks.front;
+	toks.popFront;
 	ret.children = [
 		a,
 		toks.read!(NodeType.Expression)
