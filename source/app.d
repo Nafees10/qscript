@@ -20,7 +20,7 @@ void main(){
 	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
 	Node rootNode;
-	rootNode = read(range);
+	rootNode = parseScript(range);
 	if (rootNode)
 		writeln(rootNode.toJSON.toPrettyString);
 	else

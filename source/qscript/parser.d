@@ -219,7 +219,7 @@ private NodeType _context = NodeType.Script;
 /// Returns: Node
 ///
 /// Throws: CompileError on error
-Node read(alias type)(ref Tokenizer toks) if (
+private Node read(alias type)(ref Tokenizer toks) if (
 		is(typeof(type) == NodeType) &&
 		hasUDA!(type, Builder) &&
 		!getUDAs!(type, Builder)[0].isOpPost){
@@ -241,7 +241,7 @@ Node read(alias type)(ref Tokenizer toks) if (
 }
 
 /// ditto
-Node read(Types...)(ref Tokenizer toks){
+private Node read(Types...)(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
@@ -262,16 +262,16 @@ Node read(Types...)(ref Tokenizer toks){
 }
 
 /// ditto
-Node read(uint P, Types...)(ref Tokenizer toks){
+private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks){
 	return toks.read!(HigherPreced!(P, Types));
 }
 
 /// ditto
-Node read(Types...)(ref Tokenizer toks, uint p){
+private Node read(Types...)(ref Tokenizer toks, uint p){
 	switch (p){
 		static foreach (precedence; Precedences!()){
 			case precedence:
-				return toks.read!(precedence, Types);
+				return toks.readWithPrecedence!(precedence, Types);
 		}
 		default:
 			throw new CompileError(ErrorType.Expected, toks.front, [
@@ -286,7 +286,7 @@ Node read(Types...)(ref Tokenizer toks, uint p){
 /// Returns: Node
 ///
 /// Throws: CompileError on error
-Node read(alias type)(ref Tokenizer toks, Node a) if (
+private Node read(alias type)(ref Tokenizer toks, Node a) if (
 		is(typeof(type) == NodeType) &&
 		hasUDA!(type, Builder) &&
 		getUDAs!(type, Builder)[0].isOpPost){
@@ -308,7 +308,7 @@ Node read(alias type)(ref Tokenizer toks, Node a) if (
 }
 
 /// ditto
-Node read(Types...)(ref Tokenizer toks, Node a){
+private Node read(Types...)(ref Tokenizer toks, Node a){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
@@ -329,16 +329,16 @@ Node read(Types...)(ref Tokenizer toks, Node a){
 }
 
 /// ditto
-Node read(uint P, Types...)(ref Tokenizer toks, Node a){
+private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks, Node a){
 	return toks.read!(HigherPreced!(P, Types));
 }
 
 /// ditto
-Node read(Types...)(ref Tokenizer toks, Node a, uint p){
+private Node read(Types...)(ref Tokenizer toks, Node a, uint p){
 	switch (p){
 		static foreach (precedence; Precedences!()){
 			case precedence:
-				return toks.read!(precedence, Types)(a);
+				return toks.readWithPrecedence!(precedence, Types)(a);
 		}
 		default:
 			throw new CompileError(ErrorType.Expected, toks.front, [
@@ -350,7 +350,7 @@ Node read(Types...)(ref Tokenizer toks, Node a, uint p){
 /// Tries to read token into node based off of token type hook
 ///
 /// Returns: Node or null
-public Node read(ref Tokenizer toks){
+private Node read(ref Tokenizer toks){
 	if (toks.empty)
 		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
 	auto type = toks.front.type;
@@ -658,6 +658,10 @@ public enum NodeType{
 		@Precedence(10)
 		@BinOp
 		@(TokenType.OpBinXorAssign)			OpBinXorAssign,
+}
+
+public Node parseScript(ref Tokenizer toks){
+	return readScript(toks, NodeType.init);
 }
 
 private Node readScript(ref Tokenizer toks, NodeType){
@@ -1037,6 +1041,7 @@ private Node readParamList(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.BracketOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
+	toks.popFront;
 	while (!toks.expectPop!(TokenType.BracketClose))
 		ret.children ~= toks.read!(NodeType.Param);
 	return ret;
