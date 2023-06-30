@@ -20,9 +20,13 @@ void main(){
 	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
 	Node rootNode;
-	rootNode = parseScript(range);
+	try{
+		rootNode = parseScript(range);
+	}catch (CompileError err){
+		stderr.writeln("error:\n", err);
+	}
 	if (rootNode)
 		writeln(rootNode.toJSON.toPrettyString);
 	else
-		writeln("root is null");
+		stderr.writeln("root is null");
 }
