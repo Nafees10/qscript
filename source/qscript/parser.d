@@ -1496,7 +1496,6 @@ private Node readOpIndex(ref Tokenizer toks, Node a, NodeType context){
 	toks.expectThrow!(TokenType.IndexOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
-	toks.popFront;
 	ret.children = [
 		a,
 		toks.read!(NodeType.Expression)
