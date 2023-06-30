@@ -19,6 +19,9 @@ void main(){
 	ignore |= TokenType.CommentMultiline;
 	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
+	foreach (tok; range)
+		stderr.writeln(tok);
+
 	Node rootNode;
 	try{
 		rootNode = parseScript(range);
