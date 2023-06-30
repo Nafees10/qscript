@@ -35,8 +35,12 @@ public:
 		if (typeStr.length)
 			ret["tokentype"] = typeStr.chomp(", ");
 		JSONValue[] sub;
-		foreach (child; children)
-			sub ~= child.toJSON;
+		foreach (child; children){
+			if (child is null)
+				sub ~= JSONValue(null);
+			else
+				sub ~= child.toJSON;
+		}
 		if (sub.length)
 			ret["children"] = sub;
 		return ret;
@@ -219,7 +223,7 @@ private NodeType _context = NodeType.Script;
 /// Returns: Node
 ///
 /// Throws: CompileError on error
-private Node read(alias type)(ref Tokenizer toks) if (
+private Node readType(alias type)(ref Tokenizer toks) if (
 		is(typeof(type) == NodeType) &&
 		hasUDA!(type, Builder) &&
 		!getUDAs!(type, Builder)[0].isOpPost){
@@ -242,23 +246,30 @@ private Node read(alias type)(ref Tokenizer toks) if (
 
 /// ditto
 private Node read(Types...)(ref Tokenizer toks){
-	if (toks.empty)
-		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
-	auto type = toks.front.type;
-	static foreach (member; Types){
-		static foreach (tokType; getUDAs!(member, TokenType)){
-			if (type.get!(tokType)){
-				auto branch = toks;
-				auto ret = branch.read!member;
-				if (ret !is null){
-					toks = branch;
-					return ret;
+	static if (Types.length == 1){
+		return toks.readType!(Types);
+	}else{
+		if (toks.empty)
+			throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
+		auto type = toks.front.type;
+		static foreach (member; Types){
+			static if (hasUDA!(member, Builder) &&
+					!getUDAs!(member, Builder)[0].isOpPost){
+				static foreach (tokType; getUDAs!(member, TokenType)){
+					if (type.get!(tokType)){
+						auto branch = toks;
+						auto ret = branch.readType!member;
+						if (ret !is null){
+							toks = branch;
+							return ret;
+						}
+					}
 				}
 			}
 		}
+		enum string valsStr = JoinStringOf!(" or ", Types);
+		throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 	}
-	enum string valsStr = JoinStringOf!(" or ", Types);
-	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// ditto
@@ -286,7 +297,7 @@ private Node read(Types...)(ref Tokenizer toks, uint p){
 /// Returns: Node
 ///
 /// Throws: CompileError on error
-private Node read(alias type)(ref Tokenizer toks, Node a) if (
+private Node readType(alias type)(ref Tokenizer toks, Node a) if (
 		is(typeof(type) == NodeType) &&
 		hasUDA!(type, Builder) &&
 		getUDAs!(type, Builder)[0].isOpPost){
@@ -309,28 +320,35 @@ private Node read(alias type)(ref Tokenizer toks, Node a) if (
 
 /// ditto
 private Node read(Types...)(ref Tokenizer toks, Node a){
-	if (toks.empty)
-		throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
-	auto type = toks.front.type;
-	static foreach (member; Types){
-		static foreach (tokType; getUDAs!(member, TokenType)){
-			if (type.get!(tokType)){
-				auto branch = toks;
-				auto ret = branch.read!member(a);
-				if (ret !is null){
-					toks = branch;
-					return ret;
+	static if (Types.length == 1){
+		return toks.readType!(Types)(a);
+	}else{
+		if (toks.empty)
+			throw new CompileError(ErrorType.UnexpectedEOF, toks.front);
+		auto type = toks.front.type;
+		static foreach (member; Types){
+			static if (hasUDA!(member, Builder) &&
+					getUDAs!(member, Builder)[0].isOpPost){
+				static foreach (tokType; getUDAs!(member, TokenType)){
+					if (type.get!(tokType)){
+						auto branch = toks;
+						auto ret = branch.readType!member(a);
+						if (ret !is null){
+							toks = branch;
+							return ret;
+						}
+					}
 				}
 			}
 		}
+		enum string valsStr = JoinStringOf!(" or ", Types);
+		throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 	}
-	enum string valsStr = JoinStringOf!(" or ", Types);
-	throw new CompileError(ErrorType.Expected, toks.front, [valsStr]);
 }
 
 /// ditto
 private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks, Node a){
-	return toks.read!(HigherPreced!(P, Types));
+	return toks.read!(HigherPreced!(P, Types))(a);
 }
 
 /// ditto
@@ -360,7 +378,7 @@ private Node read(ref Tokenizer toks){
 				!getUDAs!(member, Builder)[0].isOpPost){
 			static foreach (tokType; getUDAs!(member, TokenType)){
 				if (type.get!(tokType)){
-					auto ret = branch.read!(member);
+					auto ret = branch.readType!(member);
 					if (ret !is null){
 						toks = branch;
 						return ret;
@@ -1088,20 +1106,19 @@ private Node readNamedValue(ref Tokenizer toks, NodeType){
 	return ret;
 }
 
-private Node readStatement(ref Tokenizer toks, NodeType){
+private Node readStatement(ref Tokenizer toks, NodeType context){
 	// a statement can be a declaration, or some predefined statement,
 	// or an expression
 	Node ret = new Node;
 	ret.token = toks.front;
+	auto branch = toks; // branch out
 	try{
-		auto branch = toks; // branch out
 		ret.children = [branch.read!(NodeType.Declaration)];
 		toks = branch; // merge back in
 		return ret;
 	}catch (CompileError){}
-
+	branch = toks;
 	try{
-		auto branch = toks;
 		ret.children = [
 			branch.read!(
 				NodeType.IfStatement,
@@ -1119,13 +1136,16 @@ private Node readStatement(ref Tokenizer toks, NodeType){
 		return ret;
 	}catch (CompileError){}
 
+	branch = toks;
 	try{
-		auto branch = toks;
 		ret.children = [branch.read!(NodeType.Expression)];
 		toks = branch;
-		return ret;
 	}catch (CompileError){}
-	return null;
+	if (!ret)
+		return null;
+	// expect semicolon
+	toks.expectPopThrow!(TokenType.Semicolon);
+	return ret;
 }
 
 private Node readIfStatement(ref Tokenizer toks, NodeType){
@@ -1251,11 +1271,8 @@ private Node readBlock(ref Tokenizer toks, NodeType){
 	ret.token = toks.front;
 	toks.popFront;
 
-	while (true){
-		if (toks.expectPop!(TokenType.CurlyClose))
-			break;
+	while (!toks.expectPop!(TokenType.CurlyClose))
 		ret.children ~= toks.read!(NodeType.Statement);
-	}
 	return ret;
 }
 
@@ -1399,13 +1416,17 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 		branch = toks;
 		// maybe its a unary prefix operator?
 		try{
-			expr = branch.read!(PreOps!())(expr, precedence);
+			auto sub = branch.read!(PreOps!())(expr, precedence);
+			expr = new Node;
+			expr.children = [sub];
 			toks = branch;
 			continue;
 		}catch (CompileError){}
 		// maybe its a binary operator?
 		try{
-			expr = branch.read!(BinOps!())(expr, precedence);
+			auto sub = branch.read!(BinOps!())(expr, precedence);
+			expr = new Node;
+			expr.children = [sub];
 			toks = branch;
 			continue;
 		}catch (CompileError){}
@@ -1461,7 +1482,7 @@ private Node readOpCall(ref Tokenizer toks, Node a, NodeType context){
 	toks.expectThrow!(TokenType.BracketOpen);
 	Node ret = new Node;
 	ret.token = toks.front;
-	toks.popFront;
+	//toks.popFront;
 	ret.children = [
 		a,
 		toks.read!(NodeType.ParamList)
