@@ -408,256 +408,256 @@ enum PostOp;
 
 /// Node types
 public enum NodeType{
-	@Builder(&readScript)								Script,
+	@Builder(&readScript)							Script,
 	@Builder(&readPub)
-		@(TokenType.Pub)							Pub,
+		@(TokenType.Pub)								Pub,
 
-	@Builder(&readDeclaration)					Declaration,
+	@Builder(&readDeclaration)				Declaration,
 	@Builder(&readTemplate)
-		@(TokenType.Template)					Template,
+		@(TokenType.Template)						Template,
 	@Builder(&readTemplateFn)
-		@(TokenType.TemplateFn)				TemplateFn,
+		@(TokenType.TemplateFn)					TemplateFn,
 	@Builder(&readTemplateEnum)
-		@(TokenType.TemplateEnum)			TemplateEnum,
+		@(TokenType.TemplateEnum)				TemplateEnum,
 	@Builder(&readTemplateStruct)
-		@(TokenType.TemplateStruct)		TemplateStruct,
+		@(TokenType.TemplateStruct)			TemplateStruct,
 	@Builder(&readTemplateVar)
-		@(TokenType.TemplateVar)			TemplateVar,
+		@(TokenType.TemplateVar)				TemplateVar,
 	@Builder(&readTemplateAlias)
-		@(TokenType.TemplateAlias)		TemplateAlias,
+		@(TokenType.TemplateAlias)			TemplateAlias,
 	@Builder(&readFn)
-		@(TokenType.Fn)								Fn,
+		@(TokenType.Fn)									Fn,
 	@Builder(&readVar)
-		@(TokenType.Var)							Var,
+		@(TokenType.Var)								Var,
 	@Builder(&readStruct)
-		@(TokenType.Struct)						Struct,
+		@(TokenType.Struct)							Struct,
 	@Builder(&readEnum)
-		@(TokenType.Enum)							Enum,
+		@(TokenType.Enum)								Enum,
 	@Builder(&readAlias)
-		@(TokenType.Alias)						Alias,
+		@(TokenType.Alias)							Alias,
 
-	@Builder(&readDataType)							DataType,
-	@Builder(&readIndexBracketPair)			IndexBracketPair,
-	@Builder(&readTemplateParamList)		TemplateParamList,
-	@Builder(&readTemplateParam)				TemplateParam,
-	@Builder(&readParamList)						ParamList,
-	@Builder(&readParam)								Param,
-	@Builder(&readNamedValue)						NamedValue,
+	@Builder(&readDataType)						DataType,
+	@Builder(&readIndexBracketPair)		IndexBracketPair,
+	@Builder(&readTemplateParamList)	TemplateParamList,
+	@Builder(&readTemplateParam)			TemplateParam,
+	@Builder(&readParamList)					ParamList,
+	@Builder(&readParam)							Param,
+	@Builder(&readNamedValue)					NamedValue,
 
-	@Builder(&readStatement)						Statement,
+	@Builder(&readStatement)					Statement,
 	@Builder(&readIfStatement)
-		@(TokenType.If)								IfStatement,
+		@(TokenType.If)									IfStatement,
 	@Builder(&readStaticIfStatement)
-		@(TokenType.StaticIf)					StaticIfStatement,
+		@(TokenType.StaticIf)						StaticIfStatement,
 	@Builder(&readWhileStatement)
-		@(TokenType.While)						WhileStatement,
+		@(TokenType.While)							WhileStatement,
 	@Builder(&readDoWhileStatement)
-		@(TokenType.Do)								DoWhileStatement,
+		@(TokenType.Do)									DoWhileStatement,
 	@Builder(&readForStatement)
-		@(TokenType.For)							ForStatement,
+		@(TokenType.For)								ForStatement,
 	@Builder(&readStaticForStatement)
-		@(TokenType.StaticFor)				StaticForStatement,
+		@(TokenType.StaticFor)					StaticForStatement,
 	@Builder(&readBreakStatement)
-		@(TokenType.Break)						BreakStatement,
+		@(TokenType.Break)							BreakStatement,
 	@Builder(&readContinueStatement)
-		@(TokenType.Continue)					ContinueStatement,
+		@(TokenType.Continue)						ContinueStatement,
 	@Builder(&readBlock)
-		@(TokenType.CurlyOpen)				Block,
+		@(TokenType.CurlyOpen)					Block,
 
-	@Builder(&readExprUnit)					ExprUnit,
+	@Builder(&readExprUnit)						ExprUnit,
 	@Builder(&readIdentifier)
-		@(TokenType.Identifier)				Identifier,
+		@(TokenType.Identifier)					Identifier,
 	@Builder(&readIntLiteral)
 		@(TokenType.LiteralInt)
 		@(TokenType.LiteralHexadecimal)
-		@(TokenType.LiteralBinary)		IntLiteral,
+		@(TokenType.LiteralBinary)			IntLiteral,
 	@Builder(&readFloatLiteral)
-		@(TokenType.LiteralFloat)			FloatLiteral,
+		@(TokenType.LiteralFloat)				FloatLiteral,
 	@Builder(&readStringLiteral)
-		@(TokenType.LiteralString)		StringLiteral,
+		@(TokenType.LiteralString)			StringLiteral,
 	@Builder(&readCharLiteral)
-		@(TokenType.LiteralChar)			CharLiteral,
+		@(TokenType.LiteralChar)				CharLiteral,
 	@Builder(&readNullLiteral)
-		@(TokenType.Null)							NullLiteral,
+		@(TokenType.Null)								NullLiteral,
 	@Builder(&readBoolLiteral)
 		@(TokenType.True)
-		@(TokenType.False)						BoolLiteral,
+		@(TokenType.False)							BoolLiteral,
 
-	@Builder(&readArgList)							ArgList,
+	@Builder(&readArgList)						ArgList,
 
 	@Builder(&readTrait)
-		@(TokenType.Trait)						Trait,
+		@(TokenType.Trait)							Trait,
 
 	@Builder(&readExpression)
-		@(TokenType.BracketOpen)			Expression,
+		@(TokenType.BracketOpen)				Expression,
 
 	@Builder(&readLoadExpr)
 		@Precedence(110)
 		@PreOp
-		@(TokenType.Load)							LoadExpr,
+		@(TokenType.Load)								LoadExpr,
 
 	@Builder(&readArrowFunc)
 		@Precedence(100)
 		@PreOp // just a hack, its a binary operator IRL
-		@(TokenType.BracketOpen)			ArrowFunc,
+		@(TokenType.BracketOpen)				ArrowFunc,
 
 	@Builder(&readBinOp)
 		@Precedence(100)
 		@BinOp
-		@(TokenType.OpDot)						DotOp,
+		@(TokenType.OpDot)							DotOp,
 	@Builder(&readOpIndex)
 		@Precedence(100)
 		@BinOp
-		@(TokenType.OpIndex)					OpIndex,
+		@(TokenType.OpIndex)						OpIndex,
 	@Builder(&readOpCall)
 		@Precedence(100)
 		@BinOp
-		@(TokenType.OpFnCall)					OpCall,
+		@(TokenType.OpFnCall)						OpCall,
 
 	@Builder(&readPostOp)
 		@Precedence(90)
 		@PostOp
-		@(TokenType.OpInc)						OpPostInc,
+		@(TokenType.OpInc)							OpPostInc,
 	@Builder(&readPostOp)
 		@Precedence(80)
 		@PostOp
-		@(TokenType.OpDec)						OpPostDec,
+		@(TokenType.OpDec)							OpPostDec,
 
 	@Builder(&readPreOp)
 		@Precedence(90)
 		@PreOp
-		@(TokenType.OpInc)						OpPreInc,
+		@(TokenType.OpInc)							OpPreInc,
 	@Builder(&readPreOp)
 		@Precedence(80)
 		@PreOp
-		@(TokenType.OpDec)						OpPreDec,
+		@(TokenType.OpDec)							OpPreDec,
 	@Builder(&readPreOp)
 		@Precedence(80)
 		@PreOp
-		@(TokenType.OpNot)						OpNot,
+		@(TokenType.OpNot)							OpNot,
 
 	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
-		@(TokenType.OpMul)						OpMul,
+		@(TokenType.OpMul)							OpMul,
 	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
-		@(TokenType.OpDiv)						OpDiv,
+		@(TokenType.OpDiv)							OpDiv,
 	@Builder(&readBinOp)
 		@Precedence(70)
 		@BinOp
-		@(TokenType.OpMod)						OpMod,
+		@(TokenType.OpMod)							OpMod,
 
 	@Builder(&readBinOp)
 		@Precedence(60)
 		@BinOp
-		@(TokenType.OpAdd)						OpAdd,
+		@(TokenType.OpAdd)							OpAdd,
 	@Builder(&readBinOp)
 		@Precedence(60)
 		@BinOp
-		@(TokenType.OpSub)						OpSub,
+		@(TokenType.OpSub)							OpSub,
 
 	@Builder(&readBinOp)
 		@Precedence(50)
 		@BinOp
-		@(TokenType.OpLShift)					OpLShift,
+		@(TokenType.OpLShift)						OpLShift,
 	@Builder(&readBinOp)
 		@Precedence(50)
 		@BinOp
-		@(TokenType.OpRShift)					OpRShift,
+		@(TokenType.OpRShift)						OpRShift,
 
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpEquals)					OpEquals,
+		@(TokenType.OpEquals)						OpEquals,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpNotEquals)			OpNotEquals,
+		@(TokenType.OpNotEquals)				OpNotEquals,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpGreaterEquals)	OpGreaterEquals,
+		@(TokenType.OpGreaterEquals)		OpGreaterEquals,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpLesserEquals)		OpLesserEquals,
+		@(TokenType.OpLesserEquals)			OpLesserEquals,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpGreater)				OpGreater,
+		@(TokenType.OpGreater)					OpGreater,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpLesser)					OpLesser,
+		@(TokenType.OpLesser)						OpLesser,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpIs)							OpIs,
+		@(TokenType.OpIs)								OpIs,
 	@Builder(&readBinOp)
 		@Precedence(40)
 		@BinOp
-		@(TokenType.OpNotIs)					OpNotIs,
+		@(TokenType.OpNotIs)						OpNotIs,
 
 	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
-		@(TokenType.OpBinAnd)					OpBinAnd,
+		@(TokenType.OpBinAnd)						OpBinAnd,
 	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
-		@(TokenType.OpBinOr)					OpBinOr,
+		@(TokenType.OpBinOr)						OpBinOr,
 	@Builder(&readBinOp)
 		@Precedence(30)
 		@BinOp
-		@(TokenType.OpBinXor)					OpBinXor,
+		@(TokenType.OpBinXor)						OpBinXor,
 
 	@Builder(&readBinOp)
 		@Precedence(20)
 		@BinOp
-		@(TokenType.OpBoolAnd)				OpBoolAnd,
+		@(TokenType.OpBoolAnd)					OpBoolAnd,
 	@Builder(&readBinOp)
 		@Precedence(20)
 		@BinOp
-		@(TokenType.OpBoolOr)					OpBoolOr,
+		@(TokenType.OpBoolOr)						OpBoolOr,
 
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpAssign)					OpAssign,
+		@(TokenType.OpAssign)						OpAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpAddAssign)			OpAddAssign,
+		@(TokenType.OpAddAssign)				OpAddAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpSubAssign)			OpSubAssign,
+		@(TokenType.OpSubAssign)				OpSubAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpMulAssign)			OpMulAssign,
+		@(TokenType.OpMulAssign)				OpMulAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpDivAssign)			OpDivAssign,
+		@(TokenType.OpDivAssign)				OpDivAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpModAssign)			OpModAssign,
+		@(TokenType.OpModAssign)				OpModAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpSubAssign)			OpBinAndAssign,
+		@(TokenType.OpSubAssign)				OpBinAndAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpBinOrAssign)		OpBinOrAssign,
+		@(TokenType.OpBinOrAssign)			OpBinOrAssign,
 	@Builder(&readBinOp)
 		@Precedence(10)
 		@BinOp
-		@(TokenType.OpBinXorAssign)		OpBinXorAssign,
+		@(TokenType.OpBinXorAssign)			OpBinXorAssign,
 }
 
 private Node readScript(ref Tokenizer toks, NodeType){
@@ -1379,13 +1379,34 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 		return ret;
 	}
 
-	do{
-		auto front = toks.front;
-		// maybe its a prefix unary op?
+	const uint precedence = precedenceOf(context);
+	auto branch = toks;
+	Node expr;
+	try{
+		expr = branch.read!(PreOps!())(precedence);
+		toks = branch;
+	}catch (CompileError){}
+	if (!expr)
+		expr = toks.read!(NodeType.ExprUnit); // ok it's just an identifier
 
-	}while (!toks.empty);
-
-	return null;
+	// now keep feeding it into proceeding operators until precedence violated
+	while (true){
+		branch = toks;
+		// maybe its a unary prefix operator?
+		try{
+			expr = branch.read!(PreOps!())(expr, precedence);
+			toks = branch;
+			continue;
+		}catch (CompileError){}
+		// maybe its a binary operator?
+		try{
+			expr = branch.read!(BinOps!())(expr, precedence);
+			toks = branch;
+			continue;
+		}catch (CompileError){}
+		break;
+	}
+	return expr;
 }
 
 private Node readLoadExpr(ref Tokenizer toks, NodeType){
