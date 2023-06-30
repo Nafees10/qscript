@@ -1448,6 +1448,8 @@ private Node readLoadExpr(ref Tokenizer toks, NodeType){
 			break;
 		toks.expectPopThrow!(TokenType.OpDot);
 	}
+	// if semicolon, eat it too
+	toks.expectPop!(TokenType.Semicolon);
 	return ret;
 }
 
