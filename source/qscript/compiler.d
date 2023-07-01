@@ -63,7 +63,7 @@ package char charUnescape(char c){
 
 /// compilation error
 /// Possible types of errors
-enum ErrorType{
+public enum ErrorType{
 	@("")																						None,
 	@("unidentified token, cannot read further")		TokenInvalid,
 	@("unexpected token, cannot read further")			TokenUnexpected,
@@ -71,6 +71,7 @@ enum ErrorType{
 	@("Expected $ found $")													ExpectedAFoundB,
 	@("Expected 1 character inside ''")							CharLengthInvalid,
 	@("Unexpected end of file")											UnexpectedEOF,
+	@("Syntax Error")																SyntaxError,
 }
 
 /// error explain format string
@@ -86,7 +87,7 @@ private string errorExplainFormat(ErrorType type){
 }
 
 /// construct error explanation string
-string errorExplainStr(ErrorType type, uint line, uint col, string[] details){
+private string errorExplainStr(ErrorType type, uint line, uint col, string[] details){
 	string format = errorExplainFormat(type);
 	if (format is null)
 		return null;
@@ -109,16 +110,17 @@ string errorExplainStr(ErrorType type, uint line, uint col, string[] details){
 	return cast(string)errStr;
 }
 
-class CompileError : Exception{
+public struct CompileError{
 	ErrorType type = ErrorType.None;
 	uint line, col;
+	string msg;
 
 	/// constructor
 	this(ErrorType type, uint line, uint col, string[] details = []){
 		this.type = type;
 		this.line = line;
 		this.col = col;
-		super(errorExplainStr(type, line, col, details));
+		msg = errorExplainStr(type, line, col, details);
 	}
 
 	/// ditto
@@ -126,6 +128,15 @@ class CompileError : Exception{
 		this.type = type;
 		this.line = tok.lineno;
 		this.col = tok.colno;
-		super(errorExplainStr(type, line, col, details));
+		msg = errorExplainStr(type, line, col, details);
+	}
+
+	/// ditto
+	/// syntax error
+	this(Token tok){
+		this.type = ErrorType.SyntaxError;
+		this.line = tok.lineno;
+		this.col = tok.colno;
+		msg = errorExplainStr(type, line, col, []);
 	}
 }
