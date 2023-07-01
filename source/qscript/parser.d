@@ -1005,33 +1005,27 @@ private Node readParam(ref Tokenizer toks, Node){
 
 /// reads `foo = bar`
 private Node readNamedValue(ref Tokenizer toks, Node){
-	Node ret = new Node;
-	Node name = toks.read!(NodeType.Identifier);
-	toks.expectThrow!(TokenType.OpAssign);
+	Node ret;
+	if (auto val = toks.read!(NodeType.Identifier))
+		ret = new Node([val]);
+	else
+		return null;
+	if (!toks.expect!(TokenType.OpAssign))
+		return null;
+
 	ret.token = toks.front;
 	toks.popFront;
-	ret.children = [
-		name,
-		toks.read!(NodeType.Expression)
-	];
+	if (auto val = toks.read!(NodeType.Expression))
+		ret.children ~= val;
+	else
+		return null;
 	return ret;
 }
 
 private Node readStatement(ref Tokenizer toks, Node){
-	// a statement can be a declaration, or some predefined statement,
-	// or an expression
-	Node ret = new Node;
-	ret.token = toks.front;
-	auto branch = toks; // branch out
-	try{
-		ret.children = [branch.read!(NodeType.Declaration)];
-		toks = branch; // merge back in
-		return ret;
-	}catch (CompileError){}
-	branch = toks;
-	try{
-		ret.children = [
-			branch.read!(
+	auto branch = toks;
+	if (auto val = toks.read!(
+				NodeType.Declaration,
 				NodeType.IfStatement,
 				NodeType.StaticIfStatement,
 				NodeType.WhileStatement,
@@ -1040,150 +1034,195 @@ private Node readStatement(ref Tokenizer toks, Node){
 				NodeType.StaticForStatement,
 				NodeType.BreakStatement,
 				NodeType.ContinueStatement,
-				NodeType.Block,
-			)
-		];
+				NodeType.Block)){
 		toks = branch;
-		return ret;
-	}catch (CompileError){}
+		return new Node([val]);
+	}
 
-	branch = toks;
-	try{
-		ret.children = [branch.read!(NodeType.Expression)];
-		toks = branch;
-	}catch (CompileError){}
-	if (!ret)
+	Node ret;
+	if (auto val = toks.read!(NodeType.Expression))
+		ret = new Node([val]);
+	if (!toks.expectPop!(TokenType.Semicolon))
 		return null;
-	// expect semicolon
-	toks.expectPopThrow!(TokenType.Semicolon);
 	return ret;
 }
 
 private Node readIfStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.If);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.If))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.Expression),
-		toks.read!(NodeType.Statement)
-	];
-	if (toks.expectPop!(TokenType.Else))
-		ret.children ~= toks.read!(NodeType.Statement);
+	if (auto vals = toks.readSeq!(
+				NodeType.Expression,
+				NodeType.Statement))
+		ret.children = vals;
+	else
+		return null;
+	if (toks.expectPop!(TokenType.Else)){
+		if (auto val = toks.read!(NodeType.Statement))
+			ret.children ~= val;
+		else
+			return null;
+	}
 	return ret;
 }
 
 private Node readStaticIfStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.StaticIf);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.StaticIf))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.Expression),
-		toks.read!(NodeType.Statement)
-	];
-	if (toks.expectPop!(TokenType.Else))
-		ret.children ~= toks.read!(NodeType.Statement);
+	if (auto vals = toks.readSeq!(
+				NodeType.Expression,
+				NodeType.Statement))
+		ret.children = vals;
+	else
+		return null;
+	if (toks.expectPop!(TokenType.Else)){
+		if (auto val = toks.read!(NodeType.Statement))
+			ret.children ~= val;
+		else
+			return null;
+	}
 	return ret;
 }
 
 private Node readWhileStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.While);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.While))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.Expression),
-		toks.read!(NodeType.Statement)
-	];
-	return ret;
+	if (auto vals = toks.readSeq!(
+				NodeType.Expression,
+				NodeType.Statement))
+		return new Node(token, vals);
+	return null;
 }
 
 private Node readDoWhileStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Do);
-	Node ret = new Node;
+	if (!toks.expect!(TokenType.Do))
+		return null;
+	Node ret;
 	ret.token = toks.front;
 	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.Statement),
-		null // fill later with condition expression
-	];
-	toks.expectPopThrow!(TokenType.While);
-	ret.children[$ - 1] = toks.read!(NodeType.Expression);
-	toks.expectPopThrow!(TokenType.Semicolon); // expect a semicolon
+	if (auto val = toks.read!(NodeType.Statement))
+		ret.children = [val, null];
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.While))
+		return null;
+	if (auto val = toks.read!(NodeType.Expression))
+		ret.children[1] = val;
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
 	return ret;
 }
 
 private Node readForStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.For);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.For))
+		return null;
+	auto ret = new Node(toks.front);
 	toks.popFront;
 
-	toks.expectPopThrow!(TokenType.BracketOpen);
+	if (!toks.expectPop!(TokenType.BracketOpen))
+		return null;
 	Node node = toks.read!(NodeType.Identifier);
+	if (node is null)
+		return null;
 	if (toks.expectPop!(TokenType.Comma)){
 		ret.children ~= node; // iteration counter
 		node = toks.read!(NodeType.Identifier);
+		if (node is null)
+			return null;
 	}
 	ret.children ~= node; // iteration element
 
-	toks.expectPopThrow!(TokenType.Semicolon);
-	ret.children ~= toks.read!(NodeType.Expression); // range
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
+	if (auto val = toks.read!(NodeType.Expression))
+		ret.children ~= val;
+	else
+		return null;
 
-	toks.expectPopThrow!(TokenType.BracketClose);
-	ret.children ~= toks.read!(NodeType.Statement); // loop body
+	if (!toks.expectPop!(TokenType.BracketClose))
+		return null;
+	if (auto val = toks.read!(NodeType.Statement))
+		ret.children ~= val;
+	else
+		return null;
 	return ret;
 }
 
 private Node readStaticForStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.StaticFor);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.StaticFor))
+		return null;
+	auto ret = new Node(toks.front);
 	toks.popFront;
 
-	toks.expectPopThrow!(TokenType.BracketOpen);
+	if (!toks.expectPop!(TokenType.BracketOpen))
+		return null;
 	Node node = toks.read!(NodeType.Identifier);
+	if (node is null)
+		return null;
 	if (toks.expectPop!(TokenType.Comma)){
 		ret.children ~= node; // iteration counter
 		node = toks.read!(NodeType.Identifier);
+		if (node is null)
+			return null;
 	}
 	ret.children ~= node; // iteration element
 
-	toks.expectPopThrow!(TokenType.Semicolon);
-	ret.children ~= toks.read!(NodeType.Expression); // range
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
+	if (auto val = toks.read!(NodeType.Expression))
+		ret.children ~= val;
+	else
+		return null;
 
-	toks.expectPopThrow!(TokenType.BracketClose);
-	ret.children ~= toks.read!(NodeType.Statement); // loop body
+	if (!toks.expectPop!(TokenType.BracketClose))
+		return null;
+	if (auto val = toks.read!(NodeType.Statement))
+		ret.children ~= val;
+	else
+		return null;
 	return ret;
 }
 
 private Node readBreakStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Break);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Break))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
-	toks.expectPopThrow!(TokenType.Semicolon);
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
 	return ret;
 }
 
 private Node readContinueStatement(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Continue);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Continue))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
-	toks.expectPopThrow!(TokenType.Semicolon);
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
 	return ret;
 }
 
 private Node readBlock(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.CurlyOpen);
-	Node ret = new Node;
+	if (!toks.expect!(TokenType.CurlyOpen))
+		return null;
+	Node ret = new Node(toks.front);
 	ret.token = toks.front;
 	toks.popFront;
 
-	while (!toks.expectPop!(TokenType.CurlyClose))
-		ret.children ~= toks.read!(NodeType.Statement);
+	while (!toks.expectPop!(TokenType.CurlyClose)){
+		if (auto val = toks.read!(NodeType.Statement))
+			ret.children ~= val;
+		else
+			return null;
+	}
 	return ret;
 }
 
