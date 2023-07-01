@@ -1,4 +1,4 @@
-module qscript.base.ast;
+module qscript.base.parser;
 
 import qscript.base.tokens;
 
@@ -13,10 +13,10 @@ import std.conv : to;
 
 /// an AST Node
 // initialise with T = Token Type enum, M = Match Type enum
-public class ASTNode(T, M) if (is(T == enum) && is(M == enum)){
+public class Node(T, M) if (is(T == enum) && is(M == enum)){
 public:
 	Token!T token;
-	ASTNode[] childNodes;
+	Node[] childNodes;
 	M match;
 
 	JSONValue toJSON(){
@@ -42,30 +42,22 @@ public:
 
 /// parses tokens using a M match type enum.
 ///
-/// Returns: ASTNode, or null
-public ASTNode!T match(T, M)(ref Token!T[] tokens) if (
+/// Returns: Node, or null
+public Node!T match(T, M)(ref Token!T[] tokens) if (
 		is(T == enum) && is(M == enum)){
-	ASTNode!T ret;
+	Node!T ret;
 
 	return ret;
 }
 
-/// Tries to match tokens with a specific matching expression
-///
-/// Returns: ASTNode if done, false if not
-/*public ASTNode!T match(T, M)(ref Token!T[] tokens)
-		if (is(T == enum) && is(M == enum) && typeof(matcher) == ASTMatch!(T, M)){
-	return null;
-}*/
-
-/// ASTMatch[] associated with an enum M
+/// MatchExp[] associated with an enum M
 private template Matchers(T, M) if (is(M == enum) && is(T == enum)){
 	enum auto Matchers = readMatchers();
-	private ASTMatch!(T, M)[] readMatchers() pure {
-		ASTMatch!(T, M)[] ret;
+	private MatchExp!(T, M)[] readMatchers() pure {
+		MatchExp!(T, M)[] ret;
 		static foreach (sym; getSymbolsByUDA!(M, string)){
 			static foreach (match; getUDAs!(sym, string)){
-				ret ~= parseASTMatch!(T, M, sym, match);
+				ret ~= parseMatchExp!(T, M, sym, match);
 				static if (hasUDA!(sym, KeyMatch))
 					ret[$ - 1].isKey = true;
 			}
@@ -74,11 +66,11 @@ private template Matchers(T, M) if (is(M == enum) && is(T == enum)){
 	}
 }
 
-/// ASTMatch[] associated with a specific member in enum M
+/// MatchExp[] associated with a specific member in enum M
 private template Matchers(T, M, M sym) if (is(M == enum) && is(T == enum)){
 	enum auto Matchers = readMatchers();
-	private ASTMatch!(T, M)[] readMatchers() pure {
-		ASTMatch!(T, M)[] ret;
+	private MatchExp!(T, M)[] readMatchers() pure {
+		MatchExp!(T, M)[] ret;
 		static foreach (matcher; Matchers!(T, M)){
 			static if (matcher.type == sym){
 				ret ~= matcher;
@@ -90,77 +82,58 @@ private template Matchers(T, M, M sym) if (is(M == enum) && is(T == enum)){
 	}
 }
 
-/// ASTMatch[] associated with a specific member in enum M, excluding those at
-/// specific indexes
-private template Matchers(T, M, M sym, uint[] exclude)
-		if (is(M == enum) && is(T == enum)){
-	enum auto Matchers = readMatchers();
-	private ASTMatch!(T, M)[] readMatchers() pure {
-		ASTMatch!(T, M)[] ret;
-		static foreach (i, matcher; Matchers!(T, M)){
-			static if (matcher.type == sym && !exclude.canFind(i)){
-				ret ~= matcher;
-				static if (hasUDA!(sym, KeyMatch))
-					ret[$ - 1].isKey = true;
-			}
-		}
-		return ret;
-	}
-}
-
 /// Matching expression for a single match type
-private struct ASTMatch(T, M){
+private struct MatchExp(T, M){
 	struct Unit{
-		bool isTok = false;
+		bool terminal = false;
+		bool loop = false;
+		bool or = false;
 		union{
 			T tok;
 			M mat;
+			Unit[] units;
 		}
 
 		this(M mat){
-			this.isTok = false;
+			this.terminal = this.loop = this.or = false;
 			this.mat = mat;
 		}
 		this(T tok){
-			this.isTok = true;
+			this.terminal = this.loop = this.or = false;
 			this.tok = tok;
 		}
-
+		this(Unit[] units, bool isLoop = true){
+			this.loop = isLoop;
+			this.or = !isLoop;
+			this.units = units;
+		}
 		string toString() const {
-			return isTok
-				? tok.to!string
-				: '/' ~ mat.to!string;
+			return isTok ? tok.to!string : '/' ~ mat.to!string;
 		}
 	}
 
-	uint rootInd;
 	Unit[] units;
 	M type;
-	bool isKey = false;
 
-	this(Unit[] units, M type, uint rootInd = 0, bool isKey = false){
+	this(Unit[] units, M type){
 		this.units = units;
 		this.type = type;
-		this.rootInd = rootInd;
-		this.isKey = isKey;
 	}
 
 	string toString() const {
-		string ret = (isKey ? "#/" : "/") ~ type.to!string ~ " - > ";
-		if (units.length)
-			ret ~= (rootInd == 0 ? "-" : null) ~ units[0].toString;
-		foreach (i, unit; units[1 .. $])
-			ret ~= (rootInd == i + 1 ? " -" : " ") ~ unit.toString();
+		string ret = (isKey ? "#/" : "/") ~ type.to!string ~ " ->";
+		foreach (i, unit; units)
+			ret ~= " " ~ unit.toString;
 		return ret;
 	}
 }
 
-/// parses string into ASTMatch[]
-private ASTMatch!(T, M) parseASTMatch(T, M, M type, string str)(){
-	struct Matcher{
+/// parses string into MatchExp[]
+private MatchExp!(T, M) parseMatchExp(T, M, M type, string str)(){
+	struct Unit{
 		string name;
-		bool isMatched = false;
-		bool isRoot = false;
+		bool terminal = true;
+		bool ignore = false;
 	}
 	static Matcher parseIndividual(string str){
 		Matcher ret;
@@ -175,7 +148,7 @@ private ASTMatch!(T, M) parseASTMatch(T, M, M type, string str)(){
 		ret.name = str;
 		return ret;
 	}
-	alias Unit = ASTMatch!(T, M).Unit;
+	alias Unit = MatchExp!(T, M).Unit;
 
 	Unit[] units;
 	uint root;
@@ -193,5 +166,5 @@ private ASTMatch!(T, M) parseASTMatch(T, M, M type, string str)(){
 			units ~= Unit(__traits(getMember, T, matcher.name));
 		}
 	}}
-	return ASTMatch!(T, M)(units, type, root);
+	return MatchExp!(T, M)(units, type, root);
 }
