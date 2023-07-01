@@ -805,7 +805,7 @@ private Node readTemplateStruct(ref Tokenizer toks, NodeType){
 
 private Node readTemplateVar(ref Tokenizer toks, NodeType){
 	toks.expectThrow!(TokenType.TemplateVar);
-	Node ret;
+	Node ret = new Node;
 	ret.token = toks.front;
 	toks.popFront;
 

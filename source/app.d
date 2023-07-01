@@ -4,7 +4,8 @@ import std.stdio,
 			 std.file,
 			 std.algorithm.iteration,
 			 std.datetime.stopwatch,
-			 std.format;
+			 std.format,
+			 std.conv;
 
 import utils.ds;
 
@@ -21,11 +22,11 @@ int main(string[] args){
 	ignore |= TokenType.CommentMultiline;
 	auto range = Tokenizer(cast(string)read("sample"), ignore);
 
-	foreach (tok; range)
-		stderr.writeln(tok);
+	/*foreach (tok; range)
+		stderr.writeln(tok);*/
 
-	if (args.length > 1 && args[1] == "time"){
-		timeIt(range);
+	if (args.length > 1 && args[1] == "time" ){
+		timeIt(range, args.length > 2 ? args[2].to!uint : 1);
 		return 0;
 	}
 
@@ -42,14 +43,14 @@ int main(string[] args){
 	return 0;
 }
 
-void timeIt(Tokenizer toks){
+void timeIt(Tokenizer toks, uint times){
 	void benchmark(ref StopWatch sw){
 		auto branch = toks;
 		sw.start;
 		parseScript(branch);
 		sw.stop;
 	}
-	bench(&benchmark, 100).writeln;
+	bench(&benchmark, times).writeln;
 }
 
 struct Times{
