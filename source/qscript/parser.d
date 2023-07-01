@@ -54,11 +54,11 @@ private alias BuilderFunc = Node function(ref Tokenizer, NodeType);
 private alias OpPostBuilderFunc = Node function(ref Tokenizer, Node, NodeType);
 
 /// Returns: Flags constructed from AliasSeq
-private template FlagsFromAliasSeq(Vals...) if (
+private template ToFlags(Vals...) if (
 		Vals.length > 0 &&
 		is(typeof(Vals[0]) == enum)){
 	alias T = typeof(Vals[0]);
-	enum FlagsFromAliasSeq = getFlags;
+	enum ToFlags = getFlags;
 	Flags!T getFlags(){
 		Flags!T ret;
 		static foreach (val; Vals){
@@ -69,14 +69,6 @@ private template FlagsFromAliasSeq(Vals...) if (
 		}
 		return ret;
 	}
-}
-
-/// ditto
-private Flags!TokenType flagsFromVals(TokenType[] vals){
-	Flags!TokenType ret;
-	foreach (val; vals)
-		ret |= val;
-	return ret;
 }
 
 /// stringof's all other template parameters, and joins with a string
@@ -132,11 +124,6 @@ private template HigherPreced(uint P, Ops...){
 	}
 }
 
-/// ditto
-private NodeType[] higherPreced(uint p, NodeType[] ops){
-	return ops.filter!(a => a.precedenceOf >= p).array;
-}
-
 /// AliasSeq of TokenType of Hooks for given NodeTypes AliasSeq
 private template Hooks(Types...){
 	alias Hooks = AliasSeq!();
@@ -179,7 +166,7 @@ private template PostOps(uint P = 0){
 private bool expect(Types...)(ref Tokenizer toks){
 	if (toks.empty)
 		return false;
-	enum Flags!TokenType match = FlagsFromAliasSeq!Types;
+	enum Flags!TokenType match = ToFlags!Types;
 	return cast(bool)(match & toks.front.type);
 }
 
@@ -1385,15 +1372,10 @@ private Node readTrait(ref Tokenizer toks, NodeType){
 
 private Node readExpression(ref Tokenizer toks, NodeType context){
 	if (toks.expect!(TokenType.BracketOpen, TokenType.IndexOpen)){
-		Node ret = new Node;
-		ret.token = toks.front;
-		toks.popFront;
 		// so we know which closing bracket to expect
-		bool isIndexBracket = ret.token.type.get!(TokenType.IndexOpen);
-		ret.children = [
-			toks.read!(NodeType.Expression) // recurse, and forget precedence
-		];
-		// expect closing bracket
+		bool isIndexBracket = toks.front.type.get!(TokenType.IndexOpen);
+		toks.popFront;
+		Node ret = toks.read!(NodeType.Expression);
 		if (isIndexBracket)
 			toks.expectPopThrow!(TokenType.IndexClose);
 		else
@@ -1401,38 +1383,39 @@ private Node readExpression(ref Tokenizer toks, NodeType context){
 		return ret;
 	}
 
-	const uint precedence = precedenceOf(context);
+	uint precedence = precedenceOf(context);
+	bool createContainer = false;
 	auto branch = toks;
 	Node expr;
 	try{
 		expr = branch.read!(PreOps!())(precedence);
+		createContainer = true;
 		toks = branch;
-	}catch (CompileError){}
-	if (!expr)
+	}catch (CompileError){
 		expr = toks.read!(NodeType.ExprUnit); // ok it's just an identifier
+	}
 
 	// now keep feeding it into proceeding operators until precedence violated
 	while (true){
 		branch = toks;
-		// maybe its a unary prefix operator?
+		Flags!TokenType match = ToFlags!(Hooks!(AliasSeq!(
+						BinOps!(), PostOps!()
+						)));
+		if (!(match & toks.front.type))
+			break;
 		try{
-			auto sub = branch.read!(PreOps!())(expr, precedence);
-			expr = new Node;
-			expr.children = [sub];
+			expr = branch.read!(BinOps!(), PostOps!())(expr, precedence);
 			toks = branch;
-			continue;
-		}catch (CompileError){}
-		// maybe its a binary operator?
-		try{
-			auto sub = branch.read!(BinOps!())(expr, precedence);
-			expr = new Node;
-			expr.children = [sub];
-			toks = branch;
-			continue;
-		}catch (CompileError){}
-		break;
+			createContainer = true;
+		}catch (CompileError){
+			break;
+		}
 	}
-	return expr;
+	if (!createContainer)
+		return expr;
+	Node ret = new Node;
+	ret.children = [expr];
+	return ret;
 }
 
 private Node readLoadExpr(ref Tokenizer toks, NodeType){
