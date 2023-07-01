@@ -503,10 +503,9 @@ public Node parseScript(ref Tokenizer toks){
 private Node readScript(ref Tokenizer toks, Node){
 	Node ret = new Node;
 	while (!toks.empty){
-		Node val = toks.read!(NodeType.Declaration);
-		if (val is null)
-			return null;
-		ret.children ~= val;
+		if (auto val = toks.read!(NodeType.Declaration))
+			ret.children ~= val;
+		return null;
 	}
 	return ret;
 }
@@ -556,68 +555,96 @@ private Node readTemplate(ref Tokenizer toks, Node){
 }
 
 private Node readTemplateFn(ref Tokenizer toks, Node){
-	if (!toks.expect!(TokenType.TemplateFn))
+	if (toks.expect!(TokenType.TemplateFn))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
+
+	auto branch = toks;
+	if (auto vals = branch.readSeq!(
+				NodeType.Identifier,
+				NodeType.TemplateParamList,
+				NodeType.ParamList,
+				NodeType.Statement)){
+		toks = branch;
+		return new Node(token, vals);
+	}
 
 	if (auto vals = toks.readSeq!(
 				NodeType.DataType,
 				NodeType.Identifier,
 				NodeType.TemplateParamList,
 				NodeType.ParamList,
-				NodeType.Statement))
-			return new Node(token, vals);
+				NodeType.Statement)){
+		return new Node(token, vals);
+	}
 	return null;
 }
 
 private Node readTemplateEnum(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.TemplateEnum);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.TemplateEnum))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.DataType),
-		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.TemplateParamList)
-	];
+	if (auto vals = toks.readSeq!(
+				NodeType.DataType,
+				NodeType.Identifier,
+				NodeType.TemplateParamList))
+		ret.children = vals;
+	else
+		return null;
+
 	// from here on, there can be a block, or a single OpAssign
 	if (toks.expectPop!(TokenType.OpAssign)){
 		// single OpAssign
-		ret.children ~= toks.read!(NodeType.Expression);
+		auto val = toks.read!(NodeType.Expression);
+		if (val is null)
+			return null;
+		ret.children ~= val;
 		// expect a semicolon
 		if (!toks.expectPop!(TokenType.Semicolon))
-			throw new CompileError(ErrorType.Expected, toks.front, [
-					TokenType.Semicolon.to!string
-			]);
+			return null;
 		return ret;
 	}
+
 	// multiple values
-	toks.expectPopThrow!(TokenType.CurlyOpen);
+	if (!toks.expectPop!(TokenType.CurlyOpen))
+		return null;
 
 	while (true){
-		ret.children ~= toks.read!(NodeType.NamedValue);
+		auto val = toks.read!(NodeType.NamedValue);
+		if (val is null)
+			return null;
+		ret.children ~= val;
 		if (toks.expectPop!(TokenType.CurlyClose))
 			break;
-		toks.expectPopThrow!(TokenType.Comma);
+		if (!toks.expectPop!(TokenType.Comma))
+			return null;
 	}
 	return ret;
 }
 
 private Node readTemplateStruct(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.TemplateStruct);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.TemplateStruct))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.TemplateParamList)
-	];
-	toks.expectPopThrow!(TokenType.CurlyOpen);
+	if (auto vals = toks.readSeq!(
+				NodeType.Identifier,
+				NodeType.TemplateParamList))
+		ret.children = vals;
+	else
+		return null;
+
+	if (!toks.expectPop!(TokenType.CurlyOpen))
+		return null;
 	while (true){
-		ret.children ~= toks.read; // and hope its a declaration?
+		if (auto val = toks.read!(NodeType.Declaration))
+			ret.children ~= val;
+		else
+			return null;
 		if (toks.expectPop!(TokenType.CurlyClose))
 			break;
 	}
@@ -625,23 +652,32 @@ private Node readTemplateStruct(ref Tokenizer toks, Node){
 }
 
 private Node readTemplateVar(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.TemplateVar);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.TemplateVar))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.DataType)
-	];
+	if (auto val = toks.read!(NodeType.DataType))
+		ret.children = [val];
+	else
+		return null;
 
 	// now read ident paramlist optional( OpAssign Expr) [Comma or Semicolon]
 	while (true){
 		Node varNode = toks.read!(NodeType.Identifier);
-		varNode.children = [
-			toks.read!(NodeType.TemplateParamList)
-		];
-		if (toks.expectPop!(TokenType.OpAssign))
-			varNode.children ~= toks.read!(NodeType.Identifier);
+		if (varNode is null)
+			return null;
+		if (auto val = toks.read!(NodeType.TemplateParamList))
+			varNode.children = [val];
+		else
+			return null;
+
+		if (toks.expectPop!(TokenType.OpAssign)){
+			if (auto val = toks.read!(NodeType.Identifier))
+				varNode.children ~= val;
+			else
+				return null;
+		}
 
 		if (toks.expectPop!(TokenType.Comma))
 			continue;
@@ -652,63 +688,77 @@ private Node readTemplateVar(ref Tokenizer toks, Node){
 }
 
 private Node readTemplateAlias(ref Tokenizer toks, Node){
-	toks.expectPopThrow!(TokenType.TemplateAlias);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.TemplateAlias))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.TemplateParamList),
-		null // will replace it with what comes after opEquals
-	];
-	toks.expectPopThrow!(TokenType.OpAssign);
-	ret.children[$ - 1] = toks.read; // read whatever
-	toks.expectPopThrow!(TokenType.Semicolon); // expect semicolon at end
+	Node ret;
+	if (auto vals = toks.readSeq!(
+				NodeType.Identifier,
+				NodeType.TemplateParamList))
+		ret = new Node(token, vals);
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.OpAssign))
+		return null;
+	if (auto val = toks.read!())
+		ret.children ~= val;
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
 	return ret;
 }
 
 private Node readFn(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Fn);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (toks.expect!(TokenType.Fn))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
-	try{
-		auto branch = toks;
-		ret.children = [
-			branch.read!(NodeType.Identifier),
-			branch.read!(NodeType.ParamList),
-			branch.read!(NodeType.Statement)
-		];
-		toks = branch;
-		return ret;
-	}catch (CompileError){}
 
-	ret.children = [
-		toks.read!(NodeType.DataType),
-		toks.read!(NodeType.Identifier),
-		toks.read!(NodeType.ParamList),
-		toks.read!(NodeType.Statement)
-	];
-	return ret;
+	auto branch = toks;
+	if (auto vals = branch.readSeq!(
+				NodeType.Identifier,
+				NodeType.ParamList,
+				NodeType.Statement)){
+		toks = branch;
+		return new Node(token, vals);
+	}
+
+	if (auto vals = toks.readSeq!(
+				NodeType.DataType,
+				NodeType.Identifier,
+				NodeType.ParamList,
+				NodeType.Statement)){
+		return new Node(token, vals);
+	}
+	return null;
 }
 
 private Node readVar(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Var);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Var))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.DataType)
-	];
+	if (auto val = toks.read!(NodeType.DataType))
+		ret.children = [val];
+	else
+		return null;
 
 	// now read ident optional( OpAssign Expr) [Comma or Semicolon]
 	while (true){
 		Node varNode = toks.read!(NodeType.Identifier);
-		if (toks.expectPop!(TokenType.OpAssign))
-			varNode.children = [toks.read!(NodeType.Expression)];
-		ret.children ~= varNode;
+		if (varNode is null)
+			return null;
+
+		if (toks.expectPop!(TokenType.OpAssign)){
+			if (auto val = toks.read!(NodeType.Identifier))
+				varNode.children ~= val;
+			else
+				return null;
+		}
 
 		if (toks.expectPop!(TokenType.Comma))
 			continue;
@@ -719,17 +769,23 @@ private Node readVar(ref Tokenizer toks, Node){
 }
 
 private Node readStruct(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Struct);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Struct))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.Identifier),
-	];
-	toks.expectPopThrow!(TokenType.CurlyOpen);
+	if (auto val = toks.read!(NodeType.Identifier))
+		ret.children = [val];
+	else
+		return null;
+
+	if (!toks.expectPop!(TokenType.CurlyOpen))
+		return null;
 	while (true){
-		ret.children ~= toks.read; // and hope its a declaration?
+		if (auto val = toks.read!(NodeType.Declaration))
+			ret.children ~= val;
+		else
+			return null;
 		if (toks.expectPop!(TokenType.CurlyClose))
 			break;
 	}
@@ -737,46 +793,67 @@ private Node readStruct(ref Tokenizer toks, Node){
 }
 
 private Node readEnum(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Enum);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Enum))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.DataType),
-		toks.read!(NodeType.Identifier),
-	];
+	if (auto vals = toks.readSeq!(
+				NodeType.DataType,
+				NodeType.Identifier))
+		ret.children = vals;
+	else
+		return null;
+
+	// from here on, there can be a block, or a single OpAssign
 	if (toks.expectPop!(TokenType.OpAssign)){
 		// single OpAssign
-		ret.children ~= toks.read!(NodeType.Expression);
-		toks.expectPopThrow!(TokenType.Semicolon); // expect a semicolon
+		auto val = toks.read!(NodeType.Expression);
+		if (val is null)
+			return null;
+		ret.children ~= val;
+		// expect a semicolon
+		if (!toks.expectPop!(TokenType.Semicolon))
+			return null;
 		return ret;
 	}
+
 	// multiple values
-	toks.expectPopThrow!(TokenType.CurlyOpen);
+	if (!toks.expectPop!(TokenType.CurlyOpen))
+		return null;
+
 	while (true){
-		ret.children ~= toks.read!(NodeType.NamedValue);
+		auto val = toks.read!(NodeType.NamedValue);
+		if (val is null)
+			return null;
+		ret.children ~= val;
 		if (toks.expectPop!(TokenType.CurlyClose))
 			break;
-		toks.expectPopThrow!(TokenType.Comma);
+		if (!toks.expectPop!(TokenType.Comma))
+			return null;
 	}
 	return ret;
 }
 
 private Node readAlias(ref Tokenizer toks, Node){
-	toks.expectPopThrow!(TokenType.Alias);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Alias))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
 
-	ret.children = [
-		toks.read!(NodeType.Identifier),
-		null // will replace it with what comes after opEquals
-	];
-	toks.expectPopThrow!(TokenType.OpAssign);
-	ret.children[$ - 1] = toks.read; // read whatever
-	// expect a semicolon
-	toks.expectPopThrow!(TokenType.Semicolon);
+	Node ret;
+	if (auto val = toks.read!(NodeType.Identifier))
+		ret = new Node(token, [val]);
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.OpAssign))
+		return null;
+	if (auto val = toks.read!())
+		ret.children ~= val;
+	else
+		return null;
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
 	return ret;
 }
 
