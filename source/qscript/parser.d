@@ -858,50 +858,55 @@ private Node readAlias(ref Tokenizer toks, Node){
 }
 
 private Node readDataType(ref Tokenizer toks, Node){
-	Node ret = new Node;
 	// maybe its a ref?
 	if (toks.expect!(TokenType.Ref)){
-		// ref not allowed if context is already DataType, ref of ref is very bad
-		if (prevContext == NodeType.DataType)
-			throw new CompileError(ErrorType.ExpectedAFoundB, toks.front, [
-					"Data Type", "ref"
-			]);
-		ret.token = toks.front;
+		auto token = toks.front;
 		toks.popFront;
-		ret.children = [
-			toks.read!(NodeType.DataType)
-		];
-		return ret;
+		if (auto val = toks.read!(NodeType.DataType))
+			return new Node(token, [val]);
+		return null;
 	}
-
 	if (toks.expect!(TokenType.Auto)){ // maybe its auto?
-		ret.token = toks.front;
+		auto ret = new Node(toks.front);
 		toks.popFront;
 		return ret; // auto cannot have [] at end, so just return here
-	}else if (toks.expect!(TokenType.Fn)){ // maybe its a fn?
-		ret.token = toks.front;
+	}
+
+	Node ret;
+	if (toks.expect!(TokenType.Fn)){ // maybe its a fn?
+		auto token = toks.front;
 		toks.popFront;
-		ret.children = [
-			toks.read!(NodeType.DataType), // return type
-			toks.read!(NodeType.ParamList)
-		];
-	}else if (toks.expect!(TokenType.Int) || // or a primitive type
-			toks.expect!(TokenType.Float) ||
-			toks.expect!(TokenType.Bool) ||
-			toks.expect!(TokenType.String) ||
-			toks.expect!(TokenType.Char)){
-		ret.token = toks.front;
+		if (auto vals = toks.readSeq!(
+					NodeType.DataType,
+					NodeType.ParamList))
+			ret = new Node(token, vals);
+		else if (auto val = toks.read!(NodeType.ParamList))
+			ret = new Node(token, [val]);
+		else
+			return null;
+	}
+
+	if (toks.expect!(
+				TokenType.Int,
+				TokenType.Float,
+				TokenType.Bool,
+				TokenType.String,
+				TokenType.Char)){
+		ret = new Node(toks.front);
 		toks.popFront;
 	}else{ // fine! its an expression
-		ret.token = toks.front; // just a dummy
-		ret.children = [
-			toks.read!(NodeType.Expression)
-		];
+		if (auto val = toks.read!(NodeType.Expression))
+			ret = new Node([val]);
+		else
+			return null;
 	}
 
 	// now maybe it has bunch of [] making it an array
 	while (toks.expect!(TokenType.IndexOpen)){
-		ret.children ~= toks.read!(NodeType.IndexBracketPair);
+		if (auto val = toks.read!(NodeType.IndexBracketPair))
+			ret.children ~= val;
+		else
+			return null;
 	}
 	return ret;
 }
