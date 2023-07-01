@@ -184,6 +184,19 @@ private bool expect(Types...)(ref Tokenizer toks){
 	return cast(bool)(match & toks.front.type);
 }
 
+/// Checks if tokens at front are matching types.
+///
+/// Returns: true if matched
+private bool expectSeqPop(Types...)(ref Tokenizer toks){
+	auto branch = toks;
+	static foreach (type; Types){{
+		if (!branch.expectPop!(type))
+			return false;
+	}}
+	toks = branch;
+	return true;
+}
+
 /// Checks if token at front is matching type. Pops it if matching
 ///
 /// Returns: true if matched
@@ -912,21 +925,24 @@ private Node readDataType(ref Tokenizer toks, Node){
 }
 
 private Node readIndexBracketPair(ref Tokenizer toks, Node){
-	Node ret = new Node;
-	toks.expectThrow!(TokenType.IndexOpen);
-	ret.token = toks.front;
-	toks.popFront;
-	toks.expectPopThrow!(TokenType.IndexClose);
-	return ret;
+	auto token = toks.front;
+	if (auto vals = toks.expectSeqPop!(
+				TokenType.IndexOpen,
+				TokenType.IndexClose))
+		return new Node(token);
+	return null;
 }
 
 private Node readTemplateParamList(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.BracketOpen);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.BracketOpen))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	while (!toks.expectPop!(TokenType.BracketClose)){
-		ret.children ~= toks.read!(NodeType.TemplateParam);
+		if (auto val = toks.read!(NodeType.TemplateParam))
+			ret.children ~= val;
+		else
+			return null;
 	}
 	return ret;
 }
@@ -936,35 +952,33 @@ private Node readTemplateParam(ref Tokenizer toks, Node){
 	// DataType Identifier
 	// Identifier
 	auto branch = toks;
-	try{
-		Node ret = branch.read!(NodeType.DataType);
-		ret.children = [
-			branch.read!(NodeType.Identifier)
-		];
-		if (!branch.expect!(TokenType.BracketClose))
-			branch.expectPopThrow!(TokenType.Comma);
-		toks = branch;
-		return ret;
-	}catch (CompileError){}
-
-	branch = toks;
-	try{
-		Node ret = branch.read!(NodeType.Identifier);
-		if (!branch.expect!(TokenType.BracketClose))
-			branch.expectPopThrow!(TokenType.Comma);
-		toks = branch;
-		return ret;
-	}catch (CompileError){}
-	return null; // and cause read to throw CompileError
+	Node ret;
+	if (auto vals = branch.readSeq!(
+				NodeType.DataType,
+				NodeType.Identifier)){
+		ret = new Node(vals);
+	}else if (auto val = branch.read!(NodeType.Identifier)){
+		ret = new Node([val]);
+	}
+	toks = branch;
+	if (!toks.expect!(TokenType.BracketClose)){
+		if (!toks.expectPop!(TokenType.Comma))
+			return null;
+	}
+	return ret;
 }
 
 private Node readParamList(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.BracketOpen);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.BracketOpen))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
-	while (!toks.expectPop!(TokenType.BracketClose))
-		ret.children ~= toks.read!(NodeType.Param);
+	while (!toks.expectPop!(TokenType.BracketClose)){
+		if (auto val = toks.read!(NodeType.Param))
+			ret.children ~= val;
+		else
+			return null;
+	}
 	return ret;
 }
 
@@ -972,27 +986,21 @@ private Node readParam(ref Tokenizer toks, Node){
 	// can be:
 	// DataType Identifier
 	// DataType
+	Node ret;
+	if (auto val = toks.read!(NodeType.DataType))
+		ret = new Node([val]);
+	else
+		return null;
 	auto branch = toks;
-	try{
-		Node ret = branch.read!(NodeType.DataType);
-		ret.children = [
-			branch.read!(NodeType.Identifier)
-		];
-		if (!branch.expect!(TokenType.BracketClose))
-			branch.expectPopThrow!(TokenType.Comma);
+	if (auto val = branch.read!(NodeType.Identifier)){
+		ret.children ~= val;
 		toks = branch;
-		return ret;
-	}catch (CompileError){}
-
-	branch = toks;
-	try{
-		Node ret = branch.read!(NodeType.DataType);
-		if (!branch.expect!(TokenType.BracketClose))
-			branch.expectPopThrow!(TokenType.Comma);
-		toks = branch;
-		return ret;
-	}catch (CompileError){}
-	return null; // will cause calling read function to throw CompileError
+	}
+	if (!toks.expect!(TokenType.BracketClose)){
+		if (!toks.expectPop!(TokenType.Comma))
+			return null;
+	}
+	return ret;
 }
 
 /// reads `foo = bar`
