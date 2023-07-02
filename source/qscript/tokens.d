@@ -6,6 +6,9 @@ import utils.ds;
 
 debug import std.stdio;
 
+import std.algorithm,
+			 std.range;
+
 /// A Token
 public alias Token = qscript.base.tokens.Token!TokenType;
 /// Tokenizer
@@ -32,15 +35,18 @@ void whitespaceRemove(ref Token[] tokens){
 
 /// possible token types
 enum TokenType{
-	@Match(&identifyWhitespace)							Whitespace,
-	@Match(&identifyComment)								Comment,
-	@Match(&identifyCommentMultiline)				CommentMultiline,
-	@Match(&identifyLiteralInt)							LiteralInt,
-	@Match(&identifyLiteralFloat)						LiteralFloat,
-	@Match(&identifyLiteralString)					LiteralString,
-	@Match(&identifyLiteralChar)						LiteralChar,
-	@Match(&identifyLiteralHexadecimal)			LiteralHexadecimal,
-	@Match(&identifyLiteralBinary)					LiteralBinary,
+	@Match(&identifyWhitespace, "\t \r\n")	Whitespace,
+	@Match(&identifyComment, "/#")					Comment,
+	@Match(&identifyCommentMultiline, "/")	CommentMultiline,
+	@Match(&identifyLiteralInt, "0123456789")
+																					LiteralInt,
+	@Match(&identifyLiteralFloat, "0123456789")
+																					LiteralFloat,
+	@Match(&identifyLiteralString, "\"")		LiteralString,
+	@Match(&identifyLiteralChar, "'")				LiteralChar,
+	@Match(&identifyLiteralHexadecimal, "0")
+																					LiteralHexadecimal,
+	@Match(&identifyLiteralBinary, "0")			LiteralBinary,
 	@Match(`template`)											Template,
 	@Match(`load`)													Load,
 	@Match(`alias`)													Alias,
@@ -70,7 +76,10 @@ enum TokenType{
 	@Match(`is`)														Is,
 	@Match(`!is`)														NotIs,
 	@Match(`null`)													Null,
-	@Match(&identifyIdentifier)							Identifier,
+	@Match(&identifyIdentifier, cast(string)
+			iota('a', 'z' + 1).
+			chain(iota('A', 'Z' + 1)).
+			map!(a => cast(char)a).array ~ '_')	Identifier,
 	@Match(`;`)															Semicolon,
 	@Match(`->`)														Arrow,
 	@Match(`,`)															Comma,
@@ -115,7 +124,7 @@ enum TokenType{
 	@Match(`]`)															IndexClose,
 	@Match(`{`)															CurlyOpen,
 	@Match(`}`)															CurlyClose,
-	@Match(&identifyTrait)									Trait,
+	@Match(&identifyTrait, "$")							Trait,
 	@Match(`$if`)														StaticIf,
 	@Match(`$for`)													StaticFor,
 	@Match(`$fn`)														TemplateFn,
@@ -155,12 +164,12 @@ private uint identifyCommentMultiline(string str){
 }
 
 private uint identifyLiteralInt(string str){
-		foreach (index, ch; str){
+	foreach (index, ch; str){
 		if (ch < '0' || ch > '9')
-		return cast(uint)index;
-		}
-		return cast(uint)str.length;
-		}
+			return cast(uint)index;
+	}
+	return cast(uint)str.length;
+}
 
 private uint identifyLiteralFloat(string str){
 	int charsAfterDot = -1;

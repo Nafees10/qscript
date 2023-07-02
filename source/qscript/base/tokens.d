@@ -2,9 +2,10 @@ module qscript.base.tokens;
 
 import utils.ds;
 
-import std.algorithm;
-import std.traits;
-import std.conv : to;
+import std.algorithm,
+			 std.traits,
+			 std.conv,
+			 std.meta;
 
 debug import std.stdio;
 
@@ -60,34 +61,23 @@ public struct Token(T) if (is (T == enum)){
 	}
 }
 
+/// Match("..") for exact match
+/// Match(&func, "ab") for custom function, where it only need to trigger
+/// if string starts with a or b
 public struct Match{
 	private bool exactMatch;
-	union{
-		string matchStr;
-		uint function(string) funcMatch;
-	}
-
-	/// attempt to match
-	///
-	/// Returns: number of characters matching, starting from index 0
-	private uint match(string s){
-		if (exactMatch){
-			if (s.length < matchStr.length)
-				return 0;
-			return cast(uint)
-				(matchStr.length * (s[0 .. matchStr.length] == matchStr));
-		}
-		return funcMatch(s);
-	}
+	string matchStr;
+	uint function(string) funcMatch;
 
 	this (string match){
 		this.exactMatch = true;
 		this.matchStr = match;
 	}
 
-	this(uint function(string) match){
-		this.exactMatch = false;
+	this(uint function(string) match, string matchStr){
 		this.funcMatch = match;
+		this.exactMatch = false;
+		this.matchStr = matchStr;
 	}
 }
 
@@ -114,6 +104,63 @@ public:
 	}
 }
 
+/// Matches that have given initial character
+/// Match alternates with Enum Member
+template MatchesWithInitChar(T, char C){
+	alias MatchesWithInitChar = AliasSeq!();
+	static foreach (member; EnumMembers!T){
+		static foreach (matcher; getUDAs!(member, Match)){
+			static if (matcher.exactMatch){
+				static if (matcher.matchStr.length && matcher.matchStr[0] == C)
+					MatchesWithInitChar = AliasSeq!(MatchesWithInitChar, matcher,
+							member);
+			}else{
+				static foreach (char ch; matcher.matchStr){
+					static if (ch == C){
+						MatchesWithInitChar = AliasSeq!(MatchesWithInitChar, matcher,
+								member);
+					}
+				}
+			}
+		}
+	}
+}
+
+private Token!T match(T)(string str){
+	Flags!T matches;
+	uint maxLen;
+	Switch: switch (str[0]){
+		static foreach (char C; char.min .. char.max){
+			static if (MatchesWithInitChar!(T, C).length){
+				case C:
+					static foreach (i; 0 .. MatchesWithInitChar!(T, C).length / 2){{
+						alias matcher = MatchesWithInitChar!(T, C)[i * 2];
+						alias member = MatchesWithInitChar!(T, C)[i * 2 + 1];
+						uint localMaxLen = 0;
+						static if (matcher.exactMatch){
+							if (str.length >= matcher.matchStr.length &&
+									(str[0 .. matcher.matchStr.length] == matcher.matchStr)){
+								localMaxLen = matcher.matchStr.length;
+							}
+						}else{
+							localMaxLen = matcher.funcMatch(str);
+						}
+						if (localMaxLen > maxLen){
+							maxLen = localMaxLen;
+							matches.set(false);
+							matches.set!member(true);
+						}else if (maxLen && localMaxLen == maxLen){
+							matches.set!member(true);
+						}
+					}}
+					break Switch;
+			}
+		}
+		default: break;
+	}
+	return Token!T(matches, str[0 .. maxLen]);
+}
+
 /// Fancy string exploder
 public struct Tokenizer(T) if (is (T == enum)){
 private:
@@ -126,26 +173,12 @@ private:
 	Token!T _next;
 	bool _empty;
 
+
 	/// match a token
 	Token!T _getToken(){
-		Flags!T matches;
-		uint maxLen;
-		string str = _source[_seek .. $];
-		static foreach (member; EnumMembers!T){{
-			uint localMaxLen = 0;
-			static foreach (matcher; getUDAs!(member, Match))
-				localMaxLen = max(localMaxLen, matcher.match(str));
-			if (localMaxLen > maxLen){
-				maxLen = localMaxLen;
-				matches.set(false);
-				matches.set!member(true);
-			}else if (maxLen && localMaxLen == maxLen){
-				matches.set!member(true);
-			}
-		}}
-		if (!maxLen || maxLen > str.length)
+		Token!T ret = match!T(_source[_seek .. $]);
+		if (!ret.token.length)
 			throw new TokenizerException(_lineno + 1, _seek - _lastNewlineIndex);
-		auto ret = Token!T(matches, str[0 .. maxLen]);
 
 		// figure out line number etc
 		ret.lineno = _lineno + 1;
