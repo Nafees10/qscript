@@ -170,7 +170,7 @@ private template PostNoBinOps(uint P = 0){
 	static foreach (type; EnumMembers!NodeType){
 		static if (hasUDA!(type, PostOp) && !hasUDA!(type, BinOp) &&
 				PrecedenceOf!type >= P)
-			PostOps = AliasSeq!(PostOps, type);
+			PostNoBinOps = AliasSeq!(PostNoBinOps, type);
 	}
 }
 
@@ -549,6 +549,10 @@ private Node readDeclaration(ref Tokenizer toks, Node){
 				NodeType.Struct,
 				NodeType.Var,
 				NodeType.Alias)){
+		if (val.type == NodeType.LoadExpr){
+			if (!toks.expectPop!(TokenType.Semicolon))
+				return null;
+		}
 		return new Node([new Node([val])]);
 	}
 	return null;
@@ -1227,110 +1231,108 @@ private Node readBlock(ref Tokenizer toks, Node){
 }
 
 private Node readExprUnit(ref Tokenizer toks, Node){
-	Node ret = new Node;
-	ret.children = [
-		toks.read!(
+	if (auto val = toks.read!(
 				NodeType.Identifier,
 				NodeType.IntLiteral,
 				NodeType.FloatLiteral,
 				NodeType.StringLiteral,
 				NodeType.CharLiteral,
 				NodeType.NullLiteral,
-				NodeType.BoolLiteral
-				)
-	];
-	return ret;
+				NodeType.BoolLiteral))
+		return new Node([val]);
+	return null;
 }
 
 private Node readIdentifier(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Identifier);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Identifier))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readIntLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(
-		TokenType.LiteralInt,
-		TokenType.LiteralBinary,
-		TokenType.LiteralHexadecimal
-	);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(
+				TokenType.LiteralInt,
+				TokenType.LiteralBinary,
+				TokenType.LiteralHexadecimal))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readFloatLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.LiteralFloat);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.LiteralFloat))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readStringLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.LiteralString);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.LiteralString))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readCharLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.LiteralChar);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.LiteralChar))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readNullLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Null);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Null))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readBoolLiteral(ref Tokenizer toks, Node){
-	toks.expectThrow!(
-			TokenType.True,
-			TokenType.False
-	);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(
+				TokenType.True,
+				TokenType.False))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	return ret;
 }
 
 private Node readArgList(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.BracketOpen);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.BracketOpen))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	if (toks.expectPop!(TokenType.BracketClose))
 		return ret;
 
 	while (true){
-		ret.children ~= toks.read!(NodeType.Expression);
+		if (auto val = toks.read!(NodeType.Expression))
+			ret.children ~= val;
+		else
+			return null;
 		if (toks.expectPop!(TokenType.BracketClose))
 			break;
-		toks.expectPopThrow!(TokenType.Comma);
+		if (!toks.expectPop!(TokenType.Comma))
+			return null;
 	}
 	return ret;
 }
 
 private Node readTrait(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Trait);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Trait))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.ArgList)
-	];
-	return ret;
+	if (auto val = toks.read!(NodeType.ArgList))
+		return new Node(token, [val]);
+	return null;
 }
 
 private Node readExpression(ref Tokenizer toks, Node){
@@ -1339,148 +1341,147 @@ private Node readExpression(ref Tokenizer toks, Node){
 		bool isIndexBracket = toks.front.type.get!(TokenType.IndexOpen);
 		toks.popFront;
 		Node ret = toks.read!(NodeType.Expression);
+		if (ret is null)
+			return null;
+		bool closed;
 		if (isIndexBracket)
-			toks.expectPopThrow!(TokenType.IndexClose);
+			closed = toks.expectPop!(TokenType.IndexClose);
 		else
-			toks.expectPopThrow!(TokenType.BracketClose);
+			closed = toks.expectPop!(TokenType.BracketClose);
+		if (!closed)
+			return null;
 		return ret;
 	}
 
-	uint precedence = precedenceOf(prevContext);
+	const uint precedence = precedenceOf(prevContext);
 	bool createContainer = false;
 	auto branch = toks;
 	Node expr;
-	try{
-		expr = branch.read!(PreOps!())(precedence);
-		createContainer = true;
+	if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
 		toks = branch;
-	}catch (CompileError){
-		expr = toks.read!(NodeType.ExprUnit); // ok it's just an identifier
+		expr = val;
+		createContainer = true;
+	}else if (auto val = toks.read!(NodeType.ExprUnit)){
+		expr = val;
+	}else{
+		return null;
 	}
 
 	// now keep feeding it into proceeding operators until precedence violated
 	while (true){
 		branch = toks;
-		Flags!TokenType match = ToFlags!(Hooks!(AliasSeq!(
+		/*Flags!TokenType match = ToFlags!(Hooks!(AliasSeq!(
 						BinOps!(), PostOps!()
 						)));
 		if (!(match & toks.front.type))
-			break;
-		try{
-			expr = branch.read!(BinOps!(), PostOps!())(expr, precedence);
+			break;*/
+		if (auto val = branch.readWithPrecedence!(BinOps!(), PostOps!())
+				(expr, precedence)){
 			toks = branch;
 			createContainer = true;
-		}catch (CompileError){
+			expr = val;
+		}else{
 			break;
 		}
 	}
 	if (!createContainer)
 		return expr;
-	Node ret = new Node;
-	ret.children = [expr];
-	return ret;
+	return new Node([expr]);
 }
 
 private Node readLoadExpr(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.Load);
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(TokenType.Load))
+		return null;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	toks.expectPopThrow!(TokenType.BracketOpen);
+	if (!toks.expectPop!(TokenType.BracketOpen))
+		return null;
 	while (true){
-		ret.children ~= toks.read!(NodeType.Identifier);
+		if (auto val = toks.read!(NodeType.Identifier))
+			ret.children ~= val;
+		else
+			return null;
 		if (toks.expectPop!(TokenType.BracketClose))
 			break;
-		toks.expectPopThrow!(TokenType.OpDot);
+		if (!toks.expectPop!(TokenType.BracketClose))
+			return null;
 	}
-	// if semicolon, eat it too
-	toks.expectPop!(TokenType.Semicolon);
 	return ret;
 }
 
 private Node readArrowFunc(ref Tokenizer toks, Node){
-	toks.expectThrow!(TokenType.BracketOpen);
+	if (!toks.expect!(TokenType.BracketOpen))
+		return null;
 	Node ret = new Node;
-	ret.children = [
-		toks.read!(NodeType.ParamList)
-	];
+	if (auto val = toks.read!(NodeType.ParamList))
+		ret.children = [val];
+	else
+		return null;
 	// now the arrow
-	toks.expectThrow!(TokenType.Arrow);
+	if (!toks.expect!(TokenType.Arrow))
+		return null;
 	ret.token = toks.front;
 	toks.popFront;
-	// now maybe a datatype?
+
+	// (..) -> dataType {..}
 	auto branch = toks;
-	try{
-		ret.children ~= branch.read!(NodeType.DataType);
+	if (auto vals = toks.readSeq!(
+				NodeType.DataType,
+				NodeType.Block)){
 		toks = branch;
-	}catch (CompileError){}
-	// and now the expression part, or a block
-	branch = toks;
-	try{
-		ret.children ~= branch.read!(NodeType.Block);
-		toks = branch;
-	}catch (CompileError){
-		ret.children ~= toks.read!(NodeType.Expression);
+		ret.children ~= vals;
+		return ret;
 	}
-	return ret;
+
+	// (..) -> (<expr> or {..})
+	if (auto val = toks.read!(
+				NodeType.Expression,
+				NodeType.Block)){
+		ret.children ~= val;
+		return ret;
+	}
+	return null;
 }
 
 private Node readOpCall(ref Tokenizer toks, Node a){
-	toks.expectThrow!(TokenType.BracketOpen);
-	Node ret = new Node;
-	ret.token = toks.front;
-	//toks.popFront;
-	ret.children = [
-		a,
-		toks.read!(NodeType.ParamList)
-	];
-	return ret;
+	if (!toks.expect!(TokenType.BracketOpen))
+		return null;
+	if (auto val = toks.read!(NodeType.ParamList))
+		return new Node([a, val]);
+	return null;
 }
 
 private Node readOpIndex(ref Tokenizer toks, Node a){
-	toks.expectThrow!(TokenType.IndexOpen);
-	Node ret = new Node;
-	ret.token = toks.front;
-	ret.children = [
-		a,
-		toks.read!(NodeType.Expression)
-	];
-	// the ending bracket should have been removed by reading NodeType.Expression
-	// so just return
-	return ret;
+	if (!toks.expect!(TokenType.IndexOpen))
+		return null;
+	if (auto val = toks.read!(NodeType.Expression))
+		return new Node([a, val]);
+	return null;
 }
 
 private Node readBinOp(ref Tokenizer toks, Node a){
-	toks.expectThrow!(Hooks!(BinOps!())); // must be a binary operator
-	Node ret = new Node;
-	ret.token = toks.front;
-	toks.popFront;
-	ret.children = [
-		a,
-		toks.read!(NodeType.Expression)
-	];
-	return ret;
+	if (!toks.expect!(Hooks!(BinOps!())))
+		return null;
+	auto token = toks.front;
+	if (auto val = toks.read!(NodeType.Expression))
+		return new Node(token, [a, val]);
+	return null;
 }
 
 private Node readPreOp(ref Tokenizer toks, Node){
-	toks.expectThrow!(Hooks!(PreOps!())); // must be a unary prefix operator
-	Node ret = new Node;
-	ret.token = toks.front;
-	toks.popFront;
-	ret.children = [
-		toks.read!(NodeType.Expression)
-	];
-	return ret;
+	if (!toks.expect!(Hooks!(PreOps!())))
+		return null;
+	auto token = toks.front;
+	if (auto val = toks.read!(NodeType.Expression))
+		return new Node(token, [val]);
+	return null;
 }
 
 private Node readPostOp(ref Tokenizer toks, Node a){
-	toks.expectThrow!(Hooks!(PostOps!()));
-	Node ret = new Node;
-	ret.token = toks.front;
+	if (!toks.expect!(Hooks!(PostNoBinOps!())))
+		return null;
+	auto token = toks.front;
 	toks.popFront;
-	ret.children = [
-		a
-	];
-	return ret;
+	return new Node(token, [a]);
 }
