@@ -250,7 +250,8 @@ private template read(Types...){
 			currContext = Types[0];
 
 			alias func = Builder!(Types[0]);
-			auto ret = func(toks, preceeding);
+			Node ret = func(toks, preceeding);
+			ret.type = Types[0];
 			// restore state
 			currContext = prevContext;
 			prevContext = displaced;
@@ -521,7 +522,8 @@ private Node readScript(ref Tokenizer toks, Node){
 	while (!toks.empty){
 		if (auto val = toks.read!(NodeType.Declaration))
 			ret.children ~= val;
-		return null;
+		else
+			return null;
 	}
 	return ret;
 }
@@ -556,7 +558,7 @@ private Node readDeclaration(ref Tokenizer toks, Node){
 			if (!toks.expectPop!(TokenType.Semicolon))
 				return null;
 		}
-		return new Node([new Node([val])]);
+		return new Node([val]);
 	}
 	return null;
 }
@@ -1450,7 +1452,7 @@ private Node readArrowFunc(ref Tokenizer toks, Node){
 private Node readOpCall(ref Tokenizer toks, Node a){
 	if (!toks.expect!(TokenType.BracketOpen))
 		return null;
-	if (auto val = toks.read!(NodeType.ParamList))
+	if (auto val = toks.read!(NodeType.ArgList))
 		return new Node([a, val]);
 	return null;
 }
