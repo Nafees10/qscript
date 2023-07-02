@@ -367,13 +367,13 @@ public enum NodeType{
 	@(TokenType.Identifier)					Identifier,
 	@(TokenType.LiteralInt)
 		@(TokenType.LiteralHexadecimal)
-		@(TokenType.LiteralBinary)		IntLiteral,
-	@(TokenType.LiteralFloat)				FloatLiteral,
-	@(TokenType.LiteralString)			StringLiteral,
-	@(TokenType.LiteralChar)				CharLiteral,
-	@(TokenType.Null)								NullLiteral,
+		@(TokenType.LiteralBinary)		LiteralInt,
+	@(TokenType.LiteralFloat)				LiteralFloat,
+	@(TokenType.LiteralString)			LiteralString,
+	@(TokenType.LiteralChar)				LiteralChar,
+	@(TokenType.Null)								LiteralNull,
 	@(TokenType.True)
-		@(TokenType.False)						BoolLiteral,
+		@(TokenType.False)						LiteralBool,
 																	ArgList,
 
 	@(TokenType.Trait)							Trait,
@@ -1237,12 +1237,12 @@ private Node readBlock(ref Tokenizer toks, Node){
 private Node readExprUnit(ref Tokenizer toks, Node){
 	if (auto val = toks.read!(
 				NodeType.Identifier,
-				NodeType.IntLiteral,
-				NodeType.FloatLiteral,
-				NodeType.StringLiteral,
-				NodeType.CharLiteral,
-				NodeType.NullLiteral,
-				NodeType.BoolLiteral))
+				NodeType.LiteralInt,
+				NodeType.LiteralFloat,
+				NodeType.LiteralString,
+				NodeType.LiteralChar,
+				NodeType.LiteralNull,
+				NodeType.LiteralBool))
 		return new Node([val]);
 	return null;
 }
@@ -1255,7 +1255,7 @@ private Node readIdentifier(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readIntLiteral(ref Tokenizer toks, Node){
+private Node readLiteralInt(ref Tokenizer toks, Node){
 	if (!toks.expect!(
 				TokenType.LiteralInt,
 				TokenType.LiteralBinary,
@@ -1266,7 +1266,7 @@ private Node readIntLiteral(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readFloatLiteral(ref Tokenizer toks, Node){
+private Node readLiteralFloat(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.LiteralFloat))
 		return null;
 	Node ret = new Node(toks.front);
@@ -1274,7 +1274,7 @@ private Node readFloatLiteral(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readStringLiteral(ref Tokenizer toks, Node){
+private Node readLiteralString(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.LiteralString))
 		return null;
 	Node ret = new Node(toks.front);
@@ -1282,7 +1282,7 @@ private Node readStringLiteral(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readCharLiteral(ref Tokenizer toks, Node){
+private Node readLiteralChar(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.LiteralChar))
 		return null;
 	Node ret = new Node(toks.front);
@@ -1290,7 +1290,7 @@ private Node readCharLiteral(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readNullLiteral(ref Tokenizer toks, Node){
+private Node readLiteralNull(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.Null))
 		return null;
 	Node ret = new Node(toks.front);
@@ -1298,7 +1298,7 @@ private Node readNullLiteral(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readBoolLiteral(ref Tokenizer toks, Node){
+private Node readLiteralBool(ref Tokenizer toks, Node){
 	if (!toks.expect!(
 				TokenType.True,
 				TokenType.False))
