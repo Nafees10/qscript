@@ -92,7 +92,7 @@ private string errorExplainStr(ErrorType type, uint line, uint col, string[] det
 	if (format is null)
 		return null;
 	char[] errStr;
-	errStr = cast(char[]) line.to!string ~ ',' ~ col.to!string ~ ':';
+	errStr = cast(char[]) line.to!string ~ ',' ~ col.to!string ~ ": ";
 	uint i = cast(uint)errStr.length;
 	errStr ~= format;
 
@@ -110,6 +110,28 @@ private string errorExplainStr(ErrorType type, uint line, uint col, string[] det
 	return cast(string)errStr;
 }
 
+/// A value or a compiler error
+public struct CompileResult(T){
+	bool isError;
+	union{
+		T value;
+		CompileError error;
+	}
+	@disable this();
+	this(T value){
+		this.value = value;
+		this.isError = false;
+	}
+	this(CompileError error){
+		this.error = error;
+		this.isError = true;
+	}
+	bool opCast(To : bool)() const pure {
+		return !isError;
+	}
+}
+
+/// A compiler error
 public struct CompileError{
 	ErrorType type = ErrorType.None;
 	uint line, col;

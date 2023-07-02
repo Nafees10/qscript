@@ -30,12 +30,12 @@ int main(string[] args){
 		return 0;
 	}
 
-	Node rootNode;
-	try{
-		rootNode = parseScript(range);
-	}catch (CompileError err){
-		stderr.writeln("error:\n", err);
+	auto result = parseScript(range);
+	if (!result){
+		stderr.writeln("error: ", result.error.msg);
+		return 1;
 	}
+	Node rootNode = result.value;
 	if (rootNode)
 		writeln(rootNode.toJSON.toPrettyString);
 	else

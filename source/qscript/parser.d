@@ -509,8 +509,11 @@ public enum NodeType{
 		@(TokenType.OpBinXorAssign)		OpBinXorAssign,
 }
 
-public Node parseScript(ref Tokenizer toks){
-	return readScript(toks, null);
+public CompileResult!Node parseScript(ref Tokenizer toks){
+	auto ret = readScript(toks, null);
+	if (ret)
+		return CompileResult!Node(ret);
+	return CompileResult!Node(CompileError(ErrorType.SyntaxError, toks.front));
 }
 
 private Node readScript(ref Tokenizer toks, Node){
