@@ -28,7 +28,7 @@ public:
 	}
 
 	this(Node[] children = null){
-		this.children = null;
+		this.children = children;
 	}
 
 	JSONValue toJSON(){
