@@ -1111,8 +1111,7 @@ private Node readWhileStatement(ref Tokenizer toks, Node){
 private Node readDoWhileStatement(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.Do))
 		return null;
-	Node ret;
-	ret.token = toks.front;
+	Node ret = new Node(toks.front);
 	toks.popFront;
 	if (auto val = toks.read!(NodeType.Statement))
 		ret.children = [val, null];
