@@ -263,7 +263,7 @@ private template read(Types...){
 		Node read(ref Tokenizer toks, Node preceeding = null){
 			const auto type = toks.front.type;
 			static foreach (member; Types){
-				static foreach (tokType; getUDAs!(member, TokenType)){
+				static foreach (tokType; getUDAs!(member, TokenType)){{
 					if (type.get!(tokType)){
 						auto branch = toks;
 						auto ret = branch.read!member(preceeding);
@@ -272,7 +272,17 @@ private template read(Types...){
 							return ret;
 						}
 					}
-				}
+				}}
+			}
+			static foreach (member; Types){
+				static if (!hasUDA!(member, TokenType)){{
+					auto branch = toks;
+					auto ret = branch.read!member(preceeding);
+					if (ret !is null){
+						toks = branch;
+						return ret;
+					}
+				}}
 			}
 			return null;
 		}
@@ -1417,6 +1427,7 @@ private Node readBinOp(ref Tokenizer toks, Node a){
 	if (!toks.expect!(Hooks!(BinOps!())))
 		return null;
 	auto token = toks.front;
+	toks.popFront;
 	if (auto val = toks.read!(NodeType.Expression))
 		return new Node(token, [a, val]);
 	return null;
