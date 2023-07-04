@@ -399,7 +399,7 @@ public enum NodeType{
 
 	@Precedence(95)
 		@PreOp
-		@(TokenType.OpRef)						OpRef,
+		@(TokenType.Ref)						OpRef,
 
 	@Precedence(90)
 		@PostOp
@@ -1319,6 +1319,8 @@ private Node readExpression(ref Tokenizer toks, Node){
 		toks = branch;
 		expr = val;
 		createContainer = true;
+		writeln(expr.toJSON.toPrettyString);stdout.flush;
+		readln;
 	}else if (auto val = toks.read!(NodeType.ExprUnit)){
 		expr = val;
 	}else{
