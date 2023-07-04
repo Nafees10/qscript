@@ -346,7 +346,6 @@ public enum NodeType{
 	@(TokenType.Struct)							Struct,
 	@(TokenType.Enum)								Enum,
 	@(TokenType.Alias)							Alias,
-																	DataType,
 																	IndexBracketPair,
 																	TemplateParamList,
 																	TemplateParam,
@@ -390,7 +389,7 @@ public enum NodeType{
 
 	@Precedence(100)
 		@BinOp
-		@(TokenType.OpDot)						DotOp,
+		@(TokenType.OpDot)						OpDot,
 	@Precedence(100)
 		@BinOp
 		@(TokenType.OpIndex)					OpIndex,
@@ -593,7 +592,7 @@ private Node readTemplateFn(ref Tokenizer toks, Node){
 	}
 
 	if (auto vals = toks.readSeq!(
-				NodeType.DataType,
+				NodeType.Expression,
 				NodeType.Identifier,
 				NodeType.TemplateParamList,
 				NodeType.ParamList,
@@ -610,12 +609,16 @@ private Node readTemplateEnum(ref Tokenizer toks, Node){
 	toks.popFront;
 
 	if (auto vals = toks.readSeq!(
-				NodeType.DataType,
+				NodeType.Expression,
 				NodeType.Identifier,
 				NodeType.TemplateParamList))
 		ret.children = vals;
 	else
 		return null;
+
+	// is it just a simple define?
+	if (toks.expectPop!(TokenType.Semicolon))
+		return ret;
 
 	// from here on, there can be a block, or a single OpAssign
 	if (toks.expectPop!(TokenType.OpAssign)){
@@ -679,7 +682,7 @@ private Node readTemplateVar(ref Tokenizer toks, Node){
 	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	if (auto val = toks.read!(NodeType.DataType))
+	if (auto val = toks.read!(NodeType.Expression))
 		ret.children = [val];
 	else
 		return null;
@@ -749,7 +752,7 @@ private Node readFn(ref Tokenizer toks, Node){
 	}
 
 	if (auto vals = toks.readSeq!(
-				NodeType.DataType,
+				NodeType.Expression,
 				NodeType.Identifier,
 				NodeType.ParamList,
 				NodeType.Statement)){
@@ -764,7 +767,7 @@ private Node readVar(ref Tokenizer toks, Node){
 	Node ret = new Node(toks.front);
 	toks.popFront;
 
-	if (auto val = toks.read!(NodeType.DataType))
+	if (auto val = toks.read!(NodeType.Expression))
 		ret.children = [val];
 	else
 		return null;
@@ -821,7 +824,7 @@ private Node readEnum(ref Tokenizer toks, Node){
 	toks.popFront;
 
 	if (auto vals = toks.readSeq!(
-				NodeType.DataType,
+				NodeType.Expression,
 				NodeType.Identifier))
 		ret.children = vals;
 	else
@@ -879,60 +882,6 @@ private Node readAlias(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readDataType(ref Tokenizer toks, Node){
-	// maybe its a ref?
-	if (toks.expect!(TokenType.Ref)){
-		auto token = toks.front;
-		toks.popFront;
-		if (auto val = toks.read!(NodeType.DataType))
-			return new Node(token, [val]);
-		return null;
-	}
-	if (toks.expect!(TokenType.Auto)){ // maybe its auto?
-		auto ret = new Node(toks.front);
-		toks.popFront;
-		return ret; // auto cannot have [] at end, so just return here
-	}
-
-	Node ret;
-	if (toks.expect!(TokenType.Fn)){ // maybe its a fn?
-		auto token = toks.front;
-		toks.popFront;
-		if (auto vals = toks.readSeq!(
-					NodeType.DataType,
-					NodeType.ParamList))
-			ret = new Node(token, vals);
-		else if (auto val = toks.read!(NodeType.ParamList))
-			ret = new Node(token, [val]);
-		else
-			return null;
-	}
-
-	if (toks.expect!(
-				TokenType.Int,
-				TokenType.Float,
-				TokenType.Bool,
-				TokenType.String,
-				TokenType.Char)){
-		ret = new Node(toks.front);
-		toks.popFront;
-	}else{ // fine! its an expression
-		if (auto val = toks.read!(NodeType.Expression))
-			ret = new Node([val]);
-		else
-			return null;
-	}
-
-	// now maybe it has bunch of [] making it an array
-	while (toks.expect!(TokenType.IndexOpen)){
-		if (auto val = toks.read!(NodeType.IndexBracketPair))
-			ret.children ~= val;
-		else
-			return null;
-	}
-	return ret;
-}
-
 private Node readIndexBracketPair(ref Tokenizer toks, Node){
 	auto token = toks.front;
 	if (auto vals = toks.expectSeqPop!(
@@ -963,7 +912,7 @@ private Node readTemplateParam(ref Tokenizer toks, Node){
 	auto branch = toks;
 	Node ret;
 	if (auto vals = branch.readSeq!(
-				NodeType.DataType,
+				NodeType.Expression,
 				NodeType.Identifier)){
 		ret = new Node(vals);
 	}else if (auto val = branch.read!(NodeType.Identifier)){
@@ -996,7 +945,7 @@ private Node readParam(ref Tokenizer toks, Node){
 	// DataType Identifier
 	// DataType
 	Node ret;
-	if (auto val = toks.read!(NodeType.DataType))
+	if (auto val = toks.read!(NodeType.Expression))
 		ret = new Node([val]);
 	else
 		return null;
@@ -1012,7 +961,7 @@ private Node readParam(ref Tokenizer toks, Node){
 	return ret;
 }
 
-/// reads `foo = bar`
+/// reads `foo = bar`, the `= bar` being optional
 private Node readNamedValue(ref Tokenizer toks, Node){
 	Node ret;
 	if (auto val = toks.read!(NodeType.Identifier))
@@ -1020,7 +969,7 @@ private Node readNamedValue(ref Tokenizer toks, Node){
 	else
 		return null;
 	if (!toks.expect!(TokenType.OpAssign))
-		return null;
+		return ret;
 
 	ret.token = toks.front;
 	toks.popFront;
@@ -1242,7 +1191,8 @@ private Node readExprUnit(ref Tokenizer toks, Node){
 				NodeType.LiteralString,
 				NodeType.LiteralChar,
 				NodeType.LiteralNull,
-				NodeType.LiteralBool))
+				NodeType.LiteralBool,
+				NodeType.Trait))
 		return new Node([val]);
 	return null;
 }
@@ -1428,24 +1378,16 @@ private Node readArrowFunc(ref Tokenizer toks, Node){
 	ret.token = toks.front;
 	toks.popFront;
 
-	// (..) -> dataType {..}
-	auto branch = toks;
-	if (auto vals = toks.readSeq!(
-				NodeType.DataType,
-				NodeType.Block)){
-		toks = branch;
-		ret.children ~= vals;
-		return ret;
-	}
-
-	// (..) -> (<expr> or {..})
-	if (auto val = toks.read!(
-				NodeType.Expression,
-				NodeType.Block)){
+	// read data type, or the expression itself
+	if (auto val = toks.read!(NodeType.Expression))
 		ret.children ~= val;
-		return ret;
-	}
-	return null;
+	else
+		return null;
+
+	// and now if the expression above was data type maybe, read the block if any
+	if (auto val = toks.read!(NodeType.Block))
+		ret.children ~= val;
+	return ret;
 }
 
 private Node readOpCall(ref Tokenizer toks, Node a){
