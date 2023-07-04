@@ -1294,12 +1294,16 @@ private Node readTrait(ref Tokenizer toks, Node){
 }
 
 private Node readExpression(ref Tokenizer toks, Node){
+	const uint precedence = precedenceOf(prevContext);
+	bool createContainer = false;
+	auto branch = toks;
+	Node expr;
 	if (toks.expect!(TokenType.BracketOpen, TokenType.IndexOpen)){
 		// so we know which closing bracket to expect
 		bool isIndexBracket = toks.front.type.get!(TokenType.IndexOpen);
 		toks.popFront;
-		Node ret = toks.read!(NodeType.Expression);
-		if (ret is null)
+		expr = toks.read!(NodeType.Expression);
+		if (expr is null)
 			return null;
 		bool closed;
 		if (isIndexBracket)
@@ -1308,14 +1312,7 @@ private Node readExpression(ref Tokenizer toks, Node){
 			closed = toks.expectPop!(TokenType.BracketClose);
 		if (!closed)
 			return null;
-		return ret;
-	}
-
-	const uint precedence = precedenceOf(prevContext);
-	bool createContainer = false;
-	auto branch = toks;
-	Node expr;
-	if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
+	}else if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
 		toks = branch;
 		expr = val;
 		createContainer = true;
