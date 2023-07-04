@@ -1405,6 +1405,12 @@ private Node readOpCall(ref Tokenizer toks, Node a){
 private Node readOpIndex(ref Tokenizer toks, Node a){
 	if (!toks.expect!(TokenType.IndexOpen))
 		return null;
+	auto branch = toks;
+	branch.popFront;
+	if (branch.expectPop!(TokenType.IndexClose)){
+		toks = branch;
+		return new Node([a]);
+	}
 	if (auto val = toks.read!(NodeType.Expression))
 		return new Node([a, val]);
 	return null;
