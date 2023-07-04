@@ -1319,8 +1319,6 @@ private Node readExpression(ref Tokenizer toks, Node){
 		toks = branch;
 		expr = val;
 		createContainer = true;
-		writeln(expr.toJSON.toPrettyString);stdout.flush;
-		readln;
 	}else if (auto val = toks.read!(NodeType.ExprUnit)){
 		expr = val;
 	}else{
@@ -1425,6 +1423,7 @@ private Node readPreOp(ref Tokenizer toks, Node){
 	if (!toks.expect!(Hooks!(PreOps!())))
 		return null;
 	auto token = toks.front;
+	toks.popFront;
 	if (auto val = toks.read!(NodeType.Expression))
 		return new Node(token, [val]);
 	return null;
