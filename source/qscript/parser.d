@@ -397,6 +397,10 @@ public enum NodeType{
 		@BinOp
 		@(TokenType.OpFnCall)					OpCall,
 
+	@Precedence(95)
+		@PreOp
+		@(TokenType.OpRef)						OpRef,
+
 	@Precedence(90)
 		@PostOp
 		@(TokenType.OpInc)						OpPostInc,

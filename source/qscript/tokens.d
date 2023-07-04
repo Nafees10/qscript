@@ -86,6 +86,7 @@ enum TokenType{
 	@Match(`.`)															OpDot,
 	@Match(`[`)															OpIndex,
 	@Match(`(`)															OpFnCall,
+	@Match(`ref`)														OpRef,
 	@Match(`++`)														OpInc,
 	@Match(`--`)														OpDec,
 	@Match(`!`)															OpNot,
