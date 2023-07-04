@@ -251,7 +251,8 @@ private template read(Types...){
 
 			alias func = Builder!(Types[0]);
 			Node ret = func(toks, preceeding);
-			ret.type = Types[0];
+			if (ret !is null)
+				ret.type = Types[0];
 			// restore state
 			currContext = prevContext;
 			prevContext = displaced;
@@ -741,7 +742,7 @@ private Node readTemplateAlias(ref Tokenizer toks, Node){
 }
 
 private Node readFn(ref Tokenizer toks, Node){
-	if (toks.expect!(TokenType.Fn))
+	if (!toks.expect!(TokenType.Fn))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
@@ -783,11 +784,12 @@ private Node readVar(ref Tokenizer toks, Node){
 			return null;
 
 		if (toks.expectPop!(TokenType.OpAssign)){
-			if (auto val = toks.read!(NodeType.Identifier))
+			if (auto val = toks.read!(NodeType.Expression))
 				varNode.children ~= val;
 			else
 				return null;
 		}
+		ret.children ~= varNode;
 
 		if (toks.expectPop!(TokenType.Comma))
 			continue;
@@ -985,7 +987,6 @@ private Node readNamedValue(ref Tokenizer toks, Node){
 }
 
 private Node readStatement(ref Tokenizer toks, Node){
-	auto branch = toks;
 	if (auto val = toks.read!(
 				NodeType.Declaration,
 				NodeType.IfStatement,
@@ -997,7 +998,6 @@ private Node readStatement(ref Tokenizer toks, Node){
 				NodeType.BreakStatement,
 				NodeType.ContinueStatement,
 				NodeType.Block)){
-		toks = branch;
 		return new Node([val]);
 	}
 
