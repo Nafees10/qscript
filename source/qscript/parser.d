@@ -114,7 +114,7 @@ private uint precedenceOf(NodeType type){
 private template Precedences(){
 	alias Precedences = AliasSeq!();
 	static foreach (member; EnumMembers!NodeType)
-		Precedences = AliasSeq!(Precedences, member);
+		Precedences = AliasSeq!(Precedences, PrecedenceOf!member);
 	Precedences = NoDuplicates!Precedences;
 }
 
@@ -399,7 +399,7 @@ public enum NodeType{
 
 	@Precedence(95)
 		@PreOp
-		@(TokenType.Ref)						OpRef,
+		@(TokenType.Ref)							OpRef,
 
 	@Precedence(90)
 		@PostOp
@@ -1333,7 +1333,7 @@ private Node readExpression(ref Tokenizer toks, Node){
 						)));
 		if (!(match & toks.front.type))
 			break;*/
-		if (auto val = branch.readWithPrecedence!(BinOps!(), PostOps!())
+		if (auto val = branch.readWithPrecedence!(PostOps!())
 				(expr, precedence)){
 			toks = branch;
 			createContainer = true;
