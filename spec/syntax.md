@@ -165,6 +165,23 @@ var auto FUNCTION_NAME = () -> TYPE{
 };
 ```
 
+## Default parameters
+
+Default values for parameters can be written as:
+
+```
+fn int sum(int a = 0, int b = 1){...} // valid
+fn int sum(int a, int b = 1){...} // valid
+fn int sum(int a = 0, int b){...} // also valid
+```
+
+While calling a function, to use the default value for a parameter:
+```
+sum(, 1); // default value for a is used
+sum(0, 1); // no default value used
+sum(0); // default value for b used
+```
+
 ## Anonymous Functions
 ```
 fn int sumXTimes(int x, fn int(int) func){
@@ -510,7 +527,7 @@ In case you want to modify the whole array, it can be done like:
 
 ```
 var char someChar = 'a';
-var char[] someString;
+var string someString;
 someString = [someChar, 'b', 'c'] ; # you could've also done someChar + "bc"
 ```
 
@@ -619,62 +636,39 @@ do{
 First the code is executed, then if the condition is `true`, it's executed
 again.
 
-## Foreach:
+## For:
 
-Foreach loops use `iterators` to iterate over members of a value:
+For loops uses `Ranges` to iterate over members of a value:
 
 ```
-for (ITERATOR_VALUE, VALUE; CONTAINER){
-	# do stuff
-	writeln("value at " + ITERATOR_VALUE.toString() + " is " + VALUE.toString());
+var auto data = getStuff();
+for (auto val; data)
+	writeln(val);
+// is equivalent to:
+for (i; RangeOf(data)())
+	writeln(i);
+// is equivalent to:
+auto __range = RangeOf(data);
+while (!__range.empty()){
+	auto i = __range.front();
+	writeln(i);
+	__range.popFront();
 }
 ```
 
-Arrays already have iterators and can be used:
+### Ranges:
+
+A data type `T` can qualify as a range the following functions can be called on
+it:
 
 ```
-var int[] bunchOfNumbers = getABunchOfNumbers();
-for (i, number; bunchOfNumbers)
-	writeln(i.toString() + "th number is " + number.toString());
+T.empty(); // should return true if there are no more values left to pop
+T.front(); // current value
+T.popFront(); // pop current element
 ```
 
-### Iterator:
-
-A container struct can implement iterator by offering the following
-functionality:
-
-```
-struct Container{
-	struct Position{
-		pub fn opIncPre(){ ... }
-	}
-	pub fn ref int opIndex([ref] Position pos) { ... }
-	pub fn Position iteratorStart(){ ... }
-	pub fn bool iteratorValid([ref] Position pos){ ... }
-}
-```
-
-For a container to be iteratable, the following needs to be valid:
-
-* `container.iteratorStart()` should return `something`
-* `container.iteratorValid(something)` should return true if something is valid
-* `container[something]` should return element, or a ref to it to allow writing
-* `++something` should move the `something` to next element
-
-For example, a simple array iteration would be implemented like:
-
-```
-struct ArrayInt{
-	pub var int[] array;
-	pub fn ref int opIndex(int index){
-		return array[index];
-	}
-	pub fn int iteratorStart(){ return 0; }
-	pub fn int iteratorValid(int index){
-		return index >= 0 && index < array.length;
-	}
-}
-```
+Since qscript allows calling a function `f(x)` as `x.f()`, the functions do not
+necessarily have to be member functions.
 
 ## Break & Continue
 A `break;` statement can be used to exit a loop at any point, and a `continue;`
@@ -751,7 +745,9 @@ The function associated with each operator is as follows:
 
 | Operators | Function																|
 |-----------|-----------------------------------------|
-| `.`				|	`T opMemberSelect(Ta a, char[] name)`		|
+| `.`				|	`T opMemberSelect(string name)(Ta a)`		|
+|						|								or												|
+|						|	`T opMemberSelect(Ta a, string name)`		|
 | `a[b]`		|	`T opIndex(Ta a, Tb b)`									|
 | `a(..)`		|	`T opFnCall(Ta a, ..)`									|
 | `a++`			|	`T opIncPost(Ta a)`											|
@@ -817,10 +813,10 @@ The comparison operators are translated as follows:
 The `$if` can be used to determine which branch of code to compile:
 
 ```
-$if (someCompileTimeValue){
-	writeln("someCompileTimeValue was true at compile time");
+$if (platformIsLinux){
+	enum string PlatformName = "Linux";
 }else{
-	writeln("was not");
+	enum string PlatformName = "Other";
 }
 ```
 
@@ -916,7 +912,7 @@ template TypeName(T){
 		enum string TypeName = "int";
 	else $if (T is double)
 		enum string TypeName = "double";
-	else $if (T is char[])
+	else $if (T is string)
 		enum string TypeName = "string";
 	else
 		enum string TypeName = "weird type";
