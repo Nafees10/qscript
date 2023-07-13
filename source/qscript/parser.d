@@ -364,6 +364,7 @@ public enum NodeType{
 																	Param,
 																	NamedValue,
 																	Statement,
+	@(TokenType.Return)							ReturnStatement,
 	@(TokenType.If)									IfStatement,
 	@(TokenType.StaticIf)						StaticIfStatement,
 	@(TokenType.While)							WhileStatement,
@@ -1006,6 +1007,7 @@ private Node readNamedValue(ref Tokenizer toks, Node){
 private Node readStatement(ref Tokenizer toks, Node){
 	if (auto val = toks.read!(
 				NodeType.Declaration,
+				NodeType.ReturnStatement,
 				NodeType.IfStatement,
 				NodeType.StaticIfStatement,
 				NodeType.WhileStatement,
@@ -1021,6 +1023,20 @@ private Node readStatement(ref Tokenizer toks, Node){
 	Node ret;
 	if (auto val = toks.read!(NodeType.Expression))
 		ret = new Node([val]);
+	if (!toks.expectPop!(TokenType.Semicolon))
+		return null;
+	return ret;
+}
+
+private Node readReturnStatement(ref Tokenizer toks, Node){
+	if (!toks.expect!(TokenType.Return))
+		return null;
+	Node ret = new Node(toks.front);
+	toks.popFront;
+	// the return value is optional
+	if (auto val = toks.read!(NodeType.Expression))
+		ret.children = [val];
+	// but the semicolon is must
 	if (!toks.expectPop!(TokenType.Semicolon))
 		return null;
 	return ret;
