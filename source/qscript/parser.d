@@ -46,7 +46,7 @@ public:
 		JSONValue[] sub;
 		foreach (child; children){
 			if (child is null)
-				sub ~= JSONValue(null);
+				sub ~= JSONValue("null");
 			else
 				sub ~= child.toJSON;
 		}
@@ -958,6 +958,7 @@ private Node readParamList(ref Tokenizer toks, Node){
 
 private Node readParam(ref Tokenizer toks, Node){
 	// can be:
+	// DataType Identifier = Expression
 	// DataType Identifier
 	// DataType
 	Node ret;
@@ -969,6 +970,12 @@ private Node readParam(ref Tokenizer toks, Node){
 	if (auto val = branch.read!(NodeType.Identifier)){
 		ret.children ~= val;
 		toks = branch;
+		if (toks.expectPop!(TokenType.OpAssign)){
+			if (auto exp = toks.read!(NodeType.Expression))
+				ret.children ~= exp;
+			else
+				return null;
+		}
 	}
 	if (!toks.expect!(TokenType.BracketClose)){
 		if (!toks.expectPop!(TokenType.Comma))
@@ -1281,14 +1288,22 @@ private Node readArgList(ref Tokenizer toks, Node){
 		return ret;
 
 	while (true){
-		if (auto val = toks.read!(NodeType.Expression))
-			ret.children ~= val;
-		else
-			return null;
-		if (toks.expectPop!(TokenType.BracketClose))
+		Node arg = null;
+		// if not a comma or bracket end, expect expression
+		if (!toks.expect!(TokenType.Comma, TokenType.BracketClose)){
+			arg = toks.read!(NodeType.Expression);
+			if (arg is null)
+				return null;
+		}
+		if (toks.expectPop!(TokenType.BracketClose)){
+			ret.children ~= arg;
 			break;
-		if (!toks.expectPop!(TokenType.Comma))
+		}
+		if (toks.expectPop!(TokenType.Comma)){
+			ret.children ~= arg;
+		}else{
 			return null;
+		}
 	}
 	return ret;
 }
