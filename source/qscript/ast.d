@@ -52,9 +52,17 @@ public:
 	/// Return type (can be null)
 	ExpressionNode retType;
 	/// Parameters
-	ExpressionNode[] params;
+	ParamNode[] parameters;
 	/// body
 	StatementNode statement;
+}
+
+public class ParamNode : ASTNode{
+public:
+	/// data type
+	ExpressionNode dataType;
+	/// name, can be null
+	string name;
 }
 
 public class EnumNode : DeclNode{
@@ -89,8 +97,8 @@ public class TemplateParamNode : ASTNode{
 public:
 	/// Data Type (can be null)
 	ExpressionNode dataType;
-	/// Identifier
-	IdentifierNode ident;
+	/// name
+	string name;
 }
 
 public abstract class StatementNode : ASTNode{}
@@ -139,20 +147,20 @@ public:
 
 public class ForNode : StatementNode{
 public:
-	/// iteration counter, can be null
-	IdentifierNode counter;
-	/// iteration element
-	IdentifierNode iterator;
+	/// iteration counter name, can be null
+	string counter;
+	/// iterator name
+	string iterator;
 	/// range
 	ExpressionNode range;
 }
 
 public class StaticForNode : StatementNode{
 public:
-	/// iteration counter, can be null
-	IdentifierNode counter;
-	/// iteration element
-	IdentifierNode iterator;
+	/// iteration counter name, can be null
+	string counter;
+	/// iterator name
+	string iterator;
 	/// range
 	ExpressionNode range;
 }
@@ -172,12 +180,6 @@ public:
 }
 
 public abstract class ExpressionNode : ASTNode{}
-
-public class IdentifierNode : ExpressionNode{
-public:
-	/// identifier name
-	string name;
-}
 
 public class LiteralIntNode : ExpressionNode{
 public:
@@ -225,12 +227,21 @@ public:
 public class LoadNode : ExpressionNode{
 public:
 	/// module path (a.b.c will be [a,b,c])
-	string[] modPath;
+	string[] modulePath;
+}
+
+public class ArrowParamNode : ASTNode{
+public:
+	/// Data type (can be null)
+	ExpressionNode dataType;
+	/// name
+	string name;
 }
 
 public class ArrowFuncNode : ExpressionNode{
 public:
-
+	/// parameters
+	ArrowParamNode[] params;
 }
 
 public class BinOp : ExpressionNode{
