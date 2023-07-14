@@ -52,7 +52,7 @@ public:
 	/// Return type (can be null)
 	ExpressionNode retType;
 	/// Parameters
-	ParamNode[] params;
+	ExpressionNode[] params;
 	/// body
 	StatementNode statement;
 }
@@ -87,37 +87,74 @@ public:
 
 public class TemplateParamNode : ASTNode{
 public:
-	/// Data Type (optional)
-}
-
-public class ParamNode : ASTNode{
-public:
+	/// Data Type (can be null)
+	ExpressionNode dataType;
+	/// Identifier
+	IdentifierNode ident;
 }
 
 public abstract class StatementNode : ASTNode{}
 
+public class ReturnStatement : StatementNode{
+public:
+	/// return value
+	ExpressionNode value;
+}
+
 public class IfNode : StatementNode{
 public:
+	/// condition
+	ExpressionNode condition;
+	/// statement
+	StatementNode statement;
+	/// else statement
+	StatementNode elseStatement;
 }
 
 public class StaticIfNode : StatementNode{
 public:
+	/// condition
+	ExpressionNode condition;
+	/// statement
+	StatementNode statement;
+	/// else statement
+	StatementNode elseStatement;
 }
 
 public class WhileNode : StatementNode{
 public:
+	/// condition
+	ExpressionNode condition;
+	/// statement
+	StatementNode statement;
 }
 
 public class DoWhileNode : StatementNode{
 public:
+	/// condition
+	ExpressionNode condition;
+	/// statement
+	StatementNode statement;
 }
 
 public class ForNode : StatementNode{
 public:
+	/// iteration counter, can be null
+	IdentifierNode counter;
+	/// iteration element
+	IdentifierNode iterator;
+	/// range
+	ExpressionNode range;
 }
 
 public class StaticForNode : StatementNode{
 public:
+	/// iteration counter, can be null
+	IdentifierNode counter;
+	/// iteration element
+	IdentifierNode iterator;
+	/// range
+	ExpressionNode range;
 }
 
 public class BreakNode : StatementNode{
@@ -130,48 +167,70 @@ public:
 
 public class BlockNode : StatementNode{
 public:
+	/// statements
+	StatementNode[] statements;
 }
 
 public abstract class ExpressionNode : ASTNode{}
 
 public class IdentifierNode : ExpressionNode{
 public:
+	/// identifier name
+	string name;
 }
 
 public class LiteralIntNode : ExpressionNode{
 public:
+	/// integer value
+	ptrdiff_t value;
 }
 
 public class LiteralFloatNode : ExpressionNode{
 public:
+	/// floating point value
+	double value;
 }
 
 public class LiteralStringNode : ExpressionNode{
 public:
+	/// string value
+	string value;
 }
 
 public class LiteralCharNode : ExpressionNode{
 public:
+	/// character value
+	char value;
 }
 
 public class LiteralNullNode : ExpressionNode{
 public:
+	// no members
 }
 
 public class LiteralBoolNode : ExpressionNode{
 public:
+	/// boolean value
+	bool value;
 }
 
 public class TraitNode : ExpressionNode{
 public:
+	/// trait name
+	string name;
+	/// trait parameters
+	ExpressionNode params;
 }
 
 public class LoadNode : ExpressionNode{
 public:
+	/// module path (a.b.c will be [a,b,c])
+	string[] modPath;
 }
 
 public class ArrowFuncNode : ExpressionNode{
 public:
+
 }
 
 public class BinOp : ExpressionNode{
