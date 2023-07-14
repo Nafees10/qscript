@@ -638,7 +638,16 @@ again.
 
 ## For:
 
-For loops uses `Ranges` to iterate over members of a value:
+For loops uses `Ranges` to iterate over members of a value.
+
+A for loop can be written as:
+```
+for (counter, value; range)
+	writeln(counter + 1, "th value is ", value);
+// or
+for (value; range)
+	writeln(value);
+```
 
 ```
 var auto data = getStuff();
