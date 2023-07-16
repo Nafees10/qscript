@@ -695,8 +695,10 @@ is not necessary.
 
 Operators are read in this order (higher = evaluated first):
 
-1. `.`, `[`, `(`
-1. `ref` - this is a special case operator available only in Data Type
+1. `.`
+1. `[`
+1. `ref`, `fn` - these are special cases, available only in Data Type
+1. `(`
 1. `a++`, `a--`
 1. `!a`, `++a`, `--a`
 1. `*`, `/`, `%`
