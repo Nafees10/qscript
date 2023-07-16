@@ -217,11 +217,11 @@ private template Builder(alias Type){
 		alias Builder = __traits(getMember, mixin(__MODULE__),
 				"read" ~ Type.stringof);
 	}else static if (hasUDA!(Type, BinOp)){
-		alias Builder = readBinOp;
+		alias Builder = readBinOp!Type;
 	}else static if (hasUDA!(Type, PreOp)){
-		alias Builder = readPreOp;
+		alias Builder = readPreOp!Type;
 	}else static if (hasUDA!(Type, PostOp)){
-		alias Builder = readPostOp;
+		alias Builder = readPostOp!Type;
 	}
 
 	private bool exists(){
@@ -241,7 +241,7 @@ private template Builder(alias Type){
 private template read(Types...){
 	static if (Types.length == 0){
 		alias read = read!(EnumMembers!NodeType);
-
+		pragma(msg, "noo");
 	}else static if (Types.length == 1){
 		Node read(ref Tokenizer toks, Node preceeding = null){
 			// save state
@@ -393,17 +393,18 @@ public enum NodeType{
 
 	@(TokenType.BracketOpen)				Expression,
 
-	@Precedence(110)
+	@Precedence(999)
 		@PreOp
 		@(TokenType.Load)							LoadExpr,
 
-	@Precedence(100)
+	@Precedence(999)
 		@PreOp // just a hack, its a binary operator IRL
 		@(TokenType.BracketOpen)			ArrowFunc,
 
-	@Precedence(100)
+	@Precedence(110)
 		@BinOp
 		@(TokenType.OpDot)						OpDot,
+
 	@Precedence(100)
 		@BinOp
 		@(TokenType.OpIndex)					OpIndex,
@@ -1492,8 +1493,8 @@ private Node readOpIndex(ref Tokenizer toks, Node a){
 	return null;
 }
 
-private Node readBinOp(ref Tokenizer toks, Node a){
-	if (!toks.expect!(Hooks!(BinOps!())))
+private Node readBinOp(Types...)(ref Tokenizer toks, Node a){
+	if (!toks.expect!(Hooks!(Types)))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
@@ -1502,8 +1503,8 @@ private Node readBinOp(ref Tokenizer toks, Node a){
 	return null;
 }
 
-private Node readPreOp(ref Tokenizer toks, Node){
-	if (!toks.expect!(Hooks!(PreOps!())))
+private Node readPreOp(Types...)(ref Tokenizer toks, Node){
+	if (!toks.expect!(Hooks!(Types)))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
@@ -1512,8 +1513,8 @@ private Node readPreOp(ref Tokenizer toks, Node){
 	return null;
 }
 
-private Node readPostOp(ref Tokenizer toks, Node a){
-	if (!toks.expect!(Hooks!(PostNoBinOps!())))
+private Node readPostOp(Types...)(ref Tokenizer toks, Node a){
+	if (!toks.expect!(Hooks!(Types)))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
