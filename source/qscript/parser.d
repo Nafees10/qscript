@@ -241,7 +241,6 @@ private template Builder(alias Type){
 private template read(Types...){
 	static if (Types.length == 0){
 		alias read = read!(EnumMembers!NodeType);
-		pragma(msg, "noo");
 	}else static if (Types.length == 1){
 		Node read(ref Tokenizer toks, Node preceeding = null){
 			// save state
@@ -393,28 +392,30 @@ public enum NodeType{
 
 	@(TokenType.BracketOpen)				Expression,
 
-	@Precedence(999)
-		@PreOp
+	@PreOp
 		@(TokenType.Load)							LoadExpr,
 
-	@Precedence(999)
-		@PreOp // just a hack, its a binary operator IRL
+	@PreOp // just a hack, its a binary operator IRL
 		@(TokenType.BracketOpen)			ArrowFunc,
 
-	@Precedence(110)
+	@Precedence(120)
 		@BinOp
 		@(TokenType.OpDot)						OpDot,
 
-	@Precedence(100)
+	@Precedence(110)
 		@BinOp
 		@(TokenType.OpIndex)					OpIndex,
+
+	@Precedence(100)
+		@PreOp
+		@(TokenType.Ref)							OpRef,
+	@Precedence(100)
+		@PreOp
+		@(TokenType.Fn)								FnDataType,
+
 	@Precedence(100)
 		@BinOp
 		@(TokenType.OpFnCall)					OpCall,
-
-	@Precedence(95)
-		@PreOp
-		@(TokenType.Ref)							OpRef,
 
 	@Precedence(90)
 		@PostOp
@@ -1469,6 +1470,24 @@ private Node readArrowFunc(ref Tokenizer toks, Node){
 	if (auto val = toks.read!(NodeType.Block))
 		ret.children ~= val;
 	return ret;
+}
+
+private Node readFnDataType(ref Tokenizer toks, Node){
+	if (!toks.expect!(TokenType.Fn))
+		return null;
+	auto token = toks.front;
+	toks.popFront;
+	// if no return type:
+	if (toks.expect!(TokenType.BracketOpen)){
+		if (auto val = toks.read!(NodeType.ParamList))
+			return new Node(token, [val]);
+		return null;
+	}
+	if (auto type = toks.read!(NodeType.Expression)){
+		if (auto params = toks.read!(NodeType.ParamList))
+			return new Node(token, [type, params]);
+	}
+	return null;
 }
 
 private Node readOpCall(ref Tokenizer toks, Node a){
