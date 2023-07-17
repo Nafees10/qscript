@@ -604,7 +604,7 @@ private Node readTemplate(ref Tokenizer toks, Node){
 }
 
 private Node readTemplateFn(ref Tokenizer toks, Node){
-	if (toks.expect!(TokenType.TemplateFn))
+	if (!toks.expect!(TokenType.TemplateFn))
 		return null;
 	auto token = toks.front;
 	toks.popFront;
