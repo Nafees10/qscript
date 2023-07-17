@@ -390,13 +390,15 @@ public enum NodeType{
 
 	@(TokenType.Trait)							Trait,
 
-	@(TokenType.BracketOpen)				Expression,
+																	Expression,
 
 	@PreOp
-		@(TokenType.Load)							LoadExpr,
-
-	@PreOp // just a hack, its a binary operator IRL
 		@(TokenType.BracketOpen)			ArrowFunc,
+	@PreOp
+		@(TokenType.BracketOpen)
+		@(TokenType.IndexOpen)				BracketExpr,
+	@PreOp
+		@(TokenType.Load)							LoadExpr,
 
 	@Precedence(120)
 		@BinOp
@@ -1379,21 +1381,7 @@ private Node readExpression(ref Tokenizer toks, Node){
 	bool createContainer = false;
 	auto branch = toks;
 	Node expr;
-	if (toks.expect!(TokenType.BracketOpen, TokenType.IndexOpen)){
-		// so we know which closing bracket to expect
-		bool isIndexBracket = toks.front.type.get!(TokenType.IndexOpen);
-		toks.popFront;
-		expr = toks.read!(NodeType.Expression);
-		if (expr is null)
-			return null;
-		bool closed;
-		if (isIndexBracket)
-			closed = toks.expectPop!(TokenType.IndexClose);
-		else
-			closed = toks.expectPop!(TokenType.BracketClose);
-		if (!closed)
-			return null;
-	}else if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
+	if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
 		toks = branch;
 		expr = val;
 		createContainer = true;
@@ -1403,14 +1391,8 @@ private Node readExpression(ref Tokenizer toks, Node){
 		return null;
 	}
 
-	// now keep feeding it into proceeding operators until precedence violated
 	while (true){
 		branch = toks;
-		/*Flags!TokenType match = ToFlags!(Hooks!(AliasSeq!(
-						BinOps!(), PostOps!()
-						)));
-		if (!(match & toks.front.type))
-			break;*/
 		if (auto val = branch.readWithPrecedence!(PostOps!())
 				(expr, precedence)){
 			toks = branch;
@@ -1423,27 +1405,6 @@ private Node readExpression(ref Tokenizer toks, Node){
 	if (!createContainer)
 		return expr;
 	return new Node([expr]);
-}
-
-private Node readLoadExpr(ref Tokenizer toks, Node){
-	if (!toks.expect!(TokenType.Load))
-		return null;
-	Node ret = new Node(toks.front);
-	toks.popFront;
-
-	if (!toks.expectPop!(TokenType.BracketOpen))
-		return null;
-	while (true){
-		if (auto val = toks.read!(NodeType.Identifier))
-			ret.children ~= val;
-		else
-			return null;
-		if (toks.expectPop!(TokenType.BracketClose))
-			break;
-		if (!toks.expectPop!(TokenType.BracketClose))
-			return null;
-	}
-	return ret;
 }
 
 private Node readArrowFunc(ref Tokenizer toks, Node){
@@ -1472,6 +1433,56 @@ private Node readArrowFunc(ref Tokenizer toks, Node){
 	return ret;
 }
 
+private Node readBracketExpr(ref Tokenizer toks, Node){
+	if (!toks.expect!(TokenType.BracketOpen, TokenType.IndexOpen))
+		return null;
+	bool isIndexBracket = toks.front.type.get!(TokenType.IndexOpen);
+	auto token = toks.front;
+	toks.popFront;
+	auto val = toks.read!(NodeType.Expression);
+	if (val is null)
+		return null;
+	if ((isIndexBracket && !toks.expectPop!(TokenType.IndexClose)) ||
+			(!isIndexBracket && !toks.expectPop!(TokenType.BracketClose)))
+		return null;
+	return new Node(token, [val]);
+}
+
+private Node readLoadExpr(ref Tokenizer toks, Node){
+	if (!toks.expect!(TokenType.Load))
+		return null;
+	Node ret = new Node(toks.front);
+	toks.popFront;
+
+	if (!toks.expectPop!(TokenType.BracketOpen))
+		return null;
+	while (true){
+		if (auto val = toks.read!(NodeType.Identifier))
+			ret.children ~= val;
+		else
+			return null;
+		if (toks.expectPop!(TokenType.BracketClose))
+			break;
+		if (!toks.expectPop!(TokenType.BracketClose))
+			return null;
+	}
+	return ret;
+}
+
+private Node readOpIndex(ref Tokenizer toks, Node a){
+	if (!toks.expect!(TokenType.IndexOpen))
+		return null;
+	auto branch = toks;
+	branch.popFront;
+	if (branch.expectPop!(TokenType.IndexClose)){
+		toks = branch;
+		return new Node([a]);
+	}
+	if (auto val = toks.read!(NodeType.Expression))
+		return new Node([a, val]);
+	return null;
+}
+
 private Node readFnDataType(ref Tokenizer toks, Node){
 	if (!toks.expect!(TokenType.Fn))
 		return null;
@@ -1494,20 +1505,6 @@ private Node readOpCall(ref Tokenizer toks, Node a){
 	if (!toks.expect!(TokenType.BracketOpen))
 		return null;
 	if (auto val = toks.read!(NodeType.ArgList))
-		return new Node([a, val]);
-	return null;
-}
-
-private Node readOpIndex(ref Tokenizer toks, Node a){
-	if (!toks.expect!(TokenType.IndexOpen))
-		return null;
-	auto branch = toks;
-	branch.popFront;
-	if (branch.expectPop!(TokenType.IndexClose)){
-		toks = branch;
-		return new Node([a]);
-	}
-	if (auto val = toks.read!(NodeType.Expression))
 		return new Node([a, val]);
 	return null;
 }
