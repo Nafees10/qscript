@@ -310,6 +310,12 @@ private Node[] readSeq(Types...)(ref Tokenizer toks, Node preceeding = null){
 ///
 /// Returns: Node or null
 private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks, Node a){
+	debug{
+		stderr.writeln("trying ", [HigherPreced!(P, Types)]);
+		if (a !is null)
+			stderr.writeln("for: ", a.toJSON.toString);
+		stderr.flush;
+	}
 	return toks.read!(HigherPreced!(P, Types))(a);
 }
 
@@ -400,18 +406,18 @@ public enum NodeType{
 	@PreOp
 		@(TokenType.Load)							LoadExpr,
 
-	@Precedence(120)
+	@Precedence(130)
 		@BinOp
 		@(TokenType.OpDot)						OpDot,
 
-	@Precedence(110)
+	@Precedence(120)
 		@BinOp
 		@(TokenType.OpIndex)					OpIndex,
 
-	@Precedence(100)
+	@Precedence(110)
 		@PreOp
 		@(TokenType.Ref)							OpRef,
-	@Precedence(100)
+	@Precedence(110)
 		@PreOp
 		@(TokenType.Fn)								FnDataType,
 
