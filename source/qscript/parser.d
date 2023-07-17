@@ -1484,7 +1484,7 @@ private Node readOpIndex(ref Tokenizer toks, Node a){
 		toks = branch;
 		return new Node([a]);
 	}
-	if (auto val = toks.read!(NodeType.Expression))
+	if (auto val = toks.read!(NodeType.BracketExpr))
 		return new Node([a, val]);
 	return null;
 }
