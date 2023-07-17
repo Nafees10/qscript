@@ -893,7 +893,7 @@ Function templates are defined as regular functions with an extra tuple for
 template parameters:
 
 ```
-$fn bool sum(T)(T a, T b){
+fn bool sum(T)(T a, T b){
 	return a + b;
 }
 // or
@@ -908,7 +908,7 @@ Calling a function template can be done as:
 ```
 var int c = sum(int)(5, 10);
 // or
-var int c = sum(5, 10); // only if declared as $fn bool sym(T)(T a, T b)
+var int c = sum(5, 10);
 ```
 QScript is able to determine what value to use for `T`, only if the former
 declaration (`$fn bool sym(T)(T a, T b)`) is used.
@@ -929,7 +929,7 @@ template TypeName(T){
 		enum string TypeName = "weird type";
 }
 // or
-$enum string TypeName(T) = doSomethingAtCompileTime();
+enum string TypeName(T) = doSomethingAtCompileTime();
 
 fn bool typeIsSupported(T)(){
 	return TypeName(T) != "weird type";
@@ -939,7 +939,7 @@ fn bool typeIsSupported(T)(){
 ## Structs
 
 ```
-$struct Position(T){
+struct Position(T){
 	var T x, y;
 }
 // or
@@ -950,6 +950,38 @@ template Position(T){
 }
 alias PositionDiscrete = Position(int);
 alias PositionContinuous = Position(double);
+```
+
+## Variables
+
+```
+var T foo(T), bar(T);
+fn fnA(){
+	foo!int = 5;
+	foo!string = "hello";
+}
+
+fn fnB(){
+	bar!int = 10;
+	bar!string = " world";
+
+	foo!int += 2;
+}
+
+fn main(){
+	fnA();
+	fnB();
+	writeln(foo!string, bar!string); # "hello world"
+	writeln(foo!int); # 7
+	writeln(bar!int); # 10
+}
+```
+
+## Aliases
+
+```
+alias X(T) = T;
+var X(int) i = 5;
 ```
 
 ---
