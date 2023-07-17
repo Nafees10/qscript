@@ -310,12 +310,6 @@ private Node[] readSeq(Types...)(ref Tokenizer toks, Node preceeding = null){
 ///
 /// Returns: Node or null
 private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks, Node a){
-	debug{
-		stderr.writeln("trying ", [HigherPreced!(P, Types)]);
-		if (a !is null)
-			stderr.writeln("for: ", toks.front);
-		stderr.flush;
-	}
 	return toks.read!(HigherPreced!(P, Types))(a);
 }
 
