@@ -313,7 +313,7 @@ private Node readWithPrecedence(uint P, Types...)(ref Tokenizer toks, Node a){
 	debug{
 		stderr.writeln("trying ", [HigherPreced!(P, Types)]);
 		if (a !is null)
-			stderr.writeln("for: ", a.toJSON.toString);
+			stderr.writeln("for: ", toks.front);
 		stderr.flush;
 	}
 	return toks.read!(HigherPreced!(P, Types))(a);
@@ -944,9 +944,12 @@ private Node readTemplateParam(ref Tokenizer toks, Node){
 				NodeType.Expression,
 				NodeType.Identifier)){
 		ret = new Node(vals);
-	}else if (auto val = branch.read!(NodeType.Identifier)){
-		ret = new Node([val]);
+	}else{
+		branch = toks;
+		if (auto val = branch.read!(NodeType.Identifier))
+			ret = new Node([val]);
 	}
+
 	toks = branch;
 	if (!toks.expect!(TokenType.BracketClose)){
 		if (!toks.expectPop!(TokenType.Comma))
@@ -1387,7 +1390,7 @@ private Node readExpression(ref Tokenizer toks, Node){
 	bool createContainer = false;
 	auto branch = toks;
 	Node expr;
-	if (auto val = branch.readWithPrecedence!(PreOps!())(null, precedence)){
+	if (auto val = branch.read!(PreOps!())){
 		toks = branch;
 		expr = val;
 		createContainer = true;
