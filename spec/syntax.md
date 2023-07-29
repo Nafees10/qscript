@@ -773,8 +773,8 @@ The function associated with each operator is as follows:
 | `-`				|	`T opSubtract(Ta a, Tb b)`							|
 | `<<`			|	`T opBitshiftLeft(Ta a, Tb b)`					|
 | `>>`			|	`T opBitshiftRight(Ta a, Tb b)`					|
-| `==`			|	`int opCmp(Ta a, Tb b)`									|
-| `!=`			|	`int opCmp(Ta a, Tb b)`									|
+| `==`			|	`int opEquals(Ta a, Tb b)`							|
+| `!=`			|	`int opEquals(Ta a, Tb b)`							|
 | `>=`			|	`int opCmp(Ta a, Tb b)`									|
 | `<=`			|	`int opCmp(Ta a, Tb b)`									|
 | `>`				|	`int opCmp(Ta a, Tb b)`									|
@@ -893,7 +893,7 @@ Function templates are defined as regular functions with an extra tuple for
 template parameters:
 
 ```
-fn bool sum(T)(T a, T b){
+$fn bool sum(T)(T a, T b){
 	return a + b;
 }
 // or
@@ -929,9 +929,9 @@ template TypeName(T){
 		enum string TypeName = "weird type";
 }
 // or
-enum string TypeName(T) = doSomethingAtCompileTime();
+$enum string TypeName(T) = doSomethingAtCompileTime();
 
-fn bool typeIsSupported(T)(){
+$fn bool typeIsSupported(T)(){
 	return TypeName(T) != "weird type";
 }
 ```
@@ -939,7 +939,7 @@ fn bool typeIsSupported(T)(){
 ## Structs
 
 ```
-struct Position(T){
+$struct Position(T){
 	var T x, y;
 }
 // or
@@ -955,33 +955,33 @@ alias PositionContinuous = Position(double);
 ## Variables
 
 ```
-var T foo(T), bar(T);
+$var T foo(T), bar(T);
 fn fnA(){
-	foo!int = 5;
-	foo!string = "hello";
+	foo(int) = 5;
+	foo(string) = "hello";
 }
 
 fn fnB(){
-	bar!int = 10;
-	bar!string = " world";
+	bar(int) = 10;
+	bar(string) = " world";
 
-	foo!int += 2;
+	foo(int) += 2;
 }
 
 fn main(){
 	fnA();
 	fnB();
-	writeln(foo!string, bar!string); # "hello world"
-	writeln(foo!int); # 7
-	writeln(bar!int); # 10
+	writeln(foo(string), bar(string)); # "hello world"
+	writeln(foo(int)); # 7
+	writeln(bar(int)); # 10
 }
 ```
 
 ## Aliases
 
 ```
-alias X(T) = T;
-var X(int) i = 5;
+$alias X(T) = T;
+$var X(int) i = 5;
 ```
 
 ---
