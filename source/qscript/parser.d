@@ -344,7 +344,7 @@ enum PostOp;
 public enum NodeType{
 																	Script,
 	@(TokenType.Pub)								Pub,
-	Declaration,
+																	Declaration,
 	@(TokenType.Template)						Template,
 	@(TokenType.TemplateFn)					TemplateFn,
 	@(TokenType.TemplateEnum)				TemplateEnum,
@@ -356,14 +356,11 @@ public enum NodeType{
 	@(TokenType.Struct)							Struct,
 	@(TokenType.Enum)								Enum,
 	@(TokenType.Alias)							Alias,
-																	IndexBracketPair,
-																	TemplateParamList,
+																	Param,
 																	TemplateParam,
 																	ParamList,
-																	ArrowParamList,
-																	Param,
-																	ArrowParam,
-																	NamedValue,
+																	TemplateParamList,
+																	NamedValue, /// used in enum for key/val pair
 																	Statement,
 	@(TokenType.Return)							ReturnStatement,
 	@(TokenType.If)									IfStatement,
@@ -966,20 +963,6 @@ private Node readParamList(ref Tokenizer toks, Node){
 	return ret;
 }
 
-private Node readArrowParamList(ref Tokenizer toks, Node){
-	if (!toks.expect!(TokenType.BracketOpen))
-		return null;
-	Node ret = new Node(toks.front);
-	toks.popFront;
-	while (!toks.expectPop!(TokenType.BracketClose)){
-		if (auto val = toks.read!(NodeType.ArrowParam))
-			ret.children ~= val;
-		else
-			return null;
-	}
-	return ret;
-}
-
 private Node readParam(ref Tokenizer toks, Node){
 	// can be:
 	// DataType Identifier = Expression
@@ -1005,28 +988,6 @@ private Node readParam(ref Tokenizer toks, Node){
 		if (!toks.expectPop!(TokenType.Comma))
 			return null;
 	}
-	return ret;
-}
-
-private Node readArrowParam(ref Tokenizer toks, Node){
-	// can be:
-	// DataType Identifier
-	// Identifier
-	Node ret = new Node;
-	auto branch = toks;
-	if (auto val = branch.read!(NodeType.Expression)){
-		ret.children = [val, null];
-		if (auto name = branch.read!(NodeType.Identifier))
-			ret.children[1] = name;
-		else
-			return null;
-		toks = branch;
-		return ret;
-	}
-	if (auto val = branch.read!(NodeType.Identifier))
-		ret.children = [val];
-	else
-		return null;
 	return ret;
 }
 

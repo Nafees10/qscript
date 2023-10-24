@@ -8,12 +8,12 @@ import qscript.compiler,
 import utils.ds;
 
 /// Generic AST Node
-public abstract class ASTNode{
+public abstract class Node{
 public:
 	/// location in source
 	uint line, col;
 	/// parent node
-	ASTNode parent;
+	Node parent;
 
 	/*abstract JSONValue toJSON() const;
 	final override string toString() const {
@@ -21,13 +21,13 @@ public:
 	}*/
 }
 
-public class ScriptNode : ASTNode{
+public class ScriptNode : Node{
 public:
 	/// declarations
 	DeclNode[] decls;
 }
 
-public abstract class DeclNode : ASTNode{
+public abstract class DeclNode : Node{
 public:
 	/// name
 	string name;
@@ -57,12 +57,18 @@ public:
 	StatementNode statement;
 }
 
-public class ParamNode : ASTNode{
+public class VarNode : DeclNode{
 public:
-	/// data type
-	ExpressionNode dataType;
-	/// name, can be null
-	string name;
+	/// Data type
+	ExpressionNode type;
+	/// variable name to value map (value can be null)
+	ExpressionNode[string] vars;
+}
+
+public class StructNode : DeclNode{
+public:
+	/// declarations
+	DeclNode[] decls;
 }
 
 public class EnumNode : DeclNode{
@@ -73,27 +79,21 @@ public:
 	StatementNode[string] members;
 }
 
-public class StructNode : DeclNode{
-public:
-	/// declarations
-	DeclNode[] decls;
-}
-
-public class VarNode : DeclNode{
-public:
-	/// Data type
-	ExpressionNode type;
-	/// variable name to value map (value can be null)
-	ExpressionNode[string] vars;
-}
-
 public class AliasNode : DeclNode{
 public:
 	/// Expression used to identify what is being aliased
 	ExpressionNode expAliasTo;
 }
 
-public class TemplateParamNode : ASTNode{
+public class ParamNode : Node{
+public:
+	/// data type
+	ExpressionNode dataType;
+	/// name, can be null
+	string name;
+}
+
+public class TemplateParamNode : Node{
 public:
 	/// Data Type (can be null)
 	ExpressionNode dataType;
@@ -101,7 +101,7 @@ public:
 	string name;
 }
 
-public abstract class StatementNode : ASTNode{}
+public abstract class StatementNode : Node{}
 
 public class ReturnStatement : StatementNode{
 public:
@@ -179,7 +179,7 @@ public:
 	StatementNode[] statements;
 }
 
-public abstract class ExpressionNode : ASTNode{}
+public abstract class ExpressionNode : Node{}
 
 public class LiteralIntNode : ExpressionNode{
 public:
@@ -230,7 +230,7 @@ public:
 	string[] modulePath;
 }
 
-public class ArrowParamNode : ASTNode{
+public class ArrowParamNode : Node{
 public:
 	/// Data type (can be null)
 	ExpressionNode dataType;
