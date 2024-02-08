@@ -172,7 +172,7 @@ Default values for parameters can be written as:
 ```
 fn int sum(int a = 0, int b = 1){...} // valid
 fn int sum(int a, int b = 1){...} // valid
-fn int sum(int a = 0, int b){...} // also valid
+fn int sum(int a = 0, int b){...} // invalid
 ```
 
 While calling a function, to use the default value for a parameter:
@@ -186,7 +186,7 @@ sum(0); // default value for b used
 ```
 fn int sumXTimes(int x, fn int(int) func){
 	var int i = 0;
-	var sum
+	var int sum;
 	while (i < x)
 		sum += func(i ++);
 	return sum;
@@ -256,47 +256,25 @@ fn main(){
 }
 ```
 
-### Member Functions
-
-The `.` operator is also used to call member functions of a struct:
-
-```
-struct Position{
-	pub var int x = 0, y = 0;
-	pub fn flipXY(){
-		var int temp = x;
-		x = y;
-		y = temp;
-		writeln("scoped call");
-	}
-}
-fn flipXY(ref Position pos){
-	writeln("global called");
-}
-
-Position pos;
-pos.flipXY(); # prints "scoped call"
-```
-
-### `()` Overloading
+Alternatively, just writing the name of a function will call it, if it has
+either no arguments, or all the arguments were provided using `.` operator:
 
 ```
-struct SomeStruct{
-	var int i;
+fn func(int a, int b){
+	# do stuff
 }
-fn opFnCall(SomeStruct strct, int a){
-	writeln("SomeStruct() called with a = " + toString(a));
-}
-fn main(){
-	var SomeStruct s;
-	s(5); # prints: SomeStruct() called with a = 5
-}
+fn bar(){ ... }
+bar; // will call
+(5, 6).func; // will call
+5.func(6); // is the same as above
 ```
 
-Overloading `()` operator for `function` types is not allowed, as that would
-break a lot of things.
+The one case where this will not result in a function call:
 
-See Operator Overloading section for more details
+```
+var fn() fref;
+fref -> bar; // bar will not be called
+```
 
 ---
 
@@ -359,8 +337,6 @@ writeln(r); # 1
 writeln(i); # 1
 ```
 
-after initialising, a ref cannot be made to reference another variable.
-
 ## `auto` variables
 The `auto` keyword can be combined with others in the following order:
 
@@ -375,27 +351,24 @@ be made `ref`
 
 # Structs
 These can be used to store multiple values of varying or same data types.
+They also act as namespaces.
 
 They are defined like:
 
 ```
 struct STRUCT_NAME{
-	[pub] var DATA_TYPE1 NAME1;
-	[pub] var DATA_TYPE2 NAME2;
-	[pub] var auto print1 = () -> writeln(NAME1);
-	[pub] fn print2(){ writeln(NAME2); }
+	# members go here
 }
 ```
 
-* `STRUCT_NAME` is the name of this struct. This must be unique within the
-	script.
-* `pub` should be prefixed to members to make them publically accessible
-* `DATA_TYPE1` is the data type for the first value.
-* `NAME1` is the name for the first value
+By default, all members inside a struct are private.
 
-Keep in mind that recursive dependency is not possible in structs. However you
-can have an array of the same type inside the struct, as arrays are initialised
-to length 0.
+Members of a struct can be:
+
+* variables - `var TYPE NAME;`
+* static variables - `static var TYPE NAME;`
+* functions - `fn print(){ ... }`
+* static functions - `static fn print(){ ... }`
 
 ## `this` constructor
 Similar to scripts, structs have a constructor that is called after initialising
@@ -486,7 +459,7 @@ pub alias Coordinate = Position; # Coordinate is publically accessible
 Variables can be declared like:
 
 ```
-var [ref] TYPE var0, var1, var2;
+var [static] [ref] TYPE var0, var1, var2;
 ```
 
 * `TYPE` is the data type of the variables, it can be a `char`, `int`,
@@ -593,19 +566,6 @@ else
 # some other code, single statement
 ```
 
-## Nested If Statements
-If statements can also be nested inside other if statements, like:
-
-```
-if (CONDITION)
-	if (OTHER_CONDITION)
-		writeln("OTHER_CONDITION and CONDITION were 1");
-	else
-		writeln("OTHER_CONDITION was 0, CONDITION was 1");
-else
-	writeln("CONDITION was 0");
-```
-
 ---
 
 # Loops
@@ -620,8 +580,7 @@ while (CONDITION){
 }
 ```
 
-As long as `CONDITION` is `true`, `# some code in a loop` is executed. And just
-like if statements, while loops can also be nested
+As long as `CONDITION` is `true`, `# some code in a loop` is executed.
 
 ## Do While:
 
@@ -654,10 +613,10 @@ var auto data = getStuff();
 for (auto val; data)
 	writeln(val);
 // is equivalent to:
-for (i; RangeOf(data)())
+for (i; data.rangeOf)
 	writeln(i);
 // is equivalent to:
-auto __range = RangeOf(data);
+auto __range = rangeOf(data);
 while (!__range.empty()){
 	auto i = __range.front();
 	writeln(i);
@@ -667,8 +626,8 @@ while (!__range.empty()){
 
 ### Ranges:
 
-A data type `T` can qualify as a range the following functions can be called on
-it:
+A data type `T` can qualify as a range if the following functions can be called
+on it:
 
 ```
 T.empty(); // should return true if there are no more values left to pop
@@ -676,8 +635,13 @@ T.front(); // current value
 T.popFront(); // pop current element
 ```
 
-Since qscript allows calling a function `f(x)` as `x.f()`, the functions do not
-necessarily have to be member functions.
+To make a data type `X` iterable, there should exist a function:
+
+```
+fn RangeObjectOfX rangeOf(X){
+	return RangeObjectOfX(X);
+}
+```
 
 ## Break & Continue
 A `break;` statement can be used to exit a loop at any point, and a `continue;`
@@ -686,12 +650,6 @@ will jump to the end of current iteration.
 ---
 
 # Operators
-
-Syntax for binary operators is: `A operator B`. The whitespace between operator
-and A/B is not necessary.
-
-Syntax for unary operators is: `operator A`. Whitespace between operator and A
-is not necessary.
 
 Operators are read in this order (higher = evaluated first):
 
@@ -712,108 +670,47 @@ Operators are read in this order (higher = evaluated first):
 ## Operator Overloading
 Operators are read as functions, and can be overrided same as functions.
 
-Binary operators are translated as:
+operators are translated as:
 
 ```
 a + b;
 // translated to
-a.opAdd(b);
-```
+opBin("+", a, b);
+opBin("+", a)(b); 
+opBinR("+", b)(a); 
+opBin("+")(a, b);
+// they are tried from top to bottom, whichever is found first, is used
 
-And unary operators are translated as:
-
-```
 a ++;
 // translated to
-a.opIncPost();
+opPost("++", a);
+opPost("++")(a);
+
+++ a;
+// translated to
+opPre("++", a);
+opPre("++")(a);
+
+a(...);
+// translated to:
+op("")(...);
+
+a[b];
+// translated to:
+opBin("[]", a, b);
+opBin("[]", a)(b);
+opBinR("[]", b)(a);
+opBin("[]")(a, b);
+
+a.b;
+// translated to:
+opBin(".", a, "b");
 ```
 
-The operands for such functions should ideally be `ref`, however it is not
-necessary.
+`opBin`, `opBinR`, `opPost`, `opPre` must all be templates.
 
-As such, `opAdd` and `opIncPost` for a (assuming it to be of type struct A) can
-be overloaded in following ways:
-
-### Member Function
-```
-struct A{
-	pub fn opAdd(ref A right){ ... }
-	pub fn opIncPost(){ ... }
-}
-```
-
-### Global Scope Function
-```
-fn opAdd(ref A left, ref A right) { ... }
-fn opIncPost(ref A operand) { ... }
-```
-
-## Operator Functions
-
-The function associated with each operator is as follows:
-
-(`Ta`, `Tb`, `T` refers to data types, of `a`,`b`, or return value)
-
-| Operators | Function																|
-|-----------|-----------------------------------------|
-| `.`				|	`T opMemberSelect(string name)(Ta a)`		|
-|						|								or												|
-|						|	`T opMemberSelect(Ta a, string name)`		|
-| `a[b]`		|	`T opIndex(Ta a, Tb b)`									|
-| `a(..)`		|	`T opFnCall(Ta a, ..)`									|
-| `a++`			|	`T opIncPost(Ta a)`											|
-| `a--`			|	`T opDecPost(Ta a)`											|
-| `!`				|	`T opBoolNot(Ta a)`											|
-| `++a`			|	`T opIncPre(Ta a)`											|
-| `--a`			|	`T opDecPre(Ta a)`											|
-| `*`				|	`T opMultiply(Ta a, Tb b)`							|
-| `/`				|	`T opDivide(Ta a, Tb b)`								|
-| `%`				|	`T opMod(Ta a, Tb b)`										|
-| `+`				|	`T opAdd(Ta a, Tb b)`										|
-| `-`				|	`T opSubtract(Ta a, Tb b)`							|
-| `<<`			|	`T opBitshiftLeft(Ta a, Tb b)`					|
-| `>>`			|	`T opBitshiftRight(Ta a, Tb b)`					|
-| `==`			|	`int opEquals(Ta a, Tb b)`							|
-| `!=`			|	`int opEquals(Ta a, Tb b)`							|
-| `>=`			|	`int opCmp(Ta a, Tb b)`									|
-| `<=`			|	`int opCmp(Ta a, Tb b)`									|
-| `>`				|	`int opCmp(Ta a, Tb b)`									|
-| `<`				|	`int opCmp(Ta a, Tb b)`									|
-| `&`				|	`T opBinAnd(Ta a, Tb b)`								|
-| `\|`			|	`T opBinOr(Ta a, Tb b)`									|
-| `^`				|	`T opBinXor(Ta a, Tb b)`								|
-| `&&`			|	`bool opBoolAnd(Ta a, Tb b)`						|
-| `\|\|`		|	`bool opBoolOr(Ta a, Tb b)`							|
-| `=`				|	`T opAssign(Ta a, Tb b)`								|
-| `+=`			|	`T opAddAssign(Ta a, Tb b)`							|
-| `-=`			|	`T opSubtractAssign(Ta a, Tb b)`				|
-| `*=`			|	`T opMultiplyAssign(Ta a, Tb b)`				|
-| `/=`			|	`T opDivideAssign(Ta a, Tb b)`					|
-| `%=`			|	`T opModAssign(Ta a, Tb b)`							|
-| `&=`			|	`T opBinAndAssign(Ta a, Tb b)`					|
-| `\|=`			|	`T opBinOrAssign(Ta a, Tb b)`						|
-| `^=`			|	`T opBinXorAssign(Ta a, Tb b)`					|
-
-the `is`, and `!is` operators are a language feature and do not translate to a
+The `is`, and `!is` operators are a language feature and do not translate to a
 function call.
-
-## `int opCmp(Ta a, Tb b)`
-This function is used to evaluate the `>=`, `<=`, `>`, and `<` operators.
-
-It should return only one of these values:
-
-* `-1` - a is less than b
-* `0` - a is equal to b
-* `1` - a is greater than b
-
-The comparison operators are translated as follows:
-
-|	Expression	|	Compiled Form							|
-|-------------|---------------------------|
-|	`a >= b`		| `opCmp(a, b) !is -1`			|
-|	`a <= b`		| `opCmp(a, b) !is 1`				|
-|	`a > b`			| `opCmp(a, b) is 1`				|
-|	`a < b`			| `opCmp(a, b) is -1`				|
 
 ---
 
@@ -865,16 +762,18 @@ tuple of template parameters:
 template globVar(T){
 	var T globVar;
 }
-fn int getSquare(int x){ return x * x; }
 template square(int x){
 	enum int square = getSquare(x); # function call will be made at compile time
+	fn int getSquare(int x){ return x * x; }
 }
 template sum(T x, T y, T){
 	T sum = x + y;
 }
 ```
 
-Since the template results in a variable with the same identifier as the
+Anything within a template is private.
+
+Since the template results in a variable/enum with the same identifier as the
 template itself, the resulting variable will replace the template whereever
 initialised:
 
@@ -887,13 +786,43 @@ writeln(sum(5.5 + 2)); # prints 7.5
 
 As shown above, templates are initialised similar to a function call
 
+## Conditions
+
+Templates can be tagged with an if condition block, to only initialize if
+it evaluates to true:
+
+```
+template foo(T) if (someCondition(T)){
+	enum string foo = "bar";
+}
+```
+
+Another way to condition a template is through the `:` operator in template
+paramters list:
+
+```
+template typeStr(T : int){
+	enum typeStr = "int";
+}
+template typeStr(T : double){
+	enum typeStr = "double"
+}
+template number(T : (int, double)){
+	alias number = T;
+}
+```
+
 ## Functions
 
 Function templates are defined as regular functions with an extra tuple for
 template parameters:
 
 ```
-$fn bool sum(T)(T a, T b){
+$fn T sum(T)(T a, T b) if (someCondition){
+	return a + b;
+}
+// or
+$fn T sum(T)(T a, T b){
 	return a + b;
 }
 // or
@@ -905,11 +834,13 @@ template sum(T){
 ```
 
 Calling a function template can be done as:
+
 ```
 var int c = sum(int)(5, 10);
 // or
 var int c = sum(5, 10);
 ```
+
 QScript is able to determine what value to use for `T`, only if the former
 declaration (`$fn bool sym(T)(T a, T b)`) is used.
 
@@ -984,6 +915,55 @@ $alias X(T) = T;
 $var X(int) i = 5;
 ```
 
+Aliases can be used to add conditions to other templates, for example:
+
+```
+$alias Number(T) = T if (T is int || T is double)
+
+fn Number sum(Number[] arr){ # this is a function template, acting as a function
+	Number ret;
+	for (value; arr)
+		ret += value;
+	return ret;
+}
+
+sum([1, 2, 3]); # valid
+sum([1, 2.5, 3]); # valid, treated as double[]
+sum(["a", "b"]); # invalid, will not compile
+```
+
+## Sequences
+
+Sequences are compile time "lists" of aliases and/or values (can be mixed).
+
+A sequence can be defined as: `(a, b, c)`
+
+A template can receive a sequence as:
+
+```
+template foo(T...){}
+```
+
+A sequence containing aliases to types can be used to declare a sequence of
+variables:
+
+```
+$fn T[0] sum(T...)(T params){
+	var T[0] ret;
+	$for (val; params)
+		ret += val;
+	return ret;
+}
+```
+
+Length of a sequence can be found through the `length` template:
+
+```
+fn printLength(T...)(){
+	length(T).writeln;
+}
+```
+
 ---
 
 # Traits
@@ -995,7 +975,6 @@ $traitName(...)
 ```
 
 * `assert(condition, error)` - Emits error as a compiler error if !condition
-* `fnIsStatic(symbol)` - true if a symbol is static function
 * `fnRetType(symbol)` - return type of a function
 * `fnArgs(symbol)` - array of names of function arguments
 * `fnArgType(symbol, name)` - argument type of argument with name in function
@@ -1005,6 +984,7 @@ $traitName(...)
 	Works for structs and enums.
 * `canCast(s1, s2)` - whether s1 is castable to s2
 * `typeOf(symbol)` - data type of a symbol
+* `isStatic(symbol)` - true if a symbol is static
 * `isRef(symbol)` - true if a data type is reference
 * `isTemplate(symbol)` - true if a symbol is a template
 * `isFn(symbol)` - true if a symbol is a function
