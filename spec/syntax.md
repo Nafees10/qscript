@@ -918,10 +918,11 @@ $var X(int) i = 5;
 Aliases can be used to add conditions to other templates, for example:
 
 ```
-$alias Number(T) = T if (T is int || T is double)
+$alias Number(T) = T if (T is int || T is double);
+$alias Iterable(T) = T if (isRange(T));
 
-fn Number sum(Number[] arr){ # this is a function template, acting as a function
-	Number ret;
+fn double sum(Iterable(Number) arr){
+	double ret;
 	for (value; arr)
 		ret += value;
 	return ret;
@@ -931,6 +932,9 @@ sum([1, 2, 3]); # valid
 sum([1, 2.5, 3]); # valid, treated as double[]
 sum(["a", "b"]); # invalid, will not compile
 ```
+
+In this case, `sum` is a function template, that is callable on Ranges of
+`int` or `double`.
 
 ## Sequences
 
