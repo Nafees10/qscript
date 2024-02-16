@@ -601,25 +601,27 @@ For loops uses `Ranges` to iterate over members of a value.
 
 A for loop can be written as:
 ```
-for (counter, value; range)
+for (counter; value; range)
 	writeln(counter + 1, "th value is ", value);
 // or
 for (value; range)
 	writeln(value);
 ```
 
+Example:
+
 ```
 var auto data = getStuff();
-for (auto val; data)
+for (val; data)
 	writeln(val);
 // is equivalent to:
-for (i; data.rangeOf)
-	writeln(i);
+for (val; data.rangeOf)
+	writeln(val);
 // is equivalent to:
 auto __range = rangeOf(data);
 while (!__range.empty()){
-	auto i = __range.front();
-	writeln(i);
+	var auto val = __range.front();
+	writeln(val);
 	__range.popFront();
 }
 ```
@@ -676,38 +678,27 @@ operators are translated as:
 a + b;
 // translated to
 opBin("+", a, b);
-opBin("+", a)(b); 
-opBinR("+", b)(a); 
-opBin("+")(a, b);
-// they are tried from top to bottom, whichever is found first, is used
 
 a ++;
 // translated to
 opPost("++", a);
-opPost("++")(a);
 
 ++ a;
 // translated to
 opPre("++", a);
-opPre("++")(a);
 
 a(...);
 // translated to:
-op("")(...);
+opBin("()", a, ...);
 
 a[b];
 // translated to:
 opBin("[]", a, b);
-opBin("[]", a)(b);
-opBinR("[]", b)(a);
-opBin("[]")(a, b);
 
 a.b;
 // translated to:
 opBin(".", a, "b");
 ```
-
-`opBin`, `opBinR`, `opPost`, `opPre` must all be templates.
 
 The `is`, and `!is` operators are a language feature and do not translate to a
 function call.
@@ -748,6 +739,14 @@ $for (num; [0, 5, 4, 2]){{
 	enum square = num * num;
 	writeln(square.toString());
 }}
+```
+
+Since `$for` is evaluated at compile time, it can iterate over sequnces:
+
+```
+$for (num; (0, 5, 4, 2)){
+	num.toString.writeln;
+}
 ```
 
 ---
@@ -812,6 +811,21 @@ template number(T : (int, double)){
 }
 ```
 
+## Inline
+
+A template can be inlined; initialized in the context where it is called. This
+can be done by following any template definition by the `inline` keyword:
+
+```
+inline template foo(){
+	writeln(i);
+}
+fn main(){
+	var int i = 0;
+	foo(); // equivalent to calling `writeln(i)`
+}
+```
+
 ## Functions
 
 Function templates are defined as regular functions with an extra tuple for
@@ -838,7 +852,7 @@ Calling a function template can be done as:
 ```
 var int c = sum(int)(5, 10);
 // or
-var int c = sum(5, 10);
+var int c = sum(5, 10); // T is inferred
 ```
 
 QScript is able to determine what value to use for `T`, only if the former
@@ -849,7 +863,7 @@ declaration (`$fn bool sym(T)(T a, T b)`) is used.
 Templates can be used on compile time constants:
 
 ```
-template TypeName(T){
+template TypeName(T) if ($isType){ // the if (..) is optional
 	$if (T is int)
 		enum string TypeName = "int";
 	else $if (T is double)
@@ -860,7 +874,7 @@ template TypeName(T){
 		enum string TypeName = "weird type";
 }
 // or
-$enum string TypeName(T) = doSomethingAtCompileTime();
+$enum string TypeName(T) if ($isType(T)) = doSomethingAtCompileTime();
 
 $fn bool typeIsSupported(T)(){
 	return TypeName(T) != "weird type";
@@ -870,7 +884,7 @@ $fn bool typeIsSupported(T)(){
 ## Structs
 
 ```
-$struct Position(T){
+$struct Position(T) if ($isNumber(T)){
 	var T x, y;
 }
 // or
@@ -887,23 +901,21 @@ alias PositionContinuous = Position(double);
 
 ```
 $var T foo(T), bar(T);
-fn fnA(){
+fn setFoo(){
 	foo(int) = 5;
 	foo(string) = "hello";
 }
 
-fn fnB(){
+fn setBar(){
 	bar(int) = 10;
 	bar(string) = " world";
-
-	foo(int) += 2;
 }
 
 fn main(){
-	fnA();
-	fnB();
+	setFoo();
+	setBar();
 	writeln(foo(string), bar(string)); # "hello world"
-	writeln(foo(int)); # 7
+	writeln(foo(int)); # 5
 	writeln(bar(int)); # 10
 }
 ```
@@ -918,8 +930,8 @@ $var X(int) i = 5;
 Aliases can be used to add conditions to other templates, for example:
 
 ```
-$alias Number(T) = T if (T is int || T is double);
-$alias Iterable(T) = T if (isRange(T));
+$alias Number(T) if (T is int || T is double) = T;
+$alias Iterable(T) if (isRange(T)) = T;
 
 fn double sum(Iterable(Number) arr){
 	double ret;
