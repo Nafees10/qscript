@@ -759,28 +759,27 @@ tuple of template parameters:
 ```
 // an overly complicated way to create global variables of a type
 template globVar(T){
-	var T globVar;
+	var T this;
 }
 template square(int x){
-	enum int square = getSquare(x); # function call will be made at compile time
+	enum int this = getSquare(x); # function call will be made at compile time
 	fn int getSquare(int x){ return x * x; }
 }
 template sum(T x, T y, T){
-	T sum = x + y;
+	enum T this = x + y;
 }
 ```
 
 Anything within a template is private.
 
-Since the template results in a variable/enum with the same identifier as the
-template itself, the resulting variable will replace the template whereever
-initialised:
+Since the enums inside the template are named `this`, the resulting enum
+will replace the template whereever initialised:
 
 ```
 globVar(int) = 5;
 writeln(globVar(int)); # prints 5
 writeln(square(5)); # prints 25
-writeln(sum(5.5 + 2)); # prints 7.5
+writeln(sum(5.5, 2)); # prints 7.5
 ```
 
 As shown above, templates are initialised similar to a function call
@@ -792,7 +791,7 @@ it evaluates to true:
 
 ```
 template foo(T) if (someCondition(T)){
-	enum string foo = "bar";
+	enum string this = "bar";
 }
 ```
 
@@ -801,28 +800,29 @@ paramters list:
 
 ```
 template typeStr(T : int){
-	enum typeStr = "int";
+	enum string this = "int";
 }
 template typeStr(T : double){
-	enum typeStr = "double"
+	enum string this = "double"
 }
 template number(T : (int, double)){
-	alias number = T;
+	alias this = T;
 }
 ```
 
-## Inline
+## Mixin
 
-A template can be inlined; initialized in the context where it is called. This
-can be done by following any template definition by the `inline` keyword:
+A template can be mixin'd; initialized in the context where it is called. This
+can be done by following any template definition by the `mixin` keyword:
 
 ```
-inline template foo(){
+mixin template foo(){
 	writeln(i);
 }
 fn main(){
-	var int i = 0;
-	foo(); // equivalent to calling `writeln(i)`
+	var int i = 5;
+	foo(); // equivalent to calling `writeln(i)` right here
+				 // prints 5
 }
 ```
 
@@ -841,7 +841,7 @@ $fn T sum(T)(T a, T b){
 }
 // or
 template sum(T){
-	fn T sum(T a, T b){
+	fn T this(T a, T b){
 		return a + b;
 	}
 }
@@ -865,13 +865,13 @@ Templates can be used on compile time constants:
 ```
 template TypeName(T) if ($isType){ // the if (..) is optional
 	$if (T is int)
-		enum string TypeName = "int";
+		enum string this = "int";
 	else $if (T is double)
-		enum string TypeName = "double";
+		enum string this = "double";
 	else $if (T is string)
-		enum string TypeName = "string";
+		enum string this = "string";
 	else
-		enum string TypeName = "weird type";
+		enum string this = "weird type";
 }
 // or
 $enum string TypeName(T) if ($isType(T)) = doSomethingAtCompileTime();
@@ -889,7 +889,7 @@ $struct Position(T) if ($isNumber(T)){
 }
 // or
 template Position(T){
-	struct Position{
+	struct this{
 		var T x, y;
 	}
 }
