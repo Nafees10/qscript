@@ -927,26 +927,37 @@ $alias X(T) = T;
 $var X(int) i = 5;
 ```
 
-Aliases can be used to add conditions to other templates, for example:
+Alias templates can be used to create type qualifiers. When an alias template
+`foo(...)` is used as a Data Type, QScript will check if `foo(T)` evaluates to
+`T`. If it does, `T` is a `foo` qualified type:
 
 ```
 $alias Number(T) if (T is int || T is double) = T;
-$alias Iterable(T) if (isRange(T)) = T;
 
-fn double sum(Iterable(Number) arr){
-	double ret;
-	for (value; arr)
-		ret += value;
-	return ret;
+fn double square(Number x){
+	return x * x;
 }
 
-sum([1, 2, 3]); # valid
-sum([1, 2.5, 3]); # valid, treated as double[]
-sum(["a", "b"]); # invalid, will not compile
+square(5); // 25.0
+square(5.5); // 30.25
+square("a"); // compiler error
 ```
 
-In this case, `sum` is a function template, that is callable on Ranges of
-`int` or `double`.
+Another example:
+
+```
+$alias Number(T) if (T is int || T is double) = T;
+template Iterable(BaseType){
+	$alias this(T) if ($isRange(T) && $rangeType(T) is BaseType) = T;
+}
+
+fn double sum(Iterable(Number) numbers){
+	double ret;
+	for (num; numbers)
+		ret += num;
+	return ret;
+}
+```
 
 ## Sequences
 
