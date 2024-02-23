@@ -993,12 +993,12 @@ fn printLength(T...)(){
 
 ---
 
-# Traits
+# Macros
 
-Compiler directives, written as:
+Compiler macros, written as:
 
 ```
-$traitName(...)
+$traitName(args...)
 ```
 
 * `assert(condition, error)` - Emits error as a compiler error if !condition
