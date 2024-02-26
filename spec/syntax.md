@@ -677,31 +677,52 @@ operators are translated as:
 ```
 a + b;
 // translated to
-opBin("+", a, b);
+opBin("+")(a, b);
 
 a ++;
 // translated to
-opPost("++", a);
+opPost("++")(a);
 
 ++ a;
 // translated to
-opPre("++", a);
+opPre("++")(a);
 
 a(...);
 // translated to:
-opBin("()", a, ...);
+opBin("()")(a, ...);
 
 a[b];
 // translated to:
-opBin("[]", a, b);
+opBin("[]")(a, b);
 
 a.b;
 // translated to:
-opBin(".", a, "b");
+opBin(".", "b")(a);
 ```
 
 The `is`, and `!is` operators are a language feature and do not translate to a
 function call.
+
+Example:
+
+```
+struct A{}
+struct B{}
+$fn int opBin(string op : "+", aType : A, bType : B)(aType a, bType B){
+	return 5;
+}
+$fn opBin(string op : "()", T : A, ParamT...)(T a, ParamT params){
+	writeln("A called with params: ", params);
+}
+$fn $typeof(T.$member(b)) opBin(string op : ".", string b, T : A)(T a){
+	return $member(a, b);
+}
+```
+
+## Casting
+
+QScript does explicit, and implicit casting. Implicit casting is implemented
+through `T opImplicitCast(T, a)`.
 
 ---
 
@@ -998,8 +1019,10 @@ fn printLength(T...)(){
 Compiler macros, written as:
 
 ```
-$traitName(args...)
+$macroName(args...)
 ```
+
+_Note: list is incomplete_
 
 * `assert(condition, error)` - Emits error as a compiler error if !condition
 * `fnRetType(symbol)` - return type of a function
@@ -1009,7 +1032,8 @@ $traitName(args...)
 	symbol. Works for structs and enums.
 * `member(symbol, nameStr)` - returns member with name=nameStr in symbol.
 	Works for structs and enums.
-* `canCast(s1, s2)` - whether s1 is castable to s2
+* `canImplicitCast(s1, s2)` - whether s1 can be implicitly casted to s2
+* `canCast(s1, s2)` - whether s1 can be casted to s2 (implicitly or explicitly)
 * `typeOf(symbol)` - data type of a symbol
 * `isStatic(symbol)` - true if a symbol is static
 * `isRef(symbol)` - true if a data type is reference
