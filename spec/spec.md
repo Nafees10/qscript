@@ -1,7 +1,5 @@
 **currently WIP and not finalised**
 
-TODO: reorganize the sections in this
-
 # QScript Language Reference
 
 # Comments
@@ -33,83 +31,6 @@ comment
 ```
 
 ---
-
-// TODO move this after structs
-# Modules
-
-The `load` keyword can be used to instantiate a module.
-A module is similar to a struct, except:
-
-1. only 1 instannce of a module can exist, created the first time `load` is
-	called
-2. private members inside a module are not accessible outside
-
-```
-# file debug.qs
-var string prefix = "debug: ";
-pub var auto log = (string msg) -> { ... };
-
-# file main.qs:
-var auto logger = load(debug);
-pub fn this(){
-	logger.log("started");
-	logger.prefix.writeln; # compiler error, prefix not accessible
-};
-```
-
-is equivalent to:
-
-```
-# file main.qs:
-module Logger{
-	var string prefix = "debug: ";
-	pub var auto log = (string msg) -> { ... };
-}
-
-var Logger logger;
-fn this(){
-	logger.log("started");
-	logger.prefix.writeln; # compiler error, prefix not accessible
-}
-```
-
-In the first case, the `load(debug)` statement creates an instance of the
-`debug.qs` module, and returns it.
-
-assigning a "namespace" of sorts as shown above is not necessary, a library can
-be loaded so that its symbols become accessible as global symbols:
-
-```
-load(debug);
-```
-
-This will create an instance of debug and merge it's public symbols with
-current module.
-
-Similarly, a module can be loaded and all it's public symbols made public:
-
-```
-pub load(debug);
-```
-
-if a module is `load`-ed multiple times, instance is created only once,
-succeeding `load`s return the same instance.
-
----
-
-// TODO: move this after module and struct
-# Visibility
-
-All members are by default private, and only accessible inside current scope.
-
-The `pub` keyword can be prefixed to make a member public:
-
-```
-pub struct SomeStruct{
-	var int someInt, someOtherInt; # these data members are private
-	pub var int x; # this is public
-}
-```
 
 # Functions
 
@@ -441,6 +362,10 @@ struct Position{ # struct is private
 pub alias Coordinate = Position; # Coordinate is publically accessible
 ```
 
+// TODO: think of syntax for promoting types:
+`alias idInd = int;` How will runtime condition be defined for when an int is a
+valid idInt?
+
 ---
 
 # Variables
@@ -516,6 +441,106 @@ Varible `i` and `count` are accessible throughout the function. Variable `j` is
 accessible only inside the `while` block. Variable `someGlobalVar` is declared
 outside any function, so it is available to all functions defined inside the
 module, as it is `private`.
+
+---
+
+# Modules
+
+Each file is a module.
+
+The `load` keyword can be used to instantiate a module.
+A module is similar to a struct, except:
+
+1. only 1 instannce of a module can exist, created the first time `load` is
+	called
+2. private members inside a module are not accessible outside
+
+```
+# file debug.qs
+var string prefix = "debug: ";
+pub var auto log = (string msg) -> { ... };
+
+# file main.qs:
+var auto logger = load(debug);
+pub fn this(){
+	logger.log("started");
+	logger.prefix.writeln; # compiler error, prefix not accessible
+};
+```
+
+is equivalent to:
+
+```
+# file main.qs:
+module Logger{
+	var string prefix = "debug: ";
+	pub var auto log = (string msg) -> { ... };
+}
+
+var Logger logger;
+fn this(){
+	logger.log("started");
+	logger.prefix.writeln; # compiler error, prefix not accessible
+}
+```
+
+In the first case, the `load(debug)` statement creates an instance of the
+`debug.qs` module, and returns it.
+
+assigning a "namespace" of sorts as shown above is not necessary, a library can
+be loaded so that its symbols become accessible as global symbols:
+
+```
+load(debug);
+```
+
+This will create an instance of debug and merge it's public symbols with
+current module.
+
+Similarly, a module can be loaded and all it's public symbols made public:
+
+```
+pub load(debug);
+```
+
+if a module is `load`-ed multiple times, instance is created only once,
+succeeding `load`s return the same instance.
+
+# Visibility
+
+All members are by default private, and only accessible inside current scope.
+
+The `pub` keyword can be prefixed to make a member public:
+
+```
+pub struct SomeStruct{
+	var int someInt, someOtherInt; # these data members are private
+	pub var int x; # this is public
+}
+```
+
+private applies at module level. For example:
+
+```
+# file coord.qs
+pub struct Coord{
+	var int x, y; # private
+	this (int x, int y){
+		this.x = x;
+		this.y = y;
+	}
+}
+pub Coord right(Coord c){
+	return Coord(c.x + 1, c.y); # Coord.x Coord.y accessible inside module
+}
+
+# file app.qs
+load(coord);
+pub fn main(){
+	var Coord c;
+	c.x = 5; # compiler error, Coord.x is private
+}
+```
 
 ---
 
@@ -722,7 +747,7 @@ $fn $typeof(T.$member(b)) opBin(string op : ".", string b, T : A)(T a){
 ## Casting
 
 QScript does explicit, and implicit casting. Implicit casting is implemented
-through `T opImplicitCast(T, a)`.
+through `T opCast(To)(val)`.
 
 ---
 
