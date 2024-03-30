@@ -1,10 +1,11 @@
-Note: this is currently WIP and not finalised
+**currently WIP and not finalised**
 
 TODO: reorganize the sections in this
 
 # QScript Language Reference
 
 # Comments
+
 Comments can be added using the `#` character or `//`.
 Anything following a `#` or `//` is ignored by compiler as a comment.
 
@@ -19,7 +20,7 @@ fn main(){ # This is a comment
 ```
 
 Multi line comments can be written by enclosing them in between `/*` and `*/`
-like: 
+like:
 
 ```
 /*
@@ -33,39 +34,47 @@ comment
 
 ---
 
-# Loading external scripts/libraries
-The `load` keyword can be used to create an instance of an existing script.
-A script is similar to a struct:
+// TODO move this after structs
+# Modules
+
+The `load` keyword can be used to instantiate a module.
+A module is similar to a struct, except:
+
+1. only 1 instannce of a module can exist, created the first time `load` is
+	called
+2. private members inside a module are not accessible outside
 
 ```
-debug.qscript:
-	var string prefix = "debug: ";
-	pub var auto log = (string msg) -> { ... };
+# file debug.qs
+var string prefix = "debug: ";
+pub var auto log = (string msg) -> { ... };
 
-main.qscript:
-	var auto logger = load(debug);
-	pub var auto this = () -> {
-		logger.log("started");
-	};
+# file main.qs:
+var auto logger = load(debug);
+pub fn this(){
+	logger.log("started");
+	logger.prefix.writeln; # compiler error, prefix not accessible
+};
 ```
 
 is equivalent to:
 
 ```
-main.qscript:
-	struct SomeInaccessibleType{
-		var string prefix = "debug: ";
-		pub var auto log = (string msg) -> { ... };
-	}
+# file main.qs:
+module Logger{
+	var string prefix = "debug: ";
+	pub var auto log = (string msg) -> { ... };
+}
 
-	var SomeInaccessibleType logger;
-	fn this(){
-		logger.log("started");
-	}
+var Logger logger;
+fn this(){
+	logger.log("started");
+	logger.prefix.writeln; # compiler error, prefix not accessible
+}
 ```
 
 In the first case, the `load(debug)` statement creates an instance of the
-`debug.qscript` script, and returns it.
+`debug.qs` module, and returns it.
 
 assigning a "namespace" of sorts as shown above is not necessary, a library can
 be loaded so that its symbols become accessible as global symbols:
@@ -74,30 +83,28 @@ be loaded so that its symbols become accessible as global symbols:
 load(debug);
 ```
 
-This will create an instance of debug and merge it's symbols with current
-script.
+This will create an instance of debug and merge it's public symbols with
+current module.
 
-Similarly, a script can be loaded and all it's public symbols made public:
+Similarly, a module can be loaded and all it's public symbols made public:
 
 ```
 pub load(debug);
 ```
 
-if a script/library is `load`-ed multiple times, instance is created only once,
+if a module is `load`-ed multiple times, instance is created only once,
 succeeding `load`s return the same instance.
 
 ---
 
+// TODO: move this after module and struct
 # Visibility
-All script members are by default private, and only accessible inside the
-script.
+
+All members are by default private, and only accessible inside current scope.
 
 The `pub` keyword can be prefixed to make a member public:
 
 ```
-fn somePrivateFunction(int arg){
-	# body of private function
-}
 pub struct SomeStruct{
 	var int someInt, someOtherInt; # these data members are private
 	pub var int x; # this is public
@@ -105,64 +112,34 @@ pub struct SomeStruct{
 ```
 
 # Functions
+
 QScript has first class functions. Functions can be assigned to a variable
 (of appropriate type), or passed as an argument, they behave as normal
 variables.
 
-## Function Data Type
-To create a variable that can store a function:
-
-```
-var fn RETURN_TYPE(arg0_type, arg1_type, ..) someFunc;
-// or
-var auto someFunc = someExistingFunction; // assignmment necessary here
-```
-
-following this, the function can be called using the `(..)` operator:
-
-```
-someFunc(arg0, arg1);
-```
-
-The Function Data Type is a reference data type, annotating it with a `ref` is
-not necessary, and not allowed.
-
 ## Function Definition
+
 ```
-[pub] fn [ref] [RETURN_TYPE] FUNCTION_NAME(
-		[ref] arg0_type arg0,
-		[ref] arg1_type arg1){
+[pub] fn [RETURN_TYPE] FUNCTION_NAME(
+		[@]arg0_type arg0,
+		[@]arg1_type arg1){
 	# function body
 }
-// or
-[pub] var auto FUNCTION_NAME = (
-		[ref] arg0_type arg0,
-		[ref] arg1_type arg1) -> [RETURN_TYPE]{
-	# function body
-};
 ```
 
 * `pub` (optional) will make the function public
-* `ref` (optional) will make it so parameters/return is passed by reference not
-	value
 * `RETURN_TYPE` (optional) is the return type of this function.
+* `@` (optional) for pass by reference
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
 * more arguments can be added, and are to be separated by a comma.
-
-_Note that the `ref` part of return type is not a property of the function,
-but rather a part of the return data type._
 
 A function without any arguments would be defined like:
 ```
 fn [TYPE] FUNCTION_NAME(){
 	# function body
 }
-# or
-var auto FUNCTION_NAME = () -> TYPE{
-	# function body
-};
 ```
 
 ## Default parameters
@@ -183,6 +160,7 @@ sum(0); // default value for b used
 ```
 
 ## Anonymous Functions
+
 ```
 fn int sumXTimes(int x, fn int(int) func){
 	var int i = 0;
@@ -192,14 +170,17 @@ fn int sumXTimes(int x, fn int(int) func){
 	return sum;
 }
 sumXTimes(5, (num) -> num * 5);
+
 # is equivalent to:
 sumXTimes(5, (int num) -> {return num * 5;});
+
 # is equivalent to:
 fn mul5(int num){ return num * 5; }
-sumXTimes(5, mul5);
+sumXTimes(5, @mul5);
 ```
 
 ## Returning From Functions
+
 A return statement can be used to return a value from the function. The type of
 the return value, and the return type of the function must match.
 A return statement is written as following:
@@ -231,6 +212,7 @@ fn main(){
 ```
 
 ## Function Calls
+
 Function calls are made through the `()` operator like:
 
 ```
@@ -243,16 +225,19 @@ or in case of no arguments:
 fnName();
 ```
 
-The first argument to a function call can also be passed using the `.` operator:
+The first argument(s) to a function call can also be passed using the `.`
+operator:
 
 ```
-fn int square(int i){
-	return i * i;
+fn int sum(int a, int b){
+	return a + b;
 }
+
 fn main(){
-	writeln(square(5)); # is same as following
-	writeln(5.square); # writes 25
-	# () operator not needed in this case
+	writeln(sum(5, 5)); # is same as following
+	writeln(5.sum(5)); # is same as following
+	writeln((5, 5).sum()); # is same as following
+	writeln((5, 5).sum); # writes 25
 }
 ```
 
@@ -279,6 +264,7 @@ fref -> bar; // bar will not be called
 ---
 
 # Data Types
+
 QScript has these basic data types:
 
 * `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
@@ -287,10 +273,11 @@ QScript has these basic data types:
 * `bool` - a `true` or `false` (Dlang `bool`)
 * `auto` - in above examples, `auto` can be substituted for `X` in cases where
 	inline assignment occers and compiler is able to detect intended type.
-* `ref X` - reference to any of the above (behaves the same as `X` alone would)
-* `fn ...(...)` - a Function Data Type (see above)
+* `@X` - reference to any of the above (behaves the same as `X` alone would)
+* `@fn ...(...)` - reference to a function
 
 ## `int`
+
 This can be written as series (or just one) digit(s).
 
 Can be written as:
@@ -302,12 +289,14 @@ Can be written as:
 `int` is initialised as `0`.
 
 ## `double`
+
 Digits with a single `.` between them is read as a double.
 `5` is an int, but `5.0` is a double.
 
 `double`s are initialised as `0.0`
 
 ## `char`
+
 This is written by enclosing a single character within a pair of apostrophes:
 
 `'c'` for example, or `'\t'` tab character.
@@ -315,20 +304,22 @@ This is written by enclosing a single character within a pair of apostrophes:
 initialised as ascii code `0`
 
 ## `bool`
+
 A `true` (1) or a `false` (0).
 
 While casting from `int`, a non zero value is read as a `true`, zero as `false`.
 
 initialised as `false`
 
-## `ref` references
+## `@X` references
+
 These are aliases to actual variables.
-a `ref` is initialised to be `null`, and can be pointed to some data using the
-`->` operator.
+a reference is initialised to be `null`, and can be pointed to some data using
+the `->` operator.
 
 ```
 int i = 0;
-var ref int r; // initialised to null
+var @int r; // initialised to null
 if (r is null)
 	writeln("r is null");
 r -> i;
@@ -338,18 +329,18 @@ writeln(i); # 1
 ```
 
 ## `auto` variables
+
 The `auto` keyword can be combined with others in the following order:
 
 ```
-var [ref] auto
+var auto x = something;
+var @auto y -> something;
 ```
-
-This is necessary since the `auto` detection will not pick up whether it should
-be made `ref`
 
 ---
 
 # Structs
+
 These can be used to store multiple values of varying or same data types.
 They also act as namespaces.
 
@@ -371,8 +362,6 @@ Members of a struct can be:
 * static functions - `static fn print(){ ... }`
 
 ## `this` constructor
-Similar to scripts, structs have a constructor that is called after initialising
-variables:
 
 ```
 struct Position{
@@ -391,6 +380,7 @@ struct Position{
 ---
 
 # Enums
+
 Enum can be used to group together constants of the same base data type.
 
 Enums are defined like:
@@ -456,10 +446,11 @@ pub alias Coordinate = Position; # Coordinate is publically accessible
 # Variables
 
 ## Variable Declaration
+
 Variables can be declared like:
 
 ```
-var [static] [ref] TYPE var0, var1, var2;
+var [static] TYPE var0, var1, var2;
 ```
 
 * `TYPE` is the data type of the variables, it can be a `char`, `int`,
@@ -505,7 +496,8 @@ someString = [someChar, 'b', 'c'] ; # you could've also done someChar + "bc"
 ```
 
 ## Variable Scope
-Variables are only available inside the "scope" they are declared in.
+
+Variables are only available inside the scope they are declared in.
 In the code below:
 
 ```
@@ -522,18 +514,20 @@ public fn main(int count){
 
 Varible `i` and `count` are accessible throughout the function. Variable `j` is
 accessible only inside the `while` block. Variable `someGlobalVar` is declared
-outside any function, so it is available to all functions defined _inside_ the
-script, as it is `private`.
+outside any function, so it is available to all functions defined inside the
+module, as it is `private`.
 
 ---
 
 # Shadowing
-In case an identifier matches with a library, and with one defined in script,
-the one declared in the script will be preferred.
+
+In case an identifier matches with a library, and with one defined in module,
+the one declared in the module will be preferred.
 
 ---
 
 # If Statements
+
 If statements are written like:
 
 ```
@@ -557,15 +551,6 @@ else
 	# some other code, single statement
 ```
 
-Indentation is not necessary, it can be written like:
-
-```
-if (CONDITION)
-# some code, single statement
-else
-# some other code, single statement
-```
-
 ---
 
 # Loops
@@ -575,7 +560,7 @@ else
 While loops are written like:
 
 ```
-while (CONDITION){
+while (CONDITION) {
 	# some code in a loop
 }
 ```
@@ -587,9 +572,9 @@ As long as `CONDITION` is `true`, `# some code in a loop` is executed.
 Do while loops are writen like:
 
 ```
-do{
+do {
 	# some code in a loop
-}while (CONDITION);
+} while (CONDITION);
 ```
 
 First the code is executed, then if the condition is `true`, it's executed
@@ -600,6 +585,7 @@ again.
 For loops uses `Ranges` to iterate over members of a value.
 
 A for loop can be written as:
+
 ```
 for (counter; value; range)
 	writeln(counter + 1, "th value is ", value);
@@ -614,9 +600,11 @@ Example:
 var auto data = getStuff();
 for (val; data)
 	writeln(val);
+
 // is equivalent to:
 for (val; data.rangeOf)
 	writeln(val);
+
 // is equivalent to:
 auto __range = rangeOf(data);
 while (!__range.empty()){
@@ -637,7 +625,8 @@ T.front(); // current value
 T.popFront(); // pop current element
 ```
 
-To make a data type `X` iterable, there should exist a function:
+To make a data type `X` iterable, `X.rangeOf` should return a range, for
+example:
 
 ```
 fn RangeObjectOfX rangeOf(X){
@@ -645,7 +634,17 @@ fn RangeObjectOfX rangeOf(X){
 }
 ```
 
+Or in case `X` itself is a range, you can use the `alias .. = this`:
+
+```
+struct X{
+	# ...
+	alias rangeOf = this;
+}
+```
+
 ## Break & Continue
+
 A `break;` statement can be used to exit a loop at any point, and a `continue;`
 will jump to the end of current iteration.
 
@@ -657,7 +656,7 @@ Operators are read in this order (higher = evaluated first):
 
 1. `.`
 1. `[`
-1. `ref`, `fn` - these are special cases, available only in Data Type
+1. `@`, `fn`
 1. `(`
 1. `a++`, `a--`
 1. `!a`, `++a`, `--a`
@@ -670,6 +669,7 @@ Operators are read in this order (higher = evaluated first):
 1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `->`
 
 ## Operator Overloading
+
 Operators are read as functions, and can be overrided same as functions.
 
 operators are translated as:
@@ -730,7 +730,7 @@ through `T opImplicitCast(T, a)`.
 
 ## `$if`
 
-The `$if` can be used to determine which branch of code to compile:
+`$if` can be used to determine which branch of code to compile:
 
 ```
 $if (platformIsLinux){
@@ -748,7 +748,7 @@ and copies its body for each element:
 ```
 # this loop will not exist at runtime
 $for (num; [0, 5, 4, 2]){
-	writeln(num.toString());
+	writeln(num.stringOf);
 }
 ```
 
@@ -758,7 +758,7 @@ errors if any definitions are made inside. To avoid, do:
 ```
 $for (num; [0, 5, 4, 2]){{
 	enum square = num * num;
-	writeln(square.toString());
+	writeln(square.stringOf);
 }}
 ```
 
@@ -766,7 +766,7 @@ Since `$for` is evaluated at compile time, it can iterate over sequnces:
 
 ```
 $for (num; (0, 5, 4, 2)){
-	num.toString.writeln;
+	num.stringOf.writeln;
 }
 ```
 
@@ -782,10 +782,12 @@ tuple of template parameters:
 template globVar(T){
 	var T this;
 }
+
 template square(int x){
 	enum int this = getSquare(x); # function call will be made at compile time
 	fn int getSquare(int x){ return x * x; }
 }
+
 template sum(T x, T y, T){
 	enum T this = x + y;
 }
@@ -881,10 +883,10 @@ declaration (`$fn bool sym(T)(T a, T b)`) is used.
 
 ## Enums
 
-Templates can be used on compile time constants:
+Templates can be used to create compile time constants:
 
 ```
-template TypeName(T) if ($isType){ // the if (..) is optional
+template TypeName(T) if ($isType){
 	$if (T is int)
 		enum string this = "int";
 	else $if (T is double)
