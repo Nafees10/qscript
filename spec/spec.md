@@ -279,22 +279,46 @@ Members of a struct can be:
 
 * variables - `var TYPE NAME;`
 * static variables - `static var TYPE NAME;`
-* functions - `fn print(){ ... }`
-* static functions - `static fn print(){ ... }`
+* static functions - `static fn foo(){ ... }`
 
-## `this` constructor
+## constructor
+
+By default, a struct does not have any constructor, to allow default
+construction, create the empty `pub fn this(){}` function:
 
 ```
 struct Position{
 	var int x = 0, y = 0;
-	pub fn this(){
-		writeln("constructed 0,0");
-	}
+	pub fn this(){}
 	pub fn this(int x, int y){
 		this.x = x;
 		this.y = y;
-		writeln("constructed with values");
 	}
+}
+```
+
+For the second case in above example, you can also use:
+
+```
+struct Position{
+	var int x = 0, y = 0;
+	pub fn this(this.x, this.y){}
+}
+```
+This constructor is equivalent to the second constructor in previous example.
+
+// TODO: think of syntax for destructor
+
+---
+
+# Unions
+
+Unions store one set of members at a time, and store a tag, indicating which
+is currently stored.
+
+```
+union OptionalInt{
+	// TODO: TODO
 }
 ```
 
