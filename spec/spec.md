@@ -313,14 +313,16 @@ This constructor is equivalent to the second constructor in previous example.
 
 # Unions
 
-Unions store one set of members at a time, and store a tag, indicating which
-is currently stored.
+Unions store one of the members at a time:
 
 ```
-union OptionalInt{
-	// TODO: TODO
+union Val{
+	pub var int i;
+	pub var float f;
+	pub var string s;
 }
 ```
+TODO continue from here
 
 ---
 
