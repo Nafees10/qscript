@@ -331,7 +331,7 @@ alias B = struct{ int i; string s; };
 // nor are they equivalent to either Foo or Bar
 ```
 
-## alias `this` in struct
+## `this` member in struct
 
 Having `X.this` defined, where X is a struct, will add a fallback member to do
 operations on rather than the struct itself:
@@ -385,7 +385,7 @@ struct User{
 			int loginAttempts = int.max;
 			string ipAddr = "127.0.0.1";
 		} loggedOut;
-	};
+	} this;
 }
 ```
 
@@ -394,13 +394,15 @@ This is a User struct, where the username is always stored, along with one of:
 * nothing - in case of `admin`
 * nothing - in case of `moderator`
 * nothing - in case of `user`
-* loginAttempts and ipAddr - in case of `loggedOut`
+* `loginAttempts` and `ipAddr` - in case of `loggedOut`
 
 Similar to structs, anonymous unions can also be created.
 
-Same equivalence rules apply.
+Same equivalence rules as structs apply.
 
-Same rules for member named `this` apply.
+## `this` member in union
+
+// TODO: do this
 
 ## Initializing Union
 
