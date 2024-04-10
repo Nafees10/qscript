@@ -269,7 +269,9 @@ They are defined like:
 
 ```
 struct STRUCT_NAME{
-	# members go here
+	[pub] TYPE NAME [ = INIT_VALUE];
+	[pub] TYPE NAME [ = INIT_VALUE] , NAME_2 [ = INIT_VALUE];
+	[[pub] alias [X] = [Y]]
 }
 ```
 
@@ -281,48 +283,145 @@ Members of a struct can be:
 * static variables - `static var TYPE NAME;`
 * static functions - `static fn foo(){ ... }`
 
-## constructor
+## Anonymous Structs
 
-By default, a struct does not have any constructor, to allow default
-construction, create the empty `pub fn this(){}` function:
+A struct can be created, and immediately used, without being given a type name:
 
 ```
-struct Position{
-	var int x = 0, y = 0;
-	pub fn this(){}
-	pub fn this(int x, int y){
-		this.x = x;
-		this.y = y;
-	}
+var struct{ int i; string s; } data;
+data.i = 5;
+data.s = "foo";
+```
+
+`struct{ int i; string s; }` is treated as an expression.
+
+As such, structs can be defined as:
+
+```
+alias T = struct{ int i; string s; };
+// or
+struct T{ int i; string s; }
+```
+
+## Equivalence
+
+Two different structs will always be treated as different types, regardless of
+their members:
+
+```
+struct T{ int i; string s; }
+
+alias TT = struct { int i; string s; };
+
+struct TTT{ int i; string s; }
+```
+
+Each of these (`T`, `TT`, and `TTT`) are a different type.
+
+Aliases to a defined type are equivalent:
+
+```
+struct Foo{ int i; string s; }
+alias Bar = Foo;
+// bar is equivalent to Foo
+
+alias A = struct{ int i; string s; };
+alias B = struct{ int i; string s; };
+// A and B are not equivalent
+// nor are they equivalent to either Foo or Bar
+```
+
+## alias `this` in struct
+
+Having `X.this` defined, where X is a struct, will add a fallback member to do
+operations on rather than the struct itself:
+
+```
+struct Length{
+	int len = 0;
+	string unit = "cm";
+	alias this = len;
 }
+var Length len = 0; // Length = int is error, so assigns to the int member
+len = 1;
+writeln(len + 5); // Length + int is not implemented, evaluates to len.len + 5
+writeln(len.unit); // prints "cm"
 ```
-
-For the second case in above example, you can also use:
-
-```
-struct Position{
-	var int x = 0, y = 0;
-	pub fn this(this.x, this.y){}
-}
-```
-This constructor is equivalent to the second constructor in previous example.
-
-// TODO: think of syntax for destructor
 
 ---
 
 # Unions
 
-Unions store one of the members at a time:
+Unions store one of the members at a time, along with a tag, indicating which
+member is currently stored:
+
+```
+union Name{
+	[pub] TYPE NAME;
+	[[pub] alias X = Y;]
+}
+```
+
+Example:
 
 ```
 union Val{
-	pub var int i;
-	pub var float f;
-	pub var string s;
+	int i;
+	float f;
+	string s;
 }
 ```
-TODO continue from here
+
+Example:
+
+```
+struct User{
+	string username;
+	union{
+		struct {} admin;
+		struct {} moderator;
+		struct {} user;
+		struct {
+			int loginAttempts = int.max;
+			string ipAddr = "127.0.0.1";
+		} loggedOut;
+	};
+}
+```
+
+This is a User struct, where the username is always stored, along with one of:
+
+* nothing - in case of `admin`
+* nothing - in case of `moderator`
+* nothing - in case of `user`
+* loginAttempts and ipAddr - in case of `loggedOut`
+
+Similar to structs, anonymous unions can also be created.
+
+Same equivalence rules apply.
+
+Same rules for member named `this` apply.
+
+## Initializing Union
+
+A union must at all times have a valid member. At initilization, the default
+member can be denoted by assigning a default value to it. For example:
+
+```
+union Foo{
+	struct {} bar = void; // bar is default
+	int baz;
+}
+
+union Num{
+	int i;
+	float f = float.init; // f is default
+}
+```
+
+## Reading tag
+
+// TODO: do this
 
 ---
 
@@ -346,7 +445,7 @@ enum int EnumName{
 Example:
 
 ```
-public enum int ErrorType{
+enum int ErrorType{
 	FileNotFound = 1, # default value is first one
 	InvalidPath = 1 << 1, # constant expression is allowed
 	PermissionDenied = 4
@@ -453,7 +552,7 @@ In the code below:
 
 ```
 var int someGlobalVar;
-public fn main(int count){
+pub fn main(int count){
 	var int i = 0;
 	while (i < count){
 		var int j;
@@ -540,8 +639,8 @@ The `pub` keyword can be prefixed to make a member public:
 
 ```
 pub struct SomeStruct{
-	var int someInt, someOtherInt; # these data members are private
-	pub var int x; # this is public
+	int someInt, someOtherInt; # these data members are private
+	pub int x; # this is public
 }
 ```
 
@@ -657,7 +756,7 @@ for (val; data.rangeOf)
 	writeln(val);
 
 // is equivalent to:
-auto __range = rangeOf(data);
+auto __range = data.rangeOf;
 while (!__range.empty()){
 	var auto val = __range.front();
 	writeln(val);
@@ -969,6 +1068,15 @@ template Position(T){
 }
 alias PositionDiscrete = Position(int);
 alias PositionContinuous = Position(double);
+```
+
+## Unions
+
+```
+$union Optional(T) if ($isType(T)){
+	pub T this;
+	pub struct {} none;
+}
 ```
 
 ## Variables
