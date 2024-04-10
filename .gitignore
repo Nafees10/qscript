@@ -8,6 +8,7 @@ lib*.a
 *.bcode
 *-test-default
 *.pdf
+*.svg
 sample
 /ast.json
 /qscript
