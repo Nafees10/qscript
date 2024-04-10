@@ -703,6 +703,12 @@ else
 
 ---
 
+# Switch Case statement
+
+// TODO: do dis
+
+---
+
 # Loops
 
 ## While:
