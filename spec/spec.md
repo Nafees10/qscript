@@ -190,8 +190,18 @@ fref @= bar; // bar will not be called
 
 QScript has these basic data types:
 
-* `int` - a signed 32 or 64 bit integer (`ptrdiff_t` in DLang is used for this)
-* `double` - a floating point (`double` in DLang)
+* `int` - largest supported signed integer (usually 64 or 32 bits)
+* `uint` - largest supported unsigned integer (usually 64 or 32 bits)
+* `i8` - 8 bit signed integer
+* `i16` - 16 bit signed integer
+* `i32` - 32 bit signed integer
+* `i64` - 64 bit signed integer
+* `u8` - 8 bit unsigned integer
+* `u16` - 16 bit unsigned integer
+* `u32` - 32 bit unsigned integer
+* `u64` - 64 bit unsigned integer
+* `f64` - a 64 bit floating point (double)
+* `f32` - 32 bit bit floating point
 * `char` - an 8 bit character
 * `bool` - a `true` or `false` (Dlang `bool`)
 * `auto` - in above examples, `auto` can be substituted for `X` in cases where
@@ -199,7 +209,7 @@ QScript has these basic data types:
 * `@X` - reference to any of the above (behaves the same as `X` alone would)
 * `@fn ...(...)` - reference to a function
 
-## `int`
+## `int` (and other integers)
 
 This can be written as series (or just one) digit(s).
 
@@ -211,12 +221,12 @@ Can be written as:
 
 `int` is initialised as `0`.
 
-## `double`
+## floating points
 
 Digits with a single `.` between them is read as a double.
 `5` is an int, but `5.0` is a double.
 
-`double`s are initialised as `0.0`
+initialised as `0.0`
 
 ## `char`
 
