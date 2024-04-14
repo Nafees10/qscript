@@ -526,10 +526,6 @@ struct Position{ # struct is private
 pub alias Coordinate = Position; # Coordinate is publically accessible
 ```
 
-// TODO: think of syntax for promoting types:
-`alias idInd = int;` How will runtime condition be defined for when an int is a
-valid idInt?
-
 ---
 
 # Variables
@@ -918,6 +914,28 @@ $fn $typeof(T.$member(b)) opBin(string op : ".", string b, T : A)(T a){
 
 QScript does explicit, and implicit casting. Implicit casting is implemented
 through `T opCast(To)(val)`.
+
+It is not necessary that the `opCast(To)` return type be `To`, for example:
+
+```
+union Optional(T){
+	pub T this;
+	pub struct{} none = void;
+}
+
+/// An integer that is >=5 and <= 10
+struct WeirdInt{
+	pub int this;
+}
+
+Optional(WeirdInt) opCast(To : WeirdInt)(int i){
+	OptionalInt ret;
+	if (i < 5 || i > 10)
+		return ret;
+	ret = i;
+	return ret;
+}
+```
 
 ---
 
