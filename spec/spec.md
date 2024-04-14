@@ -1,4 +1,4 @@
-**currently WIP and not finalised**
+**Work In Progress, not finalised**
 
 # QScript Language Reference
 
@@ -366,7 +366,7 @@ Example:
 
 ```
 union Val{
-	int i;
+	int i = 0;
 	float f;
 	string s;
 }
@@ -400,13 +400,11 @@ Similar to structs, anonymous unions can also be created.
 
 Same equivalence rules as structs apply.
 
-## `this` member in union
-
-// TODO: do this
+Same rules regarding `this` member as struct apply.
 
 ## Initializing Union
 
-A union must at all times have a valid member. At initilization, the default
+A union must at all times have a valid member. At initialization, the default
 member can be denoted by assigning a default value to it. For example:
 
 ```
@@ -423,7 +421,46 @@ union Num{
 
 ## Reading tag
 
-// TODO: do this
+The `unionIs(U, T)` can be used to check if a union currently stores a tag:
+
+```
+union Foo{
+	struct {} bar = void;
+	int baz;
+}
+var Foo f;
+$assert($unionIs(f, bar) == true);
+$assert($unionIs(f, baz) == false);
+f.baz = 5;
+$assert($unionIs(f, bar) == false);
+$assert($unionIs(f, baz) == true);
+```
+
+In case of `this` members:
+
+```
+union Foo{
+	struct {} bar = void;
+	int baz;
+	alias this = bar;
+}
+var Foo f;
+$assert($unionIs(f) == $unionIs(f, bar));
+```
+
+Alternatively, the `?` operator can be used:
+
+```
+union Foo{
+	struct {} bar = void;
+	alias this = bar;
+	int baz;
+}
+var Foo f;
+$assert(f?);
+$assert(f.bar?);
+$assert(f.baz? == false);
+```
 
 ---
 
