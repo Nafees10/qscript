@@ -30,6 +30,8 @@ comment
 */
 ```
 
+Use `///` comments for writing documentation.
+
 ---
 
 # Functions
@@ -178,8 +180,8 @@ bar; // will call
 The one case where this will not result in a function call:
 
 ```
-var fn() fref;
-fref -> bar; // bar will not be called
+var @fn() fref;
+fref @= bar; // bar will not be called
 ```
 
 ---
@@ -236,14 +238,14 @@ initialised as `false`
 
 These are aliases to actual variables.
 a reference is initialised to be `null`, and can be pointed to some data using
-the `->` operator.
+the `@=` operator.
 
 ```
 int i = 0;
 var @int r; // initialised to null
 if (r is null)
 	writeln("r is null");
-r -> i;
+r @= i;
 # r can now be used as if it's an int.
 writeln(r); # 1
 writeln(i); # 1
@@ -251,12 +253,15 @@ writeln(i); # 1
 
 ## `auto` variables
 
-The `auto` keyword can be combined with others in the following order:
+The `auto` keyword can be used to infer types:
 
 ```
 var auto x = something;
-var @auto y -> something;
+var auto y @= something;
 ```
+
+Where it is not possible for qscript to detect whether `auto` should resolve to
+`T` or `@T`, it will prefer `T`. To override this behavior, use `@auto`
 
 ---
 
@@ -851,7 +856,7 @@ Operators are read in this order (higher = evaluated first):
 1. `==`, `!=`, `>=`, `<=`, `>`, `<`, `is`, `!is`
 1. `&`, `|`, `^`
 1. `&&`, `||`
-1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `->`
+1. `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `@=`
 
 ## Operator Overloading
 
