@@ -731,24 +731,17 @@ the one declared in the module will be preferred.
 If statements are written like:
 
 ```
-if (CONDITION){
-	# some code
-}else{
-	# some (other?) code
-}
+if CONDITION_EXPR
+	STATEMENT_ON_TRUE
 ```
 
-The `else` part is not required. If `CONDITION` is `false`, then, if the else
-exists, it's executed, if `CONDITION` is `true`, then `# some code` is executed.
-
-It is not necessary that the `# some code` or the `# some (other?) code` be in
-a block. In case only one statement is to be executed, it can be written like:
+or:
 
 ```
-if (CONDITION)
-	# some code, single statement
+if CONDITION_EXPR
+	STATEMENT_ON_TRUE
 else
-	# some other code, single statement
+	STATEMENT_ON_FALSE
 ```
 
 ---
@@ -854,7 +847,7 @@ will jump to the end of current iteration.
 
 Operators are read in this order (higher = evaluated first):
 
-1. `.`
+1. `.`, `?`
 1. `[`
 1. `@`, `fn`
 1. `(`
@@ -1258,6 +1251,8 @@ $macroName(args...)
 _Note: list is incomplete_
 
 * `assert(condition, error)` - Emits error as a compiler error if !condition
+* `unionIs(unionInstance, tagSymbolName)` - true if `tagSymbolName` is stored
+* `unionIs(unionInstance)` - true if `this` is stored
 * `fnRetType(symbol)` - return type of a function
 * `fnArgs(symbol)` - array of names of function arguments
 * `fnArgType(symbol, name)` - argument type of argument with name in function
