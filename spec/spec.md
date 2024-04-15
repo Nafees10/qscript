@@ -857,11 +857,11 @@ will jump to the end of current iteration.
 
 Operators are read in this order (higher = evaluated first):
 
-1. `.`, `?`
+1. `.`
 1. `[`
 1. `@`, `fn`
 1. `(`
-1. `a++`, `a--`
+1. `a++`, `a--`, `a?`
 1. `!a`, `++a`, `--a`
 1. `*`, `/`, `%`
 1. `+`, `-`
