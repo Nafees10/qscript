@@ -43,24 +43,32 @@ variables.
 ## Function Definition
 
 ```
-[pub] fn [RETURN_TYPE] FUNCTION_NAME(
+[pub] fn FUNCTION_NAME(
 		[@]arg0_type arg0,
-		[@]arg1_type arg1){
+		[@]arg1_type arg1) [-> RETURN_TYPE]{
 	# function body
 }
 ```
 
 * `pub` (optional) will make the function public
-* `RETURN_TYPE` (optional) is the return type of this function.
 * `@` (optional) for pass by reference
 * `FUNCTION_NAME` is the name of the function
 * `arg0_type` is the type for first argument
 * `arg0` is the "name" for first argument
 * more arguments can be added, and are to be separated by a comma.
+* `RETURN_TYPE` (optional) is the return type of this function.
 
 A function without any arguments would be defined like:
+
 ```
-fn [TYPE] FUNCTION_NAME(){
+fn FUNCTION_NAME() -> RETURN_TYPE{
+	# function body
+}
+```
+
+Without any arguments and no return type:
+```
+fn FUNCTION_NAME(){
 	# function body
 }
 ```
@@ -70,9 +78,9 @@ fn [TYPE] FUNCTION_NAME(){
 Default values for parameters can be written as:
 
 ```
-fn int sum(int a = 0, int b = 1){...} // valid
-fn int sum(int a, int b = 1){...} // valid
-fn int sum(int a = 0, int b){...} // invalid
+fn sum(int a = 0, int b = 1) -> int{...} // valid
+fn sum(int a, int b = 1) -> int{...} // valid
+fn sum(int a = 0, int b) -> int{...} // invalid
 ```
 
 While calling a function, to use the default value for a parameter:
@@ -85,20 +93,22 @@ sum(0); // default value for b used
 ## Anonymous Functions
 
 ```
-fn int sumXTimes(int x, fn int(int) func){
+fn sumXTimes(int x, fn int(int) func) -> int{
 	var int i = 0;
 	var int sum;
 	while (i < x)
 		sum += func(i ++);
 	return sum;
 }
-sumXTimes(5, (num) -> num * 5);
+sumXTimes(5, num -> num * 5);
 
 # is equivalent to:
 sumXTimes(5, (int num) -> {return num * 5;});
 
 # is equivalent to:
-fn mul5(int num){ return num * 5; }
+fn mul5(int num) -> int{
+	return num * 5;
+}
 sumXTimes(5, @mul5);
 ```
 
@@ -117,7 +127,7 @@ executed, the function execution quits, meaning that in the following code,
 writeln will not be called.
 
 ```
-fn int someFunction(){
+fn someFunction() -> int{
 	return 0;
 	writeln("this won't be written"); # because return terminates the execution
 }
@@ -152,7 +162,7 @@ The first argument(s) to a function call can also be passed using the `.`
 operator:
 
 ```
-fn int sum(int a, int b){
+fn sum(int a, int b) -> int{
 	return a + b;
 }
 
@@ -822,7 +832,7 @@ To make a data type `X` iterable, `X.rangeOf` should return a range, for
 example:
 
 ```
-fn RangeObjectOfX rangeOf(X){
+fn rangeOf(X) -> RangeObjectOfX{
 	return RangeObjectOfX(X);
 }
 ```
@@ -901,13 +911,13 @@ Example:
 ```
 struct A{}
 struct B{}
-$fn int opBin(string op : "+", aType : A, bType : B)(aType a, bType B){
+$fn opBin(string op : "+", aType : A, bType : B)(aType a, bType B) -> int{
 	return 5;
 }
-$fn opBin(string op : "()", T : A, ParamT...)(T a, ParamT params){
+$fn opBin(string op : "()", T : A, ParamT...)(T a, ParamT params) -> int{
 	writeln("A called with params: ", params);
 }
-$fn $typeof(T.$member(b)) opBin(string op : ".", string b, T : A)(T a){
+$fn opBin(string op : ".", string b, T : A)(T a) -> $typeOf(T.$member(b)){
 	return $member(a, b);
 }
 ```
@@ -1000,7 +1010,7 @@ template globVar(T){
 
 template square(int x){
 	enum int this = getSquare(x); # function call will be made at compile time
-	fn int getSquare(int x){ return x * x; }
+	fn getSquare(int x) -> int{ return x * x; }
 }
 
 template sum(T x, T y, T){
@@ -1070,16 +1080,16 @@ Function templates are defined as regular functions with an extra tuple for
 template parameters:
 
 ```
-$fn T sum(T)(T a, T b) if (someCondition){
+$fn sum(T)(T a, T b) if (someCondition) -> T{
 	return a + b;
 }
 // or
-$fn T sum(T)(T a, T b){
+$fn sum(T)(T a, T b) -> T{
 	return a + b;
 }
 // or
 template sum(T){
-	fn T this(T a, T b){
+	fn this(T a, T b) -> T{
 		return a + b;
 	}
 }
@@ -1094,7 +1104,7 @@ var int c = sum(5, 10); // T is inferred
 ```
 
 QScript is able to determine what value to use for `T`, only if the former
-declaration (`$fn bool sym(T)(T a, T b)`) is used.
+declaration (`$fn sym(T)(T a, T b) -> T`) is used.
 
 ## Enums
 
@@ -1114,7 +1124,7 @@ template TypeName(T) if ($isType){
 // or
 $enum string TypeName(T) if ($isType(T)) = doSomethingAtCompileTime();
 
-$fn bool typeIsSupported(T)(){
+$fn typeIsSupported(T)() -> bool{
 	return TypeName(T) != "weird type";
 }
 ```
@@ -1181,7 +1191,7 @@ Alias templates can be used to create type qualifiers. When an alias template
 ```
 $alias Number(T) if (T is int || T is double) = T;
 
-fn double square(Number x){
+fn square(Number x) -> double{
 	return x * x;
 }
 
@@ -1198,7 +1208,7 @@ template Iterable(BaseType){
 	$alias this(T) if ($isRange(T) && $rangeType(T) is BaseType) = T;
 }
 
-fn double sum(Iterable(Number) numbers){
+fn sum(Iterable(Number) numbers) -> double{
 	double ret;
 	for (num; numbers)
 		ret += num;
@@ -1222,7 +1232,7 @@ A sequence containing aliases to types can be used to declare a sequence of
 variables:
 
 ```
-$fn T[0] sum(T...)(T params){
+$fn sum(T...)(T params) -> T[0]{
 	var T[0] ret;
 	$for (val; params)
 		ret += val;
