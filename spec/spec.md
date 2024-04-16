@@ -471,7 +471,7 @@ Same equivalence rules as structs apply.
 
 Same rules regarding `this` member as struct apply.
 
-## Initializing Union
+## Default Member
 
 A union must at all times have a valid member. At initialization, the default
 member can be denoted by assigning a default value to it. For example:
@@ -535,7 +535,7 @@ It is a compiler error to read a union member where it is not clear if that
 member is stored:
 
 ```
-union Foo{ int i; string s; f32 f; }
+union Foo{ int i = 0; string s; f32 f; }
 fn bar(){
 	var Foo f = # get Foo from somewhere
 	f.s.writeln; # error
@@ -549,6 +549,28 @@ fn bar(){
 }
 ```
 
+## Constructing Unions
+
+Unions have multiple constructors, for each member. However if for some type
+`T`, there are multiple members, there will be no constructor.
+
+Example:
+
+```
+union Foo{
+	int i = 0; // default
+	string s;
+	struct {
+		f64 x, y;
+	} pos;
+	int k;
+}
+
+Foo(); // fine, default i = 0
+Foo(0); // error: int matches for i and k
+Foo("hello"); // fine, string matches only s
+Foo(5, 6); // fine, ints casted to floats, match pos.x pos.y
+```
 
 ---
 
