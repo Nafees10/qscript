@@ -629,6 +629,26 @@ module, as it is `private`.
 
 ---
 
+# `_` identifiers
+
+`_` can be used as a "discard" identifier. Anything named `_` will be created,
+but inaccessible. For example:
+
+```
+var int _; // create an int, that cannot be accessed
+var int _; // create another such int
+
+fn main(string[] _){
+	# receive string[] parameter, do not use it
+}
+
+for (i; _; range){
+	// iterate range, ignoring the values, just keep the counter
+}
+```
+
+---
+
 # Modules
 
 Each file is a module.
