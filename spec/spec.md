@@ -427,6 +427,24 @@ Same equivalence rules as structs apply.
 
 Same rules regarding `this` member as struct apply.
 
+It is a compiler error to read a union member where it is not clear if that
+member is stored:
+
+```
+union Foo{ int i; string s; f32 f; }
+fn bar(){
+	var Foo f = # get Foo from somewhere
+	f.s.writeln; # error
+	if (is f.s)
+		f.s.writeln; # no error
+
+	f.i.writeln; # error
+	if (is f.s || is f.f)
+		return;
+	f.i.writeln; # no error
+}
+```
+
 ## Initializing Union
 
 A union must at all times have a valid member. At initialization, the default
