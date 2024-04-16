@@ -557,10 +557,11 @@ Unions have multiple constructors, for each member. However if for some type
 Example:
 
 ```
+# file module.qs
 union Foo{
-	int i = 0; // default
-	string s;
-	struct {
+	pub int i = 0; // default
+	pub string s;
+	pub struct {
 		f64 x, y;
 	} pos;
 	int k;
@@ -570,6 +571,10 @@ Foo(); // fine, default i = 0
 Foo(0); // error: int matches for i and k
 Foo("hello"); // fine, string matches only s
 Foo(5, 6); // fine, ints casted to floats, match pos.x pos.y
+
+# file main.qs
+load(module)
+Foo(5); // fine, k is inaccessible, leaving i the only int
 ```
 
 ---
