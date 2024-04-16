@@ -427,24 +427,6 @@ Same equivalence rules as structs apply.
 
 Same rules regarding `this` member as struct apply.
 
-It is a compiler error to read a union member where it is not clear if that
-member is stored:
-
-```
-union Foo{ int i; string s; f32 f; }
-fn bar(){
-	var Foo f = # get Foo from somewhere
-	f.s.writeln; # error
-	if (is f.s)
-		f.s.writeln; # no error
-
-	f.i.writeln; # error
-	if (is f.s || is f.f)
-		return;
-	f.i.writeln; # no error
-}
-```
-
 ## Initializing Union
 
 A union must at all times have a valid member. At initialization, the default
@@ -504,6 +486,25 @@ $assert(is f);
 $assert(is f.bar);
 $assert(is f.baz == false);
 ```
+
+It is a compiler error to read a union member where it is not clear if that
+member is stored:
+
+```
+union Foo{ int i; string s; f32 f; }
+fn bar(){
+	var Foo f = # get Foo from somewhere
+	f.s.writeln; # error
+	if (is f.s)
+		f.s.writeln; # no error
+
+	f.i.writeln; # error
+	if (is f.s || is f.f)
+		return;
+	f.i.writeln; # no error
+}
+```
+
 
 ---
 
@@ -911,56 +912,49 @@ Operators are read in this order (higher = evaluated first):
 
 ## Operator Overloading
 
-Operators are read as functions, and can be overrided same as functions.
+Following operators cannot be overloaded:
 
-operators are translated as:
+* `.`
+* `is`
+* `!is`
 
-```
-a + b;
-// translated to
-opBin("+")(a, b);
+`a op b` Binary operator is translated to each, in this order, whichever
+compiles, is used:
 
-a ++;
-// translated to
-opPost("++")(a);
+1. `opBin("op", a, b)`- aliases to `a`, `b` are passed
+1. `opBin("op")(a, b)`
 
-++ a;
-// translated to
-opPre("++")(a);
+`op a` Unary operator is translated:
 
-a(...);
-// translated to:
-opBin("()")(a, ...);
+1. `opPre("op", a)` - alias to `a` is passed
+1. `opPre("op")(a)`
 
-a[b];
-// translated to:
-opBin("[]")(a, b);
+`a op` Unary operator is translated:
 
-a.b;
-// translated to:
-opBin(".", "b")(a);
-```
+1. `opPost("op", a)` - alias to `a` is passed
+1. `opPost("op")(a)`
 
-The `is`, and `!is` operators are a language feature and do not translate to a
-function call.
+### `()`, `[]` Operators Overloading
 
-Example:
+`a(x, y, z)` is translated to:
 
-```
-struct A{}
-struct B{}
-$fn opBin(string op : "+", aType : A, bType : B)(aType a, bType B) -> int{
-	return 5;
-}
-$fn opBin(string op : "()", T : A, ParamT...)(T a, ParamT params) -> int{
-	writeln("A called with params: ", params);
-}
-$fn opBin(string op : ".", string b, T : A)(T a) -> $typeOf(T.$member(b)){
-	return $member(a, b);
-}
-```
+1. `opBin("()", a, x, y, z)`
+1. `opBin("()", a, typeof(x), typeof(y), typeof(z))(x, y, z)`
+1. `opBin("()", typeof(x), typeof(y), typeof(z))(a, x, y, z)`
 
-## Casting
+`a[x, y, z]` is translated to:
+
+1. `opBin("[]", a, x, y, z)`
+1. `opBin("[]", a, typeof(x), typeof(y), typeof(z))(x, y, z)`
+1. `opBin("[]", typeof(x), typeof(y), typeof(z))(a, x, y, z)`
+
+### Example
+
+// TODO: operator overloading example
+
+---
+
+# Type Casting
 
 QScript does explicit, and implicit casting. Implicit casting is implemented
 through `T opCast(To)(val)`.
@@ -1308,8 +1302,7 @@ _Note: list is incomplete_
 	symbol. Works for structs and enums.
 * `member(symbol, nameStr)` - returns member with name=nameStr in symbol.
 	Works for structs and enums.
-* `canImplicitCast(s1, s2)` - whether s1 can be implicitly casted to s2
-* `canCast(s1, s2)` - whether s1 can be casted to s2 (implicitly or explicitly)
+* `canCast(s1, s2)` - whether s1 can be implicitly casted to s2 (via `opCast`)
 * `typeOf(symbol)` - data type of a symbol
 * `isStatic(symbol)` - true if a symbol is static
 * `isRef(symbol)` - true if a data type is reference
@@ -1322,4 +1315,6 @@ _Note: list is incomplete_
 * `isEnumTemplate(symbol)` - true if a symbol is an enum template
 * `isVar(symbol)` - true if a symbol is a variable
 * `isVarTemplate(symbol)` - true if a symbol is a variable template
+* `isAlias(symbol)` - true if a symbol is an alias
+* `isAliasTemplate(symbol)` - true if a symbol is an alias template
 * `isPub(symbol)` - true if a symbol is public
