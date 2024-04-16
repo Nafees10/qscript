@@ -256,19 +256,34 @@ initialised as `false`
 
 ## `@X` references
 
-These are aliases to actual variables.
-a reference is initialised to be `null`, and can be pointed to some data using
-the `@=` operator.
+These are pointers to data. A reference must always be pointing to a valid data,
+there is no concept of null in qscript.
 
 ```
 int i = 0;
-var @int r; // initialised to null
-if (r is null)
-	writeln("r is null");
-r @= i;
-# r can now be used as if it's an int.
-writeln(r); # 1
-writeln(i); # 1
+var @int r; // error, not initialised
+var @int r @= i;
+r = 2;
+i.writeln; // 2
+r.writeln; // 2
+
+int j = 0;
+r @= j; // reassign is fine
+r = 1;
+r.writeln; // 1
+j.writeln; // 1
+i.writeln; // 2
+```
+
+References cannot refer to lower-scoped data:
+
+```
+var int i;
+var @int r @= i;
+{
+	var int j;
+	r @= j; // error, j has lower scope than r
+}
 ```
 
 ## `auto` variables
