@@ -373,6 +373,50 @@ writeln(len + 5); // Length + int is not implemented, evaluates to len.len + 5
 writeln(len.unit); // prints "cm"
 ```
 
+## Constructing Structs
+
+Structs can be constructed as:
+
+```
+auto s = StructName(member1Value, member2Value, member3Value ...);
+```
+
+Providing values for all members is not necessary.
+
+Example:
+
+```
+struct Foo{
+	int i;
+	string s;
+	f32 f = 10.5;
+	char c;
+}
+
+var Foo f = Foo(5, "hello");
+$assert(f.i == 5);
+$assert(f.s == "hello");
+$assert(f.f == 10.5);
+$assert(f.c == '\0');
+```
+
+Only members that are accessible from the current scope can be passed to
+constructor.
+
+```
+# file module.qs:
+pub struct Foo{
+	int i;
+	pub string s = "a";
+}
+var Foo f = Foo(5, "hello"); # is fine
+
+# file main.qs
+load(module);
+var Foo f = Foo(5, "hello"); # will not compile, 5 is not accessible
+var Foo f = Foo("hello"); # is fine
+```
+
 ---
 
 # Unions
