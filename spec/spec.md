@@ -473,7 +473,7 @@ var Foo f;
 $assert($unionIs(f) == $unionIs(f, bar));
 ```
 
-Alternatively, the `?` operator can be used:
+Alternatively, the prefix `is` operator can be used:
 
 ```
 union Foo{
@@ -482,9 +482,9 @@ union Foo{
 	int baz;
 }
 var Foo f;
-$assert(f?);
-$assert(f.bar?);
-$assert(f.baz? == false);
+$assert(is f);
+$assert(is f.bar);
+$assert(is f.baz == false);
 ```
 
 ---
@@ -881,8 +881,8 @@ Operators are read in this order (higher = evaluated first):
 1. `[`
 1. `@`, `fn`
 1. `(`
-1. `a++`, `a--`, `a?`
-1. `!a`, `++a`, `--a`
+1. `a?`, `a!`, `a++`, `a--`
+1. `is a`, `!a`, `++a`, `--a`
 1. `*`, `/`, `%`
 1. `+`, `-`
 1. `<<`, `>>`
