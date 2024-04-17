@@ -1385,10 +1385,11 @@ _Note: list is incomplete_
 * `fnArgs(symbol)` - array of names of function arguments
 * `fnArgType(symbol, name)` - argument type of argument with name in function
 * `members(symbol)` - string array, names of accessible members inside of a
-	symbol. Works for structs and enums.
+	symbol. Works for structs, unions, and enums.
 * `member(symbol, nameStr)` - returns member with name=nameStr in symbol.
-	Works for structs and enums.
-* `canCast(s1, s2)` - whether s1 can be implicitly casted to s2 (via `opCast`)
+	Works for structs, unions, and enums.
+* `canCast(s1, s2)` - whether s1 can be implicitly casted to s2 (via `opCast`),
+	s1, s2 can be data types, or values.
 * `typeOf(symbol)` - data type of a symbol
 * `isStatic(symbol)` - true if a symbol is static
 * `isRef(symbol)` - true if a data type is reference
