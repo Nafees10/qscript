@@ -1182,13 +1182,13 @@ A template can be mixin'd; initialized in the context where it is called. This
 can be done by following any template definition by the `mixin` keyword:
 
 ```
-mixin template foo(){
-	writeln(i);
+mixin template xTimes(F, uint times) if ($isFn(F)){
+	$for (i; range(0, times)){
+		F();
+	}
 }
 fn main(){
-	var int i = 5;
-	foo(); // equivalent to calling `writeln(i)` right here
-				 // prints 5
+	foo.xTimes(5); // equivalent to calling foo 5 times
 }
 ```
 
