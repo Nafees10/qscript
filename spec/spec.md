@@ -311,7 +311,8 @@ They are defined like:
 struct STRUCT_NAME{
 	[pub] TYPE NAME [ = INIT_VALUE];
 	[pub] TYPE NAME [ = INIT_VALUE] , NAME_2 [ = INIT_VALUE];
-	[[pub] alias [X] = [Y]]
+	[pub] TYPE; // for when TYPE is a struct or union
+	[pub] alias [X] = [Y];
 }
 ```
 
@@ -319,9 +320,8 @@ By default, all members inside a struct are private.
 
 Members of a struct can be:
 
-* variables - `var TYPE NAME;`
-* static variables - `static var TYPE NAME;`
-* static functions - `static fn foo(){ ... }`
+* variables - `TYPE NAME;`
+* static variables - `static TYPE NAME;`
 
 ## Anonymous Structs
 
@@ -442,7 +442,8 @@ member is currently stored:
 ```
 union Name{
 	[pub] TYPE NAME;
-	[[pub] alias X = Y;]
+	[pub] TYPE; // for when type is struct or union
+	[pub] alias X = Y;
 }
 ```
 
@@ -469,7 +470,7 @@ struct User{
 			int loginAttempts = int.max;
 			string ipAddr = "127.0.0.1";
 		} loggedOut;
-	} this;
+	};
 }
 ```
 
