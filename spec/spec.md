@@ -1,3 +1,8 @@
+// TODO:
+* struct static functions?
+* module import
+* unions tag based function call
+
 **Work In Progress, not finalised**
 
 # QScript Language Reference
@@ -762,7 +767,7 @@ Each file is a module.
 The `load` keyword can be used to instantiate a module.
 A module is similar to a struct, except:
 
-1. only 1 instannce of a module can exist, created the first time `load` is
+1. only 1 instance of a module can exist, created the first time `load` is
 	called
 2. private members inside a module are not accessible outside
 
