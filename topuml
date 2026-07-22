@@ -1,7 +1,0 @@
-#!/bin/bash
-touch sample.json
-echo "@startjson" >> sample.json
-./qscript >> sample.json
-echo "@endjson" >> sample.json
-plantuml -tsvg sample.json
-rm sample.json
