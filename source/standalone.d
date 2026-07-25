@@ -43,7 +43,7 @@ version (qscriptstandalone){
 		}
 		if (args.length > 2 && args[1] == "--bcode"){
 			foreach (i, line; code.getBytecodePretty)
-				writeln(cast(integer)i-2, '\t', line);
+				writeln(cast(ptrdiff_t)i-2, '\t', line);
 			return;
 		}
 		// now execute main

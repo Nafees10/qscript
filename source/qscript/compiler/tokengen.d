@@ -11,7 +11,7 @@ import qscript.compiler.compiler;
 /// Each token is stored as a `Token` with the type and the actual token
 package struct Token{
 	/// Specifies type of token
-	/// 
+	///
 	/// used only in `compiler.tokengen`
 	enum Type{
 		String,/// That the token is: `"SOME STRING"`
@@ -41,7 +41,7 @@ package struct Token{
 		token = tToken;
 	}
 	/// Identifies token type itself
-	/// 
+	///
 	/// Throws: Exception if token invalid
 	this(string tToken){
 		token = tToken;
@@ -52,12 +52,12 @@ package struct Token{
 /// To store Tokens with Types where the line number of each token is required
 package struct TokenList{
 	Token[] tokens; /// Stores the tokens
-	uinteger[] tokenPerLine; /// Stores the number of tokens in each line
+	size_t[] tokenPerLine; /// Stores the number of tokens in each line
 	/// Returns the line number a token is in by usin the index of the token in `tokens`
-	/// 
+	///
 	/// The returned value is the line-number, not index, it starts from 1, not zero
-	uinteger getTokenLine(uinteger tokenIndex){
-		uinteger i = 0, chars = 0;
+	size_t getTokenLine(size_t tokenIndex){
+		size_t i = 0, chars = 0;
 		tokenIndex ++;
 		for (; chars < tokenIndex && i < tokenPerLine.length; i ++){
 			chars += tokenPerLine[i];
@@ -68,13 +68,13 @@ package struct TokenList{
 	static string toString(Token[] t){
 		char[] r;
 		// set length
-		uinteger length = 0;
-		for (uinteger i = 0; i < t.length; i ++){
+		size_t length = 0;
+		for (size_t i = 0; i < t.length; i ++){
 			length += t[i].token.length;
 		}
 		r.length = length;
 		// read em all into r;
-		for (uinteger i = 0, writeTo = 0; i < t.length; i ++){
+		for (size_t i = 0, writeTo = 0; i < t.length; i ++){
 			r[writeTo .. writeTo + t[i].token.length] = t[i].token;
 			writeTo += t[i].token.length;
 		}
@@ -102,12 +102,12 @@ private Token.Type getTokenType(string token){
 	bool isOperator(string s){
 		return OPERATORS.hasElement(s) || SOPERATORS.hasElement(s);
 	}
-	/// Returns true if string contains an integer
+	/// Returns true if string contains an ptrdiff_t
 	bool isInt(string s){
 		return isNum(s, false);
 	}
 	/// Returns true if a string contains a double
-	/// 
+	///
 	/// to be identified as a double, the number must have a decimal point in it
 	bool isDouble(string s){
 		return isNum(s, true);
@@ -292,13 +292,13 @@ private TokenList separateTokens(string[] script, LinkedList!CompileError compil
 		return false;
 	}
 	LinkedList!string tokens = new LinkedList!string;
-	uinteger[] tokenPerLine;
+	size_t[] tokenPerLine;
 	tokenPerLine.length = script.length;
-	uinteger tokenCount = 0;
+	size_t tokenCount = 0;
 	foreach (lineno, line; script){
-		integer stringEndIndex = -1;
+		ptrdiff_t stringEndIndex = -1;
 		char[] token = [];
-		for (uinteger i = 0; i < line.length; i ++){
+		for (size_t i = 0; i < line.length; i ++){
 			// skip strings
 			if ((line[i] == '"' || line[i] == '\'') && i > stringEndIndex){
 				stringEndIndex = line.strEnd(i);
@@ -308,7 +308,7 @@ private TokenList separateTokens(string[] script, LinkedList!CompileError compil
 				}
 			}
 			// break at comments
-			if (line[i] == '#' && cast(integer)i > stringEndIndex){
+			if (line[i] == '#' && cast(ptrdiff_t)i > stringEndIndex){
 				isDifferent(' ', token);
 				// add pending token
 				if (token.length){
@@ -378,9 +378,9 @@ unittest{
 }
 
 /// Returns the index of the quotation mark that ends a string
-/// 
+///
 /// Returns -1 if not found
-private integer strEnd(string s, uinteger i){
+private ptrdiff_t strEnd(string s, size_t i){
 	const char end = s[i] == '\'' ? '\'' : '\"';
 	for (i++;i<s.length;i++){
 		if (s[i]=='\\'){
@@ -398,12 +398,12 @@ private alias decodeString = strReplaceSpecial;
 
 /// decodes a string. i.e, converts \t to tab, \" to ", etc
 /// The string must not be surrounded by quoation marks
-/// 
+///
 /// Returns: string with special characters replaced with their actual characters (i.e, \t replaced with tab, \n with newline...)
 private string strReplaceSpecial(char specialCharBegin='\\', char[char] map = ['t' : '\t', 'n' : '\n','\\':'\\'])
 (string s){
 	char[] r = [];
-	for (uinteger i = 0; i < s.length; i ++){
+	for (size_t i = 0; i < s.length; i ++){
 		if (s[i] == specialCharBegin && i + 1 < s.length && s[i+1] in map){
 			r ~= map[s[i+1]];
 			i++;
@@ -416,10 +416,10 @@ private string strReplaceSpecial(char specialCharBegin='\\', char[char] map = ['
 
 /// Takes script, and separates into tokens (using `separateTokens`), identifies token types, retuns the Tokens with Token.Type
 /// in an array
-/// 
+///
 /// `script` is the script to convert to tokens, each line is a separate string, without ending \n
 /// `errors` is the array to which erors will be put
-/// 
+///
 /// As a plus, it also checks if the brackets are in correct order (and properly closed)
 package TokenList toTokens(string[] script, ref CompileError[] errors){
 	LinkedList!CompileError compileErrors = new LinkedList!CompileError;
@@ -452,7 +452,7 @@ package TokenList toTokens(string[] script, ref CompileError[] errors){
 
 
 /// Checks if the brackets in a tokenlist are in correct order, and are closed
-/// 
+///
 /// In case not, returns false, and appends error to `errorLog`
 private bool checkBrackets(TokenList tokens, LinkedList!CompileError errors){
 	enum BracketType{
@@ -471,10 +471,10 @@ private bool checkBrackets(TokenList tokens, LinkedList!CompileError errors){
 		Token.Type.BlockEnd:BracketType.Block
 	];
 	Stack!BracketType bracks = new Stack!BracketType;
-	Stack!uinteger bracksStartIndex = new Stack!uinteger;
+	Stack!size_t bracksStartIndex = new Stack!size_t;
 	BracketType curType;
 	bool r = true;
-	for (uinteger lastInd = tokens.tokens.length-1, i = 0; i<=lastInd; i++){
+	for (size_t lastInd = tokens.tokens.length-1, i = 0; i<=lastInd; i++){
 		if (tokens.tokens[i].type in brackOpenIdent){
 			bracks.push(brackOpenIdent[tokens.tokens[i].type]);
 			bracksStartIndex.push(i);
@@ -500,15 +500,15 @@ private bool checkBrackets(TokenList tokens, LinkedList!CompileError errors){
 	return r;
 }
 
-/// Returns index of closing/openinig bracket of the provided bracket  
-/// 
+/// Returns index of closing/openinig bracket of the provided bracket
+///
 /// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
 /// `tokens` is the array of tokens to search in
 /// `index` is the index of the opposite bracket
-/// 
-/// It only works correctly if the brackets are in correct order, and the closing bracket is present  
+///
+/// It only works correctly if the brackets are in correct order, and the closing bracket is present
 /// so, before calling this, `compiler.misc.checkBrackets` should be called
-package uinteger tokenBracketPos(bool forward=true)(Token[] tokens, uinteger index){
+package size_t tokenBracketPos(bool forward=true)(Token[] tokens, size_t index){
 	Token.Type[] closingBrackets = [
 		Token.Type.BlockEnd,
 		Token.Type.IndexBracketClose,
@@ -519,9 +519,9 @@ package uinteger tokenBracketPos(bool forward=true)(Token[] tokens, uinteger ind
 		Token.Type.IndexBracketOpen,
 		Token.Type.ParanthesesOpen
 	];
-	uinteger count; // stores how many closing/opening brackets before we reach the desired one
-	uinteger i = index;
-	for (uinteger lastInd = (forward ? tokens.length : 0); i != lastInd; (forward ? i ++: i --)){
+	size_t count; // stores how many closing/opening brackets before we reach the desired one
+	size_t i = index;
+	for (size_t lastInd = (forward ? tokens.length : 0); i != lastInd; (forward ? i ++: i --)){
 		if ((forward ? openingBrackets : closingBrackets).hasElement(tokens[i].type)){
 			count ++;
 		}else if ((forward ? closingBrackets : openingBrackets).hasElement(tokens[i].type)){

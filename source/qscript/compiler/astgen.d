@@ -18,11 +18,11 @@ private:
 	/// stores the list of tokens
 	TokenList tokens;
 	/// stores the current index (of tokens)
-	uinteger index;
+	size_t index;
 	/// stores all compilation errors
 	LinkedList!CompileError compileErrors;
 	/// Reads a single import statement.
-	/// 
+	///
 	/// Returns: the imported libraries' names
 	string[] readImports(){
 		string[] r;
@@ -44,10 +44,10 @@ private:
 		return r;
 	}
 	/// reads a type from TokensList
-	/// 
+	///
 	/// returns type in DataType struct, changes `index` to token after last token of type
 	DataType readType(){
-		uinteger startIndex = index;
+		size_t startIndex = index;
 		// check if it's a ref
 		if (tokens.tokens[index].token == "@")
 			index ++;
@@ -67,7 +67,7 @@ private:
 	}
 protected:
 	/// generates AST for a struct definition
-	/// 
+	///
 	/// changes `index` to next token after struct definition
 	StructNode generateStructAST(){
 		StructNode structNode;
@@ -121,7 +121,7 @@ protected:
 		return structNode;
 	}
 	/// generates AST for a enum definition
-	/// 
+	///
 	/// changes `index` to next token after enum definition
 	EnumNode generateEnumAST(){
 		EnumNode enumNode;
@@ -161,8 +161,8 @@ protected:
 		}
 		return enumNode;
 	}
-	/// generates AST for a function definition 
-	/// 
+	/// generates AST for a function definition
+	///
 	/// changes `index` to the token after function definition
 	FunctionNode generateFunctionAST(){
 		FunctionNode functionNode;
@@ -188,7 +188,7 @@ protected:
 			// now for the argument types
 			if (tokens.tokens[index].type == Token.Type.ParanthesesOpen){
 				LinkedList!(FunctionNode.Argument) argList = new LinkedList!(FunctionNode.Argument);
-				uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
+				size_t brackEnd = tokens.tokens.tokenBracketPos(index);
 				bool commaExpected = false;
 				for (index ++; index < brackEnd; index ++){
 					if (commaExpected){
@@ -241,20 +241,20 @@ protected:
 		}
 		return functionNode;
 	}
-	
+
 	/// generates AST for a {block-of-code}
-	/// 
+	///
 	/// changes `index` to token after block end
 	BlockNode generateBlockAST(){
 		BlockNode blockNode;
 		blockNode.lineno = tokens.getTokenLine(index);
 		// make sure it's a block
 		if (tokens.tokens[index].type == Token.Type.BlockStart){
-			uinteger brackEnd = tokens.tokens.tokenBracketPos!(true)(index);
+			size_t brackEnd = tokens.tokens.tokenBracketPos!(true)(index);
 			LinkedList!StatementNode statements = new LinkedList!StatementNode;
 			// read statements
 			index++;
-			uinteger errorCount = compileErrors.count;
+			size_t errorCount = compileErrors.count;
 			while (index < brackEnd){
 				statements.append(generateStatementAST());
 				// check if error added
@@ -329,7 +329,7 @@ protected:
 		// check if is function call
 		if (tokens.tokens[index].type == Token.Type.Identifier &&
 			tokens.tokens[index + 1].type == Token.Type.ParanthesesOpen){
-			uinteger brackEnd = tokens.tokens.tokenBracketPos(index + 1);
+			size_t brackEnd = tokens.tokens.tokenBracketPos(index + 1);
 			functionCallNode.fName = tokens.tokens[index].token;
 			// now for the arguments
 			index+=2;
@@ -359,9 +359,9 @@ protected:
 		}
 		return functionCallNode;
 	}
-	
+
 	/// generates AST for "actual code" like `2 + 2 - 6`.
-	/// 
+	///
 	/// terminates reading when on a Token that is comma, paranthesesEnd, semicolon, index/block bracket close
 	CodeNode generateCodeAST(){
 		CodeNode lastNode = null;
@@ -383,8 +383,8 @@ protected:
 				// check if there's an [...] to read the array
 				if (token.type == Token.Type.IndexBracketOpen){
 					// read the index
-					uinteger brackStartIndex = index;
-					uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
+					size_t brackStartIndex = index;
+					size_t brackEnd = tokens.tokens.tokenBracketPos(index);
 					index ++;
 					CodeNode indexNode = generateCodeAST();
 					// make sure it's a read-element, not a make-array
@@ -427,12 +427,12 @@ protected:
 		r = NegativeValueNode(val);
 		return r;
 	}
-	
+
 	/// generates AST for operators like +, -...
-	/// 
+	///
 	/// `firstOperand` is the first operand for the operator.
 	/// `index` is the index of the token which is the operator
-	/// 
+	///
 	/// changes `index` to the index of the token after the last token related to the operator
 	OperatorNode generateOperatorAST(CodeNode firstOperand){
 		OperatorNode operator;
@@ -485,7 +485,7 @@ protected:
 		}
 		return var;
 	}
-	
+
 	/// generates AST for assignment operator
 	AssignmentNode generateAssignmentAST(CodeNode lvalue){
 		AssignmentNode assignment;
@@ -519,7 +519,7 @@ protected:
 		}
 		return assignment;
 	}
-	
+
 	/// generates AST for variable declarations
 	VarDeclareNode generateVarDeclareAST(){
 		VarDeclareNode varDeclare;
@@ -552,7 +552,7 @@ protected:
 					if (tokens.tokens[index].type == Token.Type.Comma){
 						index ++;
 					}else if (tokens.tokens[index].type != Token.Type.StatementEnd){
-						compileErrors.append (CompileError(tokens.getTokenLine(index), 
+						compileErrors.append (CompileError(tokens.getTokenLine(index),
 						"variable names must be separated by a comma"));
 					}
 					continue;
@@ -575,7 +575,7 @@ protected:
 		}
 		return varDeclare;
 	}
-	
+
 	/// generates AST for if statements
 	IfNode generateIfAST(){
 		IfNode ifNode;
@@ -584,7 +584,7 @@ protected:
 		if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "if" &&
 			tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 			// now do the real work
-			uinteger brackEnd = tokens.tokens.tokenBracketPos(index+1);
+			size_t brackEnd = tokens.tokens.tokenBracketPos(index+1);
 			index += 2;
 			ifNode.condition = generateCodeAST();
 			// make sure index & brackEnd are now same
@@ -617,7 +617,7 @@ protected:
 		if (tokens.tokens[index].type == Token.Type.Keyword && tokens.tokens[index].token == "while" &&
 			tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 			// now do the real work
-			uinteger brackEnd = tokens.tokens.tokenBracketPos!true(index+1);
+			size_t brackEnd = tokens.tokens.tokenBracketPos!true(index+1);
 			index += 2;
 			whileNode.condition = generateCodeAST();
 			// skip the brackEnd, if index matches it
@@ -641,7 +641,7 @@ protected:
 		// check if is a for statement
 		if (tokens.tokens[index] == Token(Token.Type.Keyword, "for") && tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 			/// where the parantheses ends
-			uinteger bracketEnd = tokens.tokens.tokenBracketPos(index+1);
+			size_t bracketEnd = tokens.tokens.tokenBracketPos(index+1);
 			/// get the init statement
 			index = index + 2;
 			forNode.initStatement = generateStatementAST();
@@ -677,7 +677,7 @@ protected:
 			if (tokens.tokens[index] == Token(Token.Type.Keyword, "while") &&
 				tokens.tokens[index+1].type == Token.Type.ParanthesesOpen){
 				// read the condition
-				uinteger brackEnd = tokens.tokens.tokenBracketPos(index+1);
+				size_t brackEnd = tokens.tokens.tokenBracketPos(index+1);
 				index += 2;
 				doWhile.condition = generateCodeAST();
 				if (index != brackEnd){
@@ -724,9 +724,9 @@ protected:
 	/// 4. Variable (uses `generateVariableAST`)
 	/// 5. Some code inside parantheses (uses `generateCodeAST`)
 	/// 6. A literal array (`[x, y, z]`)
-	/// 
+	///
 	/// This function is used by `generateCodeAST` to separate nodes, and by `generateOperatorAST` to read operands
-	/// 
+	///
 	/// set `skipPost` to true in case you do not want it to read into `[...]` or `.` after the Node
 	CodeNode generateNodeAST(CodeNode r = CodeNode()){
 		Token token = tokens.tokens[index];
@@ -754,7 +754,7 @@ protected:
 			index ++;
 		}else if (token.type == Token.Type.IndexBracketOpen){
 			// literal array
-			uinteger brackEnd = tokens.tokens.tokenBracketPos(index);
+			size_t brackEnd = tokens.tokens.tokenBracketPos(index);
 			// read into ArrayNode
 			CodeNode[] elements = [];
 			index ++;
@@ -798,7 +798,7 @@ protected:
 					index ++; // skip the ] bracket
 			}else if (tokens.tokens[index].type == Token.Type.MemberSelector){
 				// read just the member name
-				immutable uinteger lineno = tokens.getTokenLine(index);
+				immutable size_t lineno = tokens.getTokenLine(index);
 				index ++;
 				if (tokens.tokens[index].type != Token.Type.Identifier){
 					compileErrors.append(CompileError(tokens.getTokenLine(index),
@@ -820,7 +820,7 @@ protected:
 				}
 			}
 		}
-		
+
 		return r;
 	}
 	/// generates LiteralNode
@@ -861,7 +861,7 @@ public:
 		compileErrors.clear();
 		// go through the script, compile function nodes, link them to this node
 		index = 0;
-		for (immutable uinteger lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
+		for (immutable size_t lastIndex = tokens.tokens.length - 1; index < tokens.tokens.length; index ++){
 			// look for visibility specifier, or default to private
 			Visibility vis = Visibility.Private;
 			if (tokens.tokens[index].type == Token.Type.Keyword && VISIBILITY_SPECIFIERS.hasElement(tokens.tokens[index].token)){
@@ -870,7 +870,7 @@ public:
 			}
 			// look for TokenType.Keyword where token.token == "function"
 			if (tokens.tokens[index].type == Token.Type.Keyword){
-				immutable uinteger errorCount = compileErrors.count;
+				immutable size_t errorCount = compileErrors.count;
 				if (tokens.tokens[index].token == "import"){
 					string[] imports = readImports();
 					scriptNode.imports ~= imports;

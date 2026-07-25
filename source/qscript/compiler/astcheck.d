@@ -17,15 +17,15 @@ private:
 	/// variables exported by this library. index is ID
 	List!Variable _vars;
 	/// number of variables in different scopes
-	List!uinteger _scopeVarCount;
+	List!size_t _scopeVarCount;
 	/// maximum number of variables declared in and after a specific scope (inside function)
-	uinteger _scopeMaxVars;
+	size_t _scopeMaxVars;
 	/// the scope to count max variables from
-	uinteger _scopeIndexVarCount;
+	size_t _scopeIndexVarCount;
 public:
 	/// constructor
 	this(){
-		_scopeVarCount = new List!uinteger;
+		_scopeVarCount = new List!size_t;
 		_vars = new List!Variable;
 		_scopeVarCount.append(0);
 		_scopeMaxVars = 0;
@@ -44,7 +44,7 @@ public:
 		_scopeIndexVarCount = -1;
 	}
 	/// removes a number of variables
-	void removeVars(uinteger count){
+	void removeVars(size_t count){
 		if (count > _vars.length)
 			_vars.clear;
 		else
@@ -57,7 +57,7 @@ public:
 	/// decrease scope
 	void scopeDecrease(){
 		// count how many variables going away
-		uinteger varCount = 0;
+		size_t varCount = 0;
 		if (_scopeIndexVarCount != -1){
 			foreach (i; _scopeIndexVarCount .. _scopeVarCount.length)
 				varCount += _scopeVarCount.read(i);
@@ -71,15 +71,15 @@ public:
 	}
 	/// Start counting how many variables are going to be available in current scope
 	void scopeVarCountStart(){
-		_scopeIndexVarCount = cast(integer)_scopeVarCount.length-1;
+		_scopeIndexVarCount = cast(ptrdiff_t)_scopeVarCount.length-1;
 		_scopeMaxVars = 0;
 	}
 	/// how many variables are in a scope (and in scopes within this scope and in...). Use `scopeVarCountStart` to specify scope
-	/// 
+	///
 	/// Call this AFTER `decreaseScope`
-	/// 
+	///
 	/// Returns: number of variables in scope
-	@property uinteger scopeVarCount(){
+	@property size_t scopeVarCount(){
 		_scopeIndexVarCount = -1;
 		return _scopeMaxVars;
 	}
@@ -88,7 +88,7 @@ public:
 		return _vars.toArray;
 	}
 	/// Returns: variable ID, or -1 if doesnt exist
-	integer hasVar(string name, ref DataType type){
+	ptrdiff_t hasVar(string name, ref DataType type){
 		_vars.seek = 0;
 		while (_vars.seek < _vars.length){
 			immutable Variable var = _vars.read;
@@ -105,25 +105,25 @@ public:
 		return this.hasVar(name, dummy) > 0;
 	}
 	/// Adds a new variable.
-	/// 
+	///
 	/// Returns: Variable ID, or -1 if it already exists
-	integer addVar(Variable var){
+	ptrdiff_t addVar(Variable var){
 		if (this.hasVar(var.name))
 			return -1;
 		_vars.append(var);
-		_scopeVarCount.set(cast(integer)_scopeVarCount.length-1, _scopeVarCount.readLast+1);
-		return cast(integer)_vars.length-1;
+		_scopeVarCount.set(cast(ptrdiff_t)_scopeVarCount.length-1, _scopeVarCount.readLast+1);
+		return cast(ptrdiff_t)_vars.length-1;
 	}
 }
 
-/// Contains functions to check ASTs for errors  
+/// Contains functions to check ASTs for errors
 /// One instance of this class can be used to check for errors in a script's AST.
 class ASTCheck{
 private:
 	/// stores the libraries available. Index is the library ID.
 	Library[] _libraries;
 	/// stores whether a library was imported. Index is library id
-	bool[integer] _isImported;
+	bool[ptrdiff_t] _isImported;
 	/// stores all declarations of this script, public and private. But not variables, those keep changes as going from function to function.
 	/// _vars store them
 	Library _this;
@@ -136,8 +136,8 @@ private:
 	/// stores expected return type of currently-being-checked function
 	DataType functionReturnType;
 	/// registers a new  var in current scope
-	/// 
-	/// Returns: false if it was already registered or global variable with same name exists,  
+	///
+	/// Returns: false if it was already registered or global variable with same name exists,
 	/// true if it was successful
 	bool addVar(string name, DataType type, bool isGlobal = false){
 		if (_vars.hasVar(name))
@@ -148,9 +148,9 @@ private:
 		return true;
 	}
 	/// Returns: true if a var exists. False if not.
-	/// also sets the variable data type to `type` and id to `id`, and library id to `libraryId`, and 
+	/// also sets the variable data type to `type` and id to `id`, and library id to `libraryId`, and
 	/// if it is global, sets `isGlobal` to `true`
-	bool getVar(string name, ref DataType type, ref integer id, ref integer libraryId, ref bool isGlobal){
+	bool getVar(string name, ref DataType type, ref ptrdiff_t id, ref ptrdiff_t libraryId, ref bool isGlobal){
 		id = _vars.hasVar(name, type);
 		if (id > -1){
 			isGlobal = id < _exports.vars.length;
@@ -170,10 +170,10 @@ private:
 		return false;
 	}
 	/// Returns: variable ID for a variable with a name. Only use when you know the variable is local
-	uinteger getVarID(string name){
+	size_t getVarID(string name){
 		DataType type;
-		integer id;
-		integer libraryId;
+		ptrdiff_t id;
+		ptrdiff_t libraryId;
 		bool isGlobal;
 		getVar(name, type, id, libraryId, isGlobal);
 		return id;
@@ -181,15 +181,15 @@ private:
 	/// Returns: true if a variable with a name is found
 	bool varExists(string name){
 		DataType type;
-		integer id;
-		integer libraryId;
+		ptrdiff_t id;
+		ptrdiff_t libraryId;
 		bool isGlobal;
 		return getVar(name, type, id, libraryId, isGlobal);
 	}
 	/// Returns: true if a function exists, false if not. Sets function return type to `type`,
 	/// id to `id`, and library id to `libraryId`
-	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref integer id,
-		ref integer libraryId){
+	bool getFunction(string name, DataType[] argTypes, ref DataType type, ref ptrdiff_t id,
+		ref ptrdiff_t libraryId){
 		id = _this.hasFunction(name, argTypes, type);
 		if (id > -1){
 			libraryId = -1;
@@ -210,7 +210,7 @@ private:
 	bool getStruct(string name, ref Struct structData){
 		if (_this.hasStruct(name, structData))
 			return true;
-		foreach (integer libId, lib; _libraries){
+		foreach (ptrdiff_t libId, lib; _libraries){
 			if (!isImported(libId))
 				continue;
 			if (lib.hasStruct(name, structData))
@@ -222,7 +222,7 @@ private:
 	bool getEnum(string name, ref Enum enumData){
 		if (_this.hasEnum(name, enumData))
 			return true;
-		foreach (integer libId, library; _libraries){
+		foreach (ptrdiff_t libId, library; _libraries){
 			if (!isImported(libId))
 				continue;
 			if (library.hasEnum(name, enumData))
@@ -234,7 +234,7 @@ private:
 	void readImports(ScriptNode node){
 		_isImported[-1] = true; // first mark -1 as imported, coz thats used for local stuff
 		foreach (importName; node.imports){
-			integer index = -1;
+			ptrdiff_t index = -1;
 			foreach (i, library; _libraries){
 				if (library.name == importName){
 					index = i;
@@ -247,7 +247,7 @@ private:
 		}
 	}
 	/// reads all FunctionNode from ScriptNode
-	/// 
+	///
 	/// any error is appended to compileErrors
 	void readFunctions(ScriptNode node){
 		/// first check for conflicts, also append public functions
@@ -290,10 +290,10 @@ private:
 		}
 	}
 	/// Reads all `VarDeclareNode`s from ScriptNode (global variable declarations)
-	/// 
+	///
 	/// any error is appended to compileErrors
 	void readGlobVars(ref ScriptNode node){
-		// check for conflicts among names, and append public 
+		// check for conflicts among names, and append public
 		foreach (ref varDeclare; node.variables){
 			foreach (varName; varDeclare.vars){
 				// conflict check
@@ -322,7 +322,7 @@ private:
 		}
 	}
 	/// reads all EnumNode from ScriptNode
-	/// 
+	///
 	/// any error is appended to compileErrors
 	void readEnums(ScriptNode node){
 		// check for conflicts, and append public enums
@@ -345,7 +345,7 @@ private:
 		}
 	}
 	/// Reads all structs from ScriptNode
-	/// 
+	///
 	/// Checks for any circular dependency, and other issues. Appends errors to compileErrors
 	void readStructs(ScriptNode node){
 		// first check for conflicts in name, and append public struct to _exports
@@ -380,7 +380,7 @@ private:
 		for (conflicts.seek = 0; conflicts.seek < conflicts.length; ){
 			immutable string name = conflicts.read();
 			// locate it's line number
-			uinteger lineno;
+			size_t lineno;
 			foreach (str; node.structs){
 				if (str.name == name){
 					lineno = str.lineno;
@@ -424,7 +424,7 @@ private:
 		}
 	}
 	/// Returns: return type for a CodeNode
-	/// 
+	///
 	/// In case there's an error, returns `DataType()`
 	DataType getReturnType(CodeNode node){
 		if (node.returnType != DataType(DataType.Type.Void)){
@@ -492,7 +492,7 @@ private:
 			return true;
 		}
 		// now time to search in all libraries' structs names
-		foreach (integer libId, lib; _libraries){
+		foreach (ptrdiff_t libId, lib; _libraries){
 			if (!isImported(libId-1))
 				continue;
 			if (lib.hasStruct(type.typeName, str)){
@@ -503,7 +503,7 @@ private:
 		return false;
 	}
 	/// Returns: true if a library is imported
-	bool isImported(integer id){
+	bool isImported(ptrdiff_t id){
 		if (id >= _libraries.length)
 			return false;
 		if (_libraries[id].autoImport)
@@ -580,7 +580,7 @@ protected:
 	void checkAST(ref BlockNode node, bool ownScope = true){
 		if (ownScope)
 			_vars.scopeIncrease();
-		for (uinteger i=0; i < node.statements.length; i ++){
+		for (size_t i=0; i < node.statements.length; i ++){
 			checkAST(node.statements[i]);
 		}
 		if (ownScope)
@@ -620,7 +620,7 @@ protected:
 		DataType[] argTypes;
 		argTypes.length = node.arguments.length;
 		// while moving the type into separate array, perform the checks on the args themselves
-		for (uinteger i=0; i < node.arguments.length; i ++){
+		for (size_t i=0; i < node.arguments.length; i ++){
 			checkAST(node.arguments[i]);
 			argTypes[i] = node.arguments[i].returnType;
 		}
@@ -667,7 +667,7 @@ protected:
 			// assign it an id
 			addVar (varName, node.type);
 			// set it's ID
-			uinteger vId = getVarID(varName);
+			size_t vId = getVarID(varName);
 			node.setVarID(varName, vId);
 		}
 	}
@@ -686,7 +686,7 @@ protected:
 	void checkAST(ref ReturnNode node){
 		/// check the value
 		checkAST(node.value);
-		if (!node.value.returnType.canImplicitCast(functionReturnType) && 
+		if (!node.value.returnType.canImplicitCast(functionReturnType) &&
 			!(functionReturnType.type == DataType.Type.Void && // let `return null;` be valid for void functions
 			node.value.returnType.canImplicitCast(DataType(DataType.Type.Void,0,true)))){
 
@@ -719,11 +719,11 @@ protected:
 	void checkAST(ref NegativeValueNode node){
 		// check the val
 		checkAST(node.value);
-		// make sure data type is either double or integer, nothing else works
+		// make sure data type is either double or ptrdiff_t, nothing else works
 		CompileError err = CompileError(node.lineno, "can only use - operator on numerical data types");
 		if (node.value.returnType.isArray || node.returnType.isRef)
 			compileErrors.append(err);
-		else if (!node.value.returnType.type.canImplicitCast(DataType.Type.Int) && 
+		else if (!node.value.returnType.type.canImplicitCast(DataType.Type.Int) &&
 			!node.value.returnType.type.canImplicitCast(DataType.Type.Double))
 			compileErrors.append(err);
 	}
@@ -795,7 +795,7 @@ protected:
 			checkAST(node.elements[0]);
 			DataType type = getReturnType(node.elements[0]);
 			bool typeMatches = true;
-			for (uinteger i=1; i < node.elements.length; i ++){
+			for (size_t i=1; i < node.elements.length; i ++){
 				checkAST (node.elements[i]);
 				if (typeMatches && !node.elements[i].returnType.canImplicitCast(type)){
 					compileErrors.append (CompileError(node.elements[i].lineno, "elements in array must be of same type"));
@@ -852,11 +852,11 @@ public:
 		.destroy(_vars);
 	}
 	/// checks a script's AST for any errors
-	/// 
+	///
 	/// Arguments:
-	/// `node` is the ScriptNode for the script  
+	/// `node` is the ScriptNode for the script
 	/// `scriptFunctions` is the array to put data about script defined functions in
-	/// 
+	///
 	/// Returns: errors in CompileError[] or just an empty array if there were no errors
 	CompileError[] checkAST(ref ScriptNode node, Library exports, Library allDeclerations){
 		// empty everything
@@ -870,7 +870,7 @@ public:
 		readGlobVars(node);
 		readFunctions(node);
 		// call checkAST on every FunctionNode
-		for (uinteger i=0; i < node.functions.length; i++){
+		for (size_t i=0; i < node.functions.length; i++){
 			checkAST(node.functions[i]);
 			node.functions[i].id = i; // set the id
 		}

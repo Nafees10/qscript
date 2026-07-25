@@ -41,11 +41,11 @@ package struct FunctionNode{
 		}
 	}
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// number of elements to allocate on stack for variables, this is set by ASTCheck
-	public uinteger varStackCount;
+	public size_t varStackCount;
 	/// stores arguments with their data type
 	public FunctionNode.Argument[] arguments;
 	/// returns: data types of arguments
@@ -64,7 +64,7 @@ package struct FunctionNode{
 	/// the data type of the return value of this function
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// the id of this function, assigned after checkAST has been called on this
-	public uinteger id;
+	public size_t id;
 	/// constructor
 	this (DataType returnDataType, string fName, FunctionNode.Argument[] funcArgs, BlockNode fBody){
 		bodyBlock = fBody;
@@ -95,7 +95,7 @@ package struct FunctionNode{
 /// To store a struct definition
 package struct StructNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// the actual struct
@@ -141,7 +141,7 @@ package struct StructNode{
 /// To store a enum definition
 package struct EnumNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// stores the actual enum
@@ -171,7 +171,7 @@ package struct EnumNode{
 /// to store var declaration
 package struct VarDeclareNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// Stores visibility for this node
 	public Visibility visibility = Visibility.Private;
 	/// the data typre of defined vars
@@ -179,7 +179,7 @@ package struct VarDeclareNode{
 	/// stores names of vars declared
 	private string[] varNames;
 	/// stores IDs of vars declared, only assigned after ASTCheck has checked it
-	private uinteger[string] _varIDs;
+	private size_t[string] _varIDs;
 	/// stores vars' assigned values, with key=varName
 	private CodeNode[string] varValues;
 	/// returns: array contataining names of declared vars. Modifying this array won't have any effect
@@ -187,11 +187,11 @@ package struct VarDeclareNode{
 		return varNames.dup;
 	}
 	/// returns: array containig ID's of variables in assoc_array
-	public @property uinteger[string] varIDs(){
+	public @property size_t[string] varIDs(){
 		return _varIDs.dup;
 	}
 	/// Returns: assigned value for a var
-	/// 
+	///
 	/// Throws: Exception if that variable was not assigned in this statement, or no value was assigned to it
 	public ref CodeNode getValue(string varName){
 		if (varName in varValues){
@@ -219,7 +219,7 @@ package struct VarDeclareNode{
 		varValues[varName] = value;
 	}
 	/// sets a stored var's ID
-	public void setVarID(string varName, uinteger id){
+	public void setVarID(string varName, size_t id){
 		_varIDs[varName] = id;
 	}
 	/// constructor
@@ -231,7 +231,7 @@ package struct VarDeclareNode{
 /// a node representing a "set-of-statements" AKA a "block"
 package struct BlockNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// an array of statements that make this block
 	public StatementNode[] statements;
 	/// constructor
@@ -241,8 +241,8 @@ package struct BlockNode{
 }
 
 /// a node to represent code that evaluates to some data.
-/// 
-/// This node can contain:  
+///
+/// This node can contain:
 /// 1. Function call - to only those functions that return some data
 /// 2. Literals
 /// 3. Operators
@@ -250,7 +250,7 @@ package struct BlockNode{
 /// 5. Arrays (Literal, or with variable elements)
 package struct CodeNode{
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
-	@property uinteger lineno(){
+	@property size_t lineno(){
 		if (_type == Type.FunctionCall){
 			return fCall.lineno;
 		}else if (_type == Type.Literal){
@@ -271,7 +271,7 @@ package struct CodeNode{
 		return 0;
 	}
 	/// ditto
-	@property uinteger lineno(uinteger newLineno){
+	@property size_t lineno(size_t newLineno){
 		if (_type == Type.FunctionCall){
 			return fCall.lineno = newLineno;
 		}else if (_type == Type.Literal){
@@ -462,7 +462,7 @@ package struct MemberSelectorNode{
 	/// stores the type this MemberSelector is of. Only valid after ASTCheck has been called on this
 	public Type type;
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the parent node (to select member from)
 	private CodeNode* _parentPtr;
 	/// name of member, this is valid for Type.EnumMemberRead & Type.StructMemberRead
@@ -470,7 +470,7 @@ package struct MemberSelectorNode{
 	/// Return type. Only valid after ASTCheck
 	public DataType returnType;
 	/// index of memberName in struct definition or enum definition. Only valid after ASTCheck
-	public integer memberNameIndex = -1;
+	public ptrdiff_t memberNameIndex = -1;
 	/// stores if value is static
 	public bool isLiteral = false;
 	/// Returns: the parent node
@@ -484,7 +484,7 @@ package struct MemberSelectorNode{
 		return *_parentPtr = newParent;
 	}
 	/// Constructor
-	this(CodeNode parent, string member, uinteger lineno){
+	this(CodeNode parent, string member, size_t lineno){
 		this.parent = parent;
 		this.memberName = member;
 		this.lineno = lineno;
@@ -494,13 +494,13 @@ package struct MemberSelectorNode{
 /// stores a variable
 package struct VariableNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the name of this var
 	public string varName;
 	/// the ID of the variable. This is assigned in the ASTCheck stage, not in ASTGen
-	public integer id;
+	public ptrdiff_t id;
 	/// the library ID where this is defined
-	public integer libraryId = -1;
+	public ptrdiff_t libraryId = -1;
 	/// stores if this is a global variable. Only valid valid after ASTCheck has been called on this.
 	public bool isGlobal = false;
 	/// if the variable is script defined (global or not), assigned after checkAST has been called on this
@@ -510,9 +510,9 @@ package struct VariableNode{
 	/// stores the return type. Only stored after ASTCheck has checked it
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// true if its return value is static, i.e, will always return same value when evaluated
-	/// 
+	///
 	/// determined by ASTCheck
-	/// 
+	///
 	/// TODO yet to be implemented, probably won't be done till 0.7.1
 	public bool isLiteral = false;
 	/// constructor
@@ -528,7 +528,7 @@ package struct VariableNode{
 /// stores array, for example, `[0, 1, x, y]` will be stored using this
 package struct ArrayNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	uinteger lineno;
+	size_t lineno;
 	/// stores the elements
 	public CodeNode[] elements;
 	/// Returns: true if its return value is static, i.e, will always return same value when executed
@@ -558,11 +558,11 @@ package struct ArrayNode{
 	}
 }
 
-/// stores literal data, i.e data that was availabe at runtime. Can store strings, double, integer,  
+/// stores literal data, i.e data that was availabe at runtime. Can store strings, double, ptrdiff_t,
 /// but arrays (even ones without variables, only literals) are stored in ArrayNode
 package struct LiteralNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// stores the data type for the literal
 	public DataType returnType = DataType(DataType.Type.Void);
 	/// stores the literal
@@ -577,7 +577,7 @@ package struct LiteralNode{
 		fromToken(tokenLiteral);
 	}
 	/// reads the literal from a string
-	/// 
+	///
 	/// throws Exception on error
 	void fromToken(Token token){
 		returnType.fromData(token);
@@ -588,7 +588,7 @@ package struct LiteralNode{
 /// stores `-x`
 package struct NegativeValueNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// stores the value to make negative
 	private CodeNode* _valuePtr;
 	/// value to make negative
@@ -622,7 +622,7 @@ package struct NegativeValueNode{
 /// stores an operator with two operands
 package struct OperatorNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// stores the operator (like '+' ...)
 	public string operator;
 	/// operands. [0] = left, [1] = right
@@ -657,7 +657,7 @@ package struct OperatorNode{
 /// stores an operator with single operand (like ! and @)
 package struct SOperatorNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the operator string
 	public string operator;
 	/// the stored operand
@@ -692,7 +692,7 @@ package struct SOperatorNode{
 /// stores an "array-read" (instruction `readElement` or for string, `readChar`)
 package struct ReadElement{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the node to read from
 	private CodeNode* readFromPtr = null;
 	/// the index to read at
@@ -757,7 +757,7 @@ package struct StatementNode{
 		Return
 	}
 	/// Returns: the line number (starts from 1) from which this node begins, or ends
-	public @property uinteger lineno(){
+	public @property size_t lineno(){
 		if (_type == Type.If){
 			return ifNode.lineno;
 		}else if (_type == Type.While){
@@ -780,7 +780,7 @@ package struct StatementNode{
 		return 0;
 	}
 	/// ditto
-	public @property uinteger lineno(uinteger newLineno){
+	public @property size_t lineno(size_t newLineno){
 		if (_type == Type.If){
 			return ifNode.lineno = newLineno;
 		}else if (_type == Type.While){
@@ -890,7 +890,7 @@ package struct StatementNode{
 /// to store assignment statements
 package struct AssignmentNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// stores whether the assignment is to a variable (false) or if it has to dereference first (true)
 	public bool deref = false;
 	/// the variable to assign to
@@ -908,7 +908,7 @@ package struct AssignmentNode{
 /// to store if statements
 package struct IfNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the condition for this if statement
 	public CodeNode condition;
 	/// stores the pointer to the statement to execute
@@ -962,7 +962,7 @@ package struct IfNode{
 /// to store while statements
 package struct WhileNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the condition for this while statement
 	public CodeNode condition;
 	/// stores the pointer to the statement to execute in loop while the condition is true
@@ -990,7 +990,7 @@ package struct WhileNode{
 /// to store do-while statements
 package struct DoWhileNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the condition for this do-while statement
 	public CodeNode condition;
 	/// stores pointer to the statement to execute in this loop
@@ -1018,7 +1018,7 @@ package struct DoWhileNode{
 /// to store for loop statements
 package struct ForNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// stores the pointer to initialization statement, i.e: `for (<this one>; bla; bla)...`
 	private StatementNode* initStatementPtr;
 	/// stores the pointer to the increment statement, i.e: `for (bla; bla; <this one>)...`
@@ -1078,13 +1078,13 @@ package struct ForNode{
 /// to store functionCall nodes
 package struct FunctionCallNode{
 	/// the line number (starts from 1) from which this node begins, or ends
-	public uinteger lineno;
+	public size_t lineno;
 	/// the id of the library this function is from.
-	public integer libraryId = -1;
+	public ptrdiff_t libraryId = -1;
 	/// the name of the function
 	public string fName;
 	/// the id of the function, assigned after checkAST has been called on this
-	public integer id;
+	public ptrdiff_t id;
 	/// if the function being called is script defined or not, assigned after checkAST has been called on this
 	public deprecated @property bool isScriptDefined(){
 		return libraryId == -1;
@@ -1112,7 +1112,7 @@ package struct FunctionCallNode{
 
 package struct ReturnNode{
 	/// the line number on which this node was read from
-	public uinteger lineno;
+	public size_t lineno;
 	/// the value to return from function
 	public CodeNode value;
 }

@@ -53,52 +53,52 @@ public:
 		return _functions;
 	}
 	/// Adds a new function
-	/// 
+	///
 	/// Returns: function ID, or -1 if function already exists
-	integer addFunction(Function func){
+	ptrdiff_t addFunction(Function func){
 		if (this.hasFunction(func.name, func.argTypes)!=-1)
 			return -1;
 		_functions ~= func;
-		return cast(integer)_functions.length-1;
+		return cast(ptrdiff_t)_functions.length-1;
 	}
 	/// global variables exported by this library. index is ID
 	@property ref Variable[] vars(){
 		return _vars;
 	}
 	/// Adds a new variable.
-	/// 
+	///
 	/// Returns: Variable ID, or -1 if it already exists
-	integer addVar(Variable var){
+	ptrdiff_t addVar(Variable var){
 		if (this.hasVar(var.name))
 			return -1;
 		_vars ~= var;
-		return cast(integer)_vars.length-1;
+		return cast(ptrdiff_t)_vars.length-1;
 	}
 	/// structs exported by library
 	@property ref Struct[] structs(){
 		return _structs;
 	}
 	/// Adds a new struct
-	/// 
+	///
 	/// Returns: struct ID, or -1 if already exists
-	integer addStruct(Struct str){
+	ptrdiff_t addStruct(Struct str){
 		if (this.hasStruct(str.name))
 			return -1;
 		_structs ~= str;
-		return cast(integer)_structs.length-1;
+		return cast(ptrdiff_t)_structs.length-1;
 	}
 	/// Enums exported by library
 	@property ref Enum[] enums() {
 		return _enums;
 	}
 	/// Adds a new enum
-	/// 
+	///
 	/// Returns: enum ID, or -1 if it already exists
-	integer addEnum(Enum enu){
+	ptrdiff_t addEnum(Enum enu){
 		if (this.hasEnum(enu.name))
 			return -1;
 		_enums ~= enu;
-		return cast(integer)_enums.length-1;
+		return cast(ptrdiff_t)_enums.length-1;
 	}
 	/// Returns: true if struct exists
 	bool hasStruct(string name, ref Struct str){
@@ -137,7 +137,7 @@ public:
 		return false;
 	}
 	/// Returns: variable ID, or -1 if doesnt exist
-	integer hasVar(string name, ref DataType type){
+	ptrdiff_t hasVar(string name, ref DataType type){
 		foreach (i, var; _vars){
 			if (var.name == name){
 				type = var.type;
@@ -155,7 +155,7 @@ public:
 		return false;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
+	ptrdiff_t hasFunction(string name, DataType[] argsType, ref DataType returnType){
 		foreach (i, func; _functions){
 			if (func.name == name){
 				if (argsType.length == func.argTypes.length){
@@ -171,7 +171,7 @@ public:
 		return -1;
 	}
 	/// ditto
-	integer hasFunction(string name, DataType[] argsType){
+	ptrdiff_t hasFunction(string name, DataType[] argsType){
 		DataType returnType;
 		return this.hasFunction(name, argsType, returnType);
 	}
@@ -185,43 +185,43 @@ public:
 	}
 	/// For use with generateFunctionCallCode. Use this to change what order arguments are pushed to stack
 	/// before the bytecode for functionCall is generated
-	/// 
+	///
 	/// Returns: the order of arguments to push (`[1,0]` will push 2 arguments in reverse),  or [] for default
-	uinteger[] functionCallArgumentsPushOrder(uinteger functionId){
+	size_t[] functionCallArgumentsPushOrder(size_t functionId){
 		return [];
 	}
 	/// Generates bytecode for a function call, or return false
-	/// 
+	///
 	/// This function must consider all flags
-	/// 
+	///
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+	bool generateFunctionCallCode(QScriptBytecode bytecode, size_t functionId, CodeGenFlags flags){
 		return false;
 	}
 	/// Generates bytecode that will push value of a variable to stack, or return false
-	/// 
+	///
 	/// This function must consider all flags
-	/// 
+	///
 	/// Returns: true if it added code, false if codegen.d should
-	bool generateVariableCode(QScriptBytecode bytecode, uinteger variableId, CodeGenFlags flags){
+	bool generateVariableCode(QScriptBytecode bytecode, size_t variableId, CodeGenFlags flags){
 		return false;
 	}
 	/// Executes a library function
-	/// 
+	///
 	/// Returns: whatever that function returned
-	NaData execute(uinteger functionId, NaData[] args){
+	NaData execute(size_t functionId, NaData[] args){
 		return NaData(0);
 	}
 	/// Returns: value of a variable
-	NaData getVar(uinteger varId){
+	NaData getVar(size_t varId){
 		return NaData(0);
 	}
 	/// Sets value of a variable
-	NaData getVarRef(uinteger varId){
+	NaData getVarRef(size_t varId){
 		return NaData(null);
 	}
 	/// Writes this library to a single printable string
-	/// 
+	///
 	/// Returns: string representing contents of this library
 	override string toString(){
 		char[] r = cast(char[])"library|"~name~'|'~_autoImport.to!string~'|';
@@ -240,7 +240,7 @@ public:
 		return cast(string)r;
 	}
 	/// Reads this library from a string (reverse of toString)
-	/// 
+	///
 	/// Returns: empty string in case of success, error in string in case of error
 	string fromString(string libraryString){
 		string[] vals = commaSeparate!('|',false)(libraryString);
@@ -285,7 +285,7 @@ public:
 		return [];
 	}
 }
-/// 
+///
 unittest{
 	Library dummyLib = new Library("dummyLib",true);
 	dummyLib.addEnum(Enum("Potatoes",["red","brown"]));
@@ -309,7 +309,7 @@ private:
 	NaData _retVal;
 protected:
 	void call(){
-		immutable uinteger libId = _stack.pop.intVal, funcID = _stack.pop.intVal;
+		immutable size_t libId = _stack.pop.intVal, funcID = _stack.pop.intVal;
 		_retVal = _libraries[libId].execute(funcID, _stack.pop(_arg.intVal-2));
 	}
 	void retValSet(){
@@ -353,7 +353,7 @@ protected:
 
 	void jumpFrameN(){
 		import navm.defs : StackFrame;
-		immutable uinteger offset = _stack.pop.intVal;
+		immutable size_t offset = _stack.pop.intVal;
 		_jumpStack.push(StackFrame(_inst, _arg, _stackIndex));
 		_inst = &(_instructions)[_arg.intVal] - 1;
 		_arg = &(_arguments)[_arg.intVal] - 1;
@@ -362,7 +362,7 @@ protected:
 	}
 public:
 	/// constructor
-	this(uinteger stackLength = 65_536){
+	this(size_t stackLength = 65_536){
 		super(stackLength);
 		addInstruction(NaInstruction("call",0x40,true,255,1,&call));
 		addInstruction(NaInstruction("retValSet",0x41,1,0,&retValSet));
@@ -377,21 +377,21 @@ public:
 		addInstruction(NaInstruction("jumpFrameN",0x4A,true,true,1,0,&jumpFrameN));
 	}
 	/// gets element at an index on stack
-	/// 
+	///
 	/// Returns: the element
-	NaData getElement(uinteger index){
+	NaData getElement(size_t index){
 		return _stack.readAbs(index);
 	}
 	/// gets pointer to element at an index on stack
-	/// 
+	///
 	/// Returns: the pointer to element
-	NaData* getElementPtr(uinteger index){
+	NaData* getElementPtr(size_t index){
 		return _stack.readPtrAbs(index);
 	}
 	/// pushes some data, set _stackIndex=0, and start execution at an instruction
-	/// 
+	///
 	/// Returns: return value
-	NaData executeFunction(uinteger index, NaData[] toPush){
+	NaData executeFunction(size_t index, NaData[] toPush){
 		_stack.push(toPush);
 		execute(index);
 		NaData r = _retVal;
@@ -404,7 +404,7 @@ public:
 class QScriptBytecode : NaBytecode{
 private:
 	string _linkInfo;
-	
+
 public:
 	/// constructor
 	this(NaInstruction[] instructionTable){
@@ -425,7 +425,7 @@ public:
 		]~super.getBytecodePretty();
 	}
 	/// Reads from a string[] (follows spec/syntax.md)
-	/// 
+	///
 	/// Returns: errors in a string[], or [] if no errors
 	override string[] readByteCode(string[] input){
 		if (input.length < 2 || input[1].length < 2 || input[1][0] != '#')
@@ -441,10 +441,10 @@ private:
 	QScriptVM _vm;
 	QSCompiler _compiler;
 	/// number of default libraries
-	uinteger _defLibCount;
+	size_t _defLibCount;
 public:
 	/// constructor.
-	/// 
+	///
 	/// Set stack length of VM here, default should be more than enough
 	this(string scriptName, bool autoImport, Library[] libraries, bool defaultLibs = true, bool extraLibs = true){
 		super(scriptName, autoImport);
@@ -472,32 +472,32 @@ public:
 		.destroy(_vm);
 	}
 	// overriding public functions that wont be needed
-	override integer addFunction(Function){
+	override ptrdiff_t addFunction(Function){
 		return -1;
 	}
-	override integer addStruct(Struct){
+	override ptrdiff_t addStruct(Struct){
 		return -1;
 	}
-	override integer addEnum(Enum){
+	override ptrdiff_t addEnum(Enum){
 		return -1;
 	}
-	override integer addVar(Variable){
+	override ptrdiff_t addVar(Variable){
 		return -1;
 	}
 	/// Executes a function from script
-	/// 
+	///
 	/// Returns: whatever that function returned, or random data
-	override NaData execute(uinteger functionId, NaData[] args){
+	override NaData execute(size_t functionId, NaData[] args){
 		return _vm.executeFunction(functionId, args);
 	}
-	override NaData getVar(uinteger varId){
+	override NaData getVar(size_t varId){
 		return _vm.getElement(varId);
 	}
-	override NaData getVarRef(uinteger varId){
+	override NaData getVarRef(size_t varId){
 		return NaData(_vm.getElementPtr(varId));
 	}
 	/// compiles a script, and prepares it for execution with this class
-	/// 
+	///
 	/// Returns: bytecode, or null in case of error
 	/// the returned bytecode will not be freed by this class, so you should do it when not needed
 	QScriptBytecode compileScript(string[] script, ref CompileError[] errors){
@@ -523,7 +523,7 @@ public:
 		return bytecode;
 	}
 	/// compiles a script, and prepares it for execution with this class
-	/// 
+	///
 	/// Returns: errors, if any, or empty array
 	CompileError[] compileScript(string[] script){
 		CompileError[] r;
@@ -532,7 +532,7 @@ public:
 	}
 
 	/// Loads bytecode and library info
-	/// 
+	///
 	/// the bytecode will not be freed by this class, so you should do it when not needed
 	bool load(QScriptBytecode bytecode, string[] errors){
 		errors = bytecode.resolve;

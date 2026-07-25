@@ -21,19 +21,19 @@ public:
 		super("qscript_operators",true);
 	}
 	/// Adds a new function
-	/// 
+	///
 	/// Returns: function ID, or -1 if function already exists
-	override integer addFunction(Function func){
+	override ptrdiff_t addFunction(Function func){
 		DataType dummy;
 		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
 			return -1;
 		_functions ~= func;
-		return cast(integer)_functions.length-1;
+		return cast(ptrdiff_t)_functions.length-1;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
+	override ptrdiff_t hasFunction(string name, DataType[] argsType, ref DataType returnType){
 		// check if it previously assigned an ID to a function of this type
-		integer r = super.hasFunction(name, argsType, returnType);
+		ptrdiff_t r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
 		if (argsType.length == 0) // I got nothing with zero arguments
@@ -49,7 +49,7 @@ public:
 		if (name == "opSame"){
 			returnType = DataType(DataType.Type.Bool);
 			// must have 2 operands, both of same type, not arrays, and not custom(struct)
-			if (argsType.length == 2 && argsType[0] == argsType[1] && !argsType[0].isArray && 
+			if (argsType.length == 2 && argsType[0] == argsType[1] && !argsType[0].isArray &&
 			!argsType[0].type == DataType.Type.Custom)
 				return this.addFunction(Function(name, DataType(DataType.Type.Bool), argsType));
 			return -1;
@@ -76,9 +76,9 @@ public:
 		return -1;
 	}
 	/// Generates bytecode for a function call, or return false
-	/// 
+	///
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+	override bool generateFunctionCallCode(QScriptBytecode bytecode, size_t functionId, CodeGenFlags flags){
 		Function func;
 		if (functionId >= this.functions.length)
 			return false;
@@ -146,18 +146,18 @@ public:
 		super("qscript_arrays", true);
 	}
 	/// Adds a new function
-	/// 
+	///
 	/// Returns: function ID, or -1 if function already exists
-	override integer addFunction(Function func){
+	override ptrdiff_t addFunction(Function func){
 		DataType dummy;
 		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
 			return -1;
 		_functions ~= func;
-		return cast(integer)_functions.length-1;
+		return cast(ptrdiff_t)_functions.length-1;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
-		integer r = super.hasFunction(name, argsType, returnType);
+	override ptrdiff_t hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		ptrdiff_t r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
 		if (argsType.length == 0)
@@ -189,7 +189,7 @@ public:
 		return -1;
 	}
 	/// setLength uses arrayLengthSet which wants arguments in opposite order
-	override uinteger[] functionCallArgumentsPushOrder(uinteger functionId){
+	override size_t[] functionCallArgumentsPushOrder(size_t functionId){
 		if (functionId >= this.functions.length)
 			return [];
 		if (this.functions[functionId].name == "setLength")
@@ -197,9 +197,9 @@ public:
 		return [];
 	}
 	/// Generates bytecode for a function call, or return false
-	/// 
+	///
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+	override bool generateFunctionCallCode(QScriptBytecode bytecode, size_t functionId, CodeGenFlags flags){
 		Function func;
 		if (functionId >= this.functions.length)
 			return false;
@@ -228,18 +228,18 @@ public:
 		super("qscript_typeconv", true);
 	}
 	/// Adds a new function
-	/// 
+	///
 	/// Returns: function ID, or -1 if function already exists
-	override integer addFunction(Function func){
+	override ptrdiff_t addFunction(Function func){
 		DataType dummy;
 		if (super.hasFunction(func.name, func.argTypes, dummy)!=-1)
 			return -1;
 		_functions ~= func;
-		return cast(integer)_functions.length-1;
+		return cast(ptrdiff_t)_functions.length-1;
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
-		integer r = super.hasFunction(name, argsType, returnType);
+	override ptrdiff_t hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		ptrdiff_t r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
 		if (argsType.length != 1)
@@ -276,9 +276,9 @@ public:
 		return -1;
 	}
 	/// Generates bytecode for a function call, or return false
-	/// 
+	///
 	/// Returns: true if it added code for the function call, false if codegen.d should
-	override bool generateFunctionCallCode(QScriptBytecode bytecode, uinteger functionId, CodeGenFlags flags){
+	override bool generateFunctionCallCode(QScriptBytecode bytecode, size_t functionId, CodeGenFlags flags){
 		Function func;
 		if (functionId >= this.functions.length)
 			return false;
@@ -301,7 +301,7 @@ public:
 				bytecode.addInstruction("intToDouble", "");
 			else if (func.argTypes[0] == DataType(DataType.Type.Char,1))
 				bytecode.addInstruction("stringToDouble", "");
-			else 
+			else
 				return false;
 		}else if (func.name == "toString"){
 			if (func.argTypes[0] == DataType(DataType.Type.Int))
@@ -344,8 +344,8 @@ public:
 		super("qscript_stdio", false);
 	}
 	/// Returns: function ID, or -1 if doesnt exist
-	override integer hasFunction(string name, DataType[] argsType, ref DataType returnType){
-		integer r = super.hasFunction(name, argsType, returnType);
+	override ptrdiff_t hasFunction(string name, DataType[] argsType, ref DataType returnType){
+		ptrdiff_t r = super.hasFunction(name, argsType, returnType);
 		if (r > -1)
 			return r;
 		returnType = DataType(DataType.Type.Void);
@@ -371,9 +371,9 @@ public:
 		return -1;
 	}
 	/// Executes a library function
-	/// 
+	///
 	/// Returns: whatever that function returned
-	override NaData execute(uinteger functionId, NaData[] args){
+	override NaData execute(size_t functionId, NaData[] args){
 		switch (functionId){
 			case 0:
 				return writelnStr(args);
